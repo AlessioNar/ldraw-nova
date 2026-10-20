@@ -37,8 +37,13 @@ def sh(*a, binary=False):
 
 
 def extract(rev: str, cache: Path, only: set[str] | None) -> list[str]:
-    ids = sorted({p.split("/")[3] for p in sh("ls-tree", "-r", "--name-only", rev, "app/data/chats").split("\n")
-                  if p.endswith("messages.jsonl")})
+    try:
+        ids = sorted({p.split("/")[3] for p in sh("ls-tree", "-r", "--name-only", rev, "app/data/chats").split("\n")
+                      if p.endswith("messages.jsonl")})
+    except subprocess.CalledProcessError:
+        # The chats were purged from git history; use a pre-populated --cache
+        # (one folder per chat id holding messages.jsonl and its images).
+        ids = sorted(d.name for d in cache.iterdir() if (d / "messages.jsonl").exists())
     for cid in ids:
         if only and cid not in only:
             continue

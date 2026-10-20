@@ -7,14 +7,69 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import providers
+import settings
 
-KEEP_IMAGE_MESSAGES = 2               # only the newest renders are re-sent to vision models
+KEEP_IMAGE_MESSAGES = 2               # at least the newest renders are re-sent to vision models
+STUB_HEAD_LINES = 4                   # lines of a masked tool result kept at each end
+STUB_TAIL_LINES = 4
+STUB_LINE_CHARS = 160
+STUB_ARGS_CHARS = 200
 
 
 def _image_data_url(path: Path) -> Optional[str]:
     if not path.is_file():
         return None
     return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+def _clip(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[:limit] + "..."
+
+
+def mask_stub(name: str, arguments: str, content: str) -> str:
+    """Short, deterministic stand-in for an old tool result: same input, same bytes, whatever the step."""
+    lines = content.splitlines()
+    head = [_clip(line, STUB_LINE_CHARS) for line in lines[:STUB_HEAD_LINES]]
+    tail = [_clip(line, STUB_LINE_CHARS) for line in lines[-STUB_TAIL_LINES:]] if len(lines) > STUB_HEAD_LINES + STUB_TAIL_LINES else []
+    skipped = len(lines) - len(head) - len(tail)
+    recover = ("re-read it with read_file (use offset and max_chars to get the part you need)" if name == "read_file"
+               else f"re-run {name} with the same arguments (redirect big output to a file and print only what you need)")
+    parts = [f"[Output of {name} omitted to save context: {len(content):,} characters, {len(lines):,} lines. "
+             f"Arguments: {_clip(arguments, STUB_ARGS_CHARS)}", "First lines:", *head]
+    if tail:
+        parts += [f"... [{skipped:,} lines omitted] ...", "Last lines:", *tail]
+    parts.append(f"The full output is not in this conversation any more; if you still need it, {recover}.]")
+    return "\n".join(parts)
+
+
+def _masked_steps(messages: list[dict]) -> tuple[dict[str, tuple[str, str]], int]:
+    """Tool calls by id -> (tool name, arguments), and the newest assistant step whose results may be masked.
+
+    The boundary moves in chunks of `mask_batch_steps`, so a result stays verbatim until the boundary
+    passes it and is then stubbed for good: the history prefix changes once per chunk, not every step.
+    """
+    n, k = settings.mask_after_steps(), settings.mask_batch_steps()
+    calls: dict[str, tuple[str, str, int]] = {}
+    step = 0
+    for m in messages:
+        if m["role"] == "assistant" and not m.get("_ui_only"):
+            step += 1
+            for tc in m.get("tool_calls") or []:
+                calls[tc["id"]] = (tc["function"]["name"], tc["function"].get("arguments") or "", step)
+    boundary = (step - n) // k * k
+    return {cid: (name, args) for cid, (name, args, s) in calls.items() if s <= boundary}, boundary
+
+
+def _evicted_images(image_msgs: list[dict]) -> set:
+    """Render messages left out of the request: the oldest, in batches, always keeping the newest KEEP_IMAGE_MESSAGES.
+
+    A batch of 1 drops one per new render (the history is rewritten at every render); a bigger batch keeps
+    up to batch - 1 extra renders for a while and drops them together, so the prefix breaks once per batch.
+    Every render the one-at-a-time rule would keep is also kept here.
+    """
+    batch = settings.image_eviction_batch()
+    drop = (len(image_msgs) - KEEP_IMAGE_MESSAGES) // batch * batch
+    return {m["id"] for m in image_msgs[:max(0, drop)]}
 
 
 def llm_history(messages: list[dict], vision: bool, resolve: Callable[[str], Path], model: str | None = None,
@@ -27,7 +82,9 @@ def llm_history(messages: list[dict], vision: bool, resolve: Callable[[str], Pat
     turns the image references stored in the chat into file paths.
     """
     image_msgs = [m for m in messages if m.get("_images_for_llm")]
-    keep_images = {m["id"] for m in image_msgs[-KEEP_IMAGE_MESSAGES:]} if vision else set()
+    evicted = _evicted_images(image_msgs)
+    maskable, _ = _masked_steps(messages) if settings.mask_old_tool_output() else ({}, 0)
+    mask_min = settings.mask_min_chars()
 
     out: list[dict] = []
     pending: list[str] = []
@@ -43,11 +100,15 @@ def llm_history(messages: list[dict], vision: bool, resolve: Callable[[str], Pat
         if m["role"] == "tool":
             if m.get("tool_call_id") in pending:
                 pending.remove(m["tool_call_id"])
-                out.append({"role": "tool", "tool_call_id": m["tool_call_id"], "content": m["content"]})
+                content = m["content"]
+                if m["tool_call_id"] in maskable and isinstance(content, str) and len(content) > mask_min:
+                    stub = mask_stub(*maskable[m["tool_call_id"]], content)
+                    content = stub if len(stub) < len(content) else content
+                out.append({"role": "tool", "tool_call_id": m["tool_call_id"], "content": content})
             continue
         close_pending()
         if m.get("_images_for_llm"):
-            if m["id"] not in keep_images:
+            if not vision or m["id"] in evicted:
                 continue
             urls = [u for u in (_image_data_url(resolve(ref)) for ref in m["_images_for_llm"]) if u]
             content = [{"type": "text", "text": m["content"]}]

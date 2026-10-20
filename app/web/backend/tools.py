@@ -230,7 +230,7 @@ async def t_list_files(ctx: ToolContext, path: str = "") -> ToolResult:
     return ToolResult(f"{folder}:\n" + ("\n".join(lines) or "(empty)"))
 
 
-async def t_read_file(ctx: ToolContext, path: str, max_chars: int = 40_000, offset: int = 0) -> ToolResult:
+async def t_read_file(ctx: ToolContext, path: str, max_chars: int | None = None, offset: int = 0) -> ToolResult:
     file = resolve_path(ctx, path)
     if not file.is_file():
         raise ToolError(f"{path} is not a file")
@@ -240,7 +240,7 @@ async def t_read_file(ctx: ToolContext, path: str, max_chars: int = 40_000, offs
     if b"\0" in data[:4096]:
         raise ToolError(f"{path} is a binary file ({len(data)} bytes)")
     text = data.decode(errors="replace")
-    limit = max(1000, min(max_chars, 200_000))
+    limit = max(1000, min(settings.read_file_max_chars() if max_chars is None else max_chars, 200_000))
     total = len(text)
     offset = max(0, offset)
     text = text[offset:offset + limit]

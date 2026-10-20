@@ -43,3 +43,44 @@ PLAYER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_PLAYER_VENDOR_DIR", "/op
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 TOOLKIT_DIR = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_DIR", "/opt/ldraw-nova"))
+
+
+# --- agent history tuning (history.py, tools.py) ---------------------------
+
+def _env_int(name: str, default: int, minimum: int = 0) -> int:
+    try:
+        return max(minimum, int(os.environ.get(name, "")))
+    except ValueError:
+        return default
+
+
+def mask_old_tool_output() -> bool:
+    """Replace old bulky tool results with a stub in the history sent to the LLM. Off by default:
+    it changes what the model sees."""
+    return os.environ.get("LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def mask_after_steps() -> int:
+    """A tool result is masked once at least this many assistant steps came after it."""
+    return _env_int("LDRAW_NOVA_MASK_AFTER_STEPS", 10, 1)
+
+
+def mask_min_chars() -> int:
+    """Only results longer than this are masked."""
+    return _env_int("LDRAW_NOVA_MASK_MIN_CHARS", 2000, 200)
+
+
+def mask_batch_steps() -> int:
+    """The masking boundary advances in chunks of this many steps, so the cached prefix changes once per chunk."""
+    return _env_int("LDRAW_NOVA_MASK_BATCH_STEPS", 10, 1)
+
+
+def image_eviction_batch() -> int:
+    """Older renders are dropped this many at a time (always keeping the newest KEEP_IMAGE_MESSAGES), so the
+    middle of the history is rewritten once per batch instead of at every render. 1 = evict one per render."""
+    return _env_int("LDRAW_NOVA_IMAGE_EVICTION_BATCH", 4, 1)
+
+
+def read_file_max_chars() -> int:
+    """Default `max_chars` of the read_file tool."""
+    return _env_int("LDRAW_NOVA_READ_FILE_MAX_CHARS", 40_000, 1000)
