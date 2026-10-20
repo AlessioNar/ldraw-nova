@@ -6,6 +6,7 @@ import litellm
 
 import browser_auth
 import llm_config
+import providers
 import model_catalog
 
 
@@ -54,19 +55,22 @@ async def params_for(entry: dict, options: dict) -> dict:
     elif model.startswith("openai/gpt-") and not params.get("api_base"):
         # GPT-6 function calling requires Responses; LiteLLM bridges the stream.
         params["model"] = model.replace("openai/", "openai/responses/", 1)
-    if options.get("effort"):
-        if model.startswith("openrouter/"):
-            # Use the gateway's native field. LiteLLM's older reasoning_effort
-            # mapping silently changes max to xhigh and misses newer models.
-            params.pop("reasoning_effort", None)
-            params["extra_body"] = {**params.get("extra_body", {}),
-                                    "reasoning": {"effort": options["effort"]}}
-        elif model.startswith("anthropic/"):
-            params["thinking"] = {"type": "adaptive"}
-            params["output_config"] = {"effort": options["effort"]}
-        else:
-            params["reasoning_effort"] = options["effort"]
-    elif model.startswith("openrouter/") and model_catalog.entry_profile(entry).get("reasoning") is True:
+    style = providers.of(model).effort
+    if options.get("effort") and style == "openrouter":
+        # Use the gateway's native field. LiteLLM's older reasoning_effort
+        # mapping silently changes max to xhigh and misses newer models.
+        params.pop("reasoning_effort", None)
+        params["extra_body"] = {**params.get("extra_body", {}),
+                                "reasoning": {"effort": options["effort"]}}
+    elif options.get("effort") and style == "anthropic":
+        params["thinking"] = {"type": "adaptive"}
+        params["output_config"] = {"effort": options["effort"]}
+    elif options.get("effort") and style == "reasoning_effort":
+        params["reasoning_effort"] = options["effort"]
+    elif options.get("effort"):
+        # The provider has no effort field (e.g. Mistral); sending one 400s.
+        params.pop("reasoning_effort", None)
+    elif style == "openrouter" and model_catalog.entry_profile(entry).get("reasoning") is True:
         # Some providers expose only an on/off switch, not effort levels. A
         # builder still needs reasoning (e.g. Grok 4.20 disables it by default).
         extra = params.setdefault("extra_body", {})
