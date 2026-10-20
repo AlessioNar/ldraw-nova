@@ -13,7 +13,7 @@ from leocad_render import DATA_DIR, GENERATED_DIR, OUTPUT_DIR
 __all__ = [
     "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "WEB_DIRS",
     "CONFIG_DIR", "LDRAW_DIR", "GALLERY_MODELS_DIR", "INDEX_DIR", "STATIC_DIR",
-    "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "XR_DIR", "PROMPTS_DIR",
+    "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
 ]
 
 # Shared with the host (bind mount):
@@ -40,7 +40,6 @@ STATIC_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_STATIC_DIR", "/opt/web/static")
 VIEWER_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_VIEWER_DIR", "/opt/web/viewer"))                   # viewer.html
 VIEWER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_VIEWER_VENDOR_DIR", "/opt/web/viewer-vendor"))  # ldbi etc.
 PLAYER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_PLAYER_VENDOR_DIR", "/opt/web/player-vendor"))  # ldraw-player
-XR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_XR_DIR", "/opt/web/xr"))                                # web/xr build
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 TOOLKIT_DIR = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_DIR", "/opt/ldraw-nova"))

@@ -30,14 +30,12 @@ WORKDIR /opt/codex
 RUN npm pack "@openai/codex@${CODEX_VERSION}-linux-x64" \
     && tar -xzf "openai-codex-${CODEX_VERSION}-linux-x64.tgz"
 
-# --- Stage 1b: the mixed-reality viewer (web/xr: Vite + Meta's IWSDK) ---------
-# Same idea, its own stage so SPA edits don't re-install its dependencies.
-FROM --platform=$BUILDPLATFORM node:24-slim AS xr
+# --- Stage 1b: the 3D viewer's GLB decoders (Draco, meshopt) ----------------
+# Lockfile-pinned three.js, the same package the viewer's browser test uses.
+FROM --platform=$BUILDPLATFORM node:24-slim AS viewer-deps
 WORKDIR /src
-COPY web/xr/package.json web/xr/package-lock.json ./
-RUN npm ci --no-audit --no-fund
-COPY web/xr/ ./
-RUN npm run build
+COPY web/viewer-deps/package.json web/viewer-deps/package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund
 
 # --- Stage 2: the runtime image ----------------------------------------------
 # LeoCAD only publishes x86_64 Linux AppImages, so the image is always amd64.
@@ -107,8 +105,8 @@ RUN set -eux; \
     cp /tmp/lor/LICENSE /opt/web/viewer-vendor/LICENSE-ldraworg-library.txt; \
     rm -rf /tmp/lor
 
-# GLB loaders must match ldbi's Three.js r139 globals. Decoder assets are shared
-# with the XR viewer, from its pinned super-three dependency (no runtime CDN).
+# GLB loaders must match ldbi's Three.js r139 globals. Decoder assets come from
+# the viewer-deps stage's pinned three.js (no runtime CDN).
 RUN set -eux; \
     mkdir -p /opt/web/viewer-vendor/gltf; \
     for loader in GLTFLoader DRACOLoader; do \
@@ -117,8 +115,8 @@ RUN set -eux; \
     done; \
     curl -fsSL https://raw.githubusercontent.com/mrdoob/three.js/r139/LICENSE \
         -o /opt/web/viewer-vendor/gltf/LICENSE-three.txt
-COPY --from=xr /src/node_modules/three/examples/jsm/libs/draco/gltf/ /opt/web/viewer-vendor/gltf/draco/
-COPY --from=xr /src/node_modules/three/examples/jsm/libs/meshopt_decoder.module.js /opt/web/viewer-vendor/gltf/meshopt_decoder.module.js
+COPY --from=viewer-deps /src/node_modules/three/examples/jsm/libs/draco/gltf/ /opt/web/viewer-vendor/gltf/draco/
+COPY --from=viewer-deps /src/node_modules/three/examples/jsm/libs/meshopt_decoder.module.js /opt/web/viewer-vendor/gltf/meshopt_decoder.module.js
 
 # Parts index for the agent tools (find_parts: part descriptions).
 # Only depends on the library above, so app edits don't rebuild it.
@@ -155,8 +153,8 @@ RUN set -eux; \
     cd /opt/mpd2glb && bun install --production; \
     rm -rf /root/.bun/install/cache
 
-# socat: the HTTPS front for headsets on the LAN (WebXR needs a secure page;
-# see entrypoint.sh). Its own layer, so the big layers above stay cached.
+# socat: relays the OpenAI login callback (see entrypoint.sh). Its own layer,
+# so the big layers above stay cached.
 RUN apt-get update && apt-get install -y --no-install-recommends socat \
     && rm -rf /var/lib/apt/lists/*
 
@@ -287,7 +285,6 @@ COPY leocad_render.py example.py /app/
 COPY web/backend/ /app/web/backend/
 COPY web/viewer/ /opt/web/viewer/
 COPY --from=frontend /src/dist/ /opt/web/static/
-COPY --from=xr /src/dist/ /opt/web/xr/
 
 # --- Shared folder with the host --------------------------------------------
 # /data/generated: the model collection; /data/chats: chat history;
@@ -298,6 +295,6 @@ VOLUME ["/data", "/config"]
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 8000 8443
+EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["uvicorn", "main:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0", "--port", "8000"]

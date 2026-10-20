@@ -40,8 +40,6 @@ services:
       - ./web/viewer:/opt/web/viewer    # viewer.html, player.html
       - ./scripts:/opt/scripts          # command-line helpers (on the PATH)
       - ./models-gallery:/opt/models-gallery  # bundled models on the Gallery page
-      # The mixed-reality viewer (web/xr) has its own dev server instead:
-      #   cd web/xr && npm install && npm run dev   # http://localhost:5173/xr/?model=...&emulate=quest3
       # Iterating on the 3D player (ldraw.rs-nova, tools/player/build.sh): use
       # your local build instead of the release zip baked into the image.
       # - ../ldraw.rs-nova/tools/player/dist/ldraw-player-<version>:/opt/web/player-vendor
