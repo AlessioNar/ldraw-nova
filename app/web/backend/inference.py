@@ -1,6 +1,8 @@
 """LiteLLM request normalization and bounded history shared by chat and probes."""
 import copy
+import hashlib
 import json
+from collections import OrderedDict
 
 import litellm
 
@@ -66,6 +68,35 @@ async def params_for(entry: dict, options: dict) -> dict:
     return params
 
 
+_TEXT_KEYS = {"type", "format", "index", "id", "text"}
+
+
+def coalesce_reasoning_details(details: list) -> list:
+    """Merge runs of streamed `reasoning.text` deltas into one block per run.
+
+    Only consecutive plain-text blocks that agree on type, format, index and id
+    (and carry no other field, e.g. a signature) are joined, by concatenating the
+    text in received order. Encrypted, summary and any other block, and any block
+    with an unexpected shape, is kept as is and ends the run; nothing is reordered.
+    """
+    out: list = []
+    run = None  # the last output block while it is still a mergeable text delta
+    for detail in details:
+        mergeable = (isinstance(detail, dict) and detail.get("type") == "reasoning.text"
+                     and set(detail) <= _TEXT_KEYS and isinstance(detail.get("text"), str))
+        if mergeable and run is not None and all(run.get(k) == detail.get(k) for k in ("type", "format", "index", "id")) \
+                and set(run) == set(detail):
+            run["text"] += detail["text"]
+            continue
+        if mergeable:
+            detail = dict(detail)
+            run = detail
+        else:
+            run = None
+        out.append(detail)
+    return out
+
+
 def _system_tail(message: dict) -> str:
     """Text of the system turn's last block.
 
@@ -85,22 +116,96 @@ def _append_system(message: dict, note: str) -> None:
         content[-1]["text"] += note
 
 
+_TOKEN_CACHE: "OrderedDict[tuple, int]" = OrderedDict()
+_TOKEN_CACHE_MAX = 8192
+_REPLY_PRIMING = 3  # litellm.token_counter adds this once per call, not per message
+
+
+def reasoning_text(message: dict) -> str:
+    """Text of the OpenRouter reasoning blocks the message carries.
+
+    litellm.token_counter skips list-valued keys it does not know, so the
+    reasoning that is re-sent every step would otherwise be invisible to the budget.
+    """
+    details = message.get("reasoning_details") or message.get("_reasoning_details")
+    if not isinstance(details, list):
+        return ""
+    return "".join(d[key] for d in details if isinstance(d, dict)
+                   for key in ("text", "summary") if isinstance(d.get(key), str))
+
+
+def _digest(*parts: str) -> bytes:
+    h = hashlib.blake2b(digest_size=16)
+    for part in parts:
+        h.update(part.encode("utf-8", "surrogatepass"))
+        h.update(b"\0")
+    return h.digest()
+
+
+def _message_tokens(model: str, message: dict) -> int:
+    """Tokens of one message as litellm counts it in a list, plus its reasoning text.
+
+    Counts are additive per message, so they are cached by content: only the
+    messages that are new since the previous step are tokenized. The reasoning
+    text is joined and hashed on its own because it can be megabytes of tiny blocks.
+    """
+    text = reasoning_text(message)
+    rest = {k: v for k, v in message.items() if k not in ("reasoning_details", "_reasoning_details")}
+    key = (model, _digest(json.dumps(rest, default=str), text))
+    cached = _TOKEN_CACHE.get(key)
+    if cached is not None:
+        _TOKEN_CACHE.move_to_end(key)
+        return cached
+    tokens = litellm.token_counter(model=model, messages=[rest]) - _REPLY_PRIMING
+    if text:
+        tokens += litellm.token_counter(model=model, text=text)
+    _TOKEN_CACHE[key] = tokens
+    if len(_TOKEN_CACHE) > _TOKEN_CACHE_MAX:
+        _TOKEN_CACHE.popitem(last=False)
+    return tokens
+
+
+def _strip_turn_start(messages: list[dict]) -> list[dict]:
+    """Copy for sending: own message dicts (and system blocks), shared payloads."""
+    out = []
+    for m in messages:
+        m = {k: v for k, v in m.items() if k != "_turn_start"}
+        if isinstance(m.get("content"), list) and m.get("role") == "system":
+            m["content"] = [dict(b) for b in m["content"]]
+        out.append(m)
+    return out
+
+
 def bounded_history(messages: list[dict], model: str, budget: int | None) -> tuple[list[dict], int]:
     """Trim old turns, then completed tool rounds in a long build.
 
     Keep the user's task and the last two complete tool rounds. Full history
     stays on disk; the system prompt carries the build's latest NOTES.md.
+    Message token counts are cached across steps and include reasoning blocks;
+    the history is never deep-copied (only the system turn, which gets the trim note).
     """
-    result = copy.deepcopy(messages)
+    if not budget:
+        return _strip_turn_start(messages), 0
+    limit = budget - 4096
+    try:
+        sizes = [_message_tokens(model, m) for m in messages]
+        total = _REPLY_PRIMING + sum(sizes)
+    except Exception:
+        sizes = None
+        total = len(json.dumps(messages).encode())  # conservative for unknown tokenizers
+    if total <= limit:
+        return _strip_turn_start(messages), 0
+    # Only the system turn is edited below; payloads such as reasoning blocks are shared.
+    result = [dict(m) for m in messages]
+    result[0] = copy.deepcopy(messages[0])
     removed = 0
 
     def count():
-        try:
-            return litellm.token_counter(model=model, messages=result)
-        except Exception:
-            return len(json.dumps(result).encode())  # conservative for unknown tokenizers
+        if sizes is not None:
+            return _REPLY_PRIMING + sum(sizes)
+        return len(json.dumps(result).encode())
 
-    while budget and count() > budget - 4096:
+    while count() > limit:
         starts = [i for i, m in enumerate(result) if m.get("_turn_start", m["role"] == "user")]
         if len(starts) < 2:
             rounds = [i for i, m in enumerate(result) if m.get("tool_calls")]
@@ -109,16 +214,24 @@ def bounded_history(messages: list[dict], model: str, budget: int | None) -> tup
             begin, end = rounds[0], rounds[1]
             removed += end - begin
             result[begin:end] = []
+            if sizes is not None:
+                sizes[begin:end] = []
             note = "\nEarlier completed tool rounds were omitted to fit context. Consult the current NOTES.md and saved output reports; do not assume omitted checks passed."
             if note not in _system_tail(result[0]):
                 _append_system(result[0], note)
+                if sizes is not None:
+                    sizes[0] = _message_tokens(model, result[0])
             continue
         end = starts[1]
         removed += end - 1
         result = [result[0], *result[end:]]
+        if sizes is not None:
+            sizes = [sizes[0], *sizes[end:]]
         # Do not leave results whose calls were removed (e.g. image feedback).
         while len(result) > 1 and result[1]["role"] == "tool":
             result.pop(1)
+            if sizes is not None:
+                sizes.pop(1)
     for message in result:
         message.pop("_turn_start", None)
     return result, removed

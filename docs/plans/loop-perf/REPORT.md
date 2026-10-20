@@ -86,3 +86,8 @@ Finding 4 can be validated offline (timing and count accuracy against a tokenize
 - Latency causality: LLM wait mixes queueing, prompt processing and output generation. Regression fits are correlation only. Tool gaps include approval waits.
 - Work-folder reconstruction: changes made by shell/toolkit commands are not visible, so system-tail breaks are under-counted.
 - Behaviour: whether masked outputs or relocated notes change model decisions. Five chats from three models on a single task family (building LDraw models) is a small sample; a long-context chat with many `discover`/`build` calls will weigh finding 3 more.
+
+## Correction (from the cache fix, see FIX-cache.md)
+
+The cache cost figures in finding 1 do not reproduce: one of them (0.91M for `dd4aed`) is below 0.1x of that chat's total, which cannot be, because every request is at least read. Re-simulated with the real code paths (`cache_scenarios.py`; read 0.1x, write 1.25x, every identical byte assumed to hit), the rolling breakpoint alone saves 29-71% per chat and with the tail moved after the history 68-84%, not 42-93% and 90-97%. The ordering of the scenarios is unchanged. Image eviction is the largest remaining prefix break (see FIX-history.md).
+

@@ -9,11 +9,12 @@ import litellm
 import inference
 import llm_config
 import model_catalog
+import settings
 import providers
 from store import ChatStore
 from history import llm_history
 from run_state import Run
-from system_prompt import system_message
+from system_prompt import outbound_messages, system_message
 from tool_policy import available_tools
 from tools import ToolContext
 from usage import usage_record
@@ -44,6 +45,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
             messages, removed = inference.bounded_history(messages, params["model"], budget)
             if removed:
                 run.emit("context", {"removed": removed})
+            messages = outbound_messages(store, chat_id, messages, entry["litellm_params"]["model"], run.options)
             kwargs = {"tools": available_tools(run.options)} if use_tools else {}
             run.emit("progress", {"summary": "Agent is reviewing the request and choosing the next step."})
             stream = await litellm.acompletion(**params, messages=messages, stream=True, num_retries=2, **kwargs)
@@ -83,9 +85,11 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
             if providers.of(message["_llm_model"]).reasoning_details:
                 # LiteLLM 1.102.1 retains delta.reasoning_details but loses them
                 # in stream_chunk_builder. OpenRouter specifies concatenation in
-                # received order; do not merge/reorder blocks by id or index.
+                # received order; never reorder or merge across id/index (coalescing is opt-in).
                 details = [detail for chunk in chunks if chunk.choices
                            for detail in (getattr(chunk.choices[0].delta, "reasoning_details", None) or [])]
+                if settings.COALESCE_REASONING:
+                    details = inference.coalesce_reasoning_details(details)
                 if details:
                     message["_reasoning_details"] = details
             if not message["content"] and not tool_calls:
