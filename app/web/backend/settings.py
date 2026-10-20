@@ -14,6 +14,7 @@ __all__ = [
     "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "WEB_DIRS",
     "CONFIG_DIR", "LDRAW_DIR", "GALLERY_MODELS_DIR", "INDEX_DIR", "STATIC_DIR",
     "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
+    "COALESCE_REASONING",
 ]
 
 # Shared with the host (bind mount):
@@ -84,3 +85,9 @@ def image_eviction_batch() -> int:
 def read_file_max_chars() -> int:
     """Default `max_chars` of the read_file tool."""
     return _env_int("LDRAW_NOVA_READ_FILE_MAX_CHARS", 40_000, 1000)
+
+
+# Merge streamed OpenRouter reasoning_details deltas before they are stored and
+# re-sent every step. Off by default: providers may require the original blocks
+# on continuation, which only a live run can confirm.
+COALESCE_REASONING = os.environ.get("LDRAW_NOVA_COALESCE_REASONING", "").strip().lower() in ("1", "true", "yes", "on")
