@@ -5,7 +5,7 @@
 What you get when the building process finishes:
 
 - Its **source code**, in **[LDraw language](https://www.ldraw.org/)**.
-- **Different views:** 3D viewer, 3D player, VR interactive (Meta Quest 3), images...
+- **Different views:** 3D viewer, 3D player, images...
 - **Blender editable** glTF file, in `.glb` format, metainfo as Blender's Custom Properties.
 - **Chat history** and **agent thinking process**.
 - and more... 👌
@@ -47,12 +47,9 @@ docker compose build
 docker compose up -d
 ```
 
-**4. Open** it in your browser:
+**4. Open** it in your browser at **http://localhost:8765**.
 
-- **https://localhost:8443**: needed for VR on Meta Quest 3. The certificate is self-signed, so accept the browser's warning the first time.
-- **http://localhost:8765**: plain HTTP, no certificate warnings. Use it if the self-signed certificate gets in the way. VR won't work over it.
-
-Other devices on your network can reach the app by your computer's IP instead of `localhost`, e.g. `https://192.168.1.20:8443` from a Quest 3. The app has no login, so only run it on networks you trust.
+Other devices on your network can reach the app by your computer's IP instead of `localhost`, e.g. `http://192.168.1.20:8765`. The app has no login, so only run it on networks you trust.
 
 To stop it: 
 
@@ -162,7 +159,6 @@ These are some of the guides and references given to the agent in order to make 
 
 Being this a **first release**, there are quite some things that still require some work:
 
-- **VR on Meta Quest 3:** model handling has **many issues**, performance issues.
 - **Adapt for low-end agents:** adapt current tooling, docs and instructions in order to improve usage by low-end models like e.g. Luna, Haiku, etc.
 - **Expensive generation:** currently, only **expensive**, high-end models, are currently capable of generating large-sized and correct models.
 - **Improve efficiency:** generative process is currently slow.
