@@ -14,6 +14,7 @@ __all__ = [
     "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "WEB_DIRS",
     "CONFIG_DIR", "LDRAW_DIR", "GALLERY_MODELS_DIR", "INDEX_DIR", "STATIC_DIR",
     "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
+    "COALESCE_REASONING",
 ]
 
 # Shared with the host (bind mount):
@@ -43,3 +44,8 @@ PLAYER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_PLAYER_VENDOR_DIR", "/op
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 TOOLKIT_DIR = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_DIR", "/opt/ldraw-nova"))
+
+# Merge streamed OpenRouter reasoning_details deltas before they are stored and
+# re-sent every step. Off by default: providers may require the original blocks
+# on continuation, which only a live run can confirm.
+COALESCE_REASONING = os.environ.get("LDRAW_NOVA_COALESCE_REASONING", "").strip().lower() in ("1", "true", "yes", "on")

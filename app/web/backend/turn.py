@@ -9,6 +9,7 @@ import litellm
 import inference
 import llm_config
 import model_catalog
+import settings
 import providers
 from store import ChatStore
 from history import llm_history
@@ -87,9 +88,11 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
             if providers.of(message["_llm_model"]).reasoning_details:
                 # LiteLLM 1.102.1 retains delta.reasoning_details but loses them
                 # in stream_chunk_builder. OpenRouter specifies concatenation in
-                # received order; do not merge/reorder blocks by id or index.
+                # received order; never reorder or merge across id/index (coalescing is opt-in).
                 details = [detail for chunk in chunks if chunk.choices
                            for detail in (getattr(chunk.choices[0].delta, "reasoning_details", None) or [])]
+                if settings.COALESCE_REASONING:
+                    details = inference.coalesce_reasoning_details(details)
                 if details:
                     message["_reasoning_details"] = details
             if not message["content"] and not tool_calls:
