@@ -43,3 +43,9 @@ PLAYER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_PLAYER_VENDOR_DIR", "/op
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 TOOLKIT_DIR = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_DIR", "/opt/ldraw-nova"))
+
+# Prompt-cache layout of the agent loop (see docs/plans/loop-perf/FIX-cache.md).
+# A cache breakpoint on the last message of the history, for providers that cache.
+ROLLING_CACHE_BREAKPOINT = os.environ.get("LDRAW_NOVA_ROLLING_CACHE_BREAKPOINT", "1").lower() not in ("0", "false", "no", "off")
+# Send the work listing, NOTES.md and mode note after the history instead of in the system turn. Off by default: it changes what the model sees.
+TAIL_AFTER_HISTORY = os.environ.get("LDRAW_NOVA_TAIL_AFTER_HISTORY", "0").lower() in ("1", "true", "yes", "on")

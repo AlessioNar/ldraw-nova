@@ -55,15 +55,21 @@ def system_prompt(store: ChatStore, chat_id: str) -> str:
     return "".join(system_prompt_parts(store, chat_id))
 
 
-def system_message(store: ChatStore, chat_id: str, model: str, options: dict) -> dict:
+def system_message(store: ChatStore, chat_id: str, model: str, options: dict,
+                   tail_in_system: bool | None = None) -> dict:
     """The system turn, cache-broken after the stable prefix where supported.
 
     Only providers that accept Anthropic-style `cache_control` on a content
     block get the split; the rest (OpenAI, Ollama, ...) reject the extra key,
     so they keep the plain-string system prompt.
+
+    With LDRAW_NOVA_TAIL_AFTER_HISTORY the volatile tail is left out here and
+    sent by outbound_messages() after the history instead; the caching shape
+    keeps an empty second block, where bounded_history() appends its trim note.
     """
     stable, volatile = system_prompt_parts(store, chat_id)
-    tail = volatile + mode_prompt(options)
+    tail = "" if tail_in_system is False or (tail_in_system is None and settings.TAIL_AFTER_HISTORY) \
+        else volatile + mode_prompt(options)
     if not providers.supports_prompt_caching(model):
         return {"role": "system", "content": stable + tail}
     return {"role": "system", "content": [
@@ -71,6 +77,69 @@ def system_message(store: ChatStore, chat_id: str, model: str, options: dict) ->
         {"type": "text", "text": tail},
     ]}
 
+
+MAX_CACHE_BREAKPOINTS = 4             # Anthropic's limit per request
+
+
+def _breakpoints(messages: list[dict]) -> int:
+    n = 0
+    for message in messages:
+        content = message.get("content")
+        n += "cache_control" in message
+        n += sum("cache_control" in b for b in content if isinstance(b, dict)) if isinstance(content, list) else 0
+    return n
+
+
+def with_rolling_breakpoint(messages: list[dict], model: str) -> list[dict]:
+    """Copy of the request with a cache breakpoint on its last message.
+
+    The prefix up to the previous step's last message is then read from the
+    cache and only the new tail is written, instead of re-billing the history
+    behind every change of the system tail. Outbound copy only: the stored
+    chat never sees `cache_control`. Plain-string content becomes a one-block
+    list (as in system_message); content-less messages take the key itself.
+    """
+    if (not messages or not settings.ROLLING_CACHE_BREAKPOINT or not providers.supports_prompt_caching(model)
+            or _breakpoints(messages) >= MAX_CACHE_BREAKPOINTS):
+        return messages
+    last = dict(messages[-1])
+    content = last.get("content")
+    if isinstance(content, str) and content:
+        last["content"] = [{"type": "text", "text": content, "cache_control": {"type": "ephemeral"}}]
+    elif isinstance(content, list) and content and isinstance(content[-1], dict):
+        last["content"] = [*content[:-1], {**content[-1], "cache_control": {"type": "ephemeral"}}]
+    else:
+        last["cache_control"] = {"type": "ephemeral"}
+    return [*messages[:-1], last]
+
+
+def outbound_messages(store: ChatStore, chat_id: str, messages: list[dict], model: str, options: dict) -> list[dict]:
+    """The request as sent: history-bounded messages plus cache breakpoint and, when
+    LDRAW_NOVA_TAIL_AFTER_HISTORY is on, the volatile tail as a trailing context message.
+
+    That message has the user role: a system turn has to come first (Anthropic
+    hoists later ones into the system prompt, other providers reject them), and a
+    user turn after the history is accepted everywhere, also after a tool result
+    (LiteLLM folds it into the same Anthropic user turn). It follows the
+    breakpoint, so the history stays one unbroken cached prefix.
+    """
+    if settings.TAIL_AFTER_HISTORY:
+        stable, volatile = system_prompt_parts(store, chat_id)
+        system, history = dict(messages[0]), messages[1:]
+        content = system["content"]
+        if isinstance(content, str):
+            note = content[len(stable):]                  # what bounded_history appended
+        else:
+            note = content[-1]["text"]
+            system["content"] = content[:-1]
+        text = (volatile + mode_prompt(options) + note).strip()
+        messages = [system, *history]
+        if text:
+            messages = [*with_rolling_breakpoint(messages, model),
+                        {"role": "user", "content": "[Workspace state for this step, added by the app. "
+                                                    "It is not a message from the user.]\n\n" + text}]
+            return messages
+    return with_rolling_breakpoint(messages, model)
 
 
 def mode_prompt(options: dict) -> str:

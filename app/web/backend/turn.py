@@ -13,7 +13,7 @@ import providers
 from store import ChatStore
 from history import llm_history
 from run_state import Run
-from system_prompt import system_message, system_prompt
+from system_prompt import outbound_messages, system_message, system_prompt
 from tool_policy import available_tools
 from tools import ToolContext
 from usage import usage_record
@@ -48,6 +48,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
             messages, removed = inference.bounded_history(messages, params["model"], budget)
             if removed:
                 run.emit("context", {"removed": removed})
+            messages = outbound_messages(store, chat_id, messages, entry["litellm_params"]["model"], run.options)
             kwargs = {"tools": available_tools(run.options)} if use_tools else {}
             run.emit("progress", {"summary": "Agent is reviewing the request and choosing the next step."})
             stream = await litellm.acompletion(**params, messages=messages, stream=True, num_retries=2, **kwargs)
