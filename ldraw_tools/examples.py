@@ -1,6 +1,5 @@
 """Find a small, relevant set of generated teaching examples."""
 import json
-from pathlib import Path
 from .common import ROOT
 
 
