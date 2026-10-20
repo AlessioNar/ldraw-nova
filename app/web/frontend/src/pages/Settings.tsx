@@ -4,7 +4,7 @@ import EnvironmentSettings from "../components/EnvironmentSettings";
 import AgentForm, { ConnectionPill } from "../components/AgentForm";
 import AgentDetails from "../components/AgentDetails";
 import { useApp } from "../context";
-import { agentProvider, providerLabel } from "../modelChoices";
+import { agentProvider, isLegacyBrowser, LEGACY_BROWSER_HINT, providerLabel } from "../modelChoices";
 
 export default function Settings() {
   const { llms, defaultLlmId } = useApp();
@@ -44,10 +44,11 @@ export default function Settings() {
                 <div key={m.id} className="panel llm-row">
                   <div className="llm-info"><div className="llm-title"><strong>{m.model_name}</strong>
                     {m.id === defaultLlmId && <span className="badge">Default</span>}
-                    <span className="badge">{m.auth_mode === "browser" ? "Browser login" : String(m.litellm_params.api_key ?? "").startsWith("os.environ/") ? "API key · env var" : "API key · value"}</span>
+                    <span className={`badge ${isLegacyBrowser(m) ? "warn" : ""}`}>{isLegacyBrowser(m) ? "Browser login removed" : String(m.litellm_params.api_key ?? "").startsWith("os.environ/") ? "API key · env var" : "API key · value"}</span>
                     <ConnectionPill status={m.connection_status ?? "not_tested"} />
                   </div><div className="muted small model-id">{String(m.litellm_params.model)}</div>
-                    <AgentDetails profile={m.profile} browser={m.auth_mode === "browser"} />
+                    {isLegacyBrowser(m) && <p className="muted small">{LEGACY_BROWSER_HINT}</p>}
+                    <AgentDetails profile={m.profile} />
                   </div>
                   <div className="llm-actions"><button type="button" disabled={busy} onClick={() => { setEditing(m.id); setNewId(null); }}>Edit</button></div>
                 </div>

@@ -7,7 +7,10 @@ export function setProviderCatalogue(catalogue: ProviderInfo[]) {
   labels = Object.fromEntries(catalogue.map(p => [p.provider, p.label]));
 }
 
-export const agentProvider = (model: string) => model.startsWith("chatgpt/") ? "openai" : model.split("/")[0];
+export const agentProvider = (model: string) => model.split("/")[0];
+// Entries saved before browser login was removed stay listed but cannot run.
+export const isLegacyBrowser = (model: LlmEntry) => model.auth_mode === "browser";
+export const LEGACY_BROWSER_HINT = "Browser login was removed. Edit this agent and use an API key.";
 export const providerLabel = (provider: string) => labels[provider] ?? provider;
 
 const RECENTS_KEY = "ldraw-nova.recent-models";
@@ -25,9 +28,7 @@ export function rememberModel(id: string) {
 }
 
 export function providerName(model: LlmEntry) {
-  const provider = String(model.litellm_params.model).split("/")[0];
-  if (provider === "openai" && model.auth_mode === "browser") return providerLabel("chatgpt");
-  return providerLabel(provider);
+  return providerLabel(agentProvider(String(model.litellm_params.model)));
 }
 
 export function tokenLabel(tokens: number) {

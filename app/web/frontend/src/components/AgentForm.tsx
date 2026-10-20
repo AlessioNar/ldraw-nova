@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, type LlmEntry, type ModelProfile, type ConnectionStatus } from "../api";
 import { useApp } from "../context";
-import { agentProvider, providerLabel, tokenLabel } from "../modelChoices";
+import { agentProvider, isLegacyBrowser, LEGACY_BROWSER_HINT, providerLabel, tokenLabel } from "../modelChoices";
 import AgentDetails from "./AgentDetails";
 
-type AuthMethod = "browser" | "api_value" | "api_env";
+type AuthMethod = "api_value" | "api_env";
 type Form = {
   id?: string; model_name: string; model: string; api_key: string; env_var: string;
   api_base: string; api_version: string; extra: { key: string; value: string }[]; auth: AuthMethod;
@@ -26,19 +26,17 @@ function toForm(e: LlmEntry): Form {
     env_var: reference ? str("api_key").slice("os.environ/".length) : envName(str("model").split("/")[0]),
     api_base: str("api_base"), api_version: str("api_version"),
     extra: Object.entries(p).filter(([k]) => !BASIC.includes(k)).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })),
-    auth: e.auth_mode === "browser" ? "browser" : reference ? "api_env" : "api_value" };
+    auth: reference ? "api_env" : "api_value" };
 }
 function parseValue(value: string): unknown { try { return JSON.parse(value); } catch { return value; } }
 function fromForm(f: Form): Partial<LlmEntry> {
   const params: Record<string, unknown> = { model: f.model.trim() };
-  if (f.auth !== "browser") {
-    if (f.auth === "api_env") params.api_key = `os.environ/${f.env_var.trim()}`;
-    else if (f.api_key) params.api_key = f.api_key;
-    if (f.api_base) params.api_base = f.api_base.trim();
-    if (f.api_version) params.api_version = f.api_version.trim();
-    for (const { key, value } of f.extra) if (key.trim() && !BASIC.includes(key.trim())) params[key.trim()] = parseValue(value);
-  }
-  return { model_name: f.model_name.trim() || f.model.trim(), litellm_params: params, auth_mode: f.auth === "browser" ? "browser" : "api_key" };
+  if (f.auth === "api_env") params.api_key = `os.environ/${f.env_var.trim()}`;
+  else if (f.api_key) params.api_key = f.api_key;
+  if (f.api_base) params.api_base = f.api_base.trim();
+  if (f.api_version) params.api_version = f.api_version.trim();
+  for (const { key, value } of f.extra) if (key.trim() && !BASIC.includes(key.trim())) params[key.trim()] = parseValue(value);
+  return { model_name: f.model_name.trim() || f.model.trim(), litellm_params: params, auth_mode: "api_key" };
 }
 
 export function ConnectionPill({ status }: { status: ConnectionStatus }) {
@@ -54,9 +52,9 @@ export default function AgentForm({ entry, provider, catalog, onClose, onSaved, 
   const { defaultLlmId, refreshLlms } = useApp();
   const presets = catalog.filter(m => agentProvider(m.model) === provider);
   const [form, setForm] = useState<Form>(() => entry ? toForm(entry) : {
-    ...EMPTY, model: provider + "/", env_var: envName(provider),
-    auth: ["openai", "anthropic"].includes(provider) ? "browser" : "api_env",
+    ...EMPTY, model: provider + "/", env_var: envName(provider), auth: "api_env",
   });
+  const [legacy, setLegacy] = useState(!!entry && isLegacyBrowser(entry));
   const [status, setStatus] = useState<ConnectionStatus>(entry?.connection_status ?? "not_tested");
   const [testedProfile, setTestedProfile] = useState<ModelProfile | undefined>(entry?.profile);
   const [message, setMessage] = useState("");
@@ -81,7 +79,7 @@ export default function AgentForm({ entry, provider, catalog, onClose, onSaved, 
   async function persist() {
     if (agentProvider(form.model) !== provider) throw new Error(`Choose an agent from ${providerLabel(provider)}.`);
     const saved = form.id ? await api.updateLlm(form.id, fromForm(form)) : await api.createLlm(fromForm(form));
-    setForm(toForm(saved)); onSaved(saved); refreshLlms();
+    setForm(toForm(saved)); setLegacy(isLegacyBrowser(saved)); onSaved(saved); refreshLlms();
     return saved;
   }
   async function save(event: FormEvent) {
@@ -118,13 +116,14 @@ export default function AgentForm({ entry, provider, catalog, onClose, onSaved, 
     <header className="agent-form-head"><div><h3>{form.id ? form.model_name || "Edit agent" : "Add agent"}</h3><ConnectionPill status={status} /></div>
       {form.id && <button type="button" className="danger-text" disabled={busy} onClick={remove}>Delete</button>}
     </header>
+    {legacy && <p className="muted small">{LEGACY_BROWSER_HINT}</p>}
     <fieldset className="agent-fields" disabled={busy}>
       <label><span>Agent presets</span><select aria-label="Agent presets" value={presets.some(p => p.model === form.model) ? form.model : ""} onChange={e => preset(e.target.value)}>
         <option value="">{form.model !== provider + "/" ? "Custom agent" : "Choose an agent…"}</option>
         {presets.map(m => <option key={m.model} value={m.model}>{m.name}{m.context_window ? ` · ${tokenLabel(m.context_window)}` : ""}{provider === "openrouter" && m.pricing ? ` · $${m.pricing.input} in / $${m.pricing.output} out per 1M` : ""}</option>)}
       </select></label>
       {provider === "openrouter" && <small className="muted">A shortlist of models with large contexts, image input, reasoning and tools. Compare context and API prices below.</small>}
-      <AgentDetails profile={testedProfile ?? presets.find(m => m.model === form.model)} browser={form.auth === "browser"} />
+      <AgentDetails profile={testedProfile ?? presets.find(m => m.model === form.model)} />
       {presets.find(m => m.model === form.model)?.recommendation && <small className="muted">{presets.find(m => m.model === form.model)?.recommendation}</small>}
       <label><span>Model ID</span><input aria-label="Model ID" required list="model-suggestions" value={form.model} onChange={e => set({ model: e.target.value })} />
         <datalist id="model-suggestions">{suggestions.map(m => <option key={m} value={m} />)}</datalist>
@@ -132,35 +131,32 @@ export default function AgentForm({ entry, provider, catalog, onClose, onSaved, 
       </label>
       <label><span>Display name</span><input value={form.model_name} placeholder="Shown in the agent picker" onChange={e => set({ model_name: e.target.value })} /></label>
       <label><span>Authentication</span><select aria-label="Authentication" value={form.auth} onChange={e => set({ auth: e.target.value as AuthMethod, env_var: form.env_var || envName(provider) })}>
-        {["openai", "anthropic"].includes(provider) && <option value="browser">Browser login</option>}
         <option value="api_value">API key (value)</option><option value="api_env">API key (env var)</option>
       </select></label>
-      {form.auth === "browser" ? <p className="muted small">Uses the account connected in Browser login above.</p> : <>
-        {form.auth === "api_env" ? <label><span>Environment variable</span>
-          <input aria-label="Environment variable" required list="environment-names" pattern="[A-Za-z_][A-Za-z0-9_]*" autoComplete="off" spellCheck={false} value={form.env_var}
-            placeholder={envName(provider) || "MY_API_KEY"} onChange={e => set({ env_var: e.target.value })} />
-          <datalist id="environment-names">{environmentNames.map(name => <option key={name}>{name}</option>)}</datalist>
-          <small className="muted">Enter the variable name only. A value saved in Environment variables above takes precedence over a preconfigured value.</small>
-        </label> : <label><span>API key value</span><input aria-label="API key value" type="password" autoComplete="new-password" spellCheck={false} value={form.api_key} placeholder="Paste your API key" onChange={e => set({ api_key: e.target.value })} />
-          <small className="muted">Leave the hidden value untouched to keep the saved key.</small>
-        </label>}
-        {providerHelp[provider] && <small className="muted"><a href={providerHelp[provider].keys} target="_blank" rel="noreferrer">Get an API key from {providerLabel(provider)}</a>. {form.auth === "api_env" ? "Save it in Environment variables above under the name you entered." : "Copy the key and paste it above."}</small>}
-        <details className="advanced-model-settings"><summary>Connection and advanced parameters</summary>
-          <div className="row">
-            <label><span>API base URL</span><input value={form.api_base} placeholder="Optional" onChange={e => set({ api_base: e.target.value })} /></label>
-            <label><span>API version</span><input value={form.api_version} placeholder="Optional (Azure)" onChange={e => set({ api_version: e.target.value })} /></label>
-          </div>
-          <fieldset><legend>Extra LiteLLM parameters</legend>
-            <small className="muted">Use parameters supported by this agent. JSON values are parsed.</small>
-            {form.extra.map((row, i) => <div className="row extra-row" key={i}>
-              <input aria-label={`Parameter name ${i + 1}`} placeholder="Name" value={row.key} onChange={e => set({ extra: form.extra.map((r, j) => j === i ? { ...r, key: e.target.value } : r) })} />
-              <input aria-label={`Parameter value ${i + 1}`} type={/key|secret|token|password|credential|authorization|extra_headers/i.test(row.key) ? "password" : "text"} autoComplete="off" placeholder="Value" value={row.value} onChange={e => set({ extra: form.extra.map((r, j) => j === i ? { ...r, value: e.target.value } : r) })} />
-              <button type="button" className="icon-button" aria-label={`Remove parameter ${i + 1}`} onClick={() => set({ extra: form.extra.filter((_, j) => j !== i) })}>✕</button>
-            </div>)}
-            <button type="button" onClick={() => set({ extra: [...form.extra, { key: "", value: "" }] })}>+ Parameter</button>
-          </fieldset>
-        </details>
-      </>}
+      {form.auth === "api_env" ? <label><span>Environment variable</span>
+        <input aria-label="Environment variable" required list="environment-names" pattern="[A-Za-z_][A-Za-z0-9_]*" autoComplete="off" spellCheck={false} value={form.env_var}
+          placeholder={envName(provider) || "MY_API_KEY"} onChange={e => set({ env_var: e.target.value })} />
+        <datalist id="environment-names">{environmentNames.map(name => <option key={name}>{name}</option>)}</datalist>
+        <small className="muted">Enter the variable name only. A value saved in Environment variables above takes precedence over a preconfigured value.</small>
+      </label> : <label><span>API key value</span><input aria-label="API key value" type="password" autoComplete="new-password" spellCheck={false} value={form.api_key} placeholder="Paste your API key" onChange={e => set({ api_key: e.target.value })} />
+        <small className="muted">Leave the hidden value untouched to keep the saved key.</small>
+      </label>}
+      {providerHelp[provider] && <small className="muted"><a href={providerHelp[provider].keys} target="_blank" rel="noreferrer">Get an API key from {providerLabel(provider)}</a>. {form.auth === "api_env" ? "Save it in Environment variables above under the name you entered." : "Copy the key and paste it above."}</small>}
+      <details className="advanced-model-settings"><summary>Connection and advanced parameters</summary>
+        <div className="row">
+          <label><span>API base URL</span><input value={form.api_base} placeholder="Optional" onChange={e => set({ api_base: e.target.value })} /></label>
+          <label><span>API version</span><input value={form.api_version} placeholder="Optional (Azure)" onChange={e => set({ api_version: e.target.value })} /></label>
+        </div>
+        <fieldset><legend>Extra LiteLLM parameters</legend>
+          <small className="muted">Use parameters supported by this agent. JSON values are parsed.</small>
+          {form.extra.map((row, i) => <div className="row extra-row" key={i}>
+            <input aria-label={`Parameter name ${i + 1}`} placeholder="Name" value={row.key} onChange={e => set({ extra: form.extra.map((r, j) => j === i ? { ...r, key: e.target.value } : r) })} />
+            <input aria-label={`Parameter value ${i + 1}`} type={/key|secret|token|password|credential|authorization|extra_headers/i.test(row.key) ? "password" : "text"} autoComplete="off" placeholder="Value" value={row.value} onChange={e => set({ extra: form.extra.map((r, j) => j === i ? { ...r, value: e.target.value } : r) })} />
+            <button type="button" className="icon-button" aria-label={`Remove parameter ${i + 1}`} onClick={() => set({ extra: form.extra.filter((_, j) => j !== i) })}>✕</button>
+          </div>)}
+          <button type="button" onClick={() => set({ extra: [...form.extra, { key: "", value: "" }] })}>+ Parameter</button>
+        </fieldset>
+      </details>
     </fieldset>
     {error && <div className="banner error" role="alert">{error}</div>}
     {message && <p className={`small ${status === "connected" ? "ok-text" : "warn-text"}`} role="status">{message}</p>}
