@@ -1,0 +1,22 @@
+/* Styles shared by viewer.html and player.html. */
+:root {
+  --bg: #f2f2f2; --bar: rgba(255,255,255,.92); --fg: #1d1d1f; --muted: #6b6b70;
+  --btn: #fff; --btn-border: #d4d4d8; --danger: #b42318;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bar: rgba(28,28,30,.92); --fg: #f4f4f5; --muted: #a1a1aa;
+    --btn: #2c2c2e; --btn-border: #3f3f46; --danger: #f97066;
+  }
+}
+:root[data-theme="dark"] {
+  --bar: rgba(28,28,30,.92); --fg: #f4f4f5; --muted: #a1a1aa;
+  --btn: #2c2c2e; --btn-border: #3f3f46; --danger: #f97066;
+}
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+             font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+#stage { position: fixed; inset: 0; }
+#title strong { font-weight: 600; }
+#parts { color: var(--muted); }
+#status.error { color: var(--danger); }
+.segmented { display: inline-flex; }
