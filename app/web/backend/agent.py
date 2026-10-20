@@ -22,6 +22,7 @@ import llm_config
 import browser_auth
 import inference
 import model_catalog
+import providers
 import settings
 import toolkit
 from store import ChatStore
@@ -153,12 +154,6 @@ def usage_totals(messages: list[dict]) -> dict:
     return totals
 
 
-# Providers whose APIs accept Anthropic-style `cache_control` on a content
-# block. Everything else (OpenAI, Ollama, ...) rejects the extra key, so those
-# keep the plain-string system prompt.
-CACHEABLE_PREFIXES = ("anthropic/", "openrouter/anthropic/", "bedrock/anthropic.", "vertex_ai/claude")
-
-
 def system_prompt_parts(store: ChatStore, chat_id: str) -> tuple[str, str]:
     """The system prompt split at its stability boundary, for prompt caching.
 
@@ -188,10 +183,15 @@ def system_prompt(store: ChatStore, chat_id: str) -> str:
 
 
 def system_message(store: ChatStore, chat_id: str, model: str, options: dict) -> dict:
-    """The system turn, cache-broken after the stable prefix where supported."""
+    """The system turn, cache-broken after the stable prefix where supported.
+
+    Only providers that accept Anthropic-style `cache_control` on a content
+    block get the split; the rest (OpenAI, Ollama, ...) reject the extra key,
+    so they keep the plain-string system prompt.
+    """
     stable, volatile = system_prompt_parts(store, chat_id)
     tail = volatile + mode_prompt(options)
-    if not model.startswith(CACHEABLE_PREFIXES):
+    if not providers.supports_prompt_caching(model):
         return {"role": "system", "content": stable + tail}
     return {"role": "system", "content": [
         {"type": "text", "text": stable, "cache_control": {"type": "ephemeral"}},
@@ -254,7 +254,7 @@ def llm_history(messages: list[dict], vision: bool, resolve: Callable[[str], Pat
             clean.pop("provider_specific_fields", None)
             clean.pop("reasoning_details", None)
             clean.pop("reasoning_content", None)
-        if model and model.startswith("openrouter/") and m.get("_llm_model") == model:
+        if model and providers.of(model).reasoning_details and m.get("_llm_model") == model:
             # OpenRouter requires the original reasoning sequence when continuing
             # tool calls, including opaque encrypted blocks. Keep it out of the UI
             # and never forward it to a different model/provider.
@@ -413,7 +413,7 @@ async def _run_turn(store: ChatStore, run: Run, entry: dict) -> None:
                 message["provider_specific_fields"] = reply.provider_specific_fields
             if getattr(reply, "reasoning_content", None):
                 message["_reasoning"] = reply.reasoning_content
-            if message["_llm_model"].startswith("openrouter/"):
+            if providers.of(message["_llm_model"]).reasoning_details:
                 # LiteLLM 1.102.1 retains delta.reasoning_details but loses them
                 # in stream_chunk_builder. OpenRouter specifies concatenation in
                 # received order; do not merge/reorder blocks by id or index.
