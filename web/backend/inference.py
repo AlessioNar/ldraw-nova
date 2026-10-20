@@ -77,6 +77,25 @@ async def params_for(entry: dict, options: dict) -> dict:
     return params
 
 
+def _system_tail(message: dict) -> str:
+    """Text of the system turn's last block.
+
+    The content is a list of blocks when prompt caching has put a cache
+    breakpoint after the stable prefix, and a plain string otherwise.
+    """
+    content = message["content"]
+    return content if isinstance(content, str) else content[-1]["text"]
+
+
+def _append_system(message: dict, note: str) -> None:
+    """Append to the system turn, after any cache breakpoint."""
+    content = message["content"]
+    if isinstance(content, str):
+        message["content"] = content + note
+    else:
+        content[-1]["text"] += note
+
+
 def bounded_history(messages: list[dict], model: str, budget: int | None) -> tuple[list[dict], int]:
     """Trim old turns, then completed tool rounds in a long build.
 
@@ -102,8 +121,8 @@ def bounded_history(messages: list[dict], model: str, budget: int | None) -> tup
             removed += end - begin
             result[begin:end] = []
             note = "\nEarlier completed tool rounds were omitted to fit context. Consult the current NOTES.md and saved output reports; do not assume omitted checks passed."
-            if note not in result[0]["content"]:
-                result[0]["content"] += note
+            if note not in _system_tail(result[0]):
+                _append_system(result[0], note)
             continue
         end = starts[1]
         removed += end - 1

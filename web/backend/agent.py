@@ -108,21 +108,50 @@ def work_listing(work_dir: Path) -> str:
     return "\n".join(lines) or "(empty)"
 
 
-def system_prompt(store: ChatStore, chat_id: str) -> str:
+# Providers whose APIs accept Anthropic-style `cache_control` on a content
+# block. Everything else (OpenAI, Ollama, ...) rejects the extra key, so those
+# keep the plain-string system prompt.
+CACHEABLE_PREFIXES = ("anthropic/", "openrouter/anthropic/", "bedrock/anthropic.", "vertex_ai/claude")
+
+
+def system_prompt_parts(store: ChatStore, chat_id: str) -> tuple[str, str]:
+    """The system prompt split at its stability boundary, for prompt caching.
+
+    The first part is byte-identical on every turn of a chat (instructions.md
+    plus the foundation guides, ~18k tokens), so it can sit behind a cache
+    breakpoint. The second grows as the agent writes files, and has to stay
+    after it or the whole prefix is re-billed on every step.
+    """
     work_dir = store.work_dir(chat_id)
     text = (settings.PROMPTS_DIR / "system.md").read_text()
-    prompt = (text.replace("{work_dir}", str(work_dir))
-                .replace("{work_listing}", work_listing(work_dir))
+    stable = (text.replace("{work_dir}", str(work_dir))
                 .replace("{generated_dir}", str(settings.GENERATED_DIR))
                 .replace("{ldraw_dir}", str(settings.LDRAW_DIR))
                 .replace("{artifact_base}", f"/api/chats/{chat_id}/artifacts")
                 .replace("{toolkit_instructions}", toolkit.instructions())
-                .replace("{toolkit_guides}", toolkit.builder_guides()))
+                .replace("{toolkit_guides}", toolkit.builder_guides())).rstrip()
+    volatile = "\n\nCurrent output files:\n" + work_listing(work_dir)
     notes = work_dir / "NOTES.md"
     if notes.is_file() and not notes.is_symlink():
         with notes.open(errors="replace") as handle:
-            prompt += "\n\nCurrent hand-over notes (workspace data):\n" + handle.read(16000)
-    return prompt
+            volatile += "\n\nCurrent hand-over notes (workspace data):\n" + handle.read(16000)
+    return stable, volatile
+
+
+def system_prompt(store: ChatStore, chat_id: str) -> str:
+    return "".join(system_prompt_parts(store, chat_id))
+
+
+def system_message(store: ChatStore, chat_id: str, model: str, options: dict) -> dict:
+    """The system turn, cache-broken after the stable prefix where supported."""
+    stable, volatile = system_prompt_parts(store, chat_id)
+    tail = volatile + mode_prompt(options)
+    if not model.startswith(CACHEABLE_PREFIXES):
+        return {"role": "system", "content": stable + tail}
+    return {"role": "system", "content": [
+        {"type": "text", "text": stable, "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": tail},
+    ]}
 
 
 def _image_data_url(path: Path) -> Optional[str]:
@@ -297,8 +326,7 @@ async def _run_turn(store: ChatStore, run: Run, entry: dict) -> None:
             return
         params = await inference.params_for(entry, run.options)
         for _step in range(MAX_STEPS):
-            prompt = system_prompt(store, chat_id) + mode_prompt(run.options)
-            messages = [{"role": "system", "content": prompt},
+            messages = [system_message(store, chat_id, entry["litellm_params"]["model"], run.options),
                         *llm_history(store.messages(chat_id), vision, lambda ref: store.resolve(chat_id, ref), entry["litellm_params"]["model"], mark_turns=True)]
             budget = run.options.get("context_tokens") or model_catalog.profile(entry["litellm_params"]["model"])["context_window"]
             messages, removed = inference.bounded_history(messages, params["model"], budget)
