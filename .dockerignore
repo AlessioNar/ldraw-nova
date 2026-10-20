@@ -1,0 +1,19 @@
+# This repo is consumed as the `nova` named build context by ldraw-nova-docker
+# (COPY --from=nova ...). Named contexts don't use the other repo's
+# .dockerignore, so without this file the whole checkout — .git included — is
+# transferred to the daemon on every build.
+#
+# Keep this in sync with the `COPY --from=nova` lines in ldraw-nova-docker's
+# Dockerfile: data/, docs/, examples/, prompts/, ldraw_tools/, and the
+# top-level *.md *.py *.sh LICENSE CC-BY-SA-4.0 ldraw-agent.
+.git
+.obsidian
+.vscode
+.DS_Store
+**/.DS_Store
+.venv
+**/__pycache__
+**/.pytest_cache
+tests
+img
+*.jpg
