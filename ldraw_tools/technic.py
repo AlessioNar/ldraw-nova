@@ -14,7 +14,7 @@ import json
 import math
 
 import numpy as np
-from ldraw import Matrix, Vector
+from ldraw import Vector
 from ldraw.connection_types import (
     ConnectionFeature, ConnectionKind as Kind, ConnectionRole as Role,
     ConnectionSource as Source, ConnectionStatus as Status,
