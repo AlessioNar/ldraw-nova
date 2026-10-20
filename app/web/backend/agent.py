@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+import uuid
 from dataclasses import replace
 from typing import Optional
 
@@ -86,7 +87,6 @@ async def execute_tool(run: Run, ctx: ToolContext, call_id: str, name: str, argu
         return ToolResult("Tool denied by the current mode or permissions.")
     if name not in READ_TOOLS and run.options.get("permissions", "ask") == "ask":
         # Independent approval IDs prevent replay between turns or duplicate provider call IDs.
-        import uuid
         approval_id = uuid.uuid4().hex
         future = asyncio.get_running_loop().create_future()
         info = {"id": approval_id, "call_id": call_id, "name": name, "arguments": arguments}
