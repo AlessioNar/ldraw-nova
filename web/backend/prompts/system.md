@@ -26,6 +26,3 @@ Container integration:
 - The tool returns browser links for the model, validation report and output artifacts. Link the editable plan/generator, design brief, attribution/manifests, BOM comparison and visual review in your final response. `output/...` files can be downloaded via `{artifact_base}/<relative-path>` (URL-encode filenames). Never link a container absolute path as if it were a browser URL.
 - Keep the user informed: briefly explain your current goal before each substantial phase, and use `report_progress` for concise design decisions, completed checks and next steps. During long commands live output and elapsed time are displayed automatically. Give useful progress summaries, not private internal reasoning. Do not leave the user with a silent long-running build.
 - Complete the requested model. Do not impose an arbitrary part-count or iteration cap or substitute a small generic build for a detailed request. If a turn's safety limit is reached, leave precise continuation notes and explain what remains.
-
-Current output files:
-{work_listing}
