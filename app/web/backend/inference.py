@@ -51,7 +51,7 @@ async def params_for(entry: dict, options: dict) -> dict:
             }})
             params = {"model": "chatgpt/responses/" + name}
         else:
-            raise ValueError("Claude browser sessions use the Claude agent runtime")
+            raise ValueError("Browser login is only available for ChatGPT")
     elif model.startswith("openai/gpt-") and not params.get("api_base"):
         # GPT-6 function calling requires Responses; LiteLLM bridges the stream.
         params["model"] = model.replace("openai/", "openai/responses/", 1)

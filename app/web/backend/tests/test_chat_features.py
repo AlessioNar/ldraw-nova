@@ -9,12 +9,10 @@ from fastapi.testclient import TestClient
 import agent
 from history import llm_history
 import run_state
-import tool_policy
 import browser_auth
 import inference
 import llm_config
 import model_catalog
-import settings
 from attachments import validate_images
 from main import app
 from tools import ToolContext, ToolResult
@@ -162,7 +160,6 @@ def test_login_status_excludes_secrets_and_blocks_cross_origin(monkeypatch):
     assert response.json() == {"status": "pending", "url": "https://auth.openai.com/codex/device", "code": "ABCD"}
     assert client.post("/api/auth/openai/login", headers={"origin": "https://evil.example"}).status_code == 403
     assert client.get("/api/auth/unknown").status_code == 400
-    assert client.post("/api/auth/anthropic/code", json={"code": "fake"}).status_code == 400
 
 
 def test_expired_chatgpt_never_starts_interactive_login(monkeypatch):
@@ -172,140 +169,3 @@ def test_expired_chatgpt_never_starts_interactive_login(monkeypatch):
     monkeypatch.setattr(browser_auth, "openai_authenticator", Auth)
     with pytest.raises(ValueError, match="Sign in again"):
         asyncio.run(browser_auth.openai_ready())
-
-
-@pytest.mark.parametrize("address", ["claude.com/cai", "claude.ai", "platform.claude.com", "console.anthropic.com"])
-def test_claude_login_extracts_complete_url_and_confirms_provider(monkeypatch, address):
-    url = f"https://{address}/oauth/authorize?code=true&state=opaque&code_challenge=pkce"
-    waiting, submitted = asyncio.Event(), asyncio.Event()
-    written = []
-
-    class Reader:
-        def __init__(self):
-            self.chunks = [b"Opening browser to sign in\n", url[:25].encode(), url[25:].encode(), b"\nPaste code here if prompted > "]
-        async def read(self, size):
-            if self.chunks:
-                return self.chunks.pop(0)
-            waiting.set()
-            await submitted.wait()
-            return b""
-
-    class Writer:
-        def write(self, value): written.append(value)
-        async def drain(self): submitted.set()
-
-    class Process:
-        stdout = Reader()
-        stdin = Writer()
-        returncode = None
-        async def wait(self): self.returncode = 0
-
-    recorded = {}
-    async def spawn(*args, **kwargs):
-        recorded.update(argv=args, env=kwargs["env"])
-        return Process()
-    async def connected(provider):
-        assert provider == "anthropic"
-        return True
-    monkeypatch.setattr(browser_auth.asyncio, "create_subprocess_exec", spawn)
-    monkeypatch.setattr(browser_auth, "connected", connected)
-    state = {"status": "starting"}
-    monkeypatch.setitem(browser_auth._sessions, "anthropic", state)
-
-    async def check():
-        task = asyncio.create_task(browser_auth._login("anthropic", state))
-        try:
-            await asyncio.wait_for(waiting.wait(), 2)
-            assert await browser_auth.status("anthropic") == {"status": "pending", "url": url}
-            await browser_auth.submit_code("anthropic", "  private-code#state\n")
-            assert written == [b"private-code#state\n"]
-            await task
-        finally:
-            if not task.done():
-                task.cancel()
-                await asyncio.gather(task, return_exceptions=True)
-
-    asyncio.run(check())
-    assert state == {"status": "connected"}
-    assert recorded["argv"][-3:] == ("auth", "login", "--claudeai")
-    assert recorded["env"]["ANTHROPIC_API_KEY"] == ""
-    assert recorded["env"]["CLAUDE_CONFIG_DIR"].startswith(str(settings.CONFIG_DIR))
-
-
-@pytest.mark.parametrize("output", [
-    "https://claude.com/cai/oauth/auth",  # incomplete stdout chunk
-    "https://claude.com/cai/oauth/authorize?state=partial",  # no delimiter yet
-    "https://claude.com/privacy\n",  # unrelated provider URL
-    "https://claude.com.attacker.example/cai/oauth/authorize\n",
-    "https://claude.com@attacker.example/cai/oauth/authorize\n",
-    "http://claude.com/cai/oauth/authorize\n",
-])
-def test_claude_login_ignores_incomplete_and_unrelated_urls(output):
-    assert browser_auth.claude_login_url(output) is None
-
-
-def test_claude_code_submission_handles_closed_login(monkeypatch):
-    class Writer:
-        def write(self, value): raise BrokenPipeError()
-    class Process:
-        returncode = None
-        stdin = Writer()
-    monkeypatch.setitem(browser_auth._sessions, "anthropic", {"status": "pending", "process": Process()})
-    with pytest.raises(ValueError, match="fresh login"):
-        asyncio.run(browser_auth.submit_code("anthropic", "private-code#state"))
-
-
-def test_login_cancellation_terminates_process_group(monkeypatch):
-    killed = []
-    class Reader:
-        async def read(self, size): await asyncio.Future()
-    class Process:
-        stdout = Reader()
-        returncode = None
-        pid = 12345
-        async def wait(self): self.returncode = -9
-    async def spawn(*args, **kwargs): return Process()
-    monkeypatch.setattr(browser_auth.asyncio, "create_subprocess_exec", spawn)
-    monkeypatch.setattr(browser_auth.os, "killpg", lambda pid, sig: killed.append(pid))
-    async def check():
-        task = asyncio.create_task(browser_auth._login("anthropic", {"status": "starting"}))
-        await asyncio.sleep(0)
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError): await task
-    asyncio.run(check())
-    assert killed == [12345]
-
-
-def test_claude_adapter_exposes_only_app_tools_and_runs_gate(monkeypatch, store):
-    import claude_agent
-    from claude_agent_sdk import AssistantMessage, TextBlock
-    recorded = {}
-    class Client:
-        def __init__(self, options): recorded["options"] = options
-        async def __aenter__(self): return self
-        async def __aexit__(self, *args): pass
-        async def query(self, message): recorded["input"] = [m async for m in message]
-        async def receive_response(self):
-            tool = next(t for t in recorded["tools"] if t.name == "read_file")
-            await tool.handler({"path": "docs/agent/geometry.md"})
-            yield AssistantMessage(content=[TextBlock(text="answer")], model="claude-opus-5-5")
-    def server(**kwargs):
-        recorded["tools"] = kwargs["tools"]
-        return {}
-    async def execute(*args):
-        recorded["executed"] = args
-        return ToolResult("part found")
-    monkeypatch.setattr(claude_agent, "ClaudeSDKClient", Client)
-    monkeypatch.setattr(claude_agent, "create_sdk_mcp_server", server)
-    chat = store.create_chat()
-    store.add_message(chat["id"], {"role": "user", "content": "find bricks"})
-    run = run_state.Run(chat["id"], options={"mode": "plan", "permissions": "full"})
-    entry = {"litellm_params": {"model": "anthropic/claude-opus-5-5"}}
-    saved = []
-    asyncio.run(claude_agent.run_claude(store, run, entry, saved.append, execute, "system", True))
-    options = recorded["options"]
-    assert options.tools == [] and options.strict_mcp_config and options.setting_sources == []
-    assert options.permission_mode == "dontAsk"
-    assert set(t.name for t in recorded["tools"]) == tool_policy.READ_TOOLS
-    assert recorded["executed"][3] == "read_file"
-    assert [m["role"] for m in saved] == ["assistant", "tool", "assistant"]

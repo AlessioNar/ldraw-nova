@@ -50,8 +50,7 @@ async def start_turn(store: ChatStore, chat_id: str, text: str, llm_model_id: Op
     if images and llm_config.capabilities(entry)["vision"] is not True:
         raise ValueError("Select a model with image input support")
     if entry.get("auth_mode") == "browser":
-        provider = "anthropic" if entry["litellm_params"]["model"].startswith("anthropic/") else "openai"
-        if not await browser_auth.connected(provider):
+        if not await browser_auth.connected("openai"):
             raise ValueError("Sign in to the provider in Settings first")
     # A concurrent request may have started while browser auth status was checked.
     if is_running(chat_id):

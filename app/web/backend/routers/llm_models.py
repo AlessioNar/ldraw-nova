@@ -8,7 +8,7 @@ import litellm
 import yaml
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 import browser_auth
 import inference
@@ -51,19 +51,6 @@ class LoginRequest(BaseModel):
 async def auth_login(provider: str, body: Optional[LoginRequest] = None):
     try:
         return await browser_auth.start(provider, body.flow if body else "browser", body.restart if body else False)
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from None
-
-
-class AuthCode(BaseModel):
-    code: str = Field(max_length=4096)
-
-
-@router.post("/api/auth/{provider}/code")
-async def auth_code(provider: str, body: AuthCode):
-    try:
-        await browser_auth.submit_code(provider, body.code)
-        return {"submitted": True}
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from None
 
@@ -130,10 +117,6 @@ async def llm_models_test(entry_id: str):
         result["profile"] = model_catalog.entry_profile(llm_config.get(entry_id) or entry)
         return result
     try:
-        if entry.get("auth_mode") == "browser" and entry["litellm_params"]["model"].startswith("anthropic/"):
-            ready = await browser_auth.connected("anthropic")
-            return await tested({"ok": ready, "reply": "Claude login is ready. Send a chat to verify model access." if ready else None,
-                           "error": None if ready else "Sign in to Claude in Settings first"})
         params = await inference.params_for(entry, {})
         params.setdefault("max_tokens", 4096)
         params.setdefault("timeout", 60)

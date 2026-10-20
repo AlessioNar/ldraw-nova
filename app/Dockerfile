@@ -266,9 +266,6 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --break-system-packages -r requirements.txt
-# The pinned Claude Agent SDK includes its matching native Claude Code runtime.
-# Browser login and inference use that same binary; no host credentials mounted.
-RUN python3 -c "import pathlib, subprocess, claude_agent_sdk; subprocess.run([str(pathlib.Path(claude_agent_sdk.__file__).parent / '_bundled' / 'claude'), '--version'], check=True)"
 ENV PYTHONPATH=/app
 # Keep the standalone builder intact. Only its distributable inputs enter the
 # image: never the sibling checkout's output, virtualenv, credentials or cache.

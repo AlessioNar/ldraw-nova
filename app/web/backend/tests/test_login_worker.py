@@ -1,6 +1,5 @@
 import asyncio
 
-import pytest
 
 import browser_auth
 
@@ -31,8 +30,3 @@ def test_switching_from_device_to_browser_cancels_old_login(monkeypatch):
         assert cancelled == ["device", "device"] and flows == ["device", "device", "browser"]
         await browser_auth.shutdown()
     asyncio.run(run())
-
-
-def test_device_flow_remains_explicit_and_does_not_change_claude():
-    with pytest.raises(ValueError, match="Unsupported login flow"):
-        asyncio.run(browser_auth.start("anthropic", "device"))

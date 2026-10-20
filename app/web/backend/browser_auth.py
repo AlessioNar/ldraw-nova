@@ -13,26 +13,12 @@ import signal
 import sys
 import time
 from pathlib import Path
-from urllib.parse import urlsplit
 
 import settings
 
-PROVIDERS = ("openai", "anthropic")
+PROVIDERS = ("openai",)
 _sessions: dict[str, dict] = {}
 _locks: dict[str, asyncio.Lock] = {}
-
-
-def claude_login_url(output: str) -> str | None:
-    """Read complete authorization URLs from CLI output, including split reads."""
-    for url in re.findall(r"https://[^\s\x1b]+(?=\s)", output):
-        parsed = urlsplit(url)
-        # Current Claude Code uses claude.com/cai/oauth/authorize. Keep the
-        # older provider addresses, but never open unrelated links in output.
-        if (parsed.hostname in ("claude.com", "claude.ai", "platform.claude.com", "console.anthropic.com")
-                and parsed.path in ("/cai/oauth/authorize", "/oauth/authorize")
-                and not parsed.username and not parsed.password):
-            return url
-    return None
 
 
 def auth_dir(provider: str) -> Path:
@@ -44,20 +30,6 @@ def auth_dir(provider: str) -> Path:
     path.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(path, 0o700)
     return path
-
-
-def claude_binary() -> str:
-    import claude_agent_sdk
-    return str(Path(claude_agent_sdk.__file__).parent / "_bundled" / "claude")
-
-
-def claude_env() -> dict[str, str]:
-    # Explicitly erase inherited API credentials even when an SDK merges envs.
-    return {"PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
-            "HOME": str(auth_dir("anthropic")), "CLAUDE_CONFIG_DIR": str(auth_dir("anthropic")),
-            "ANTHROPIC_API_KEY": "", "ANTHROPIC_AUTH_TOKEN": "", "CLAUDE_CODE_OAUTH_TOKEN": "",
-            "CLAUDECODE": "", "BROWSER": "/bin/true", "TERM": "dumb",
-            "DISABLE_AUTOUPDATER": "1"}
 
 
 def openai_authenticator():
@@ -85,20 +57,8 @@ async def openai_ready() -> None:
 
 
 async def connected(provider: str) -> bool:
-    if provider == "openai":
-        data = openai_authenticator()._read_auth_file() or {}
-        return bool(data.get("access_token") and data.get("refresh_token"))
-    proc = await asyncio.create_subprocess_exec(
-        claude_binary(), "auth", "status", env=claude_env(),
-        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
-    try:
-        stdout, _ = await asyncio.wait_for(proc.communicate(), 15)
-        return proc.returncode == 0 and bool(json.loads(stdout).get("loggedIn"))
-    except (asyncio.TimeoutError, ValueError):
-        if proc.returncode is None:
-            proc.kill()
-            await proc.wait()
-        return False
+    data = openai_authenticator()._read_auth_file() or {}
+    return bool(data.get("access_token") and data.get("refresh_token"))
 
 
 async def status(provider: str) -> dict:
@@ -135,14 +95,8 @@ async def start(provider: str, flow: str = "browser", restart: bool = False) -> 
 async def _login(provider: str, state: dict):
     proc = None
     try:
-        if provider == "openai":
-            env = {**os.environ, "CHATGPT_TOKEN_DIR": str(auth_dir(provider)), "CHATGPT_AUTH_FILE": "auth.json"}
-            command = [sys.executable, "-u", str(Path(__file__).with_name("login_worker.py"))]
-            if state.get("flow") == "device":
-                command.append("--device")
-        else:
-            env = claude_env()
-            command = [claude_binary(), "auth", "login", "--claudeai"]
+        env = {**os.environ, "CHATGPT_TOKEN_DIR": str(auth_dir(provider)), "CHATGPT_AUTH_FILE": "auth.json"}
+        command = [sys.executable, "-u", str(Path(__file__).with_name("login_worker.py"))]
         proc = await asyncio.create_subprocess_exec(*command, env=env, cwd=auth_dir(provider),
                 stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT, start_new_session=True)
@@ -152,21 +106,17 @@ async def _login(provider: str, state: dict):
             while data := await proc.stdout.read(4096):
                 buffer = (buffer + data.decode(errors="replace"))[-32_000:]
                 clean = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", buffer)
-                if provider == "openai":
-                    for line in clean.splitlines():
-                        try:
-                            event = json.loads(line)
-                        except ValueError:
-                            continue
-                        if event.get("type") == "login":
-                            state.update(status="pending", url=event["url"], flow=event.get("flow", "browser"))
-                            if event.get("code"):
-                                state["code"] = event["code"]
-                        elif event.get("type") == "login_error":
-                            state.update(status="error", message=event["message"])
-                else:
-                    if url := claude_login_url(clean):
-                        state.update(status="pending", url=url)
+                for line in clean.splitlines():
+                    try:
+                        event = json.loads(line)
+                    except ValueError:
+                        continue
+                    if event.get("type") == "login":
+                        state.update(status="pending", url=event["url"], flow=event.get("flow", "device"))
+                        if event.get("code"):
+                            state["code"] = event["code"]
+                    elif event.get("type") == "login_error":
+                        state.update(status="error", message=event["message"])
             await proc.wait()
             if proc.returncode == 0 and await connected(provider):
                 state.clear()
@@ -190,39 +140,12 @@ async def _login(provider: str, state: dict):
         for path in auth_dir(provider).rglob("*"):
             if path.is_file() and not path.is_symlink():
                 path.chmod(0o600)
-        if provider == "openai":
-            (auth_dir(provider) / "codex" / "auth.json").unlink(missing_ok=True)
-
-
-async def submit_code(provider: str, code: str):
-    state = _sessions.get(provider, {})
-    proc = state.get("process")
-    if provider != "anthropic" or state.get("status") != "pending" or not proc or proc.returncode is not None:
-        raise ValueError("No Claude login is awaiting a code")
-    code = code.strip()
-    if not code or len(code) > 4096 or "\n" in code or "\r" in code:
-        raise ValueError("Invalid authorization code")
-    try:
-        proc.stdin.write((code + "\n").encode())
-        await proc.stdin.drain()
-    except (BrokenPipeError, ConnectionResetError):
-        raise ValueError("Claude sign-in closed. Start a fresh login and use its new code.") from None
 
 
 async def disconnect(provider: str):
     auth_dir(provider)
     await _stop(provider)
-    if provider == "openai":
-        Path(openai_authenticator().auth_file).unlink(missing_ok=True)
-    else:
-        proc = await asyncio.create_subprocess_exec(claude_binary(), "auth", "logout", env=claude_env(),
-                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-        try:
-            await asyncio.wait_for(proc.wait(), 15)
-        except asyncio.TimeoutError:
-            proc.kill()
-            await proc.wait()
-            raise ValueError("Logout timed out; retry") from None
+    Path(openai_authenticator().auth_file).unlink(missing_ok=True)
 
 
 async def shutdown():
