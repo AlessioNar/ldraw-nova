@@ -1,4 +1,4 @@
-"""LLM model settings, browser sign-in, providers and the model catalog."""
+"""LLM model settings, providers and the model catalog."""
 from __future__ import annotations
 
 import asyncio
@@ -10,13 +10,11 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
-import browser_auth
 import inference
 import llm_config
 import model_catalog
 import model_discovery
 import providers
-import run_state
 from .common import not_found
 
 router = APIRouter()
@@ -32,38 +30,6 @@ class LlmEntry(BaseModel):
 @router.get("/api/model-catalog")
 def model_catalog_list():
     return {"models": [model_catalog.profile(m["model"]) for m in model_catalog.CATALOG]}
-
-
-@router.get("/api/auth/{provider}")
-async def auth_status(provider: str):
-    try:
-        return await browser_auth.status(provider)
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from None
-
-
-class LoginRequest(BaseModel):
-    flow: str = "browser"
-    restart: bool = False
-
-
-@router.post("/api/auth/{provider}/login")
-async def auth_login(provider: str, body: Optional[LoginRequest] = None):
-    try:
-        return await browser_auth.start(provider, body.flow if body else "browser", body.restart if body else False)
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from None
-
-
-@router.delete("/api/auth/{provider}")
-async def auth_disconnect(provider: str):
-    if any(run_state.is_running(chat_id) for chat_id in run_state._runs):
-        raise HTTPException(409, "Stop active turns before disconnecting a provider")
-    try:
-        await browser_auth.disconnect(provider)
-        return {"status": "disconnected"}
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from None
 
 
 @router.get("/api/llm-models")
@@ -109,6 +75,8 @@ def llm_models_default(entry_id: str):
 @router.post("/api/llm-models/{entry_id}/test")
 async def llm_models_test(entry_id: str):
     entry = llm_config.get(entry_id) or not_found()
+    if llm_config.unsupported(entry):
+        return {"ok": False, "error": llm_config.UNSUPPORTED_MESSAGE, "profile": model_catalog.entry_profile(entry)}
     fingerprint = llm_config.connection_fingerprint(entry)
     discovery = asyncio.create_task(model_discovery.discover(entry))
     async def tested(result):

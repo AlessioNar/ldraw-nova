@@ -40,7 +40,6 @@ REGISTRY: tuple[Provider, ...] = (
              api_bases=frozenset({"https://openrouter.ai/api/v1"})),
     Provider(prefix="openai/", label="OpenAI", effort="reasoning_effort",
              api_bases=frozenset({"https://api.openai.com/v1"})),
-    Provider(prefix="chatgpt/", label="ChatGPT", effort="reasoning_effort"),
     Provider(prefix="azure/", label="Azure OpenAI", effort="reasoning_effort"),
     Provider(prefix="gemini/", label="Gemini", effort="reasoning_effort"),
     Provider(prefix="vertex_ai/", label="Google Vertex AI", effort="reasoning_effort",

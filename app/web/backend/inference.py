@@ -4,7 +4,6 @@ import json
 
 import litellm
 
-import browser_auth
 import llm_config
 import providers
 import model_catalog
@@ -34,25 +33,11 @@ def preserve_openrouter_reasoning_chunks(stream, model: str) -> None:
 
 
 async def params_for(entry: dict, options: dict) -> dict:
+    if llm_config.unsupported(entry):
+        raise ValueError(llm_config.UNSUPPORTED_MESSAGE)
     params = llm_config.resolve_params(entry)
     model = params["model"]
-    if entry.get("auth_mode") == "browser":
-        if model.startswith(("openai/", "chatgpt/")):
-            await browser_auth.openai_ready()
-            # Subscription inference only has a Responses endpoint. New model
-            # names may not yet be in LiteLLM's catalog, so force its bridge
-            # instead of letting it fall back to /chat/completions.
-            name = model.split("/")[-1]
-            # Unknown models otherwise trigger LiteLLM's fake streaming path,
-            # which removes stream=true; ChatGPT requires it on every request.
-            litellm.register_model({f"chatgpt/{name}": {
-                "litellm_provider": "chatgpt", "mode": "responses",
-                "supports_native_streaming": True,
-            }})
-            params = {"model": "chatgpt/responses/" + name}
-        else:
-            raise ValueError("Browser login is only available for ChatGPT")
-    elif model.startswith("openai/gpt-") and not params.get("api_base"):
+    if model.startswith("openai/gpt-") and not params.get("api_base"):
         # GPT-6 function calling requires Responses; LiteLLM bridges the stream.
         params["model"] = model.replace("openai/", "openai/responses/", 1)
     style = providers.of(model).effort

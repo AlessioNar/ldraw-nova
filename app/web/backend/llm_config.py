@@ -29,6 +29,7 @@ import environment_config
 SECRET_MARKERS = ("key", "secret", "token", "password", "credential")
 MASK_PREFIX = "••••"
 LEGACY_KEY_REF = "os.environ/OPENROUTER_LDRAW_NOVA_API_KEY"      # renamed; stored entries are upgraded on load
+UNSUPPORTED_MESSAGE = "Browser login was removed. Edit this agent and use an API key instead."
 _lock = threading.Lock()
 
 
@@ -79,10 +80,20 @@ def is_secret(name: str) -> bool:
     return any(marker in name.lower() for marker in SECRET_MARKERS)
 
 
+def unsupported(entry: dict) -> bool:
+    """True for entries saved by the removed browser/subscription logins.
+
+    They stay in models.json and in the list (nothing is deleted behind the
+    user's back), but cannot run: the user edits them to use an API key.
+    """
+    return entry.get("auth_mode") == "browser" or entry["litellm_params"].get("model", "").startswith("chatgpt/")
+
+
 def public(entry: dict) -> dict:
     """An entry as the UI may see it: secrets masked, capabilities resolved."""
     params = mask_secrets(entry["litellm_params"])
     return {**{k: v for k, v in entry.items() if k != "_connection_test"},
+            "unsupported": unsupported(entry),
             "connection_status": connection_status(entry),
             "litellm_params": params, "resolved_capabilities": capabilities(entry),
             "profile": model_catalog.entry_profile(entry)}
@@ -94,7 +105,7 @@ def connection_fingerprint(entry: dict) -> str:
     params = _map_env_refs(entry["litellm_params"], environment.get)
     provider = params.get("model", "").split("/")[0]
     default_key = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "openrouter": "OPENROUTER_API_KEY"}.get(provider)
-    if not params.get("api_key") and entry.get("auth_mode") != "browser" and default_key:
+    if not params.get("api_key") and default_key:
         params["api_key"] = environment.get(default_key)
     value = {"params": params, "auth": entry.get("auth_mode"), "name": entry.get("model_name")}
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
@@ -149,8 +160,10 @@ def list_entries() -> tuple[list[dict], Optional[str]]:
 
 def builder_entries() -> tuple[list[dict], Optional[str]]:
     entries, default = list_entries()
-    entries = [e for e in entries if model_catalog.builder_supported(e["litellm_params"]["model"])]
-    return entries, default if any(e["id"] == default for e in entries) else (entries[0]["id"] if entries else None)
+    # Unsupported (removed browser-login) entries stay listed so the user can fix them.
+    entries = [e for e in entries if unsupported(e) or model_catalog.builder_supported(e["litellm_params"]["model"])]
+    usable = [e for e in entries if not unsupported(e)] or entries
+    return entries, default if any(e["id"] == default for e in usable) else (usable[0]["id"] if usable else None)
 
 
 def get(entry_id: str) -> Optional[dict]:
@@ -177,14 +190,12 @@ def _clean(entry: dict, previous: Optional[dict]) -> dict:
                 params.pop(k)
     caps = {"tools": "auto", "vision": "auto", **(entry.get("capabilities") or {})}
     auth_mode = entry.get("auth_mode") or "api_key"
-    if params["model"].startswith("chatgpt/"):
-        auth_mode = "browser"
-    if auth_mode not in ("api_key", "browser"):
-        raise ValueError("Unknown authentication method")
     if auth_mode == "browser":
-        if params["model"].split("/", 1)[0] not in ("openai", "anthropic", "chatgpt"):
-            raise ValueError("Browser login is supported for OpenAI and Anthropic")
-        params = {"model": params["model"]}
+        raise ValueError(UNSUPPORTED_MESSAGE)
+    if auth_mode != "api_key":
+        raise ValueError("Unknown authentication method")
+    if params["model"].startswith("chatgpt/"):
+        raise ValueError("ChatGPT subscription models were removed. Use an openai/ model with an API key instead.")
     for cap in ("tools", "vision"):
         if caps[cap] not in (True, False, "auto"):
             raise ValueError("Capabilities must be true, false or auto")

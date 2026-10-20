@@ -19,7 +19,6 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-import browser_auth
 import run_state
 import sandbox
 import settings
@@ -36,7 +35,6 @@ async def lifespan(_app: FastAPI):
     sandbox.give_to_agent(settings.GENERATED_DIR)      # agent scripts may publish models there
     get_store()
     yield
-    await browser_auth.shutdown()
     for chat_id in list(run_state._runs):
         await run_state.cancel(chat_id)
 

@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 import agent
 from history import llm_history
 import run_state
-import browser_auth
 import inference
 import llm_config
 import model_catalog
@@ -39,26 +38,19 @@ def test_nested_keys_mask_and_roundtrip():
         llm_config.create(public)
 
 
-def test_browser_entries_never_store_api_overrides():
-    entry = llm_config.create({"auth_mode": "browser", "litellm_params": {
-        "model": "openai/gpt-6-astra", "api_key": "secret", "api_base": "https://invalid.example"}})
-    assert entry["litellm_params"] == {"model": "openai/gpt-6-astra"}
-    with pytest.raises(ValueError):
-        llm_config.create({"auth_mode": "browser", "litellm_params": {"model": "ollama/fake"}})
+def test_browser_login_entries_cannot_be_created():
+    for entry in ({"auth_mode": "browser", "litellm_params": {"model": "openai/gpt-6-astra"}},
+                  {"litellm_params": {"model": "chatgpt/gpt-6-astra"}}):
+        with pytest.raises(ValueError):
+            llm_config.create(entry)
 
 
 def test_request_uses_responses_and_provider_effort(monkeypatch):
-    async def ready():
-        pass
-    monkeypatch.setattr(browser_auth, "openai_ready", ready)
     async def run():
         api = {"litellm_params": {"model": "openai/gpt-6-astra", "api_key": "test"}}
         params = await inference.params_for(api, {"effort": "max"})
         assert params["model"] == "openai/responses/gpt-6-astra"
         assert params["reasoning_effort"] == "max"
-        api["auth_mode"] = "browser"
-        params = await inference.params_for(api, {})
-        assert params == {"model": "chatgpt/responses/gpt-6-astra"}
         claude = {"litellm_params": {"model": "anthropic/claude-opus-5-5"}}
         params = await inference.params_for(claude, {"effort": "xhigh"})
         assert params["output_config"] == {"effort": "xhigh"}
@@ -152,20 +144,37 @@ def test_model_switch_strips_signed_thinking_and_handles_images():
     assert "thinking_blocks" in llm_history(messages, True, Path, "anthropic/old")[0]
 
 
-def test_login_status_excludes_secrets_and_blocks_cross_origin(monkeypatch):
-    monkeypatch.setitem(browser_auth._sessions, "openai", {"status": "pending", "url": "https://auth.openai.com/codex/device",
-        "code": "ABCD", "access_token": "must-not-leak", "process": object(), "device_auth_id": "private"})
+def stored_browser_entry():
+    """What an older version saved: written straight to models.json."""
+    entry = {"id": "old1", "model_name": "Old browser agent", "litellm_params": {"model": "anthropic/claude-opus-5-5"},
+             "capabilities": {"tools": "auto", "vision": "auto"}, "auth_mode": "browser"}
+    llm_config._save({"models": [entry], "default_id": "old1"})
+    return entry
+
+
+def test_stored_browser_entry_is_listed_but_marked_unsupported_and_unusable():
+    stored_browser_entry()
     client = TestClient(app)
-    response = client.get("/api/auth/openai")
-    assert response.json() == {"status": "pending", "url": "https://auth.openai.com/codex/device", "code": "ABCD"}
-    assert client.post("/api/auth/openai/login", headers={"origin": "https://evil.example"}).status_code == 403
-    assert client.get("/api/auth/unknown").status_code == 400
+    listed = client.get("/api/llm-models").json()
+    assert listed["default_id"] == "old1"
+    assert [(m["id"], m["auth_mode"], m["unsupported"]) for m in listed["models"]] == [("old1", "browser", True)]
+    test = client.post("/api/llm-models/old1/test").json()
+    assert test["ok"] is False and test["error"] == llm_config.UNSUPPORTED_MESSAGE
+    with pytest.raises(ValueError, match="Browser login was removed"):
+        asyncio.run(inference.params_for(llm_config.get("old1"), {}))
+    store_ = None
+    with pytest.raises(ValueError, match="Browser login was removed"):
+        asyncio.run(agent.start_turn(store_, "chat", "hi", "old1"))
+    # Nothing was deleted, and the entry can be fixed by switching to an API key.
+    fixed = client.put("/api/llm-models/old1", json={"model_name": "Old browser agent", "auth_mode": "api_key",
+            "litellm_params": {"model": "anthropic/claude-opus-5-5", "api_key": "sk-ant-test-1234"}}).json()
+    assert fixed["unsupported"] is False and fixed["auth_mode"] == "api_key"
+    assert client.put("/api/llm-models/old1", json={"auth_mode": "browser",
+            "litellm_params": {"model": "anthropic/claude-opus-5-5"}}).status_code == 400
 
 
-def test_expired_chatgpt_never_starts_interactive_login(monkeypatch):
-    class Auth:
-        def _read_auth_file(self): return {}
-        def get_access_token(self): raise AssertionError("must not trigger implicit login")
-    monkeypatch.setattr(browser_auth, "openai_authenticator", Auth)
-    with pytest.raises(ValueError, match="Sign in again"):
-        asyncio.run(browser_auth.openai_ready())
+def test_stored_chatgpt_entry_is_unsupported_even_without_browser_mode():
+    llm_config._save({"models": [{"id": "g1", "model_name": "g", "litellm_params": {"model": "chatgpt/gpt-6-astra"},
+                                   "capabilities": {}, "auth_mode": "api_key"}], "default_id": "g1"})
+    listed = TestClient(app).get("/api/llm-models").json()["models"]
+    assert [(m["id"], m["unsupported"]) for m in listed] == [("g1", True)]
