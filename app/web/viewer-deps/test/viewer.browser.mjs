@@ -1,5 +1,5 @@
 // Run against a backend with the current viewer and Docker's vendored assets:
-// VIEWER_TEST_URL=http://localhost:8765 npm run test:viewer
+// VIEWER_TEST_URL=http://localhost:8765 npm test
 // PLAYWRIGHT_CHANNEL=chrome uses an installed Chrome instead of downloaded Chromium.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';

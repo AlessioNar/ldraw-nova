@@ -16,8 +16,6 @@ services:
     # with your host firewall on untrusted networks.
     ports:
       - "${LDRAW_NOVA_WEB_PORT:-8765}:8000"
-      # HTTPS (self-signed), for headsets: WebXR needs HTTPS or localhost.
-      - "${LDRAW_NOVA_WEB_HTTPS_PORT:-8443}:8443"
       # OpenAI browser OAuth callback, reachable only on the Docker host.
       - "127.0.0.1:1455:1456"
     volumes:
