@@ -8,6 +8,7 @@ import ModelCard from "../components/ModelCard";
 import { useApp } from "../context";
 import { placeChatModels } from "../chatModels";
 import DocumentIcon from "../components/DocumentIcon";
+import UsageBadge from "../components/UsageBadge";
 
 type RunningTool = { id: string; name: string; arguments: string; output?: string; started_at?: number };
 type Activity = { started_at: number; last_event_at: number; phase: string };
@@ -203,6 +204,7 @@ export default function ChatPage() {
     <div className="chat-page">
       <header className="chat-head">
         <h2 className="ellipsis">{detail.chat.title}</h2>
+        {!!detail.usage?.steps && <UsageBadge usage={detail.usage} steps={detail.usage.steps} />}
       </header>
       <div className="messages" ref={scrollerRef} onScroll={onScroll}>
         {messages.map((m) => {
@@ -244,6 +246,7 @@ export default function ChatPage() {
                 );
               })}
               {(cards.byMessage.get(m.id) ?? []).map(modelCard)}
+              {m._usage && <UsageBadge usage={m._usage} />}
             </div>
           );
         })}
