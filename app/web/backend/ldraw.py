@@ -6,7 +6,6 @@ import os
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
-from pathlib import Path
 from typing import Iterable, Optional
 
 import settings

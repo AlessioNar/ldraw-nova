@@ -2,10 +2,13 @@ import asyncio
 import json
 from pathlib import Path
 
+import litellm
 import pytest
 from litellm.types.utils import ChatCompletionDeltaToolCall, Delta, Function, ModelResponseStream, StreamingChoices
 
 import agent
+import history
+import run_state
 import llm_config
 import settings
 from store import ChatStore
@@ -42,11 +45,6 @@ def scripted(responses: list[list[ModelResponseStream]]):
 
 
 @pytest.fixture
-def store() -> ChatStore:
-    return ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
-
-
-@pytest.fixture
 def entry():
     return llm_config.create({"model_name": "fake", "litellm_params": {"model": "openai/gpt-6-luna", "api_key": "sk-x"},
                               "capabilities": {"tools": True, "vision": True}})
@@ -61,7 +59,7 @@ def test_llm_history_repairs_interrupted_tool_calls():
         {"id": 4, "role": "assistant", "content": "Stopped.", "_ui_only": True},
         {"id": 5, "role": "user", "content": "again"},
     ]
-    out = agent.llm_history(stored, vision=False, resolve=Path)
+    out = history.llm_history(stored, vision=False, resolve=Path)
     assert [m["role"] for m in out] == ["user", "assistant", "tool", "tool", "user"]
     assert out[3]["tool_call_id"] == "b" and "interrupted" in out[3]["content"]
     assert all(not k.startswith("_") and k not in ("id", "created_at") for m in out for k in m)
@@ -73,10 +71,10 @@ def test_llm_history_sends_only_newest_images(tmp_path: Path):
         (tmp_path / f"r{i}.png").write_bytes(b"\x89PNG fake")
         stored.append({"id": i, "role": "user", "content": "renders", "_images_for_llm": [f"r{i}.png"]})
     resolve = lambda ref: tmp_path / ref  # noqa: E731
-    with_vision = agent.llm_history(stored, vision=True, resolve=resolve)
-    assert len(with_vision) == agent.KEEP_IMAGE_MESSAGES
+    with_vision = history.llm_history(stored, vision=True, resolve=resolve)
+    assert len(with_vision) == history.KEEP_IMAGE_MESSAGES
     assert with_vision[-1]["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
-    assert agent.llm_history(stored, vision=False, resolve=resolve) == []
+    assert history.llm_history(stored, vision=False, resolve=resolve) == []
 
 
 def test_turn_runs_tool_saves_renders_and_answers(monkeypatch, entry, store: ChatStore):
@@ -87,7 +85,7 @@ def test_turn_runs_tool_saves_renders_and_answers(monkeypatch, entry, store: Cha
         [*tool_call_chunks("c3", "view_image", {"path": str(settings.GENERATED_DIR / "agent-bridge-v1.png")})],
         [chunk(content="Done.")],
     ])
-    monkeypatch.setattr(agent.litellm, "acompletion", fake)
+    monkeypatch.setattr(litellm, "acompletion", fake)
     import os
     os.chmod(settings.DATA_DIR.parent, 0o755)
     chat = store.create_chat()
@@ -95,7 +93,7 @@ def test_turn_runs_tool_saves_renders_and_answers(monkeypatch, entry, store: Cha
 
     async def run():
         await agent.start_turn(store, chat["id"], "build an example bridge", entry["id"], {"permissions": "full"})
-        await agent._runs[chat["id"]].task
+        await run_state._runs[chat["id"]].task
 
     asyncio.run(run())
     messages = store.messages(chat["id"])
@@ -113,14 +111,14 @@ def test_turn_runs_tool_saves_renders_and_answers(monkeypatch, entry, store: Cha
 def test_provider_error_ends_turn_but_not_chat(monkeypatch, entry, store: ChatStore):
     async def broken(**_kwargs):
         raise RuntimeError("401 invalid api key")
-    monkeypatch.setattr(agent.litellm, "acompletion", broken)
+    monkeypatch.setattr(litellm, "acompletion", broken)
     chat = store.create_chat()
 
     async def run():
         await agent.start_turn(store, chat["id"], "hello", entry["id"])
-        await agent._runs[chat["id"]].task
+        await run_state._runs[chat["id"]].task
 
     asyncio.run(run())
     last = store.messages(chat["id"])[-1]
     assert last["_error"] and "Provider request failed" in last["content"]
-    assert not agent.is_running(chat["id"])
+    assert not run_state.is_running(chat["id"])

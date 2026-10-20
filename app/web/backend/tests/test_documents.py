@@ -1,13 +1,12 @@
 import asyncio
 import base64
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 import agent
+from history import llm_history
 import llm_config
-import settings
 from attachments import save_documents, validate_documents, validate_images
 from main import app
 from store import ChatStore
@@ -49,11 +48,10 @@ def test_uploads_cannot_follow_a_symlink_outside_the_chat(tmp_path):
     assert list(outside.iterdir()) == []
 
 
-def test_documents_persist_and_are_available_to_both_agent_adapters(monkeypatch):
+def test_documents_persist_and_are_available_to_both_agent_adapters(monkeypatch, store):
     async def no_inference(*args):
         pass
     monkeypatch.setattr(agent, "_run_turn", no_inference)
-    store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     chat = store.create_chat()
     entry = llm_config.create({"litellm_params": {"model": "openai/gpt-6-sol", "api_key": "fake"}})
     image = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\n").decode()
@@ -71,7 +69,7 @@ def test_documents_persist_and_are_available_to_both_agent_adapters(monkeypatch)
         ctx = ToolContext(chat["id"], store, lambda *_: None)
         assert "Use tan bricks" in asyncio.run(t_read_file(ctx, str(path))).content
         for model in ("openai/gpt-6-sol", "anthropic/claude-opus-5"):
-            history = agent.llm_history(messages, True, lambda ref: store.resolve(chat["id"], ref), model)
+            history = llm_history(messages, True, lambda ref: store.resolve(chat["id"], ref), model)
             assert str(path) in history[0]["content"][-1]["text"]
             assert history[0]["content"][1]["image_url"]["url"] == image
             assert "_documents" not in history[0]

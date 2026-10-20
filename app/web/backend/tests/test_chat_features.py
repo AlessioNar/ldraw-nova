@@ -7,6 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 import agent
+from history import llm_history
+import run_state
+import tool_policy
 import browser_auth
 import inference
 import llm_config
@@ -14,7 +17,6 @@ import model_catalog
 import settings
 from attachments import validate_images
 from main import app
-from store import ChatStore
 from tools import ToolContext, ToolResult
 
 
@@ -67,25 +69,24 @@ def test_request_uses_responses_and_provider_effort(monkeypatch):
 
 
 @pytest.mark.parametrize("approved", [True, False])
-def test_approval_pauses_and_decision_is_single_use(monkeypatch, approved):
+def test_approval_pauses_and_decision_is_single_use(monkeypatch, store, approved):
     called = []
     async def dispatch(*args):
         called.append(args)
         return ToolResult("executed")
     monkeypatch.setattr(agent, "dispatch", dispatch)
-    store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     chat = store.create_chat()
-    run = agent.Run(chat["id"], options={"mode": "agent", "permissions": "ask"})
-    agent._runs[chat["id"]] = run
+    run = run_state.Run(chat["id"], options={"mode": "agent", "permissions": "ask"})
+    run_state._runs[chat["id"]] = run
     ctx = ToolContext(chat["id"], store, run.emit)
     async def check():
         task = asyncio.create_task(agent.execute_tool(run, ctx, "call", "run_shell", '{"command":"true"}'))
         await asyncio.sleep(0)
         assert not task.done() and not called
         [approval_id] = run.approvals
-        assert not agent.decide("unrelated-chat", approval_id, True)
-        assert agent.decide(chat["id"], approval_id, approved)
-        assert not agent.decide(chat["id"], approval_id, True)
+        assert not run_state.decide("unrelated-chat", approval_id, True)
+        assert run_state.decide(chat["id"], approval_id, approved)
+        assert not run_state.decide(chat["id"], approval_id, True)
         result = await task
         assert bool(called) is approved
         assert result.content == "executed" if approved else "denied" in result.content
@@ -98,12 +99,12 @@ def test_modes_enforced_even_if_model_calls_forbidden_tool(monkeypatch, options)
     async def forbidden(*args):
         raise AssertionError("must never dispatch")
     monkeypatch.setattr(agent, "dispatch", forbidden)
-    result = asyncio.run(agent.execute_tool(agent.Run("chat", options=options), None, "call", "run_python", "{}"))
+    result = asyncio.run(agent.execute_tool(run_state.Run("chat", options=options), None, "call", "run_python", "{}"))
     assert "denied" in result.content
 
 
 def test_cancel_pending_approval_cleans_up():
-    run = agent.Run("chat", options={"mode": "agent", "permissions": "ask"})
+    run = run_state.Run("chat", options={"mode": "agent", "permissions": "ask"})
     async def check():
         task = asyncio.create_task(agent.execute_tool(run, None, "call", "run_shell", "{}"))
         await asyncio.sleep(0)
@@ -147,10 +148,10 @@ def test_images_reject_remote_urls_mime_spoof_and_bad_encoding():
 def test_model_switch_strips_signed_thinking_and_handles_images():
     messages = [{"role": "assistant", "content": "previous", "thinking_blocks": [{"signature": "signed"}], "_llm_model": "anthropic/old"},
                 {"role": "user", "content": [{"type": "text", "text": "inspect"}, {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}}]}]
-    history = agent.llm_history(messages, False, Path, "openai/new")
+    history = llm_history(messages, False, Path, "openai/new")
     assert "thinking_blocks" not in history[0]
     assert history[1]["content"] == "inspect"
-    assert "thinking_blocks" in agent.llm_history(messages, True, Path, "anthropic/old")[0]
+    assert "thinking_blocks" in llm_history(messages, True, Path, "anthropic/old")[0]
 
 
 def test_login_status_excludes_secrets_and_blocks_cross_origin(monkeypatch):
@@ -275,7 +276,7 @@ def test_login_cancellation_terminates_process_group(monkeypatch):
     assert killed == [12345]
 
 
-def test_claude_adapter_exposes_only_app_tools_and_runs_gate(monkeypatch):
+def test_claude_adapter_exposes_only_app_tools_and_runs_gate(monkeypatch, store):
     import claude_agent
     from claude_agent_sdk import AssistantMessage, TextBlock
     recorded = {}
@@ -296,16 +297,15 @@ def test_claude_adapter_exposes_only_app_tools_and_runs_gate(monkeypatch):
         return ToolResult("part found")
     monkeypatch.setattr(claude_agent, "ClaudeSDKClient", Client)
     monkeypatch.setattr(claude_agent, "create_sdk_mcp_server", server)
-    store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     chat = store.create_chat()
     store.add_message(chat["id"], {"role": "user", "content": "find bricks"})
-    run = agent.Run(chat["id"], options={"mode": "plan", "permissions": "full"})
+    run = run_state.Run(chat["id"], options={"mode": "plan", "permissions": "full"})
     entry = {"litellm_params": {"model": "anthropic/claude-opus-5-5"}}
     saved = []
     asyncio.run(claude_agent.run_claude(store, run, entry, saved.append, execute, "system", True))
     options = recorded["options"]
     assert options.tools == [] and options.strict_mcp_config and options.setting_sources == []
     assert options.permission_mode == "dontAsk"
-    assert set(t.name for t in recorded["tools"]) == agent.READ_TOOLS
+    assert set(t.name for t in recorded["tools"]) == tool_policy.READ_TOOLS
     assert recorded["executed"][3] == "read_file"
     assert [m["role"] for m in saved] == ["assistant", "tool", "assistant"]

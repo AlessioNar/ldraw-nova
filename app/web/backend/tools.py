@@ -14,9 +14,10 @@ import json
 import re
 import shutil
 import time
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Awaitable, Callable
+from typing import Awaitable, Callable
 from urllib.parse import quote
 
 import sandbox
@@ -161,7 +162,6 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
         raise ToolError("Publish a self-contained .mpd or .ldr from this chat's output folder")
     if source.stat().st_size > 32 * 1024 * 1024:
         raise ToolError("Model exceeds the 32 MB publication limit")
-    import uuid
     review = ctx.work_dir / "publication" / uuid.uuid4().hex[:12]
     review.mkdir(parents=True)
     sandbox.give_to_agent(review.parent)

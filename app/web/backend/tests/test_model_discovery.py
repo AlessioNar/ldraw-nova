@@ -1,10 +1,11 @@
 import asyncio
 import json
-from types import SimpleNamespace
 
+import litellm
 from fastapi.testclient import TestClient
 
 import inference
+from helpers import ok_reply
 import agent
 import llm_config
 import main
@@ -32,9 +33,9 @@ def test_test_refreshes_context_prices_and_persists_without_keys(monkeypatch, tm
                           "reasoning": {"supported_efforts": ["low", "high"], "default_effort": "high"},
                           "pricing": {"prompt": "0.0000004", "completion": "0.000002"}}]}
     async def complete(**params):
-        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))])
+        return ok_reply()
     monkeypatch.setattr(model_discovery, "_fetch_json", fetch)
-    monkeypatch.setattr(main.litellm, "acompletion", complete)
+    monkeypatch.setattr(litellm, "acompletion", complete)
     client = TestClient(main.app)
     entry = client.post("/api/llm-models", json={"litellm_params": {"model": "openrouter/x-ai/grok-4.20", "api_key": "secret-metadata-key"}}).json()
     result = client.post(f"/api/llm-models/{entry['id']}/test").json()
@@ -69,7 +70,7 @@ def test_unavailable_lookup_uses_sourced_fallback_without_changing_test_result(m
     monkeypatch.setattr(main.settings, "CONFIG_DIR", tmp_path)
     async def complete(**params):
         raise ValueError("private-token-must-not-escape")
-    monkeypatch.setattr(main.litellm, "acompletion", complete)
+    monkeypatch.setattr(litellm, "acompletion", complete)
     entry = llm_config.create({"litellm_params": {"model": "openrouter/x-ai/grok-4.20", "api_key": "test"}})
     result = TestClient(main.app).post(f"/api/llm-models/{entry['id']}/test")
     assert not result.json()["ok"]

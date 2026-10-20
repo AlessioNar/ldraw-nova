@@ -20,7 +20,7 @@ import os
 import threading
 import time
 import uuid
-from typing import Any, Optional
+from typing import Optional
 
 import settings
 import model_catalog
@@ -28,6 +28,7 @@ import environment_config
 
 SECRET_MARKERS = ("key", "secret", "token", "password", "credential")
 MASK_PREFIX = "••••"
+LEGACY_KEY_REF = "os.environ/OPENROUTER_LDRAW_NOVA_API_KEY"      # renamed; stored entries are upgraded on load
 _lock = threading.Lock()
 
 
@@ -44,9 +45,24 @@ def _load() -> dict:
     data.setdefault("default_id", None)
     for entry in data["models"]:
         params = entry.get("litellm_params", {})
-        if params.get("api_key") == "os.environ/OPENROUTER_LDRAW_NOVA_API_KEY":
-            params["api_key"] = "os.environ/OPENROUTER_API_KEY"
+        _upgrade_key_ref(params)
     return data
+
+
+def _upgrade_key_ref(params: dict) -> None:
+    if params.get("api_key") == LEGACY_KEY_REF:
+        params["api_key"] = "os.environ/OPENROUTER_API_KEY"
+
+
+def _map_env_refs(value, resolve):
+    """Copy of a params structure with every "os.environ/NAME" replaced by resolve(NAME)."""
+    if isinstance(value, dict):
+        return {k: _map_env_refs(v, resolve) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_map_env_refs(v, resolve) for v in value]
+    if isinstance(value, str) and value.startswith("os.environ/"):
+        return resolve(value.split("/", 1)[1])
+    return value
 
 
 def _save(data: dict) -> None:
@@ -63,12 +79,6 @@ def is_secret(name: str) -> bool:
     return any(marker in name.lower() for marker in SECRET_MARKERS)
 
 
-def _mask(value: Any) -> Any:
-    if not isinstance(value, str) or not value or value.startswith("os.environ/"):
-        return value
-    return MASK_PREFIX
-
-
 def public(entry: dict) -> dict:
     """An entry as the UI may see it: secrets masked, capabilities resolved."""
     params = mask_secrets(entry["litellm_params"])
@@ -81,15 +91,7 @@ def public(entry: dict) -> dict:
 def connection_fingerprint(entry: dict) -> str:
     """Bind test results to the exact saved settings and referenced credentials."""
     environment = environment_config.snapshot()
-    def effective(value):
-        if isinstance(value, dict):
-            return {k: effective(v) for k, v in value.items()}
-        if isinstance(value, list):
-            return [effective(v) for v in value]
-        if isinstance(value, str) and value.startswith("os.environ/"):
-            return environment.get(value.split("/", 1)[1])
-        return value
-    params = effective(entry["litellm_params"])
+    params = _map_env_refs(entry["litellm_params"], environment.get)
     provider = params.get("model", "").split("/")[0]
     default_key = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "openrouter": "OPENROUTER_API_KEY"}.get(provider)
     if not params.get("api_key") and entry.get("auth_mode") != "browser" and default_key:
@@ -121,7 +123,9 @@ def mask_secrets(value, secret=False):
         return {k: mask_secrets(v, secret or is_secret(k) or k.lower() in ("authorization", "extra_headers")) for k, v in value.items()}
     if isinstance(value, list):
         return [mask_secrets(v, secret) for v in value]
-    return _mask(value) if secret else value
+    if not secret or not isinstance(value, str) or not value or value.startswith("os.environ/"):
+        return value
+    return MASK_PREFIX
 
 
 def restore_secrets(value, previous):
@@ -158,8 +162,7 @@ def _clean(entry: dict, previous: Optional[dict]) -> dict:
     if not str(params.get("model", "")).strip():
         raise ValueError("litellm_params.model is required, e.g. 'anthropic/claude-sonnet-5'")
     params["model"] = params["model"].strip()
-    if params.get("api_key") == "os.environ/OPENROUTER_LDRAW_NOVA_API_KEY":
-        params["api_key"] = "os.environ/OPENROUTER_API_KEY"
+    _upgrade_key_ref(params)
     if params["model"] == "openrouter/":
         raise ValueError("Choose an OpenRouter model, e.g. openrouter/openai/gpt-6-luna")
     old = (previous or {}).get("litellm_params", {})
@@ -261,21 +264,14 @@ def resolve_params(entry: dict) -> dict:
     """Resolve references, including nested params, with saved overrides first."""
     environment = environment_config.snapshot()
 
-    def resolve(value):
-        if isinstance(value, dict):
-            return {k: resolve(v) for k, v in value.items()}
-        if isinstance(value, list):
-            return [resolve(v) for v in value]
-        if isinstance(value, str) and value.startswith("os.environ/"):
-            name = value.split("/", 1)[1]
-            if name == "OPENROUTER_LDRAW_NOVA_API_KEY":
-                name = "OPENROUTER_API_KEY"
-            if not environment.get(name, "").strip():
-                raise ValueError(f"Environment variable {name} is not set or is empty")
-            return environment[name]
-        return value
+    def resolve(name):
+        if name == LEGACY_KEY_REF.split("/", 1)[1]:
+            name = "OPENROUTER_API_KEY"
+        if not environment.get(name, "").strip():
+            raise ValueError(f"Environment variable {name} is not set or is empty")
+        return environment[name]
 
-    return resolve(entry["litellm_params"])
+    return _map_env_refs(entry["litellm_params"], resolve)
 
 
 def capabilities(entry: dict) -> dict[str, bool]:

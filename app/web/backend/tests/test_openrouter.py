@@ -11,6 +11,8 @@ import inference
 import llm_config
 import model_catalog
 import agent
+import history
+import run_state
 import settings
 from main import app
 from store import ChatStore
@@ -170,7 +172,7 @@ def test_agent_roundtrips_streamed_reasoning_through_tools_storage_and_http(endp
     store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     chat_id = store.create_chat()["id"]
     store.add_message(chat_id, {"role": "user", "content": "Build me a car"})
-    run = agent.Run(chat_id, options={"mode": "agent", "permissions": "full"})
+    run = run_state.Run(chat_id, options={"mode": "agent", "permissions": "full"})
     events = []
     run.emit = lambda event, data: events.append((event, data))
 
@@ -187,14 +189,14 @@ def test_agent_roundtrips_streamed_reasoning_through_tools_storage_and_http(endp
     assert stored[-1]["content"] == "OK"
     assert "opaque-test" not in json.dumps(events)
     assert "opaque-test" not in TestClient(app).get(f"/api/chats/{chat_id}").text
-    assert agent.llm_history(stored, False, lambda _: None, model)[1]["reasoning_details"] == details
+    assert history.llm_history(stored, False, lambda _: None, model)[1]["reasoning_details"] == details
     for other in ("openrouter/openai/gpt-6-astra", "openai/gpt-6-sol", "anthropic/claude-opus-5.5"):
-        assert "reasoning_details" not in agent.llm_history(stored, False, lambda _: None, other)[1]
+        assert "reasoning_details" not in history.llm_history(stored, False, lambda _: None, other)[1]
 
 
 def test_old_openrouter_history_preserves_plain_reasoning_only_for_same_model():
     model = "openrouter/openai/gpt-6-sol"
     stored = [{"role": "assistant", "content": "Working.", "_llm_model": model,
                "_reasoning": "Synthetic legacy reasoning."}]
-    assert agent.llm_history(stored, False, lambda _: None, model)[0]["reasoning_content"] == stored[0]["_reasoning"]
-    assert "reasoning_content" not in agent.llm_history(stored, False, lambda _: None, "openai/gpt-6-sol")[0]
+    assert history.llm_history(stored, False, lambda _: None, model)[0]["reasoning_content"] == stored[0]["_reasoning"]
+    assert "reasoning_content" not in history.llm_history(stored, False, lambda _: None, "openai/gpt-6-sol")[0]

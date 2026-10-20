@@ -15,17 +15,15 @@ import environment_config
 
 environment_config.initialize()
 
-import litellm  # noqa: F401 - tests patch main.litellm
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-import agent
 import browser_auth
+import run_state
 import sandbox
 import settings
 from routers import chats, environment, files, llm_models, models_gallery, spa
-from routers.models_gallery import model_from_url  # noqa: F401 - re-exported
 from store import get_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -39,8 +37,8 @@ async def lifespan(_app: FastAPI):
     get_store()
     yield
     await browser_auth.shutdown()
-    for chat_id in list(agent._runs):
-        await agent.cancel(chat_id)
+    for chat_id in list(run_state._runs):
+        await run_state.cancel(chat_id)
 
 
 app = FastAPI(title="LDraw Nova agent chat", lifespan=lifespan)

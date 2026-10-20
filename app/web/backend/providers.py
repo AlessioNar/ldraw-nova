@@ -70,10 +70,6 @@ def of(model: str) -> Provider:
     return UNKNOWN
 
 
-def is_known(model: str) -> bool:
-    return of(model) is not UNKNOWN
-
-
 def inner(model: str) -> str:
     """Strip one gateway prefix: openrouter/anthropic/x -> anthropic/x."""
     provider = of(model)

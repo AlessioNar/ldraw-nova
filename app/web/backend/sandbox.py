@@ -67,13 +67,6 @@ def give_to_agent(path: Path) -> None:
         pass                                # e.g. bind mounts that ignore chown
 
 
-def _truncate(text: str) -> str:
-    if len(text) <= MAX_OUTPUT_CHARS:
-        return text
-    half = MAX_OUTPUT_CHARS // 2
-    return f"{text[:half]}\n... [{len(text) - MAX_OUTPUT_CHARS} characters omitted] ...\n{text[-half:]}"
-
-
 async def run(argv: list[str], cwd: Path, timeout: int, *,
               env_extra: dict[str, str] | None = None,
               on_output: Callable[[str, str], None] | None = None,
