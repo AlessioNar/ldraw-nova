@@ -51,4 +51,4 @@ def test_inner_strips_one_gateway():
 def test_catalogue_has_one_row_per_provider():
     names = [row["provider"] for row in providers.catalogue()]
     assert len(names) == len(set(names))
-    assert {"anthropic", "openrouter", "chatgpt", "vertex_ai"} <= set(names)
+    assert {"anthropic", "openrouter", "openai", "vertex_ai"} <= set(names)

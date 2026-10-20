@@ -20,7 +20,6 @@ from typing import Optional
 import litellm
 
 import llm_config
-import browser_auth
 import model_catalog
 from run_state import Run, _runs, is_running
 from store import ChatStore
@@ -42,6 +41,8 @@ async def start_turn(store: ChatStore, chat_id: str, text: str, llm_model_id: Op
         entry = llm_config.get(default_id) if default_id else None
     if entry is None:
         raise ValueError("no LLM model configured — add one in Settings")
+    if llm_config.unsupported(entry):
+        raise ValueError(llm_config.UNSUPPORTED_MESSAGE)
     if (not model_catalog.builder_supported(entry["litellm_params"]["model"])
             or any(value is False for value in llm_config.capabilities(entry).values())):
         raise ValueError("Choose a model with tool calling and image input support in Settings")
@@ -49,13 +50,6 @@ async def start_turn(store: ChatStore, chat_id: str, text: str, llm_model_id: Op
     options = model_catalog.validate_options(entry, options)
     if images and llm_config.capabilities(entry)["vision"] is not True:
         raise ValueError("Select a model with image input support")
-    if entry.get("auth_mode") == "browser":
-        provider = "anthropic" if entry["litellm_params"]["model"].startswith("anthropic/") else "openai"
-        if not await browser_auth.connected(provider):
-            raise ValueError("Sign in to the provider in Settings first")
-    # A concurrent request may have started while browser auth status was checked.
-    if is_running(chat_id):
-        raise RuntimeError("this chat is already running a turn")
 
     chat = store.get_chat(chat_id)
     if chat["title"] == "New chat":

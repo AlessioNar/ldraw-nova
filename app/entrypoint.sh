@@ -31,8 +31,4 @@ for _ in $(seq 1 50); do
     sleep 0.1
 done
 
-# OpenAI's login runtime listens on container loopback. Relay the browser's
-# localhost:1455 callback through a separate container port. No URL logging.
-socat TCP-LISTEN:1456,bind=0.0.0.0,fork,reuseaddr TCP:127.0.0.1:1455 &
-
 exec "$@"

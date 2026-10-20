@@ -13,7 +13,7 @@ import providers
 from store import ChatStore
 from history import llm_history
 from run_state import Run
-from system_prompt import system_message, system_prompt
+from system_prompt import system_message
 from tool_policy import available_tools
 from tools import ToolContext
 from usage import usage_record
@@ -36,10 +36,6 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
         return msg_id
 
     try:
-        if entry.get("auth_mode") == "browser" and entry["litellm_params"]["model"].startswith("anthropic/"):
-            from claude_agent import run_claude
-            await run_claude(store, run, entry, save, execute_tool, system_prompt(store, chat_id), use_tools)
-            return
         params = await inference.params_for(entry, run.options)
         for _step in range(MAX_STEPS):
             messages = [system_message(store, chat_id, entry["litellm_params"]["model"], run.options),
