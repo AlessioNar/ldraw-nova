@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, type LlmEntry, type ModelProfile, type ConnectionStatus } from "../api";
 import { useApp } from "../context";
-import { agentProvider, providerLabel } from "../modelChoices";
-import { tokenLabel } from "../modelChoices";
+import { agentProvider, providerLabel, tokenLabel } from "../modelChoices";
 import AgentDetails from "./AgentDetails";
 
 type AuthMethod = "browser" | "api_value" | "api_env";

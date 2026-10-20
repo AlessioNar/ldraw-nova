@@ -62,7 +62,7 @@ export type Usage = { prompt: number; completion: number; cache_read: number; ca
 export type UsageTotals = Usage & { steps: number };
 export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals };
 
-export type Capability = boolean | "auto";
+type Capability = boolean | "auto";
 export type EnvironmentVariable = { id: string; name: string; value: null; has_value: boolean; fixed: boolean };
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
@@ -188,10 +188,4 @@ export function timeAgo(seconds: number): string {
   if (diff < 86400) return `${Math.floor(diff / 3600)} h ago`;
   if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} d ago`;
   return new Date(seconds * 1000).toLocaleDateString();
-}
-
-export function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
