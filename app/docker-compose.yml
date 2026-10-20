@@ -1,3 +1,4 @@
+# Kept from the two-repo days: renaming it would orphan running containers.
 name: ldraw-nova-docker
 
 services:
@@ -5,7 +6,7 @@ services:
     build:
       context: .
       additional_contexts:
-        nova: ../ldraw-nova
+        nova: ..                 # the toolkit, at the repo root (see ../.dockerignore)
     image: ldraw-nova-app
     platform: linux/amd64  # LeoCAD ships x86_64-only AppImages (emulated on Apple Silicon)
     container_name: ldraw-nova-app

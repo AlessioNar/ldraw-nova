@@ -1,5 +1,5 @@
 # check=skip=FromPlatformFlagConstDisallowed
-# ldraw-nova-docker: LeoCAD (pinned released AppImage) + Python + full LDraw parts library,
+# ldraw-nova app image: LeoCAD (pinned released AppImage) + Python + full LDraw parts library,
 # plus a web app (chat with LLM agents that build and render LDraw models).
 #
 # No compiling: downloads an official, tagged LeoCAD-Linux-*.AppImage release
@@ -11,7 +11,7 @@
 #   docker compose exec ldraw-nova-app bash # log in
 #
 # Pin versions explicitly:
-#   docker build --build-context nova=../ldraw-nova --build-arg LEOCAD_TAG=v25.09 -t ldraw-nova-app .
+#   docker build --build-context nova=.. --build-arg LEOCAD_TAG=v25.09 -t ldraw-nova-app .
 
 # --- Stage 1: the web UI (React + Vite) --------------------------------------
 # Runs on the build host's own architecture (fast, no emulation); its output is
