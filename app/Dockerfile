@@ -37,34 +37,26 @@ WORKDIR /src
 COPY web/viewer-deps/package.json web/viewer-deps/package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 
-# --- Stage 2: the runtime image ----------------------------------------------
-# LeoCAD only publishes x86_64 Linux AppImages, so the image is always amd64.
-# On Apple Silicon / arm64 hosts Docker Desktop runs it under emulation.
-FROM --platform=linux/amd64 ubuntu:24.04
-
-# Pin to a specific, released (non-continuous) LeoCAD version.
-# Check https://github.com/leozide/leocad/releases for available tags.
-ARG LEOCAD_TAG=v25.09
-
-# The 3D viewer: library.ldraw.org's own source (MIT), which vendors the
-# buildinginstructions.js viewer (Unlicense) it runs on. Pinned commit.
-ARG LDRAWORG_REF=a38efc7aca5b1171e888687939d77b6c0b228c7f
-
+# --- Download stages ---------------------------------------------------------
+# Everything that is only fetched and unpacked happens in throwaway stages, so
+# the big downloads (a) never depend on the runtime's apt layer or on any app
+# file, (b) run in parallel, and (c) leave no archives or tools in the image.
+# Each only changes when its own pinned URL / version / checksum changes.
+# amd64 because bun (run by the mpd2glb stage) is an x86_64 binary.
+FROM --platform=linux/amd64 ubuntu:24.04 AS fetch
 ENV DEBIAN_FRONTEND=noninteractive
+# Keep downloaded .debs in the apt cache mount (the stock image deletes them).
+RUN rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl unzip squashfs-tools python3
 
-# --- Runtime deps: Xvfb/Mesa for headless GL, Qt's X11 plugin deps, Python,
-# plus curl/unzip just to fetch and unpack things during the build. ----------
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl unzip squashfs-tools \
-        xvfb x11-utils \
-        libgl1 libglx-mesa0 libegl1 libgl1-mesa-dri libosmesa6 \
-        libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
-        libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
-        libxcb-xinerama0 libnss3 libdbus-1-3 fontconfig \
-        python3 python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-# --- Download the pinned release's AppImage and unpack it --------------------
+# --- LeoCAD: the pinned release's AppImage, unpacked --------------------------
+# Check https://github.com/leozide/leocad/releases for available tags.
+FROM fetch AS leocad
+ARG LEOCAD_TAG=v25.09
 # An AppImage is an ELF runtime with a squashfs image appended right after its
 # section headers. We unpack that squashfs directly instead of running
 # `./LeoCAD.AppImage --appimage-extract`: the AppImage's "AI\x02" marker in the
@@ -80,22 +72,30 @@ RUN set -eux; \
     echo "squashfs offset: ${offset}"; \
     mkdir -p /opt/leocad; \
     unsquashfs -q -no-progress -o "$offset" -d /opt/leocad/squashfs-root /tmp/LeoCAD.AppImage; \
-    rm /tmp/LeoCAD.AppImage; \
-    ln -s /opt/leocad/squashfs-root/AppRun /usr/local/bin/leocad
+    rm /tmp/LeoCAD.AppImage
 
-# --- Bake in the complete official LDraw parts library ----------------------
+# --- The complete official LDraw parts library --------------------------------
 # Produces /opt/ldraw/ldraw/{parts,p,models,LDConfig.ldr,...}
+FROM fetch AS ldraw-lib
 RUN mkdir -p /opt/ldraw \
     && curl -fsSL https://library.ldraw.org/library/updates/complete.zip -o /tmp/complete.zip \
     && unzip -q /tmp/complete.zip -d /opt/ldraw \
     && rm /tmp/complete.zip
 
-# LeoCAD reads LEOCAD_LIB as its default parts-library path (equivalent to
-# always passing --libpath). Any call can still override it with -l/--libpath.
-ENV LEOCAD_LIB=/opt/ldraw/ldraw
+# Parts index for the agent tools (find_parts: part descriptions).
+# Only depends on the library above and build_index.py, so other app edits
+# don't rebuild it.
+FROM fetch AS ldraw-index
+COPY --from=ldraw-lib /opt/ldraw /opt/ldraw
+COPY web/backend/build_index.py /opt/index/build_index.py
+RUN python3 /opt/index/build_index.py /opt/ldraw/ldraw /opt/index
 
 # --- The 3D viewer's JavaScript, textures and licence ------------------------
+# The 3D viewer: library.ldraw.org's own source (MIT), which vendors the
+# buildinginstructions.js viewer (Unlicense) it runs on. Pinned commit.
 # -> /opt/web/viewer-vendor/{ldbi/js,ldbi/textures,js/ldraworgscene.js,js/WebGL.js}
+FROM fetch AS viewer-vendor
+ARG LDRAWORG_REF=a38efc7aca5b1171e888687939d77b6c0b228c7f
 RUN set -eux; \
     mkdir -p /tmp/lor /opt/web/viewer-vendor/js; \
     curl -fsSL "https://codeload.github.com/ldraw-org/ldraworg-library/tar.gz/${LDRAWORG_REF}" \
@@ -118,16 +118,12 @@ RUN set -eux; \
 COPY --from=viewer-deps /src/node_modules/three/examples/jsm/libs/draco/gltf/ /opt/web/viewer-vendor/gltf/draco/
 COPY --from=viewer-deps /src/node_modules/three/examples/jsm/libs/meshopt_decoder.module.js /opt/web/viewer-vendor/gltf/meshopt_decoder.module.js
 
-# Parts index for the agent tools (find_parts: part descriptions).
-# Only depends on the library above, so app edits don't rebuild it.
-COPY web/backend/build_index.py /opt/index/build_index.py
-RUN python3 /opt/index/build_index.py /opt/ldraw/ldraw /opt/index
-
 # --- Bun runtime (for mpd2glb) -------------------------------------------------
 # mpd2glb supports Node.js and Bun; measured on this image, Bun converts up to
 # ~3.7x faster than Node (Deno: no faster) with byte-identical .glb output.
 # The *baseline* build: the default one needs AVX2, which the emulated x86 CPU
 # on Apple Silicon doesn't have. Pinned and checksum-verified.
+FROM fetch AS bun
 ARG BUN_VERSION=1.4.2
 ARG BUN_SHA256=c678040f14fe0440eb839d37cbd0ce4c051a32da72806ac97de6a6aab6bf728f
 RUN set -eux; \
@@ -142,6 +138,7 @@ RUN set -eux; \
 # https://github.com/anteloc/mpd2glb — pinned release, checksum-verified.
 # Run it through scripts/mpd2glb.sh (below), not bun + the .mjs directly:
 #   mpd2glb.sh -c none -l /opt/ldraw/ldraw -o out.glb model.mpd
+FROM bun AS mpd2glb
 ARG MPD2GLB_VERSION=0.9.1
 ARG MPD2GLB_SHA256=381fb275c9f974820620ef4e4ec8b5be84ea8306a9f1ccd95bc75beaa8139f34
 RUN set -eux; \
@@ -153,15 +150,63 @@ RUN set -eux; \
     cd /opt/mpd2glb && bun install --production; \
     rm -rf /root/.bun/install/cache
 
-# socat: relays the OpenAI login callback (see entrypoint.sh). Its own layer,
-# so the big layers above stay cached.
-RUN apt-get update && apt-get install -y --no-install-recommends socat \
-    && rm -rf /var/lib/apt/lists/*
+# --- The 3D player: ldraw-player (Rust -> WebAssembly) ------------------------
+# https://github.com/anteloc/ldraw.rs-nova (tools/player), its release zip,
+# checksum-verified -> /opt/web/player-vendor/{ldraw_player.js,ldraw_player_bg.wasm,...}
+# For now a local build from vendor/: the v0.8.0 release doesn't start in any
+# browser (its CI's old wasm-opt exported the wrong table; fixed in the fork's
+# build). Once a fixed release is on GitHub, the COPY goes back to:
+#   RUN curl -fsSL "https://github.com/anteloc/ldraw.rs-nova/releases/download/v${LDRAW_PLAYER_VERSION}/ldraw-player-${LDRAW_PLAYER_VERSION}.zip" -o /tmp/ldraw-player.zip
+FROM fetch AS player
+ARG LDRAW_PLAYER_VERSION=0.8.1
+ARG LDRAW_PLAYER_SHA256=1c96d79764393ec702106b5da7a9131594510135704ff02cb808f1ec77a1154f
+COPY vendor/ldraw-player-${LDRAW_PLAYER_VERSION}.zip /tmp/ldraw-player.zip
+RUN set -eux; \
+    echo "${LDRAW_PLAYER_SHA256}  /tmp/ldraw-player.zip" | sha256sum -c -; \
+    mkdir -p /opt/web; \
+    unzip -q /tmp/ldraw-player.zip -d /tmp/ldraw-player; \
+    mv "/tmp/ldraw-player/ldraw-player-${LDRAW_PLAYER_VERSION}" /opt/web/player-vendor; \
+    rm -rf /tmp/ldraw-player /tmp/ldraw-player.zip; \
+    test -f /opt/web/player-vendor/ldraw_player_bg.wasm
 
-# --- Command-line tools for agents and scripts ---------------------------------
-# poppler-utils (pdftotext, pdfinfo, pdftoppm, ...), ripgrep (rg), git.
-RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils ripgrep git \
-    && rm -rf /var/lib/apt/lists/*
+# --- Stage 2: the runtime image ----------------------------------------------
+# LeoCAD only publishes x86_64 Linux AppImages, so the image is always amd64.
+# On Apple Silicon / arm64 hosts Docker Desktop runs it under emulation.
+FROM --platform=linux/amd64 ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
+# --- All apt packages in one layer (it only changes when this list does) ------
+# Runtime deps: Xvfb/Mesa for headless GL, Qt's X11 plugin deps, Python;
+# curl/unzip for agents and the uv/jev-rerank steps below;
+# socat relays the OpenAI login callback (see entrypoint.sh);
+# poppler-utils (pdftotext, pdfinfo, pdftoppm, ...), ripgrep (rg), git for agents.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl unzip \
+        xvfb x11-utils \
+        libgl1 libglx-mesa0 libegl1 libgl1-mesa-dri libosmesa6 \
+        libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
+        libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
+        libxcb-xinerama0 libnss3 libdbus-1-3 fontconfig \
+        python3 python3-pip \
+        socat poppler-utils ripgrep git
+
+# --- Unpacked downloads from the stages above ---------------------------------
+COPY --from=leocad /opt/leocad /opt/leocad
+RUN ln -s /opt/leocad/squashfs-root/AppRun /usr/local/bin/leocad
+COPY --from=ldraw-lib /opt/ldraw /opt/ldraw
+COPY --from=ldraw-index /opt/index /opt/index
+# LeoCAD reads LEOCAD_LIB as its default parts-library path (equivalent to
+# always passing --libpath). Any call can still override it with -l/--libpath.
+ENV LEOCAD_LIB=/opt/ldraw/ldraw
+COPY --from=viewer-vendor /opt/web/viewer-vendor /opt/web/viewer-vendor
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+COPY --from=mpd2glb /opt/mpd2glb /opt/mpd2glb
+COPY --from=player /opt/web/player-vendor /opt/web/player-vendor
 
 # --- uv, and Python 3.14 managed by it (jev-rerank, and tools to come) ---------
 # https://github.com/astral-sh/uv — pinned release, checksum-verified. Python
@@ -175,14 +220,17 @@ ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python \
     UV_PYTHON_BIN_DIR=/usr/local/bin \
     UV_TOOL_DIR=/opt/uv/tools \
     UV_TOOL_BIN_DIR=/usr/local/bin
-RUN set -eux; \
+# Build-only (not in the runtime env): the cache mount is another filesystem, so hardlinks can't work.
+ARG UV_LINK_MODE=copy
+# /root/.cache/uv is a build cache mount: reused across builds, never in the image.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    set -eux; \
     curl -fsSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/uv.tar.gz; \
     echo "${UV_SHA256}  /tmp/uv.tar.gz" | sha256sum -c -; \
     tar -xzf /tmp/uv.tar.gz -C /tmp; \
     install -m 0755 /tmp/uv-x86_64-unknown-linux-gnu/uv /tmp/uv-x86_64-unknown-linux-gnu/uvx /usr/local/bin/; \
     rm -rf /tmp/uv.tar.gz /tmp/uv-x86_64-unknown-linux-gnu; \
     uv python install "${PYTHON_VERSION}"; \
-    uv cache clean; \
     test "$(python3.14 -c 'import platform; print(platform.python_version())')" = "${PYTHON_VERSION}"
 
 # --- jev-rerank: ranks text files / SQLite text fields against a query ---------
@@ -191,7 +239,8 @@ RUN set -eux; \
 # locked dependency versions. Needs TYPESAFE_API_KEY when it runs.
 ARG JEV_RERANK_VERSION=0.5.0
 ARG JEV_RERANK_SHA256=7a2bc86b68779e5f835026df708f4c7f38e2364f9d17bee58ff7f2c17e04f03a
-RUN set -eux; \
+RUN --mount=type=cache,target=/root/.cache/uv \
+    set -eux; \
     curl -fsSL "https://github.com/anteloc/jev-rerank/releases/download/v${JEV_RERANK_VERSION}/jev-rerank-${JEV_RERANK_VERSION}-source.zip" -o /tmp/jev-rerank.zip; \
     echo "${JEV_RERANK_SHA256}  /tmp/jev-rerank.zip" | sha256sum -c -; \
     unzip -q /tmp/jev-rerank.zip -d /tmp/jev-rerank; \
@@ -200,7 +249,6 @@ RUN set -eux; \
     uv tool install --python "${PYTHON_VERSION}" --constraints /tmp/jev-rerank-locked.txt .; \
     cd /; \
     rm -rf /tmp/jev-rerank /tmp/jev-rerank.zip /tmp/jev-rerank-locked.txt; \
-    uv cache clean; \
     jev-rerank --help > /dev/null
 
 # Software (llvmpipe) OpenGL rendering — works on any host, GPU or not.
@@ -224,47 +272,33 @@ RUN useradd --system --create-home --shell /bin/bash agent \
 # --- Python side of the app ---------------------------------------------------
 WORKDIR /app
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --break-system-packages -r requirements.txt
 # The pinned Claude Agent SDK includes its matching native Claude Code runtime.
 # Browser login and inference use that same binary; no host credentials mounted.
 RUN python3 -c "import pathlib, subprocess, claude_agent_sdk; subprocess.run([str(pathlib.Path(claude_agent_sdk.__file__).parent / '_bundled' / 'claude'), '--version'], check=True)"
 ENV PYTHONPATH=/app
+# Official OpenAI login runtime, before the toolkit files so their edits don't rebuild it.
+COPY --from=openai-login /opt/codex/package/vendor/x86_64-unknown-linux-musl/ /opt/codex/
+RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex && codex --version
 # Keep the standalone builder intact. Only its distributable inputs enter the
 # image: never the sibling checkout's output, virtualenv, credentials or cache.
 COPY --from=nova pyproject.toml uv.lock /opt/ldraw-nova/
-RUN cd /opt/ldraw-nova && uv sync --frozen --no-dev --no-install-project --python "${PYTHON_VERSION}"
+RUN --mount=type=cache,target=/root/.cache/uv \
+    cd /opt/ldraw-nova && uv sync --frozen --no-dev --no-install-project --python "${PYTHON_VERSION}"
 COPY --from=nova ldraw_tools/ /opt/ldraw-nova/ldraw_tools/
 COPY --from=nova data/ /opt/ldraw-nova/data/
 COPY --from=nova docs/ /opt/ldraw-nova/docs/
 COPY --from=nova examples/ /opt/ldraw-nova/examples/
 COPY --from=nova prompts/ /opt/ldraw-nova/prompts/
-COPY --from=nova *.md *.py *.sh LICENSE CC-BY-SA-4.0 ldraw-agent /opt/ldraw-nova/
-RUN cd /opt/ldraw-nova && uv sync --locked --no-dev --python "${PYTHON_VERSION}" \
+COPY --from=nova *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent /opt/ldraw-nova/
+RUN --mount=type=cache,target=/root/.cache/uv \
+    cd /opt/ldraw-nova && uv sync --locked --no-dev --python "${PYTHON_VERSION}" \
     && mkdir -p .cache && chown agent:agent .cache \
     && ln -s /data/output output \
     && chmod -R a+rX /opt/ldraw-nova \
-    && chmod a+x ldraw-agent setup.sh check-model.sh prepare-glb.sh \
-    && uv cache clean
+    && chmod a+x ldraw-agent setup.sh check-model.sh prepare-glb.sh
 ENV LDRAW_DIR=/opt/ldraw/ldraw LDRAW_NOVA_TOOLKIT_DIR=/opt/ldraw-nova
-COPY --from=openai-login /opt/codex/package/vendor/x86_64-unknown-linux-musl/ /opt/codex/
-RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex && codex --version
-
-# --- The 3D player: ldraw-player (Rust -> WebAssembly) ------------------------
-# https://github.com/anteloc/ldraw.rs-nova (tools/player), its release zip,
-# checksum-verified -> /opt/web/player-vendor/{ldraw_player.js,ldraw_player_bg.wasm,...}
-# For now a local build from vendor/: the v0.8.0 release doesn't start in any
-# browser (its CI's old wasm-opt exported the wrong table; fixed in the fork's
-# build). Once a fixed release is on GitHub, the COPY goes back to:
-#   RUN curl -fsSL "https://github.com/anteloc/ldraw.rs-nova/releases/download/v${LDRAW_PLAYER_VERSION}/ldraw-player-${LDRAW_PLAYER_VERSION}.zip" -o /tmp/ldraw-player.zip
-ARG LDRAW_PLAYER_VERSION=0.8.1
-ARG LDRAW_PLAYER_SHA256=1c96d79764393ec702106b5da7a9131594510135704ff02cb808f1ec77a1154f
-COPY vendor/ldraw-player-${LDRAW_PLAYER_VERSION}.zip /tmp/ldraw-player.zip
-RUN set -eux; \
-    echo "${LDRAW_PLAYER_SHA256}  /tmp/ldraw-player.zip" | sha256sum -c -; \
-    unzip -q /tmp/ldraw-player.zip -d /tmp/ldraw-player; \
-    mv "/tmp/ldraw-player/ldraw-player-${LDRAW_PLAYER_VERSION}" /opt/web/player-vendor; \
-    rm -rf /tmp/ldraw-player /tmp/ldraw-player.zip; \
-    test -f /opt/web/player-vendor/ldraw_player_bg.wasm
 
 # --- scripts/: the whole folder, on everyone's PATH ----------------------------
 # Whatever is in scripts/ runs from anywhere in the container, by name, for

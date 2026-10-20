@@ -5,7 +5,7 @@
 #
 # Keep this in sync with the `COPY --from=nova` lines in app/Dockerfile:
 # data/, docs/, examples/, prompts/, ldraw_tools/, and the top-level
-# *.md *.py *.sh LICENSE CC-BY-SA-4.0 ldraw-agent.
+# *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent.
 .git
 app
 .obsidian
@@ -18,3 +18,11 @@ app
 tests
 img
 *.jpg
+.gitattributes
+.gitignore
+.cache
+output
+.claude
+.pytest_cache
+*.egg-info
+**/node_modules
