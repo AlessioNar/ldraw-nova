@@ -149,19 +149,29 @@ def reasoning_text(message: dict) -> str:
                    for key in ("text", "summary") if isinstance(d.get(key), str))
 
 
+def _digest(*parts: str) -> bytes:
+    h = hashlib.blake2b(digest_size=16)
+    for part in parts:
+        h.update(part.encode("utf-8", "surrogatepass"))
+        h.update(b"\0")
+    return h.digest()
+
+
 def _message_tokens(model: str, message: dict) -> int:
     """Tokens of one message as litellm counts it in a list, plus its reasoning text.
 
     Counts are additive per message, so they are cached by content: only the
-    messages that are new since the previous step are tokenized.
+    messages that are new since the previous step are tokenized. The reasoning
+    text is joined and hashed on its own because it can be megabytes of tiny blocks.
     """
-    key = (model, hashlib.blake2b(json.dumps(message, default=str).encode(), digest_size=16).digest())
+    text = reasoning_text(message)
+    rest = {k: v for k, v in message.items() if k not in ("reasoning_details", "_reasoning_details")}
+    key = (model, _digest(json.dumps(rest, default=str), text))
     cached = _TOKEN_CACHE.get(key)
     if cached is not None:
         _TOKEN_CACHE.move_to_end(key)
         return cached
-    tokens = litellm.token_counter(model=model, messages=[message]) - _REPLY_PRIMING
-    text = reasoning_text(message)
+    tokens = litellm.token_counter(model=model, messages=[rest]) - _REPLY_PRIMING
     if text:
         tokens += litellm.token_counter(model=model, text=text)
     _TOKEN_CACHE[key] = tokens
@@ -187,7 +197,7 @@ def bounded_history(messages: list[dict], model: str, budget: int | None) -> tup
     Keep the user's task and the last two complete tool rounds. Full history
     stays on disk; the system prompt carries the build's latest NOTES.md.
     Message token counts are cached across steps and include reasoning blocks;
-    the history is only deep-copied when something has to be trimmed.
+    the history is never deep-copied (only the system turn, which gets the trim note).
     """
     if not budget:
         return _strip_turn_start(messages), 0
@@ -200,7 +210,9 @@ def bounded_history(messages: list[dict], model: str, budget: int | None) -> tup
         total = len(json.dumps(messages).encode())  # conservative for unknown tokenizers
     if total <= limit:
         return _strip_turn_start(messages), 0
-    result = copy.deepcopy(messages)
+    # Only the system turn is edited below; payloads such as reasoning blocks are shared.
+    result = [dict(m) for m in messages]
+    result[0] = copy.deepcopy(messages[0])
     removed = 0
 
     def count():
