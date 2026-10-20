@@ -109,6 +109,8 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 const json = (body: unknown) => JSON.stringify(body);
 
+export type ProviderInfo = { provider: string; label: string; effort: boolean; prompt_caching: boolean; discovery: boolean };
+
 export const api = {
   environment: () => request<{ variables: EnvironmentVariable[] }>("/api/environment"),
   checkEnvironment: (name: string, id?: string) => request<{ preconfigured: boolean; saved: boolean }>(`/api/environment/check?name=${encodeURIComponent(name)}&exclude_id=${encodeURIComponent(id ?? "")}`),
@@ -146,7 +148,7 @@ export const api = {
     ),
   importLlm: (yaml: string) =>
     request<{ imported: LlmEntry[] }>("/api/llm-models/import", { method: "POST", body: json({ yaml }) }),
-  providers: () => request<{ providers: string[] }>("/api/llm-providers"),
+  providers: () => request<{ providers: string[]; catalogue: ProviderInfo[] }>("/api/llm-providers"),
   providerModels: (p: string) => request<{ models: string[] }>(`/api/llm-providers/${encodeURIComponent(p)}/models`),
 };
 

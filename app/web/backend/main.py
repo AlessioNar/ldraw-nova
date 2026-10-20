@@ -34,6 +34,7 @@ import glb
 import llm_config
 import model_catalog
 import model_discovery
+import providers
 import browser_auth
 import inference
 import render
@@ -275,7 +276,7 @@ def llm_models_import(body: ImportBody):
 @app.get("/api/llm-providers")
 def llm_providers():
     names = sorted({getattr(p, "value", p) for p in litellm.provider_list})
-    return {"providers": names}
+    return {"providers": names, "catalogue": providers.catalogue()}
 
 
 @app.get("/api/llm-providers/{provider}/models")
