@@ -26,22 +26,18 @@ Take a look at [the video](https://youtu.be/YDjjxGqWpgU):
 
 Run **ldraw-nova** as a web app, with Docker. You need [Git](https://git-scm.com/downloads) and [Docker](https://docs.docker.com/get-started/get-docker/).
 
-This web app will run dockerized, and to build the Docker image, two sibling repos are required:
+The web app runs dockerized. The Docker configuration and the web app live in [`app/`](app/), next to the toolkit it packages, so a single clone is all you need.
 
-- [`ldraw-nova`](https://github.com/anteloc/ldraw-nova): this one, of course 😉
-- [`ldraw-nova-docker`](https://github.com/anteloc/ldraw-nova-docker): provides both Docker configuration and the web app.
-
-**1. Clone** both repos side by side, at the **same tag**, so they work together:
+**1. Clone** the repo:
 
 ```bash
-git clone --branch v0.6.0 https://github.com/anteloc/ldraw-nova.git
-git clone --branch v0.6.0 https://github.com/anteloc/ldraw-nova-docker.git
+git clone https://github.com/AlessioNar/ldraw-nova.git
 ```
 
 **2. Build** the Docker image. The first build takes a while and needs about 5 GB of disk space:
 
 ```bash
-cd ldraw-nova-docker
+cd ldraw-nova/app
 docker compose build
 ```
 

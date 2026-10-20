@@ -1,13 +1,11 @@
-# ldraw-nova-docker
+# ldraw-nova app
 
 > [!IMPORTANT]
-> **Want to try the ldraw-nova web app? Start at the [ldraw-nova repo](https://github.com/anteloc/ldraw-nova#installation).**
+> **Want to try the ldraw-nova web app? Start at the [installation steps](../README.md#installation).**
 >
-> This repo is the Docker packaging of [ldraw-nova](https://github.com/anteloc/ldraw-nova). It turns that toolset into a web app you can run. It isn't meant to be used on its own: the Docker image is built from both repos, cloned side by side at the same tag.
+> This directory is the Docker packaging of the ldraw-nova toolkit at the repo root. It turns that toolset into a web app you can run; the image is built from both, with the repo root passed as the `nova` build context.
 >
-> The project's landing page, demo video and installation steps are all in **ldraw-nova**. This README will only cover the technical side of the Docker image, and it's being rewritten.
->
-> 👉 **[Go to ldraw-nova and install the web app](https://github.com/anteloc/ldraw-nova#installation)**
+> The project's landing page, demo video and installation steps are in the [top-level README](../README.md). This README will only cover the technical side of the Docker image, and it's being rewritten.
 
 ## Overview
 
