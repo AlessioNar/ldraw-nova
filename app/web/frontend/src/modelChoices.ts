@@ -1,8 +1,14 @@
-import type { LlmEntry } from "./api";
+import type { LlmEntry, ProviderInfo } from "./api";
+
+// Display names come from the backend registry (providers.py) via
+// /api/llm-providers; until that loads, a provider shows as its prefix.
+let labels: Record<string, string> = {};
+export function setProviderCatalogue(catalogue: ProviderInfo[]) {
+  labels = Object.fromEntries(catalogue.map(p => [p.provider, p.label]));
+}
 
 export const agentProvider = (model: string) => model.startsWith("chatgpt/") ? "openai" : model.split("/")[0];
-export const providerLabel = (provider: string) => ({ openai: "OpenAI", anthropic: "Claude", openrouter: "OpenRouter",
-  gemini: "Gemini", ollama: "Ollama", ollama_chat: "Ollama", azure: "Azure OpenAI" } as Record<string, string>)[provider] ?? provider;
+export const providerLabel = (provider: string) => labels[provider] ?? provider;
 
 const RECENTS_KEY = "ldraw-nova.recent-models";
 export function recentModels(): string[] {
@@ -20,10 +26,8 @@ export function rememberModel(id: string) {
 
 export function providerName(model: LlmEntry) {
   const provider = String(model.litellm_params.model).split("/")[0];
-  if (provider === "openrouter") return "OpenRouter";
-  if (provider === "chatgpt" || (provider === "openai" && model.auth_mode === "browser")) return "ChatGPT";
-  return ({ openai: "OpenAI", anthropic: "Claude", gemini: "Gemini", vertex_ai: "Google Vertex AI",
-    ollama_chat: "Ollama", ollama: "Ollama", azure: "Azure OpenAI" } as Record<string, string>)[provider] ?? provider;
+  if (provider === "openai" && model.auth_mode === "browser") return providerLabel("chatgpt");
+  return providerLabel(provider);
 }
 
 export function tokenLabel(tokens: number) {

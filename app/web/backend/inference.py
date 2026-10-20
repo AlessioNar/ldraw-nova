@@ -19,7 +19,7 @@ def preserve_openrouter_reasoning_chunks(stream, model: str) -> None:
     """
     from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
 
-    if not model.startswith("openrouter/") or not isinstance(stream, CustomStreamWrapper):
+    if not providers.of(model).reasoning_details or not isinstance(stream, CustomStreamWrapper):
         return
     original = stream.is_chunk_non_empty
 

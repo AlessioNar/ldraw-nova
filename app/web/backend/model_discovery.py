@@ -14,6 +14,7 @@ import httpx
 import environment_config
 import llm_config
 import model_catalog
+import providers
 
 
 def positive_int(value):
@@ -65,10 +66,8 @@ async def discover(entry: dict) -> dict:
     base = entry["litellm_params"].get("api_base") or ""
     if isinstance(base, str) and base.startswith("os.environ/"):
         base = environment_config.snapshot().get(base.split("/", 1)[1], "unknown")
-    standard_bases = {"openai": {"https://api.openai.com/v1"},
-                      "openrouter": {"https://openrouter.ai/api/v1"},
-                      "anthropic": {"https://api.anthropic.com", "https://api.anthropic.com/v1"}}
-    if base and str(base).rstrip("/") not in standard_bases.get(model.split("/", 1)[0], set()):
+    provider = providers.of(model)
+    if base and str(base).rstrip("/") not in provider.api_bases:
         return {**spec, "context_window": None, "context_budgets": [], "max_output_tokens": None,
                 "tools": None, "vision": None, "reasoning": None, "efforts": [], "default_effort": None,
                 "pricing": None, "source_url": None, "source_label": None, "verified_at": None,
@@ -76,14 +75,14 @@ async def discover(entry: dict) -> dict:
     spec["lookup_status"] = "published" if spec.get("source_label") else "unavailable"
     try:
         async with httpx.AsyncClient(timeout=8, follow_redirects=False) as client:
-            if model.startswith("openrouter/"):
+            if provider.discovery == "openrouter":
                 catalogue = await _fetch_json(client, "https://openrouter.ai/api/v1/models")
-                data = next((m for m in catalogue["data"] if m.get("id") == model.removeprefix("openrouter/")), None)
+                data = next((m for m in catalogue["data"] if m.get("id") == providers.inner(model)), None)
                 if data:
                     spec.update(openrouter_profile(model, data))
                 else:
                     spec["lookup_status"] = "unavailable"
-            elif model.startswith("anthropic/") and entry.get("auth_mode") != "browser":
+            elif provider.discovery == "anthropic" and entry.get("auth_mode") != "browser":
                 params = llm_config.resolve_params(entry)
                 key = params.get("api_key") or environment_config.snapshot().get("ANTHROPIC_API_KEY")
                 if key:

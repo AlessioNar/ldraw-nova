@@ -22,6 +22,7 @@ class Provider:
     label: str                        # what the UI calls it
     effort: str | None = None         # "reasoning_effort" | "openrouter" | "anthropic" | None
     prompt_caching: bool = False      # accepts cache_control on a content block
+    caching_models: tuple[str, ...] = ()  # or only for model names starting with one of these
     reasoning_details: bool = False   # streams OpenRouter-style reasoning_details blocks
     discovery: str | None = None      # live capability lookup: "openrouter" | "anthropic" | None
     gateway: bool = False             # serves other providers' models under its own prefix
@@ -42,8 +43,12 @@ REGISTRY: tuple[Provider, ...] = (
     Provider(prefix="chatgpt/", label="ChatGPT", effort="reasoning_effort"),
     Provider(prefix="azure/", label="Azure OpenAI", effort="reasoning_effort"),
     Provider(prefix="gemini/", label="Gemini", effort="reasoning_effort"),
-    Provider(prefix="vertex_ai/", label="Google Vertex AI", effort="reasoning_effort"),
-    Provider(prefix="bedrock/", label="Amazon Bedrock", gateway=True),
+    Provider(prefix="vertex_ai/", label="Google Vertex AI", effort="reasoning_effort",
+             caching_models=("claude",)),
+    # Bedrock model ids are dotted (anthropic.claude-...), not a nested prefix,
+    # so caching is matched on the name rather than resolved through `inner`.
+    Provider(prefix="bedrock/", label="Amazon Bedrock", gateway=True,
+             caching_models=("anthropic.",)),
     Provider(prefix="mistral/", label="Mistral"),
     Provider(prefix="ollama_chat/", label="Ollama"),
     Provider(prefix="ollama/", label="Ollama"),
@@ -82,9 +87,10 @@ def supports_prompt_caching(model: str) -> bool:
     openrouter/anthropic/* caches while openrouter/meta-llama/* does not.
     """
     provider = of(model)
-    if provider.gateway:
-        return supports_prompt_caching(inner(model))
-    return provider.prompt_caching
+    name = model[len(provider.prefix):]
+    if provider.prompt_caching or name.startswith(provider.caching_models):
+        return True
+    return provider.gateway and supports_prompt_caching(name)
 
 
 def label(model_or_prefix: str) -> str:

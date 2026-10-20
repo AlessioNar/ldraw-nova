@@ -8,6 +8,7 @@ import ChatPage from "./pages/ChatPage";
 import Home from "./pages/Home";
 import Models from "./pages/Models";
 import Settings from "./pages/Settings";
+import { setProviderCatalogue } from "./modelChoices";
 
 export default function App() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -16,6 +17,7 @@ export default function App() {
   const [defaultLlmId, setDefaultLlmId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<ViewerTarget | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [, setProvidersLoaded] = useState(false);
   const location = useLocation();
 
   const refreshChats = useCallback(() => {
@@ -40,6 +42,14 @@ export default function App() {
   useEffect(() => {
     refreshChats();
     refreshLlms();
+    // Labels live in a module map; the state flip re-renders the tree once they land.
+    api
+      .providers()
+      .then((r) => {
+        setProviderCatalogue(r.catalogue);
+        setProvidersLoaded(true);
+      })
+      .catch(() => {});
   }, [refreshChats, refreshLlms]);
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
