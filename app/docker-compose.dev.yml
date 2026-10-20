@@ -14,10 +14,11 @@ services:
     develop:
       watch:
         - action: sync
-          path: ../ldraw-nova
+          path: ..
           target: /opt/ldraw-nova
           ignore:
             - .git/
+            - app/
             - .venv/
             - .cache/
             - .claude/
@@ -31,9 +32,9 @@ services:
             - pyproject.toml
             - uv.lock
         - action: rebuild
-          path: ../ldraw-nova/pyproject.toml
+          path: ../pyproject.toml
         - action: rebuild
-          path: ../ldraw-nova/uv.lock
+          path: ../uv.lock
     volumes:
       - .:/app                          # leocad_render.py, example.py, web/backend
       - ./web/viewer:/opt/web/viewer    # viewer.html, player.html
