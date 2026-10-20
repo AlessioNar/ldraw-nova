@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-import history
 from history import KEEP_IMAGE_MESSAGES, llm_history
 
 

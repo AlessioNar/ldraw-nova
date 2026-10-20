@@ -67,8 +67,6 @@ def test_trim_note_appends_after_the_breakpoint(content, expected):
 
 import json
 
-import system_prompt
-
 CACHING, PLAIN = "anthropic/claude-opus-5", "openai/gpt-5"
 HISTORY = [
     {"role": "user", "content": "build a car"},
@@ -80,7 +78,7 @@ HISTORY = [
 
 def _request(ctx, model, options=None, history=HISTORY):
     from inference import bounded_history
-    messages = [agent.system_message(ctx.store, ctx.chat_id, model, options or {}), *history]
+    messages = [system_prompt.system_message(ctx.store, ctx.chat_id, model, options or {}), *history]
     messages, _ = bounded_history(messages, model, None)
     return system_prompt.outbound_messages(ctx.store, ctx.chat_id, messages, model, options or {})
 
@@ -152,7 +150,7 @@ def test_tail_after_history_shape(ctx, monkeypatch, model):
     monkeypatch.setattr(settings, "TAIL_AFTER_HISTORY", True)
     (ctx.work_dir / "NOTES.md").write_text("handover")
     sent = _request(ctx, model, {"mode": "plan"})
-    stable, _ = agent.system_prompt_parts(ctx.store, ctx.chat_id)
+    stable, _ = system_prompt.system_prompt_parts(ctx.store, ctx.chat_id)
     system = sent[0]
     assert system["role"] == "system" and all(m["role"] != "system" for m in sent[1:])
     text = system["content"] if isinstance(system["content"], str) else "".join(b["text"] for b in system["content"])
@@ -173,7 +171,7 @@ def test_tail_after_history_shape(ctx, monkeypatch, model):
 
 def test_tail_after_history_keeps_the_trim_note_out_of_the_cached_prefix(ctx, monkeypatch):
     monkeypatch.setattr(settings, "TAIL_AFTER_HISTORY", True)
-    messages = [agent.system_message(ctx.store, ctx.chat_id, CACHING, {}), *HISTORY]
+    messages = [system_prompt.system_message(ctx.store, ctx.chat_id, CACHING, {}), *HISTORY]
     inference._append_system(messages[0], " TRIMNOTE")
     sent = system_prompt.outbound_messages(ctx.store, ctx.chat_id, messages, CACHING, {})
     assert "TRIMNOTE" not in json.dumps(sent[0]) and "TRIMNOTE" in sent[-1]["content"]
