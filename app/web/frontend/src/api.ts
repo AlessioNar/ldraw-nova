@@ -75,7 +75,6 @@ export type ModelProfile = {
   source_url?: string | null; source_label?: string | null; verified_at?: string | null;
   lookup_status?: "live" | "published" | "unavailable"; recommendation?: string | null;
 };
-export type AuthStatus = { status: "starting" | "pending" | "connected" | "disconnected" | "error" | "expired"; flow?: "browser" | "device"; url?: string; code?: string; message?: string; expires_at?: number };
 export type Approval = { id: string; call_id: string; name: string; arguments: string };
 export type LlmEntry = {
   connection_status: ConnectionStatus;
@@ -126,10 +125,6 @@ export const api = {
     request(`/api/chats/${id}/messages`, { method: "POST", body: json({ text, llm_model_id, options, images, documents }) }),
   approve: (id: string, approval: string, approved: boolean) => request(`/api/chats/${id}/approvals/${approval}`, { method: "POST", body: json({ approved }) }),
   catalog: () => request<{ models: ModelProfile[] }>("/api/model-catalog"),
-  authStatus: (provider: string) => request<AuthStatus>(`/api/auth/${provider}`),
-  login: (provider: string, flow: "browser" | "device" = "browser") => request<AuthStatus>(`/api/auth/${provider}/login`, { method: "POST", body: json({ flow, restart: true }) }),
-  loginCode: (provider: string, code: string) => request(`/api/auth/${provider}/code`, { method: "POST", body: json({ code }) }),
-  logout: (provider: string) => request(`/api/auth/${provider}`, { method: "DELETE" }),
   cancel: (id: string) => request(`/api/chats/${id}/cancel`, { method: "POST" }),
   models: (collection: "models" | "gallery" = "models") => request<{ models: ModelFile[]; pending: number }>(`/api/${collection}`),
   deleteModel: (filename: string) => request<{ deleted: string[] }>(`/api/models/${encodeURIComponent(filename)}`, { method: "DELETE" }),

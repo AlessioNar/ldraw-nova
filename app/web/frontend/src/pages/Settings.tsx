@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api, type ModelProfile } from "../api";
-import ProviderLogin from "../components/ProviderLogin";
 import EnvironmentSettings from "../components/EnvironmentSettings";
 import AgentForm, { ConnectionPill } from "../components/AgentForm";
 import AgentDetails from "../components/AgentDetails";
@@ -19,16 +18,12 @@ export default function Settings() {
   const providers = [...new Set(["anthropic", "openai", "openrouter", ...llms.map(m => agentProvider(String(m.litellm_params.model)))])];
   const close = () => { setEditing(null); setNewId(null); };
   return <div className="page settings">
-    <header className="page-head"><div><h1>Settings</h1><p className="muted">Connect your accounts and choose the agents you build with.</p></div></header>
-    <section aria-labelledby="browser-login-heading">
-      <h2 id="browser-login-heading" className="settings-heading">Browser login</h2>
-      <div className="provider-logins"><ProviderLogin provider="openai" /><ProviderLogin provider="anthropic" /></div>
-    </section>
+    <header className="page-head"><div><h1>Settings</h1><p className="muted">Add API keys and choose the agents you build with.</p></div></header>
     <EnvironmentSettings />
     <section aria-labelledby="agents-heading">
       <header className="page-head settings-models-head"><div><h2 id="agents-heading">Agents</h2>
         <p className="muted small">Building LDraw models needs image input to inspect designs, reasoning to plan builds, and tool calling to run the app’s building tools.</p>
-        <p className="muted small">Choose a provider, click Add agent, and select a preset. Connect a browser account or add an API key, then click Test to check the connection and available model details.</p>
+        <p className="muted small">Choose a provider, click Add agent, and select a preset. Add an API key, then click Test to check the connection and available model details.</p>
       </div></header>
       {error && <div className="banner error" role="alert">{error}</div>}
       <div className="agent-providers">{providers.map(provider => {
