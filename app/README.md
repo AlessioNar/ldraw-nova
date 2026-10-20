@@ -21,7 +21,7 @@ COMING SOON
 
 ## Development
 
-COMING SOON
+CI (`.github/workflows/ci.yml`) builds the frontend, then builds this image and runs the smoke checks, the backend tests and the root tests inside it, on every pull request and push to `master`. That is the only place the tests needing LeoCAD and the baked LDraw library run automatically.
 
 ## Acknowledgements
 
