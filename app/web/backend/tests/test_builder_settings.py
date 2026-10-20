@@ -5,9 +5,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 import inference
+from helpers import ok_reply
 import llm_config
 import model_catalog
-from types import SimpleNamespace
 from main import app
 
 
@@ -90,7 +90,7 @@ def test_connection_status_persists_and_tracks_the_configuration(monkeypatch):
     assert entry["connection_status"] == "not_tested"
     async def success(**params):
         assert params["api_key"] == "private-probe-key"
-        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))])
+        return ok_reply()
     monkeypatch.setattr(litellm, "acompletion", success)
     url = f"/api/llm-models/{entry['id']}"
     assert client.post(url + "/test").json()["connection_status"] == "connected"

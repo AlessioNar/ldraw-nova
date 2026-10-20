@@ -214,10 +214,8 @@ def test_absent_gallery_is_empty(client, tmp_path, monkeypatch):
         assert zf.namelist() == []
 
 
-def test_chat_api_resolves_model_references(client, data_dir: Path):
+def test_chat_api_resolves_model_references(client, store, data_dir: Path):
     import settings as s
-    from store import ChatStore
-    store = ChatStore(s.CHATS_DIR, s.OUTPUT_DIR)
     chat = store.create_chat()
     model = s.GENERATED_DIR / "referenced.mpd"
     model.write_text("0 FILE referenced.ldr\n0 Referenced from a chat\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n")

@@ -24,6 +24,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))          # repo roo
 
 import pytest  # noqa: E402
 
+import settings  # noqa: E402
+import tools  # noqa: E402
+from store import ChatStore, get_store  # noqa: E402
+
 
 @pytest.fixture(autouse=True)
 def offline_model_details(monkeypatch):
@@ -42,3 +46,18 @@ def data_dir() -> Path:
 @pytest.fixture
 def gallery_dir() -> Path:
     return _tmp / "models-gallery"
+
+
+@pytest.fixture
+def store() -> ChatStore:
+    return ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
+
+
+@pytest.fixture
+def ctx():
+    """A tool context on a fresh chat of the shared store."""
+    # Match /data's traversable ancestors while /config remains private.
+    os.chmod(settings.DATA_DIR.parent, 0o755)
+    store = get_store()
+    chat = store.create_chat()
+    return tools.ToolContext(chat["id"], store, lambda *_: None)

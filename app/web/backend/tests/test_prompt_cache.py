@@ -1,5 +1,4 @@
 """The system prompt's cache breakpoint, and the pieces that must tolerate it."""
-import os
 
 import pytest
 
@@ -7,16 +6,6 @@ import system_prompt
 import inference
 import settings
 import toolkit
-import tools
-from store import get_store
-
-
-@pytest.fixture
-def ctx():
-    os.chmod(settings.DATA_DIR.parent, 0o755)
-    store = get_store()
-    chat = store.create_chat()
-    return tools.ToolContext(chat["id"], store, lambda *_: None)
 
 
 def test_stable_part_carries_the_guides_and_no_volatile_state(ctx):

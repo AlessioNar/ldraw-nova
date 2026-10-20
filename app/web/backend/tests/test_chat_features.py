@@ -17,7 +17,6 @@ import model_catalog
 import settings
 from attachments import validate_images
 from main import app
-from store import ChatStore
 from tools import ToolContext, ToolResult
 
 
@@ -70,13 +69,12 @@ def test_request_uses_responses_and_provider_effort(monkeypatch):
 
 
 @pytest.mark.parametrize("approved", [True, False])
-def test_approval_pauses_and_decision_is_single_use(monkeypatch, approved):
+def test_approval_pauses_and_decision_is_single_use(monkeypatch, store, approved):
     called = []
     async def dispatch(*args):
         called.append(args)
         return ToolResult("executed")
     monkeypatch.setattr(agent, "dispatch", dispatch)
-    store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     chat = store.create_chat()
     run = run_state.Run(chat["id"], options={"mode": "agent", "permissions": "ask"})
     run_state._runs[chat["id"]] = run
@@ -278,7 +276,7 @@ def test_login_cancellation_terminates_process_group(monkeypatch):
     assert killed == [12345]
 
 
-def test_claude_adapter_exposes_only_app_tools_and_runs_gate(monkeypatch):
+def test_claude_adapter_exposes_only_app_tools_and_runs_gate(monkeypatch, store):
     import claude_agent
     from claude_agent_sdk import AssistantMessage, TextBlock
     recorded = {}
@@ -299,7 +297,6 @@ def test_claude_adapter_exposes_only_app_tools_and_runs_gate(monkeypatch):
         return ToolResult("part found")
     monkeypatch.setattr(claude_agent, "ClaudeSDKClient", Client)
     monkeypatch.setattr(claude_agent, "create_sdk_mcp_server", server)
-    store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     chat = store.create_chat()
     store.add_message(chat["id"], {"role": "user", "content": "find bricks"})
     run = run_state.Run(chat["id"], options={"mode": "plan", "permissions": "full"})

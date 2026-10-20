@@ -45,11 +45,6 @@ def scripted(responses: list[list[ModelResponseStream]]):
 
 
 @pytest.fixture
-def store() -> ChatStore:
-    return ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
-
-
-@pytest.fixture
 def entry():
     return llm_config.create({"model_name": "fake", "litellm_params": {"model": "openai/gpt-6-luna", "api_key": "sk-x"},
                               "capabilities": {"tools": True, "vision": True}})

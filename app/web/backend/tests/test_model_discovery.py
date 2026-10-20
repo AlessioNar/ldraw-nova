@@ -1,11 +1,11 @@
 import asyncio
 import json
-from types import SimpleNamespace
 
 import litellm
 from fastapi.testclient import TestClient
 
 import inference
+from helpers import ok_reply
 import agent
 import llm_config
 import main
@@ -33,7 +33,7 @@ def test_test_refreshes_context_prices_and_persists_without_keys(monkeypatch, tm
                           "reasoning": {"supported_efforts": ["low", "high"], "default_effort": "high"},
                           "pricing": {"prompt": "0.0000004", "completion": "0.000002"}}]}
     async def complete(**params):
-        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))])
+        return ok_reply()
     monkeypatch.setattr(model_discovery, "_fetch_json", fetch)
     monkeypatch.setattr(litellm, "acompletion", complete)
     client = TestClient(main.app)

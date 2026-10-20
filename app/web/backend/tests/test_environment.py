@@ -3,13 +3,13 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 import litellm
 import pytest
 from fastapi.testclient import TestClient
 
 import environment_config
+from helpers import ok_reply
 import llm_config
 import main
 
@@ -66,7 +66,7 @@ def test_references_and_provider_requests_use_override_immediately(monkeypatch):
 
     async def completion(**params):
         received.append(params["api_key"])
-        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))])
+        return ok_reply()
 
     monkeypatch.setattr(litellm, "acompletion", completion)
     response = client.put("/api/environment", json={"variables": [

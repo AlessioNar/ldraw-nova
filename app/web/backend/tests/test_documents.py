@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 import agent
 from history import llm_history
 import llm_config
-import settings
 from attachments import save_documents, validate_documents, validate_images
 from main import app
 from store import ChatStore
@@ -49,11 +48,10 @@ def test_uploads_cannot_follow_a_symlink_outside_the_chat(tmp_path):
     assert list(outside.iterdir()) == []
 
 
-def test_documents_persist_and_are_available_to_both_agent_adapters(monkeypatch):
+def test_documents_persist_and_are_available_to_both_agent_adapters(monkeypatch, store):
     async def no_inference(*args):
         pass
     monkeypatch.setattr(agent, "_run_turn", no_inference)
-    store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     chat = store.create_chat()
     entry = llm_config.create({"litellm_params": {"model": "openai/gpt-6-sol", "api_key": "fake"}})
     image = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\n").decode()

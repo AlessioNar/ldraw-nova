@@ -1,7 +1,6 @@
 """Integration with the real sibling toolkit, library, CLI and renderer."""
 import asyncio
 import json
-import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,16 +14,6 @@ import settings
 import toolkit
 import tools
 from main import app
-from store import get_store
-
-
-@pytest.fixture
-def ctx():
-    # Match /data's traversable ancestors while /config remains private.
-    os.chmod(settings.DATA_DIR.parent, 0o755)
-    store = get_store()
-    chat = store.create_chat()
-    return tools.ToolContext(chat["id"], store, lambda *_: None)
 
 
 def test_workspace_is_standalone_layout_with_chat_local_output(ctx):

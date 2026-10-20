@@ -6,11 +6,6 @@ import settings
 from store import ChatStore
 
 
-@pytest.fixture
-def store() -> ChatStore:
-    return ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
-
-
 def test_chat_is_a_folder_with_a_sibling_work_folder(store: ChatStore):
     chat = store.create_chat()
     assert (settings.CHATS_DIR / chat["id"] / "chat.json").is_file()
