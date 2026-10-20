@@ -64,7 +64,7 @@ Images are not the problem (0.1-7% of tokens); tool output and the system prefix
 
 ### 5. Image eviction (`KEEP_IMAGE_MESSAGES = 2`) rewrites the middle of the history
 
-- Evidence. Dropping the third-newest render message changes a message in the middle of the request, so the prefix breaks there: 7 / 27 / 8 / 11 / 9 steps per chat, losing 0.16M, 0.22M, 0.10M, 0.70M, 0.19M tokens of otherwise reusable prefix (15-39% of all prefix loss in the chats where the system tail is not dominant). The images themselves are only 0.1-7% of tokens, so the eviction saves little while costing cache hits once finding 1 is fixed.
+- Evidence. Dropping the third-newest render message changes a message in the middle of the request, so the prefix breaks there: 7 / 27 / 8 / 11 / 9 steps per chat, losing 0.16M, 0.22M, 0.10M, 0.70M, 0.19M tokens of otherwise reusable prefix (2-39% of all prefix loss per chat; largest in `20261003-100404-9e6e55`). The images themselves are only 0.1-7% of tokens, so the eviction saves little while costing cache hits once finding 1 is fixed.
 - Fix. `agent.llm_history`: evict in batches (keep 2 until 6 exist, then drop down to 2), or replace evicted images with a short stable text stub at their original position, so the cut is made rarely.
 - Behaviour risk. Low: the model sees up to a few more renders for a while; each is ~1-1.5k tokens.
 - Live benchmark: only to confirm the cache gain after finding 1; offline numbers already show the break count.
