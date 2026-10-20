@@ -67,7 +67,8 @@ def test_llm_history_repairs_interrupted_tool_calls():
     assert all(not k.startswith("_") and k not in ("id", "created_at") for m in out for k in m)
 
 
-def test_llm_history_sends_only_newest_images(tmp_path: Path):
+def test_llm_history_sends_only_newest_images(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("LDRAW_NOVA_IMAGE_EVICTION_BATCH", "1")
     stored = []
     for i in range(3):
         (tmp_path / f"r{i}.png").write_bytes(b"\x89PNG fake")
