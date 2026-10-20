@@ -1,7 +1,7 @@
 // GLB scene adapter for viewer.html's shared camera and lighting controls.
 // Keep the authored graph intact: animation bindings, skins, morph targets,
 // textures and edge lines must survive every rendering-mode change.
-/* global THREE */
+/* global THREE, ViewerCommon */
 var GLBView = (function () {
   const VENDOR = new URL('vendor/gltf/', document.baseURI).href;
   let dependencies;
@@ -149,8 +149,7 @@ var GLBView = (function () {
       if (!variants[mode]) {
         const color = original.color ? original.color.clone() : new THREE.Color(0xffffff);
         if (mode === 'poly') {
-          const hsl = color.getHSL({});
-          if (hsl.l > 0.82) color.setHSL(hsl.h, hsl.s, 0.62);
+          ViewerCommon.polyColor(color);
         }
         variants[mode] = new THREE.MeshBasicMaterial({
           color, side: original.side, vertexColors: original.vertexColors,
