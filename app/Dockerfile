@@ -23,13 +23,6 @@ RUN npm ci --no-audit --no-fund
 COPY web/frontend/ ./
 RUN npm run build
 
-# Official OpenAI login runtime; no Node runtime or host credentials needed.
-FROM --platform=$BUILDPLATFORM node:24-slim AS openai-login
-ARG CODEX_VERSION=0.157.1
-WORKDIR /opt/codex
-RUN npm pack "@openai/codex@${CODEX_VERSION}-linux-x64" \
-    && tar -xzf "openai-codex-${CODEX_VERSION}-linux-x64.tgz"
-
 # --- Stage 1b: the 3D viewer's GLB decoders (Draco, meshopt) ----------------
 # Lockfile-pinned three.js, the same package the viewer's browser test uses.
 FROM --platform=$BUILDPLATFORM node:24-slim AS viewer-deps
@@ -181,7 +174,6 @@ RUN rm -f /etc/apt/apt.conf.d/docker-clean \
 # --- All apt packages in one layer (it only changes when this list does) ------
 # Runtime deps: Xvfb/Mesa for headless GL, Qt's X11 plugin deps, Python;
 # curl/unzip for agents and the uv/jev-rerank steps below;
-# socat relays the OpenAI login callback (see entrypoint.sh);
 # poppler-utils (pdftotext, pdfinfo, pdftoppm, ...), ripgrep (rg), git for agents.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -193,7 +185,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
         libxcb-xinerama0 libnss3 libdbus-1-3 fontconfig \
         python3 python3-pip \
-        socat poppler-utils ripgrep git
+        poppler-utils ripgrep git
 
 # --- Unpacked downloads from the stages above ---------------------------------
 COPY --from=leocad /opt/leocad /opt/leocad
@@ -278,9 +270,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Browser login and inference use that same binary; no host credentials mounted.
 RUN python3 -c "import pathlib, subprocess, claude_agent_sdk; subprocess.run([str(pathlib.Path(claude_agent_sdk.__file__).parent / '_bundled' / 'claude'), '--version'], check=True)"
 ENV PYTHONPATH=/app
-# Official OpenAI login runtime, before the toolkit files so their edits don't rebuild it.
-COPY --from=openai-login /opt/codex/package/vendor/x86_64-unknown-linux-musl/ /opt/codex/
-RUN ln -s /opt/codex/bin/codex /usr/local/bin/codex && codex --version
 # Keep the standalone builder intact. Only its distributable inputs enter the
 # image: never the sibling checkout's output, virtualenv, credentials or cache.
 COPY --from=nova pyproject.toml uv.lock /opt/ldraw-nova/
