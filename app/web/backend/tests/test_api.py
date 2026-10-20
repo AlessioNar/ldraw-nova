@@ -130,7 +130,7 @@ def test_models_page_lists_generated_and_renders_missing_snapshots(client, data_
 
 
 def test_gallery_and_generated_models_are_independent(client, data_dir: Path, gallery_dir: Path):
-    from main import model_from_url
+    from routers.models_gallery import model_from_url
     generated = data_dir / "generated"
     generated.mkdir(parents=True, exist_ok=True)
     for folder, filenames in ((gallery_dir, ("gallery-only.mpd", "clash.mpd", "shared.mpd")),

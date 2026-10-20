@@ -2,12 +2,12 @@
 import asyncio
 import json
 import os
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-import agent
+import run_state
+import system_prompt
 import environment_config
 import inference
 import sandbox
@@ -15,7 +15,7 @@ import settings
 import toolkit
 import tools
 from main import app
-from store import ChatStore, get_store
+from store import get_store
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def test_workspace_is_standalone_layout_with_chat_local_output(ctx):
     (ctx.work_dir / "escape").symlink_to(settings.TOOLKIT_DIR)
     with pytest.raises(tools.ToolError):
         tools.resolve_path(ctx, "output/escape/instructions.md", write=True)
-    prompt = agent.system_prompt(ctx.store, ctx.chat_id)
+    prompt = system_prompt.system_prompt(ctx.store, ctx.chat_id)
     assert toolkit.instructions() in prompt
     for path in toolkit.BUILDER_GUIDES:
         complete = (settings.TOOLKIT_DIR / path).read_text()
@@ -130,14 +130,14 @@ def test_artifacts_reject_escape_and_force_download(ctx):
 
 def test_progress_reconnect_retains_output_and_stalled_provider_heartbeat(ctx):
     async def check():
-        run = agent.Run(ctx.chat_id)
+        run = run_state.Run(ctx.chat_id)
         run.task = asyncio.create_task(asyncio.sleep(60))
-        agent._runs[ctx.chat_id] = run
+        run_state._runs[ctx.chat_id] = run
         info = {"id": "cmd", "name": "run_shell", "arguments": "{}"}
         run.tools_running["cmd"] = info
         run.emit("tool_start", info)
         run.emit("tool_output", {"id": "cmd", "delta": "preparing geometry\n"})
-        stream = agent.subscribe(ctx.chat_id)
+        stream = run_state.subscribe(ctx.chat_id)
         event, data = await anext(stream)
         assert event == "snapshot" and data["tools"][0]["output"] == "preparing geometry\n"
         assert data["tools"][0]["started_at"]

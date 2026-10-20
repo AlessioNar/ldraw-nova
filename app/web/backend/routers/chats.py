@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 
 import agent
 import gallery
+import run_state
+import usage
 from attachments import validate_documents, validate_images
 from paths import safe_join
 from store import get_store
@@ -42,7 +44,7 @@ def chats_list():
     store = get_store()
     chats = store.list_chats()
     for chat in chats:
-        chat["running"] = agent.is_running(chat["id"])
+        chat["running"] = run_state.is_running(chat["id"])
         chat["models"] = list(chat_models(store, chat["id"]).values())
     return {"chats": chats}
 
@@ -72,8 +74,8 @@ async def chats_get(chat_id: str):
     models = chat_models(store, chat_id)
     gallery.ensure_artifacts(store.resolve(chat_id, ref["model"]) for ref in store.models(chat_id)
                              if store.resolve(chat_id, ref["model"]).is_file())
-    return {"chat": {**chat, "running": agent.is_running(chat_id)}, "messages": messages, "models": models,
-            "usage": agent.usage_totals(messages)}
+    return {"chat": {**chat, "running": run_state.is_running(chat_id)}, "messages": messages, "models": models,
+            "usage": usage.usage_totals(messages)}
 
 
 @router.patch("/api/chats/{chat_id}")
@@ -90,7 +92,7 @@ async def chats_delete(chat_id: str):
     it produced stay in data/generated (they're part of the collection)."""
     store = get_store()
     store.get_chat(chat_id) or not_found("no such chat")
-    await agent.cancel(chat_id)
+    await run_state.cancel(chat_id)
     store.delete_chat(chat_id)
     return {"deleted": True}
 
@@ -118,20 +120,20 @@ class ApprovalDecision(BaseModel):
 
 @router.post("/api/chats/{chat_id}/approvals/{approval_id}")
 async def chats_approve(chat_id: str, approval_id: str, body: ApprovalDecision):
-    if not agent.decide(chat_id, approval_id, body.approved):
+    if not run_state.decide(chat_id, approval_id, body.approved):
         raise HTTPException(409, "This approval is no longer pending")
     return {"accepted": True}
 
 
 @router.post("/api/chats/{chat_id}/cancel")
 async def chats_cancel(chat_id: str):
-    return {"cancelled": await agent.cancel(chat_id)}
+    return {"cancelled": await run_state.cancel(chat_id)}
 
 
 @router.get("/api/chats/{chat_id}/stream")
 async def chats_stream(chat_id: str):
     async def events():
-        async for event, data in agent.subscribe(chat_id):
+        async for event, data in run_state.subscribe(chat_id):
             yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
     return StreamingResponse(events(), media_type="text/event-stream",

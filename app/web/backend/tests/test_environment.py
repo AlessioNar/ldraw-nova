@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import litellm
 import pytest
 from fastapi.testclient import TestClient
 
@@ -67,7 +68,7 @@ def test_references_and_provider_requests_use_override_immediately(monkeypatch):
         received.append(params["api_key"])
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))])
 
-    monkeypatch.setattr(main.litellm, "acompletion", completion)
+    monkeypatch.setattr(litellm, "acompletion", completion)
     response = client.put("/api/environment", json={"variables": [
         {"name": "OPENROUTER_API_KEY", "value": "private-override"}]})
     assert response.status_code == 200

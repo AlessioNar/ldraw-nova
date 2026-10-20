@@ -5,9 +5,9 @@ doesn't kill it). The chat's files (store.py) are the source of truth; live
 events only carry what's in flight (streaming text, running tools) plus
 "saved" pings telling the UI to refetch.
 
-This module is the facade: the pieces live in run.py (live run state),
-turn.py (the loop), history.py, system_prompt.py, tool_policy.py and
-usage.py, and are re-exported here for main.py, claude_agent.py and tests.
+This module starts a turn and gates tool execution; the pieces live in
+run_state.py (live run state), turn.py (the loop), history.py,
+system_prompt.py, tool_policy.py and usage.py.
 """
 from __future__ import annotations
 
@@ -21,15 +21,11 @@ import litellm
 import llm_config
 import browser_auth
 import model_catalog
-from history import KEEP_IMAGE_MESSAGES, llm_history  # noqa: F401 - re-exported facade names
-from run_state import Run, _runs, cancel, decide, is_running, subscribe  # noqa: F401
+from run_state import Run, _runs, is_running
 from store import ChatStore
-from system_prompt import (WORK_LISTING_LIMIT, mode_prompt, system_message, system_prompt,
-                           system_prompt_parts, work_listing)  # noqa: F401
-from tool_policy import READ_TOOLS, available_tools  # noqa: F401
+from tool_policy import READ_TOOLS, available_tools
 from tools import ToolContext, ToolResult, dispatch
-from turn import MAX_STEPS, log, run_turn  # noqa: F401
-from usage import usage_record, usage_totals  # noqa: F401
+from turn import run_turn
 
 litellm.drop_params = False           # unsupported settings must fail visibly
 litellm.suppress_debug_info = True
@@ -78,7 +74,6 @@ async def start_turn(store: ChatStore, chat_id: str, text: str, llm_model_id: Op
     run.started_at = run.last_event_at = time.time()
     run.phase = "Preparing the build workspace"
     run.task = asyncio.create_task(_run_turn(store, run, entry))
-
 
 
 async def _run_turn(store: ChatStore, run: Run, entry: dict) -> None:

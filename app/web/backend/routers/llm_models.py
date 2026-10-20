@@ -10,13 +10,13 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
-import agent
 import browser_auth
 import inference
 import llm_config
 import model_catalog
 import model_discovery
 import providers
+import run_state
 from .common import not_found
 
 router = APIRouter()
@@ -70,7 +70,7 @@ async def auth_code(provider: str, body: AuthCode):
 
 @router.delete("/api/auth/{provider}")
 async def auth_disconnect(provider: str):
-    if any(agent.is_running(chat_id) for chat_id in agent._runs):
+    if any(run_state.is_running(chat_id) for chat_id in run_state._runs):
         raise HTTPException(409, "Stop active turns before disconnecting a provider")
     try:
         await browser_auth.disconnect(provider)
@@ -137,7 +137,7 @@ async def llm_models_test(entry_id: str):
         params = await inference.params_for(entry, {})
         params.setdefault("max_tokens", 4096)
         params.setdefault("timeout", 60)
-        response = await litellm.acompletion(
+        await litellm.acompletion(
             **params,
             messages=[{"role": "user", "content": "Reply with the single word: OK"}],
         )

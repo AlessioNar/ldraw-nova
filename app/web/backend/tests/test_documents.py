@@ -1,11 +1,11 @@
 import asyncio
 import base64
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 import agent
+from history import llm_history
 import llm_config
 import settings
 from attachments import save_documents, validate_documents, validate_images
@@ -71,7 +71,7 @@ def test_documents_persist_and_are_available_to_both_agent_adapters(monkeypatch)
         ctx = ToolContext(chat["id"], store, lambda *_: None)
         assert "Use tan bricks" in asyncio.run(t_read_file(ctx, str(path))).content
         for model in ("openai/gpt-6-sol", "anthropic/claude-opus-5"):
-            history = agent.llm_history(messages, True, lambda ref: store.resolve(chat["id"], ref), model)
+            history = llm_history(messages, True, lambda ref: store.resolve(chat["id"], ref), model)
             assert str(path) in history[0]["content"][-1]["text"]
             assert history[0]["content"][1]["image_url"]["url"] == image
             assert "_documents" not in history[0]

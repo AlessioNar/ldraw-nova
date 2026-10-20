@@ -1,12 +1,12 @@
 import asyncio
 
+import litellm
 import pytest
 from fastapi.testclient import TestClient
 
 import inference
 import llm_config
 import model_catalog
-import main
 from types import SimpleNamespace
 from main import app
 
@@ -91,7 +91,7 @@ def test_connection_status_persists_and_tracks_the_configuration(monkeypatch):
     async def success(**params):
         assert params["api_key"] == "private-probe-key"
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="OK"))])
-    monkeypatch.setattr(main.litellm, "acompletion", success)
+    monkeypatch.setattr(litellm, "acompletion", success)
     url = f"/api/llm-models/{entry['id']}"
     assert client.post(url + "/test").json()["connection_status"] == "connected"
     saved = client.get(url + "/edit").json()
@@ -101,7 +101,7 @@ def test_connection_status_persists_and_tracks_the_configuration(monkeypatch):
     assert client.put(url, json=saved).json()["connection_status"] == "not_tested"
     async def failure(**params):
         raise ValueError("provider accidentally included changed-key")
-    monkeypatch.setattr(main.litellm, "acompletion", failure)
+    monkeypatch.setattr(litellm, "acompletion", failure)
     response = client.post(url + "/test")
     assert response.json()["connection_status"] == "not_connected"
     assert "changed-key" not in response.text
