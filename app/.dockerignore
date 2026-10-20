@@ -14,3 +14,9 @@ web/frontend/dist
 web/viewer-deps/node_modules
 **/__pycache__
 **/.pytest_cache
+.dockerignore
+Dockerfile
+docker-compose*.yml
+**/node_modules
+**/*.pyc
+web/frontend/.vite
