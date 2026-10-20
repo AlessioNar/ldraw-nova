@@ -13,3 +13,7 @@ Thumbs.db
 .vscode/
 .obsidian/
 .DS_Store
+
+# SQLite sidecar files of the reference database
+data/*.db-shm
+data/*.db-wal

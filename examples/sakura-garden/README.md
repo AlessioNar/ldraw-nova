@@ -20,19 +20,17 @@ tall.
 |---|---|
 | Final model | [sakura-garden.mpd](sakura-garden.mpd) |
 | Generator (edit this) | [generate.py](generate.py) → [sakura-garden.plan.json](sakura-garden.plan.json) |
-| Hero renders | [render_hero.py](render_hero.py) → [hero/](hero/) |
+| Hero renders | [render_hero.py](render_hero.py) (regenerates `hero/`; only `hero-pond.png` is kept in the repo) |
 | Design brief | [design-brief.md](design-brief.md) |
 | Visual review | [visual-review.md](visual-review.md) |
 | Terrain map (top = back, bottom = front) | [terrain-map.txt](terrain-map.txt) |
 | Validation | [sakura-garden.validation.json](sakura-garden.validation.json) |
 | Full-contact inspection | [sakura-garden.inspection.json](sakura-garden.inspection.json), [connectivity.txt](connectivity.txt) |
-| Overlap triage | [overlap-triage.txt](overlap-triage.txt) (from [overlaps-full.json](overlaps-full.json)) |
+| Overlap triage | [overlap-triage.txt](overlap-triage.txt) |
 | BOM / LeoCAD comparison | [sakura-garden.bom.json](sakura-garden.bom.json), [sakura-garden.bom-comparison.json](sakura-garden.bom-comparison.json) |
 | LeoCAD import check | [sakura-garden.check-model.json](sakura-garden.check-model.json) |
 | Review renders | [review/](review/) — home, front, back, left, right, top |
 | Module renders and inspections | [modules/](modules/) |
-| Research (Jev queries, part boards, 10315 study) | [research/](research/) |
-| Earlier passes and prototypes | [iterations/](iterations/), [proto/](proto/) |
 | Review helpers | [tools/](tools/) |
 
 ## Rebuild
