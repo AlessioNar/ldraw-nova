@@ -73,7 +73,6 @@ jobs:
             bun --version
             mpd2glb.sh --help
             jev-rerank --help
-            codex --version
             ls /opt/index /opt/web/viewer-vendor /opt/web/player-vendor
           '
 
