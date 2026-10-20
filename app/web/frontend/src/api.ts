@@ -48,6 +48,7 @@ export type Message = {
   tool_call_id?: string;
   name?: string;
   _models?: string[];
+  _usage?: Usage;
   _image_urls?: string[];
   _documents?: { name: string; size: number; url: string | null }[];
   _hidden?: boolean;
@@ -57,7 +58,9 @@ export type Message = {
   _reasoning?: string;
 };
 
-export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel> };
+export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number };
+export type UsageTotals = Usage & { steps: number };
+export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals };
 
 export type Capability = boolean | "auto";
 export type EnvironmentVariable = { id: string; name: string; value: null; has_value: boolean; fixed: boolean };

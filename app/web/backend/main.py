@@ -424,7 +424,8 @@ async def chats_get(chat_id: str):
     models = chat_models(store, chat_id)
     gallery.ensure_artifacts(store.resolve(chat_id, ref["model"]) for ref in store.models(chat_id)
                              if store.resolve(chat_id, ref["model"]).is_file())
-    return {"chat": {**chat, "running": agent.is_running(chat_id)}, "messages": messages, "models": models}
+    return {"chat": {**chat, "running": agent.is_running(chat_id)}, "messages": messages, "models": models,
+            "usage": agent.usage_totals(messages)}
 
 
 @app.patch("/api/chats/{chat_id}")

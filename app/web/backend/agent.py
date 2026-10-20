@@ -108,6 +108,51 @@ def work_listing(work_dir: Path) -> str:
     return "\n".join(lines) or "(empty)"
 
 
+def usage_record(response) -> Optional[dict]:
+    """Token usage for one step, including the prompt-cache counters.
+
+    Providers report caching differently through litellm: Anthropic adds
+    cache_read_input_tokens / cache_creation_input_tokens, OpenAI-style
+    providers put it in prompt_tokens_details.cached_tokens, and plenty
+    report nothing. Returns None when there is nothing worth storing.
+    """
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None
+
+    def number(*names) -> int:
+        for name in names:
+            found = getattr(usage, name, None)
+            if isinstance(found, (int, float)) and not isinstance(found, bool):
+                return int(found)
+        return 0
+
+    details = getattr(usage, "prompt_tokens_details", None)
+    cached = getattr(details, "cached_tokens", None) if details is not None else None
+    record = {"prompt": number("prompt_tokens"),
+              "completion": number("completion_tokens"),
+              "cache_read": number("cache_read_input_tokens") or (int(cached) if isinstance(cached, (int, float)) else 0),
+              "cache_write": number("cache_creation_input_tokens")}
+    return record if any(record.values()) else None
+
+
+def usage_totals(messages: list[dict]) -> dict:
+    """Running totals for a chat, so a long build's cost is visible."""
+    fields = ("prompt", "completion", "cache_read", "cache_write")
+    totals = {field: 0 for field in fields}
+    totals["steps"] = 0
+    for message in messages:
+        record = message.get("_usage")
+        if not isinstance(record, dict):
+            continue
+        totals["steps"] += 1
+        for field in fields:
+            value = record.get(field)
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                totals[field] += int(value)
+    return totals
+
+
 # Providers whose APIs accept Anthropic-style `cache_control` on a content
 # block. Everything else (OpenAI, Ollama, ...) rejects the extra key, so those
 # keep the plain-string system prompt.
@@ -356,6 +401,10 @@ async def _run_turn(store: ChatStore, run: Run, entry: dict) -> None:
             # null (not "") content next to tool calls: some providers reject empty text blocks.
             message: dict = {"role": "assistant", "content": reply.content or (None if tool_calls else "")}
             message["_llm_model"] = entry["litellm_params"]["model"]
+            step_usage = usage_record(full)
+            if step_usage:
+                message["_usage"] = step_usage
+                run.emit("usage", step_usage)
             if tool_calls:
                 message["tool_calls"] = tool_calls
             if getattr(reply, "thinking_blocks", None):          # must round-trip for Anthropic thinking
