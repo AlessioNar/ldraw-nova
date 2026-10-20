@@ -9,3 +9,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Runtime state of the app: chat history and agents' work folders
+data/chats/
+data/output/

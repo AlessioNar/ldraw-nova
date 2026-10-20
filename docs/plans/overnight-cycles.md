@@ -2,13 +2,17 @@
 
 Goal: a smaller codebase that is quick to build, easy to navigate and fast to run.
 
-## Baseline (measured 2026-10-20)
+## Baseline (measured 2026-10-20, after the chat/output logs were removed)
 
 - Source is small: ~19k lines of py/ts/js/html/sh/css. The biggest files are
   `app/web/viewer/viewer.html` (775), `ldraw_tools/cli.py` (740),
   `app/web/backend/main.py` (707) and `agent.py` (519).
-- Weight is data: `app/data` is 130 MB of the 134 MB under `app/` (chat logs,
-  validation JSON/logs, generated `.mpd`). `examples/` is 17 MB. `.git` is 299 MB.
+- The tracked tree was 741 MB; removing `app/data/{chats,output}` (129 MB, from
+  the working tree and all history) left ~612 MB. What is left:
+  `data/models-annotated` 388 MB (baked into the image), `examples/*` ~150 MB
+  (`atlas-crane` 76, `sakura-garden` 35, `building-atlas` 18), `data/ldraw-info.db`
+  26 MB, `data/categories` 7 MB.
+- `.git` is ~190 MB after the history rewrite (it was ~300 MB).
 - `app/Dockerfile`: 300 lines, 18 sections, one runtime stage. The pinned
   downloads (LeoCAD, LDraw library, bun, mpd2glb, uv, jev-rerank, ldraw-player)
   are the slow part of a cold build.
@@ -27,16 +31,18 @@ Goal: a smaller codebase that is quick to build, easy to navigate and fast to ru
 
 ## Cycle 1: weight (what is in the repo)
 
-1. Stop tracking `app/data/{chats,output}` (keep `.gitkeep`, and a handful of
-   small representative runs under `examples/`). Files stay on disk.
-2. Audit `examples/` (17 MB) and `docs/reports/` for generated artefacts that
-   can be regenerated; list candidates, remove the clearly derived ones.
+1. Done: `app/data/{chats,output}` removed from the tree and all history, and
+   git-ignored.
+2. Audit `examples/` (~150 MB), `data/models-annotated` (388 MB),
+   `data/ldraw-info.db` and `docs/reports/`: which are inputs the image or tests
+   need, and which are regenerable artefacts. List candidates with sizes and
+   what reads them; remove only the clearly derived ones and ask about the rest.
 3. Dead code: `verify_endplate.py`, `VARIANT_REPORT.md`, `check-model.sh`,
    `.obsidian`/`.DS_Store` leftovers, unused `app/scripts`, unused CSS and
    exports (`knip`/`vulture` reports, reviewed before deleting).
 4. Output: size table before/after, plus the list of everything removed.
-   Decision left to the owner: rewrite history to shrink `.git` (299 MB) with
-   `git filter-repo`, which changes every commit ID.
+   History rewrites with `git filter-repo` are allowed for removed paths; verify
+   the surviving trees are identical before pushing.
 
 ## Cycle 2: Docker builds
 
