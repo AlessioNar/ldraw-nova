@@ -51,7 +51,8 @@ def test_viewer_and_player_offer_the_camera_modes(client):
 @pytest.mark.skipif(not settings.PLAYER_VENDOR_DIR.is_dir(), reason="ldraw-player is unpacked at image build")
 def test_player_page_and_webassembly_are_served(client):
     page = client.get("/viewer/player.html")
-    assert page.status_code == 200 and "player-vendor/ldraw_player.js" in page.text
+    assert page.status_code == 200 and "player.js" in page.text
+    assert "player-vendor/ldraw_player.js" in client.get("/viewer/player.js").text   # the page's module imports it
     assert "Player" in client.get("/viewer/player-vendor/ldraw_player.js").text
     wasm = client.get("/viewer/player-vendor/ldraw_player_bg.wasm")
     # the MIME type WebAssembly.instantiateStreaming insists on

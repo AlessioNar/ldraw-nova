@@ -4,7 +4,7 @@ import { tokenLabel } from "../modelChoices";
 const support = (value?: boolean | null) => value === true ? "Yes" : value === false ? "No" : "Unknown";
 const dollars = (value?: number | null) => value == null ? "Unknown" : `$${value.toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
 
-export default function AgentDetails({ profile, browser = false }: { profile?: ModelProfile; browser?: boolean }) {
+export default function AgentDetails({ profile }: { profile?: ModelProfile }) {
   const contexts = profile?.context_budgets?.length ? profile.context_budgets.map(tokenLabel).join(" / ") : "Unknown";
   const effort = profile?.efforts.length ? profile.efforts.join(" · ") : "Levels unknown";
   return <div className="agent-details">
@@ -19,13 +19,12 @@ export default function AgentDetails({ profile, browser = false }: { profile?: M
       {profile?.default_effort && <> · Default: <strong>{profile.default_effort}</strong></>}
     </div>
     <div className="small muted agent-pricing" title={profile?.pricing?.note}>
-      {browser ? "API reference price" : "API price"} / 1M tokens: <strong>{dollars(profile?.pricing?.input)}</strong> input · <strong>{dollars(profile?.pricing?.output)}</strong> output
+      API price / 1M tokens: <strong>{dollars(profile?.pricing?.input)}</strong> input · <strong>{dollars(profile?.pricing?.output)}</strong> output
     </div>
-    {browser && <small className="muted">Browser login uses your subscription’s access and limits; API prices do not describe its charges.</small>}
     {profile?.source_label && <small className="muted agent-source">
       {profile.source_url ? <a href={profile.source_url} target="_blank" rel="noreferrer">{profile.source_label}</a> : profile.source_label}
       {profile.verified_at && <> · {profile.lookup_status === "live" ? "Refreshed" : "Published details checked"} {new Date(profile.verified_at).toLocaleDateString()}</>}
-      {profile.pricing && !browser && <> · Starting rates; actual charges vary.</>}
+      {profile.pricing && <> · Starting rates; actual charges vary.</>}
     </small>}
     {profile?.lookup_status === "unavailable" && <small className="muted">Live details unavailable. Showing published details where known.</small>}
   </div>;

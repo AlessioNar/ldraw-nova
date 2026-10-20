@@ -18,7 +18,7 @@ OPENROUTER_CATALOG = [entry for entry in CATALOG if entry["model"].startswith("o
 
 
 def profile(model: str) -> dict:
-    canonical = model.replace("chatgpt/", "openai/", 1).replace("responses/", "")
+    canonical = model.replace("responses/", "")
     known = next((m for m in _PROFILES if m["model"] == canonical), None)
     if known:
         return {**copy.deepcopy(known), "context_budgets": [known["context_window"]]}

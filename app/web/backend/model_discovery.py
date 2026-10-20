@@ -82,7 +82,7 @@ async def discover(entry: dict) -> dict:
                     spec.update(openrouter_profile(model, data))
                 else:
                     spec["lookup_status"] = "unavailable"
-            elif provider.discovery == "anthropic" and entry.get("auth_mode") != "browser":
+            elif provider.discovery == "anthropic":
                 params = llm_config.resolve_params(entry)
                 key = params.get("api_key") or environment_config.snapshot().get("ANTHROPIC_API_KEY")
                 if key:
