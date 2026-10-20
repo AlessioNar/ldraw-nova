@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+# A newer push to the same PR/branch makes the older run pointless, and the
+# image job is expensive.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ldraw-nova-app
+
+jobs:
+  # Cheap feedback (about 1 minute) that doesn't wait for the image. The backend
+  # tests can't run here: they need LeoCAD and the baked LDraw library.
+  quick:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: app/web/frontend
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 24   # same major as the Dockerfile's node:24-slim
+          cache: npm
+          cache-dependency-path: app/web/frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      # `tsc -b && vite build`: type errors fail the build, as in the image.
+      - run: npm run build
+
+  # The only place the Dockerfile is built end to end and the tests that need
+  # LeoCAD / the LDraw library can run. Real network access is required: the
+  # image downloads LeoCAD, the LDraw library, bun, mpd2glb, uv, jev-rerank...
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: docker/setup-buildx-action@v3.11.1
+
+      # Same inputs as app/docker-compose.yml (context app/, `nova` = repo
+      # root), but build-push-action is what gives us the GitHub cache backend.
+      # mode=max also caches the intermediate download stages. RUN cache mounts
+      # (apt, uv, pip) are not part of the exported cache, so a cache hit saves
+      # the downloads but a miss on one stage re-fetches that stage's packages.
+      - name: Build image
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: app
+          file: app/Dockerfile
+          build-contexts: nova=.
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke checks
+        run: |
+          # The entrypoint starts Xvfb, which leocad needs.
+          docker run --rm --init "$IMAGE" bash -euxc '
+            leocad --help
+            bun --version
+            mpd2glb.sh --help
+            jev-rerank --help
+            codex --version
+            ls /opt/index /opt/web/viewer-vendor /opt/web/player-vendor
+          '
+
+      - name: Prepare log directory
+        run: mkdir -m 777 test-logs
+
+      # Per app/web/backend/tests/conftest.py. Test-only deps are not baked
+      # into the image, hence the pip install (needs network, so no --network none).
+      - name: Backend tests
+        run: |
+          docker run --rm --init -v "$PWD/test-logs:/logs" "$IMAGE" bash -euo pipefail -c '
+            pip install -q --break-system-packages -r /app/web/backend/requirements-dev.txt
+            cd /app/web/backend
+            pytest -q 2>&1 | tee /logs/backend.log
+          '
+
+      # tests/ is excluded from the image (.dockerignore), so mount it from the
+      # checkout over the toolkit copy at /opt/ldraw-nova, which has the uv
+      # environment. That environment is built --no-dev, so add the `test` extra
+      # (pytest) first. pytest's cache is off because the mount is read-only.
+      - name: Root tests
+        run: |
+          docker run --rm --init -v "$PWD/tests:/opt/ldraw-nova/tests:ro" -v "$PWD/test-logs:/logs" "$IMAGE" bash -euo pipefail -c '
+            cd /opt/ldraw-nova
+            uv sync --locked --extra test --python python3.14
+            uv run --no-sync pytest -q -p no:cacheprovider 2>&1 | tee /logs/root.log
+          '
+
+      # Failure output is in the job log too; the files are for diffing across runs.
+      - name: Upload test logs
+        if: failure()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: test-logs
+          path: test-logs/
+          if-no-files-found: ignore
