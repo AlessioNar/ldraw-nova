@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import html
-import hashlib
 import json
 import shutil
 from collections import Counter
@@ -12,7 +11,7 @@ from pathlib import Path
 
 from ldraw import Parts, inspect_model
 
-from .common import atomic_write, dumps, jsonable
+from .common import atomic_write, dumps, jsonable, sha256_file
 from .discovery import confined, digest, record_id
 from .document import extract_section, physical_context
 from .external import compare_bom, render
@@ -60,7 +59,7 @@ def prepare_reference(index, row, outdir, *, views=DEFAULT_VIEWS, colour=7, cont
         card = json.loads(card_path.read_text())
         artifacts = ['source.mpd','preview.mpd','extraction.json','renders/leocad-bom.csv', *['renders/'+v+'.png' for v in views]]
         if (card.get('cache_key') == key and all((destination/f).is_file() and
-                hashlib.sha256((destination/f).read_bytes()).hexdigest()==card.get('artifact_hashes',{}).get(f) for f in artifacts)
+                sha256_file(destination/f)==card.get('artifact_hashes',{}).get(f) for f in artifacts)
                 and all(v in card['views'] for v in views)):
             return card
     if not hasattr(index, '_mesh_parts'):
@@ -105,7 +104,7 @@ def prepare_reference(index, row, outdir, *, views=DEFAULT_VIEWS, colour=7, cont
                              'Preview colour resolves inherited 16; extraction retains original colours and authorship.',
                              'Passing checks or matching a BOM does not prove connectivity, stability or fit in a new model.'])
     artifacts = ['source.mpd','preview.mpd','extraction.json','renders/leocad-bom.csv', *['renders/'+v+'.png' for v in views]]
-    card['artifact_hashes'] = {f:hashlib.sha256((destination/f).read_bytes()).hexdigest() for f in artifacts}
+    card['artifact_hashes'] = {f:sha256_file(destination/f) for f in artifacts}
     atomic_write(card_path, dumps(card)+'\n')
     return card
 
@@ -241,7 +240,7 @@ def _current_card(index, identity, card_dir):
                  *['renders/'+view+'.png' for view in card['views']]]
     for name in artifacts:
         path = confined(source, name)
-        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != card.get('artifact_hashes',{}).get(name):
+        if not path.is_file() or sha256_file(path) != card.get('artifact_hashes',{}).get(name):
             raise ValueError('Reference artifacts changed; prepare and review the card again')
     return source, card
 

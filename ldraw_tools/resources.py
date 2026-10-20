@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import sqlite3
 import subprocess
 from pathlib import Path
 
-from .common import ROOT, CACHE, atomic_write, database_path, models_path
+from .common import ROOT, CACHE, atomic_write, database_path, models_path, numbered_lines, sha256_file
 
 
 def spec_pages(pdf=None):
     path = Path(pdf or ROOT / "docs/ldraw-specs.pdf")
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = sha256_file(path)
     cache = CACHE / f"spec-{digest}.json"
     if cache.exists():
         return json.loads(cache.read_text())
@@ -71,7 +70,7 @@ def search_models(query, *, root=None, database=None, limit=10, submodels=False,
 
 def model_sections(path, section=None):
     """Inventory raw headers and records, including sources without FILE blocks."""
-    lines = list(enumerate(Path(path).read_text(encoding="utf-8-sig").splitlines(), 1))
+    lines = numbered_lines(path)
     rows, active = [], None
     for number, line in lines:
         fields = line.split(None, 2)

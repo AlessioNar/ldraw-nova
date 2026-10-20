@@ -15,6 +15,7 @@ from ldraw import Colour, Piece, inspect_model
 
 from .builder import serialize_mpd
 from .common import DATA, atomic_write, dumps, jsonable, normalized
+from .common import sha256_file as sha  # public name used by example generators
 from .discovery import confined
 from .document import (dependency_closure, extract_section, is_part, parse_source,
                        physical_context, resolve_section, section_table)
@@ -22,10 +23,6 @@ from .external import compare_bom, render, render_steps
 from .geometry import analyze_geometry, geometry_complete
 from .reference_catalog import preview_wrapper
 from .validation import validate_text
-
-
-def sha(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def construction_steps(model, section, parts):

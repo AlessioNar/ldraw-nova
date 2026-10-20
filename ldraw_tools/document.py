@@ -16,7 +16,7 @@ import numpy as np
 from ldraw import Model, Parts, Piece, parse_model_result
 from ldraw.part import Part
 
-from .common import CACHE, atomic_write, normalized
+from .common import CACHE, atomic_write, normalized, numbered_lines, sha256_file
 
 
 def is_part(model):
@@ -121,7 +121,7 @@ def parse_source(path):
 def source_blocks(path):
     """Block boundaries only; operational records are parsed by pyldraw3."""
     result, active = {}, None
-    for number, line in enumerate(Path(path).read_text(encoding="utf-8-sig").splitlines(), 1):
+    for number, line in numbered_lines(path):
         fields = line.split(None, 2)
         if fields[:2] == ["0", "FILE"] and len(fields) == 3:
             active = normalized(fields[2].strip())
@@ -134,7 +134,7 @@ def source_blocks(path):
             result[active].append((number, line))
     if not result:
         model = parse_source(path)
-        result[normalized(model.name)] = list(enumerate(Path(path).read_text(encoding="utf-8-sig").splitlines(), 1))
+        result[normalized(model.name)] = numbered_lines(path)
     return result
 
 
@@ -262,7 +262,7 @@ def study_model(path, parts, *, instance_limit=100000):
                          library_parts=[dict(name=ref, count=n) for ref,n in refs.most_common(12) if normalized(ref) not in table]))
     from .validation import validate_file
     _, diagnostics = validate_file(path, parts, assembly=True, instance_limit=instance_limit)
-    return dict(source=str(Path(path).resolve()), source_sha256=hashlib.sha256(Path(path).read_bytes()).hexdigest(),
+    return dict(source=str(Path(path).resolve()), source_sha256=sha256_file(path),
                 main=model.name, section_count=len(table), assembly_count=sum(not is_part(s) for s in table.values()),
                 embedded_definition_count=sum(is_part(s) for s in table.values()), physical_placements=len(occurrences),
                 reachable_section_count=len(reachable), unreachable_sections=[s.name for k,s in table.items() if k not in reachable],

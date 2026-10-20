@@ -14,7 +14,7 @@ from collections import Counter
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 
-from .common import CACHE, atomic_write, database_path, dumps, jsonable, models_path, normalized
+from .common import CACHE, atomic_write, database_path, dumps, jsonable, models_path, normalized, sha256_file
 from .document import dependency_closure, is_part, parse_source, physical_context, resolve_section, section_table
 from .resources import model_sections
 
@@ -116,7 +116,7 @@ class DiscoveryIndex:
                         else:
                             path = confined(self.root, row['model'])
                             if row['model'] not in inventories:
-                                inventories[row['model']] = (model_sections(path)['sections'], hashlib.sha256(path.read_bytes()).hexdigest())
+                                inventories[row['model']] = (model_sections(path)['sections'], sha256_file(path))
                             sections, sha = inventories[row['model']]
                             selected = sections[:1] if kind == 'models' else [s for s in sections if normalized(s['name']).strip() == normalized(row['section']).strip()]
                             if len(selected) != 1:
@@ -169,7 +169,7 @@ class DiscoveryIndex:
         if row['kind'] == 'parts':
             return dict(physical_placements=1, expanded_leaf_count=1, physical_accounting_complete=row['record_type']=='physical_part')
         path = confined(self.root, row['model'])
-        sha = hashlib.sha256(path.read_bytes()).hexdigest()
+        sha = sha256_file(path)
         if sha != row.get('source_sha256'):
             raise ValueError('Source changed since indexing; rebuild the discovery index')
         key = digest([VERSION, row['id'], sha, self.manifest_path.read_text(), max_instances])

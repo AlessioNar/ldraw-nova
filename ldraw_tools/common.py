@@ -46,6 +46,15 @@ def atomic_write(path, text):
             tmp.unlink(missing_ok=True)
 
 
+def sha256_file(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def numbered_lines(path):
+    """(line number, text) pairs of an LDraw source file, BOM stripped."""
+    return list(enumerate(Path(path).read_text(encoding="utf-8-sig").splitlines(), 1))
+
+
 def normalized(name):
     return name.replace("\\", "/").casefold()
 
