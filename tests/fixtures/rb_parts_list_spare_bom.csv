@@ -1,0 +1,5 @@
+﻿Part,Color,Quantity,Is Spare,Color Name,Image URL
+3001,4,2,False,Red,http://x/y.jpg
+3001,4,1,True,Red,http://x/y.jpg
+3003,1,0,False,Blue,
+3022,14,4,False,Yellow,

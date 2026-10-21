@@ -83,13 +83,13 @@ Swept insertion paths, hand access, arbitrary solid collisions, strength, stiffn
 
 ## Find structural references and finish the appearance
 
-First perform the [Jev availability check](reference-discovery.md#check-jev-availability-before-searching). When available:
+Search with the default `--engine auto` (Jev when available, otherwise FTS; see [search engines](reference-discovery.md#search-engines-auto-picks-jev-or-keyword-search)):
 
 ```sh
 ./ldraw-agent discover search submodels 'a compact braced chassis frame' \
-  --construction technic-structure --engine jev --limit 5
+  --construction technic-structure --limit 5
 ```
 
-When unavailable, use `--engine fts`, the local catalogs and examples. Identify offline keyword ranking explicitly. The construction filter considers the selected description and actual BOM, excludes obvious mechanism contents, and allows static sections from mechanism-bearing parents. It does not prove every axle in a “chassis” is structural. Inspect parent support, mounting interfaces and build order; preserve attribution and extraction manifests.
+If `engine_used` is `fts`, say the ranking is keyword-based and use the local catalogs and examples too. The construction filter considers the selected description and actual BOM, excludes obvious mechanism contents, and allows static sections from mechanism-bearing parents. It does not prove every axle in a “chassis” is structural. Inspect parent support, mounting interfaces and build order; preserve attribution and extraction manifests.
 
 Keep the skeleton's main lines clear, control its palette and reserve real mounts for panels or System cladding. Expose structure where it explains the subject; organize connector clutter elsewhere. Compare all seven views and a thumbnail. Fix proportions and unsupported mounts before adding decoration. Deliver the MPD, plan/generator, contract, checks, BOM comparison and visual review of the final revision.

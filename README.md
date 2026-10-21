@@ -21,8 +21,8 @@ Take a look at [the video](https://youtu.be/YDjjxGqWpgU):
 > **Tools** used by agents in order to find **suitable parts** and **example models** take advantage of [jev-rerank](https://github.com/anteloc/jev-rerank) (I'm also the author). 
 > This is a **semantic search tool** with **re-ranking** backed by [TypeSafe](https://typesafe.ai/)'s [Jev System One](https://typesafe.ai/) AI model.
 > 
-> - **If you have a TypeSafe API key** (`TYPESAFE_API_KEY`), set its value on the web app's **Settings** section.
-> - **If you don't**, reranking search **will not work**, and agents will resort to a **FTS (Full Text Search)** strategy as a fallback, which could (maybe) yield **worse models.**
+> - **A TypeSafe API key is optional.** If you have one (`TYPESAFE_API_KEY`), set its value on the web app's **Settings** section to enable Jev semantic search.
+> - **If you don't**, nothing breaks: searches automatically use **FTS (Full Text Search)** with keyword (BM25) ranking, which works but ranks parts and models **less well** than semantic search.
 
 Run **ldraw-nova** as a web app, with Docker. You need [Git](https://git-scm.com/downloads) and [Docker](https://docs.docker.com/get-started/get-docker/).
 

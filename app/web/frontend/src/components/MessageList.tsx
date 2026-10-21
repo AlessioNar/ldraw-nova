@@ -5,6 +5,7 @@ import type { RunningTool } from "../hooks/useChatStream";
 import DocumentIcon from "./DocumentIcon";
 import Markdown from "./Markdown";
 import ModelCard from "./ModelCard";
+import PartsCheckCard from "./PartsCheckCard";
 import ToolCard from "./ToolCard";
 import UsageBadge from "./UsageBadge";
 
@@ -66,6 +67,7 @@ export default function MessageList({ detail, running, draft, persisting, tools,
               );
             })}
             {(cards.byMessage.get(m.id) ?? []).map(modelCard)}
+            {m.parts_check && <PartsCheckCard check={m.parts_check} />}
             {m._usage && <UsageBadge usage={m._usage} />}
           </div>
         );

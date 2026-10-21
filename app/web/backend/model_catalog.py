@@ -11,6 +11,8 @@ from pathlib import Path
 
 import litellm
 
+import inventories
+
 EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 _PROFILES = json.loads(Path(__file__).with_name("model_catalog_data.json").read_text())
 CATALOG = [entry for entry in _PROFILES if entry["preset"]]
@@ -76,4 +78,5 @@ def validate_options(entry: dict, options: dict | None) -> dict:
         raise ValueError("This effort is not supported by the selected model")
     if value["context_tokens"] is not None and value["context_tokens"] not in spec["context_budgets"]:
         raise ValueError("This context budget is not supported by the selected model")
+    inventories.validate_parts_options(value)
     return value

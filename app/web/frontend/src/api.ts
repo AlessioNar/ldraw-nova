@@ -55,6 +55,7 @@ export type Message = {
   _error?: boolean;
   _notice?: boolean;
   _reasoning?: string;
+  parts_check?: PartsCheck; // set by the backend once a model is published under a parts steering mode
 };
 
 export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number };
@@ -66,7 +67,7 @@ export type EnvironmentVariable = { id: string; name: string; value: null; has_v
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
 export type ConnectionStatus = "not_tested" | "connected" | "not_connected";
-export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; effort?: string | null; context_tokens?: number | null };
+export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; effort?: string | null; context_tokens?: number | null; parts_mode?: PartsMode; inventory_ids?: string[] };
 export type ModelProfile = {
   model: string; name: string; context_window: number | null; efforts: string[]; default_effort: string | null; context_budgets: number[];
   max_output_tokens?: number | null; tools?: boolean | null; vision?: boolean | null; reasoning?: boolean | null;
@@ -184,3 +185,46 @@ export function timeAgo(seconds: number): string {
   if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} d ago`;
   return new Date(seconds * 1000).toLocaleDateString();
 }
+
+// --- My Parts: the user's own inventories (Rebrickable CSV) and the agent steering built on them ---
+
+export type PartsMode = "off" | "prefer" | "only";
+
+export type Inventory = {
+  id: string; name: string; created_at: number; source_filename: string | null;
+  distinct_parts: number; distinct_colours: number; total_pieces: number; spare_pieces: number;
+  unmapped_parts: number; unmapped_colours: number;
+};
+export type ImportReport = {
+  dialect: string; total_rows: number; total_pieces: number; spare_pieces: number;
+  unmapped_parts: { rb_part: string; colour: number; qty: number }[];
+  unmapped_colours: { rb_colour: number; part: string; qty: number }[];
+  warnings: string[];
+};
+type InventoryRow = { part: string; colour: number; colour_name: string; qty: number; description: string };
+export type InventoryDetail = {
+  inventory: Inventory; rows: InventoryRow[]; total: number;
+  top_colours: { colour: number; colour_name: string; qty: number }[];
+};
+/** What the backend found missing from the inventories once a model was published. */
+export type PartsCheck = {
+  mode: PartsMode; complete: boolean; needed_total: number; owned_total: number; summary: string;
+  short: { part: string; colour: number; colour_name: string; needed: number; owned: number; missing: number }[];
+};
+
+export const inventoryApi = {
+  list: () => request<{ inventories: Inventory[] }>("/api/inventories"),
+  create: (name: string, csv: string, include_spares?: boolean) =>
+    request<{ inventory: Inventory; report: ImportReport }>("/api/inventories", { method: "POST", body: json({ name, csv, include_spares }) }),
+  detail: (id: string, q: { query?: string; colour?: number | null; limit?: number; offset?: number } = {}) => {
+    const params = new URLSearchParams();
+    if (q.query) params.set("query", q.query);
+    if (q.colour != null) params.set("colour", String(q.colour));
+    if (q.limit != null) params.set("limit", String(q.limit));
+    if (q.offset) params.set("offset", String(q.offset));
+    return request<InventoryDetail>(`/api/inventories/${encodeURIComponent(id)}?${params}`);
+  },
+  rename: (id: string, name: string) =>
+    request<{ inventory: Inventory }>(`/api/inventories/${encodeURIComponent(id)}`, { method: "PATCH", body: json({ name }) }),
+  remove: (id: string) => request<{ ok: true }>(`/api/inventories/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};

@@ -31,15 +31,15 @@ The same source-step method can grow every atlas. See the [general build-manual 
 
 Open the example's `index.html` to move through steps and switch viewpoints. Open its `GUIDE.md` and `operation.json` before reuse. Compare its size, input/output locations, support frame, shaft directions and available attachment space with the new model's brief. A rack carriage may need a pinion from its parent; a gearbox section may expose interfaces whose roles are only clear in the complete transmission.
 
-For other subjects, first perform the [Jev availability check](reference-discovery.md#check-jev-availability-before-searching), then query one role at a time:
+For other subjects, query one role at a time (the default `--engine auto` picks Jev or FTS, see [search engines](reference-discovery.md#search-engines-auto-picks-jev-or-keyword-search)):
 
 ```sh
 ./ldraw-agent discover search submodels 'a compact worm drive for a winch' \
-  --construction mechanism --engine jev --max-parts 150 --limit 5 \
+  --construction mechanism --max-parts 150 --limit 5 \
   --report output/winch-candidates.json
 ```
 
-If Jev is unavailable, use the same command with `--engine fts` and state that it is offline keyword ranking. `--construction mechanism` uses the selected description and BOM as discovery filters; it does not establish that the result is complete or functional. `--construction all` remains useful for broad searches. Do not reject a useful assembly because its parent belongs to a different theme.
+Without Jev the default `--engine auto` uses FTS; report it as keyword ranking. `--construction mechanism` uses the selected description and BOM as discovery filters; it does not establish that the result is complete or functional. `--construction all` remains useful for broad searches. Do not reject a useful assembly because its parent belongs to a different theme.
 
 ## Turn a source into build pages
 

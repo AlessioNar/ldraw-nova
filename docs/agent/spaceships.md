@@ -26,7 +26,7 @@ For new designs use X for width, -Z for forward and negative Y for up. Choose a 
 
 ## Study constructions and choose real parts
 
-Use Jev only after its availability check; use explicit FTS when unavailable. Search separately for whole-ship proportions and each construction role. Do not restrict useful source parts to the same theme. Spacecraft often combine System skins with Technic frames; `--construction all` helps discover both.
+`discover search` picks Jev or FTS automatically (see `engine_used`). Search separately for whole-ship proportions and each construction role. Do not restrict useful source parts to the same theme. Spacecraft often combine System skins with Technic frames; `--construction all` helps discover both.
 
 ```sh
 ./ldraw-agent discover search models 'a detailed Star Wars starfighter with wing and engine submodels' \
