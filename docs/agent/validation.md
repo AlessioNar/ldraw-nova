@@ -42,8 +42,4 @@ Ordinary filenames containing single spaces and mixed case work. This pinned par
 | `coverage.*` | Simplify to the supported construction or perform and document the missing external checks. A failed coverage check is not a validation pass. |
 | `header.*`, `mpd.unreachable`, `part.alias_or_internal` | Add accurate headers, remove unused assemblies, or inspect the alias/replacement. Preserve original attribution where source is reused. |
 
-If a complex connection remains uncertain, replace it with a simpler inspected assembly and rerun checks. Deliver a specific remaining limitation if it cannot be resolved; do not claim that “the validator guarantees correctness.”
-
-## Large-reference regressions
-
-The [Bookshop audit](complex-models.md) exercises thousands of physical placements, embedded DATs, rounded rotations, reference reuse and a real duplicate. The revised Copper Lane example exercises composition at 1,655 placements. Summary/pagination only reduce report detail. The default expansion budget is 100,000 physical leaves; section selection includes transitive definitions and keeps diagnostic source lines tied to the original file. Neither renderer success nor a matching BOM clears a geometry error. Visual quality has its own [review](visual-design.md), with a design brief and inspected images; it is not inferred from these numeric checks.
+If a complex connection remains uncertain, replace it with a simpler inspected assembly and rerun checks. Deliver a specific remaining limitation if it cannot be resolved; do not claim that “the validator guarantees correctness.” Neither renderer success nor a matching BOM clears a geometry error.
