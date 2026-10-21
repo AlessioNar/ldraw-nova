@@ -47,6 +47,13 @@ jobs:
           pip install ruff==0.17.1
           ruff check
 
+      # models-packed/ is what the repo ships; the image's `models` stage and
+      # setup.sh unpack it into data/models-annotated/. Check every shard
+      # against the manifest here, without the 390 MB unpack.
+      - name: Reference model shards
+        working-directory: .
+        run: python tools/models_pack.py verify --packed-only
+
   # The only place the Dockerfile is built end to end and the tests that need
   # LeoCAD / the LDraw library can run. Real network access is required: the
   # image downloads LeoCAD, the LDraw library, bun, mpd2glb, uv, jev-rerank...

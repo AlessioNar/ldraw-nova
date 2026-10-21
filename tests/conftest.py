@@ -1,7 +1,34 @@
+import importlib.util
+from pathlib import Path
+
 import pytest
 from ldraw import Parts
 
-from ldraw_tools.common import get_parts, library_path
+from ldraw_tools.common import get_parts, library_path, models_path
+
+MODELS_PACK = Path(__file__).resolve().parents[1] / "tools" / "models_pack.py"
+
+
+def load_models_pack():
+    """tools/models_pack.py as a module, or None where the checkout lacks it (the image)."""
+    if not MODELS_PACK.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("models_pack", MODELS_PACK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture(scope="session")
+def reference_models():
+    """data/models-annotated/, unpacked from models-packed/ on first use (a fresh clone has only the shards)."""
+    root = models_path()
+    pack = load_models_pack()
+    if pack is not None and (pack.PACKED / pack.MANIFEST).is_file():
+        assert pack.main(["unpack"]) == 0
+    if not any(root.glob("*.mpd")):
+        pytest.skip("reference models unavailable: run tools/models_pack.py unpack")
+    return root
 
 
 @pytest.fixture(scope="session")

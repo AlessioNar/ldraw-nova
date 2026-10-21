@@ -2,6 +2,8 @@
 set -eu
 task_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$task_dir"
+# The repo ships the reference models as models-packed/*.tar.xz; materialise data/models-annotated/.
+python3 tools/models_pack.py unpack
 if command -v uv >/dev/null 2>&1; then
   uv sync --locked --extra test
 else
