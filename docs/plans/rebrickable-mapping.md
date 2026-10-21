@@ -69,3 +69,17 @@ Of 59,252 Plastic parts, 32,239 are unresolved; Cardboard/Paper (4,177), Cloth (
 Most-referenced unresolved parts (children pointing at them in the relationship table, the best popularity proxy available): 4066 Duplo Brick 1x2x2 (458), minifig hips 970c03 (436) and torsos 973c27h01 (373), 970c27, 973c03h03, 973c01h01, 3814 torso, Modulex tiles 1022A/1021A/1011A, Pen Bead parts penupn0004/0003, 2835. These are minifig torso/leg assemblies (`973cNNhNN`, `970cNN`) that LDraw names differently or models as separate pieces, and non-LDraw systems (Duplo, Modulex, Pen). A future pass could map `970cNN`/`973cNNhNN` to LDraw's assemblies by hand.
 
 Not verifiable offline: whether a part exists in LDraw under an unrelated number (renumbered or stickered variants that Rebrickable does not link), and the real-world popularity of the unresolved parts.
+
+## Coverage weighted by real usage
+
+The part counts above are unweighted over all 64.9k Rebrickable part numbers, most of which are rare prints, Duplo, Modulex and stickers. Weighted by `quantity` in Rebrickable's `inventory_parts.csv` (spares excluded; 5,295,735 pieces over 63,150 distinct parts, measured against the committed alias map and LDraw `complete.zip` 2609):
+
+| | pieces | distinct parts |
+|---|---|---|
+| identity (same number exists in LDraw `parts/`) | 94.2% | 8.3% |
+| alias | 2.6% | 33.9% |
+| unresolved | 3.2% | 57.8% |
+
+- Colour coverage by pieces: 99.75%.
+- Of the 500 most-used parts 496 resolve; of the 2000 most-used, 1879.
+- Most-used unresolved: `298c02` (4,896), `3711a` (3,717), `970c03` (1,858), `30237b` (1,608), `3046a` (1,234), `1011A` (1,100), `30237a`, `970c28`, `970c27`, `1121L`..`1142L` (Modulex tiles). They are minifig leg and torso assemblies, older mould variants and Modulex, so a suffix-letter fallback (`3711a` to `3711`) and an assembly mapping for `970cNN`/`973cNN` are the likely next gains.
