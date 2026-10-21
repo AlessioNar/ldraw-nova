@@ -155,6 +155,19 @@ These are some of the guides and references given to the agent in order to make 
 | Understand connections and checks     | [Geometry](docs/agent/geometry.md), [snapping](docs/agent/snapping.md) and [validation](docs/agent/validation.md)  |
 | Look up a command or file-format rule | [Tool reference](docs/agent/tooling.md) and [LDraw rules](docs/agent/ldraw-reference.md)                           |
 
+## Reference models
+
+The 1,821 annotated reference models (about 390 MB as `.mpd`) are stored in the repo compressed, as `models-packed/*.tar.xz` (about 36 MB, one shard per block of 100 set numbers) with a small `models-packed/manifest.json` (file, shard, sha256, size, licence, author of every model). The toolkit, the docs and the tests keep reading `data/models-annotated/*.mpd`; that folder is **not in git**, it is created from the shards by `tools/models_pack.py unpack`, which `setup.sh`, the Docker build and the test suite run for you. Plain Python 3, nothing to install.
+
+```bash
+python3 tools/models_pack.py unpack          # shards -> data/models-annotated/ (checks every sha256; skips what is current)
+python3 tools/models_pack.py list '42*'      # what exists, without unpacking
+python3 tools/models_pack.py verify          # shards and unpacked folder against the manifest
+python3 tools/models_pack.py add my-set-12345-1.mpd   # add or replace a model: re-packs only its shard
+```
+
+`add` refuses files that are not valid LDraw `.mpd` or that carry no `0 !LICENSE` header, unless you pass `--licence` (and `--author`), which is then recorded in the manifest. Commit the changed shard and `manifest.json`. Rationale and measurements: [docs/plans/models-pack.md](docs/plans/models-pack.md).
+
 ## Development
 
 Code checks are lint-only (no formatter). Install [ruff](https://docs.astral.sh/ruff/) 0.17.1 (`pip install ruff==0.17.1`) and run `ruff check` from the repo root; the rules are in `ruff.toml`. To run it together with the YAML, merge-conflict and large-file hooks, use `pip install pre-commit && pre-commit run --all-files` (or `pre-commit install` to run them on each commit). Frontend types are checked by `npm run build` in `app/web/frontend` (`tsc -b`). CI runs the same checks in the `quick` job.
