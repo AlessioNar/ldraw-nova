@@ -355,22 +355,50 @@ def model_bom(model, library):
     return needed
 
 
-def check_model(model, inventories, *, mode="prefer", library=None, substitutions=True):
+def index_owned(owned):
+    """{part: [(colour, qty)]} of a combined inventory, for the substitution and not-owned lookups."""
+    by_part = defaultdict(list)
+    for (p, c), q in owned.items():
+        by_part[p].append((c, q))
+    return by_part
+
+
+def match_bom(needed, owned):
+    """The (part, colour) comparison every model check builds on: (matched pieces, short lines).
+
+    A line is (part, colour, needed, owned) for each (part, colour) the inventory holds too few of,
+    sorted by part and colour.  Pure counting, no names or library: cheap enough for a whole model catalogue.
+    """
+    ok, short = 0, []
+    for (part, col), need in sorted(needed.items(), key=lambda kv: (kv[0][0], kv[0][1] is not None, kv[0][1] or 0)):  # colour None: unresolved
+        have = owned.get((part, col), 0)
+        ok += min(need, have)
+        if have < need:
+            short.append((part, col, need, have))
+    return ok, short
+
+
+def substituted_pieces(needed, by_part):
+    """Matched pieces when any owned colour of a part may stand in for a missing one: sum over parts of min(needed, owned)."""
+    need_by_part = Counter()
+    for (part, _), need in needed.items():
+        need_by_part[part] += need
+    return sum(min(n, sum(q for _, q in by_part.get(part, ()))) for part, n in need_by_part.items())
+
+
+def check_model(model, inventories, *, mode="prefer", library=None, substitutions=True, needed=None):
+    """Compare a model's physical BOM with inventories; `needed` skips the BOM expansion when it is already known."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {', '.join(MODES)}")
     if library is None:
         raise ValueError("check_model needs the parts library to expand the model's physical BOM")
-    needed = model_bom(model, library)
+    if needed is None:
+        needed = model_bom(model, library)
     owned = combine(inventories)
-    by_part = defaultdict(list)
-    for (p, c), q in owned.items():
-        by_part[p].append((c, q))
-    short, not_owned, subs, ok = [], [], [], 0
-    for (part, col), need in sorted(needed.items()):
-        have = owned.get((part, col), 0)
-        ok += min(need, have)
-        if have >= need:
-            continue
+    by_part = index_owned(owned)
+    ok, lines = match_bom(needed, owned)
+    short, not_owned, subs = [], [], []
+    for part, col, need, have in lines:
         short.append(dict(part=part, colour=col, colour_name=colour_name(col, library), needed=need, owned=have, missing=need - have))
         if part not in by_part:
             if not any(n["part"] == part for n in not_owned):
