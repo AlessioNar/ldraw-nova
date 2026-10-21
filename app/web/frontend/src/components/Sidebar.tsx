@@ -25,6 +25,7 @@ export default function Sidebar() {
       </NavLink>
       <nav className="nav">
         <NavLink to="/models">My Models</NavLink>
+        <NavLink to="/parts">My Parts</NavLink>
         <NavLink to="/settings">Settings</NavLink>
       </nav>
 
