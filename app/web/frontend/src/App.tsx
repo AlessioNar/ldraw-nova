@@ -7,6 +7,7 @@ import ViewerModal from "./components/ViewerModal";
 import ChatPage from "./pages/ChatPage";
 import Home from "./pages/Home";
 import Models from "./pages/Models";
+import Parts from "./pages/Parts";
 import Settings from "./pages/Settings";
 import { setProviderCatalogue } from "./modelChoices";
 
@@ -73,6 +74,8 @@ export default function App() {
             <Route path="/new" element={<Home />} />
             <Route path="/chat/:id" element={<ChatPage />} />
             <Route path="/models" element={<Models />} />
+            <Route path="/parts" element={<Parts />} />
+            <Route path="/parts/:id" element={<Parts />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/new" replace />} />
           </Routes>
