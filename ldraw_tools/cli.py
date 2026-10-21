@@ -8,19 +8,19 @@ import sys
 import jsonschema
 from ldraw.errors import PartError
 
-from .commands import cad, design, discover, examples, library, manual, model, spaceship, study, technic, vehicle
+from .commands import cad, design, discover, examples, library, inventory, manual, model, spaceship, study, technic, vehicle
 from .commands.base import Command
 from .common import atomic_write, dumps, get_parts, library_path
 
 COMMANDS: dict[str, Command] = {}
-for module in (examples, discover, spaceship, manual, technic, vehicle, library, design, study, model, cad):
+for module in (examples, discover, spaceship, manual, technic, vehicle, library, design, study, model, cad, inventory):
     COMMANDS.update(module.COMMANDS)
 
 # Registration order is the order subcommands appear in --help.
 ORDER = ["examples", "discover", "spaceship", "manual", "mechanism", "technic", "vehicle", "catalog", "design",
          "part-board", "doctor", "index", "search", "part", "colours", "spec", "sections", "study", "extract",
          "matrix", "profiles", "build", "validate", "inspect", "bom", "compare-bom", "snap", "connectors",
-         "cad-check", "render", "glb"]
+         "cad-check", "render", "glb", "inventory"]
 assert set(ORDER) == set(COMMANDS), set(ORDER) ^ set(COMMANDS)
 
 
@@ -52,6 +52,8 @@ def main():
         report, status = run(args)
     except (OSError, ValueError, PartError, RecursionError, sqlite3.Error, subprocess.SubprocessError, jsonschema.ValidationError) as exc:
         report, status = dict(checks_passed=False, error=str(exc), error_type=type(exc).__name__), 2
+    if report is None:  # the command already printed its own text output
+        return status
     text = dumps(report) + "\n"
     if getattr(args, "report", None):
         atomic_write(args.report, text)
