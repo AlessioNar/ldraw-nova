@@ -197,8 +197,8 @@ export type Inventory = {
 };
 export type ImportReport = {
   dialect: string; total_rows: number; total_pieces: number; spare_pieces: number;
-  unmapped_parts: { rb_part: string; colour: string; qty: number }[];
-  unmapped_colours: { rb_colour: string; part: string; qty: number }[];
+  unmapped_parts: { rb_part: string; colour: number; qty: number }[];
+  unmapped_colours: { rb_colour: number; part: string; qty: number }[];
   warnings: string[];
 };
 type InventoryRow = { part: string; colour: number; colour_name: string; qty: number; description: string };
