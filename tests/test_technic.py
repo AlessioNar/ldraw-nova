@@ -5,6 +5,7 @@ from ldraw import Model, Piece, Vector
 
 from ldraw_tools.builder import rotation
 from ldraw_tools.common import get_parts
+from ldraw_tools.common import get_parts
 from ldraw_tools.connectivity import inspect_connections, snap_report, apply_snap
 from ldraw_tools.connection_adapter import connection_contacts
 from ldraw_tools.technic import registry, definition, managed
