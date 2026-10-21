@@ -49,7 +49,7 @@ docker compose up -d
 
 **4. Open** it in your browser at **http://localhost:8765**.
 
-Other devices on your network can reach the app by your computer's IP instead of `localhost`, e.g. `http://192.168.1.20:8765`. The app has no login, so only run it on networks you trust.
+The app is reachable from this computer only (`localhost`). To open it from other devices on your network, set `LDRAW_NOVA_WEB_BIND=0.0.0.0` in `app/.env` (or in your shell) before `docker compose up -d`, then browse to your computer's IP, e.g. `http://192.168.1.20:8765`. The app has no login, so only do this on networks you trust.
 
 To stop it: 
 
