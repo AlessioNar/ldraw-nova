@@ -32,7 +32,7 @@ def test_workspace_is_standalone_layout_with_chat_local_output(ctx):
         tools.resolve_path(ctx, "output/escape/instructions.md", write=True)
     prompt = system_prompt.system_prompt(ctx.store, ctx.chat_id)
     assert toolkit.instructions() in prompt
-    for path in toolkit.BUILDER_GUIDES:
+    for path in toolkit.guide_paths():
         complete = (settings.TOOLKIT_DIR / path).read_text()
         assert complete in prompt
         assert prompt.index(toolkit.instructions()) < prompt.index(complete)

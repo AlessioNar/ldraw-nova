@@ -36,7 +36,7 @@ Analytical mechanism verification is deferred at the user's request. The workflo
 
 ## Study another mechanism
 
-Follow the [agent mechanism workflow](../../docs/agent/mechanisms.md). Search with `discover search submodels ... --construction mechanism`, checking Jev availability first and using `--engine fts` when unavailable. `mechanism prepare` creates the source and build pages; `mechanism review` records pages actually inspected; `mechanism export` copies a current reviewed study.
+Follow the [agent mechanism workflow](../../docs/agent/mechanisms.md). Search with `discover search submodels ... --construction mechanism`, using the default `--engine auto` (Jev when available, otherwise FTS; check `engine_used`). `mechanism prepare` creates the source and build pages; `mechanism review` records pages actually inspected; `mechanism export` copies a current reviewed study.
 
 [selections.json](selections.json) records the six exact Jev results, source identities, source hashes and study notes. Their source headers retain the original authors and licences.
 
