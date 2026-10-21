@@ -25,6 +25,7 @@ import settings
 import toolkit
 import environment_config
 import gallery
+import parts_steering
 from leocad_render import bom_path_for, list_models, snapshot_path_for
 from paths import safe_join
 from store import ChatStore
@@ -41,6 +42,7 @@ class ToolContext:
     chat_id: str
     store: ChatStore
     emit: Callable[[str, dict], None]
+    options: dict = field(default_factory=dict)           # the turn's validated options (parts steering, ...)
 
     @property
     def work_dir(self) -> Path:
@@ -56,6 +58,7 @@ class ToolResult:
     content: str                                          # what the LLM sees
     models: list[dict] = field(default_factory=list)      # model references added to the chat
     images: list[Path] = field(default_factory=list)      # PNGs to show (and send to vision models)
+    parts_check: dict | None = None                       # inventory check of a published model, stored with the tool message
 
 
 # --- helpers ---------------------------------------------------------------
@@ -216,7 +219,71 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
     if bom.exists():
         result["bom"] = artifact_url(ctx, bom)
         result["bom_path"] = str(bom)
-    return ToolResult(json.dumps(result, indent=2), models=[ref])
+    content = json.dumps(result, indent=2)
+    check, note = await parts_check(ctx, revision)
+    return ToolResult(f"{content}\n\n{note}" if note else content, models=[ref], parts_check=check)
+
+
+async def parts_check(ctx: ToolContext, model: Path) -> tuple[dict | None, str]:
+    """Compare a published model with the chat's inventories: (payload for the UI, text for the agent).
+
+    Never fails the publication: a check that cannot run only leaves a one-line note.
+    """
+    mode, invs = parts_steering.selection(ctx.options)
+    if mode == "off":
+        return None, ""
+    ids = parts_steering.id_list(invs)
+    try:
+        if not invs:
+            raise ValueError("none of the selected inventories could be read")
+        ctx.emit("progress", {"summary": "Checking the model against your parts inventory."})
+        report = model.parent / "parts-check.json"
+        argv = ["./ldraw-agent", "inventory", "check", str(model), ids, "--mode", mode, "--json",
+                "--store", str(settings.INVENTORIES_DIR), "--report", str(report)]
+        run = await run_command(ctx, argv, 600)           # exit 1 = short in "only" mode
+        data = json.loads(report.read_text(encoding="utf-8")) if report.is_file() else {}
+        if run.exit_code not in (0, 1) or not isinstance(data, dict) or data.get("error") or "short" not in data:
+            raise ValueError(str(data.get("error") if isinstance(data, dict) and data.get("error") else f"exit code {run.exit_code}")[:160])
+        check = parts_steering.check_payload(data)
+    except Exception as exc:  # noqa: BLE001 - the model is published either way
+        reason = " ".join(str(exc).split())[:160]
+        return None, f"PARTS CHECK unavailable ({reason}); the model was published anyway."
+    return check, parts_steering.check_note(check, ids)
+
+
+async def t_my_parts(ctx: ToolContext, query: str = "", colour: int | None = None, limit: int = parts_steering.DEFAULT_SEARCH_RESULTS,
+                     inventory: str | None = None) -> ToolResult:
+    mode, invs = parts_steering.selection(ctx.options)
+    if mode == "off":
+        raise ToolError("my_parts is only available when this chat uses the owner's parts inventories")
+    if not invs:
+        raise ToolError("none of the inventories selected for this chat could be read")
+    try:
+        chosen = parts_steering.pick_inventories(invs, inventory)
+    except ValueError as exc:
+        raise ToolError(str(exc)) from None
+    if colour is not None and (isinstance(colour, bool) or not isinstance(colour, int) or colour < 0):
+        raise ToolError("colour must be an LDraw colour code (a non-negative integer)")
+    if not isinstance(query, str) or isinstance(limit, bool) or not isinstance(limit, int):
+        raise ToolError("query must be a string and limit an integer")
+    limit = max(1, min(limit, parts_steering.MAX_SEARCH_RESULTS))
+    argv = ["./ldraw-agent", "inventory", "search", parts_steering.id_list(chosen), "--limit", str(limit + 1), "--json",
+            "--store", str(settings.INVENTORIES_DIR), *(["--colour", str(colour)] if colour is not None else [])]
+    if query.strip():
+        argv += ["--", query.strip()[:200]]               # after --: a query starting with "-" is not an option
+    run = await run_command(ctx, argv, 120)
+    try:
+        data = json.loads(run.stdout)
+    except ValueError:
+        data = None
+    matches = data.get("matches") if isinstance(data, dict) else None
+    if run.exit_code != 0 or not isinstance(matches, list):
+        raise ToolError("inventory search failed: " + " ".join(str((data or {}).get("error") if isinstance(data, dict) and data.get("error") else run.as_text()).split())[:300])
+    rows = [dict(part=str(m["part"]), colour=int(m["colour"]), colour_name=parts_steering.safe_name(m.get("colour_name")),
+                 qty=int(m["qty"]), description=parts_steering.safe_name(m.get("description"), 80) if m.get("description") else "")
+            for m in matches[:limit]]
+    return ToolResult(json.dumps(dict(inventories=[parts_steering.safe_name(i.name) for i in chosen], count=len(rows),
+                                      more=len(matches) > limit, matches=rows), separators=(",", ":")))
 
 
 async def t_list_files(ctx: ToolContext, path: str = "") -> ToolResult:
@@ -305,6 +372,14 @@ TOOLS: dict[str, tuple[dict, Callable[..., Awaitable[ToolResult]]]] = {
         "Call publish_model to show a generated model in the chat.",
         {"command": {"type": "string"}, "timeout": {"type": "integer", "description": "Seconds, default 60, max 1800"}},
         ["command"]), t_run_shell),
+    "my_parts": (_fn("my_parts", "Search the parts the user owns (the inventories selected for this chat), most owned first. "
+        "Rows: LDraw part number, LDraw colour code, colour name, owned quantity, description. Use it to pick parts and "
+        "colours the user has before designing, and to find an owned substitute. query: words of the part number or "
+        "description (all must match, e.g. 'plate 2 x 4'); empty lists the most owned. colour: LDraw colour code. "
+        "inventory: one selected inventory (id or name), default all selected.",
+        {"query": {"type": "string"}, "colour": {"type": "integer", "description": "LDraw colour code"},
+         "limit": {"type": "integer", "description": f"Rows, default {parts_steering.DEFAULT_SEARCH_RESULTS}, max {parts_steering.MAX_SEARCH_RESULTS}"},
+         "inventory": {"type": "string", "description": "Inventory id or name; default: all selected"}}, []), t_my_parts),
     "list_files": (_fn("list_files", "List toolkit resources or this chat's output/ (default: repository root).",
         {"path": {"type": "string"}}, []), t_list_files),
     "read_file": (_fn("read_file", "Read toolkit instructions, documentation, examples or your output files. "

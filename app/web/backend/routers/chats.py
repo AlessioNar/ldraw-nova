@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 import agent
 import gallery
+import parts_steering
 import run_state
 import usage
 from attachments import validate_documents, validate_images
@@ -71,6 +72,7 @@ async def chats_get(chat_id: str):
                     document["url"] = f"/api/chats/{chat_id}/artifacts/" + quote(relative.as_posix())
                 except ValueError:
                     document["url"] = None
+    parts_steering.attach_parts_checks(messages)
     models = chat_models(store, chat_id)
     gallery.ensure_artifacts(store.resolve(chat_id, ref["model"]) for ref in store.models(chat_id)
                              if store.resolve(chat_id, ref["model"]).is_file())
