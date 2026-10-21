@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 import run_state
 import sandbox
 import settings
-from routers import chats, environment, files, llm_models, models_gallery, spa
+from routers import chats, environment, files, inventories, llm_models, models_gallery, spa
 from store import get_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -62,15 +62,17 @@ async def same_origin_api(request: Request, call_next):
             size = int(request.headers.get("content-length", "0"))
         except ValueError:
             return JSONResponse({"detail": "Invalid Content-Length"}, status_code=400)
-        if size > 18 * 1024 * 1024:
-            return JSONResponse({"detail": "Request exceeds 18 MB"}, status_code=413)
+        # An inventory upload carries a CSV of up to 25 MB (the route enforces that) inside its JSON body.
+        limit = 27 if request.url.path == "/api/inventories" else 18
+        if size > limit * 1024 * 1024:
+            return JSONResponse({"detail": f"Request exceeds {limit} MB"}, status_code=413)
     response = await call_next(request)
     if request.url.path.startswith("/api/environment") or request.url.path.endswith("/edit"):
         response.headers["Cache-Control"] = "no-store"
     return response
 
 
-for module in (environment, llm_models, chats, models_gallery, files):
+for module in (environment, llm_models, chats, models_gallery, files, inventories):
     app.include_router(module.router)
 spa.mount_static(app)
 app.include_router(spa.router)   # catch-all: after every other route and mount
