@@ -4,7 +4,7 @@
 
 Run `./ldraw-agent part 3001 --limit 30`. It returns actual library metadata, origin-relative bounds, dimensions, stud positions, connectors, provenance, and completeness. Bounds include decorative geometry and stud height; **bounding-box height is not stacking height**. Do not infer axes from the part description alone.
 
-Use `catalog parts QUERY --category NAME --measure` to discover shapes through the supplied categories and compare cached dimensions with the installed geometry. Category `ldu_y`, `plates_y` and rounded `studs_*` fields describe extents, not connection planes. For example, the supplied `3659` arch cache reports Y=37.41191 LDU while the installed file measures 28. The [visual-design guide](visual-design.md) explains selection boards, palettes and supported detail recipes. Reserve openings and overhangs before adding them; a new ornament must be checked in its containing module too.
+Use `catalog parts QUERY --category NAME --measure` to discover shapes through the supplied categories and compare cached dimensions with the installed geometry. Category `ldu_y`, `plates_y` and rounded `studs_*` fields describe extents, not connection planes. The [visual-design guide](visual-design.md) explains selection boards, palettes and supported detail recipes. Reserve openings and overhangs before adding them; a new ornament must be checked in its containing module too.
 
 The PDF's standard dimensions (p.63) are:
 
@@ -31,9 +31,9 @@ y_upper = y_lower - height_of_upper_body
 
 A plate placed on a brick at Y=0 goes at Y=-8. A brick placed on that plate goes at Y=-32. Do not subtract the lower part's height or add a 4-LDU gap for the stud. Studs enter the upper part's sockets, so their bounding boxes legitimately overlap.
 
-The plan's `on` field implements this rule for the curated parts in `./ldraw-agent profiles`. `offset_studs: [x,z]` is measured in **the supporting part's local axes**, times 20 LDU. `yaw` describes the new part's orientation in the containing section, independently of the support's yaw. `on` requires an earlier placement ID in the same section and at least one aligned stud grid point. It is not available for unknown part profiles, tiles, slopes, rotated sideways parts, or submodel references; use inspection and explicit `at` coordinates instead.
+`on` needs an earlier placement ID in the same section and at least one aligned stud grid point; it is unavailable for unknown part profiles, tiles, slopes, rotated sideways parts and submodel references (use inspection and explicit `at`). The field syntax is in the instructions and the tool reference.
 
-Half-stud offsets are 10 LDU. A centred 1×1 over a 2×2 needs an X/Z offset to an actual stud, e.g. `[0.5,0.5]`, not `[0,0]`. Side-by-side bricks touching walls have no clutch connection; bridge them with a plate or a correctly mated connector. Place long plates across seams for connected assemblies.
+Side-by-side bricks touching walls have no clutch connection; bridge them with a plate or a correctly mated connector. Place long plates across seams for connected assemblies.
 
 ## Reuse subassemblies and connection evidence
 
@@ -56,18 +56,4 @@ Use actual matching wheel/rim/tyre assemblies from inspected official shortcuts 
 
 `confirmed_components` and `optimistic_components` describe the connector algorithm's evidence. “Confirmed” is a library inference status, not a promise of real-world fit. Multiple groups can mean floating parts, missing connector metadata, or deliberately separate objects (e.g. a figure beside a vehicle). Document which explanation you verified. One connected group also does not prove that the model is strong or stable.
 
-The report always says `physical_validity: not_proven`. Visually inspect home/top/front views and any obscured connection. For difficult geometry, render the selected submodel and inspect its construction steps from several viewpoints with the global `ldraw-render-steps.sh`; see [construction review](build-manuals.md#inspect-a-model-during-construction). Compare suspect regions with the actual part geometry and connector metadata. Record unresolved physical checks and simplify unverified construction where practical.
-
-For a semantic GLB export:
-
-```sh
-./prepare-glb.sh --file output/my-model.mpd output/my-model.glb
-```
-
-This invokes the global `mpd2glb.sh` and preserves semantic annotations for downstream viewing. Conversion is not an additional geometry or physical-fit check. Keep all fixes in the source plan/MPD and regenerate derived exports after changes.
-
-## Module interfaces and large scenes
-
-The [complex-model guide](complex-models.md) defines named anchor frames, relative plan includes, dependency-closed assets and regular repeats. Anchor alignment composes full rigid transforms and accounts for each module's local origin. It is an authored interface, not automatic connector detection. Keep actual mating studs/holes clear and inspect both modules together.
-
-Use `--section NAME --colour CODE` for a floor, roof or furniture detail. Source line paths remain tied to the input, while occurrence indices restart in the selected frame. Use `--detail full --limit 30 --offset 30` to obtain another instance page. Full-scene summary reports still check all resolved bounds and curated overlaps. Contacts are computed automatically through 500 physical leaves; above that, skipped coverage is explicit. `--contacts none` yields null component counts; `--contacts all` requests the full computation. Embedded physical DAT definitions are geometry leaves for BOM/instance purposes, while their internal geometry is expanded through an isolated document library overlay.
+The report always says `physical_validity: not_proven`. Visually inspect home/top/front views and any obscured connection. Compare suspect regions with the actual part geometry and connector metadata. Record unresolved physical checks and simplify unverified construction where practical.
