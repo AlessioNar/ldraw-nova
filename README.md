@@ -185,6 +185,7 @@ I'd like to thank the following:
 - [LDCad](https://www.melkert.net/LDCad) and Shadow Library, Roland Melkert.
 - [ldraw.rs](https://github.com/segfault87/ldraw.rs)'s Park Joon-Kyu (@segfault87), and contributors.
 - [pyldraw3](https://github.com/hbmartin/pyldraw3)'s  Harold Martin (@hbmartin), and contributors.
+- [Rebrickable](https://rebrickable.com/): the set catalog (`ldraw_tools/data/set-catalog.bin`, `ldraw-agent sets`) and the part and colour mapping derive from Rebrickable's database downloads. **Data from Rebrickable, rebrickable.com** (free for personal and commercial use provided Rebrickable is acknowledged as the data source).
 
 ... and thanks to all of the many other LDraw creators!
 
@@ -196,4 +197,4 @@ If you think you should be included on this section, please **drop me an email!*
 
 ## Trademarks
 
-**LEGO(R)** is a trademark of the **LEGO Group** of companies which does not sponsor, authorize or endorse this software.
+**LEGO(R)** is a trademark of the **LEGO Group** of companies which does not sponsor, authorize or endorse this software. Set names, numbers and parts lists in the set catalog are factual data from Rebrickable; Rebrickable is not affiliated with this project either.

@@ -30,3 +30,18 @@ retained unchanged. [The study index](examples/technic-studies/README.md) and
 
 The underlying 42083/42110 LDraw models credit Philippe Hurbain [Philo] and retain
 their CCAL 2.0 notices. Documentation reuse does not replace model or part licences.
+
+## Rebrickable data
+
+`ldraw_tools/data/set-catalog.bin` (set numbers, names, years, themes, piece counts and parts lists of about 20,000
+LEGO sets, read with `ldraw-agent sets`) and `ldraw_tools/data/rebrickable-colours.json` / `rebrickable-parts.json`
+(Rebrickable to LDraw colour and part mapping) are derived from the database downloads of
+[Rebrickable](https://rebrickable.com/downloads/).
+
+**Data from Rebrickable, rebrickable.com.**
+
+Rebrickable's downloads page states (read 2026-10-21): "Free for personal and commercial use, provided you
+acknowledge Rebrickable as your data source." This notice is that acknowledgement; keep it when you redistribute the
+files or derivatives. The terms are recorded in `docs/plans/set-catalog.md`.
+
+LEGO(R) is a trademark of the LEGO Group of companies, which does not sponsor, authorize or endorse this project.
