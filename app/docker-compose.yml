@@ -11,11 +11,12 @@ services:
     platform: linux/amd64  # LeoCAD ships x86_64-only AppImages (emulated on Apple Silicon)
     container_name: ldraw-nova-app
     init: true            # proper signal handling / zombie reaping (Xvfb + your process)
-    # The web app is available on localhost and the host's LAN IP at this port
-    # (change with LDRAW_NOVA_WEB_PORT in .env). It has no login, so restrict access
-    # with your host firewall on untrusted networks.
+    # The web app is published on this machine only (127.0.0.1) at this port
+    # (change with LDRAW_NOVA_WEB_PORT in .env). It has no login: to reach it from
+    # other devices set LDRAW_NOVA_WEB_BIND=0.0.0.0 in .env, and only on networks
+    # you trust (or restrict access with your host firewall).
     ports:
-      - "${LDRAW_NOVA_WEB_PORT:-8765}:8000"
+      - "${LDRAW_NOVA_WEB_BIND:-127.0.0.1}:${LDRAW_NOVA_WEB_PORT:-8765}:8000"
     volumes:
       - ./data:/data       # host ./data <-> container /data (input: everything under it, output: output/)
       - config:/config     # LLM settings, API keys; kept out of ./data
