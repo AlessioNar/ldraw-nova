@@ -1,15 +1,24 @@
 """User parts inventories: import a Rebrickable CSV, then list, show, search and check models against it."""
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import shutil
 from pathlib import Path
 
-from ..common import atomic_write, get_parts
+from .. import buildable
+from ..common import atomic_write, dumps, get_parts
 from ..inventory import (Inventory, ParseError, check_model, make_inventory, parse_rebrickable_csv,
                          search_owned, slugify, summary)
 from .base import Command, positive
+
+
+def fraction(value):
+    value = float(value)
+    if not 0 <= value <= 1:
+        raise argparse.ArgumentTypeError("must be between 0 and 1")
+    return value
 
 
 def store_dir(value=None):
@@ -68,13 +77,34 @@ def register(commands):
     p.add_argument("--mode", choices=["prefer", "only"], default="prefer", help="only: exit 1 when the inventory is short")
     p.add_argument("--report", help="Also write the JSON report to this file (--json prints it; stdout may be truncated for big models)")
     common(p)
+    p = sub.add_parser("buildable", help="Rank the bundled set models by how much of each the inventories cover")
+    p.add_argument("name", nargs="?", help="Inventory name, or several separated by commas")
+    p.add_argument("--limit", type=positive, default=20)
+    p.add_argument("--min-parts", type=int, default=buildable.MIN_PARTS, help="Skip models with fewer pieces (default %(default)s)")
+    p.add_argument("--max-parts", type=positive, help="Skip models with more pieces")
+    missing = p.add_mutually_exclusive_group()
+    missing.add_argument("--max-missing", type=int, help="Only models missing at most this many pieces")
+    missing.add_argument("--max-missing-share", type=fraction, help="Only models missing at most this share (0-1) of their pieces")
+    p.add_argument("--query", default="", help="Only models whose file name or description has all these words")
+    p.add_argument("--substitute-colours", action="store_true",
+                   help="Also report the completeness if any owned colour of a part may stand in for a missing one (ranking stays exact)")
+    p.add_argument("--keep-subvariants", action="store_true", help="Do not drop sub-variants that fit inside their parent set model")
+    p.add_argument("--report", help="Also write the JSON report to this file")
+    p.add_argument("--warm", action="store_true", help="Only build the BOM cache (no inventory needed)")
+    p.add_argument("--cache-only", action="store_true", help="Rank what is cached; never build BOMs (the report says how many are pending)")
+    p.add_argument("--max-build-seconds", type=positive, default=buildable.DEFAULT_BUDGET,
+                   help="Stop building BOMs after this long; rerun to resume (default %(default)s)")
+    p.add_argument("--workers", type=positive, help="BOM build processes (default min(4, CPUs))")
+    p.add_argument("--cache-dir", help="BOM cache directory (default .cache/buildable/<library signature>)")
+    p.add_argument("--models-dir", help=argparse.SUPPRESS)      # tests: a small model folder instead of the bundled catalogue
+    common(p)
     p = sub.add_parser("remove", help="Delete a stored inventory")
     p.add_argument("name")
     common(p)
 
 
 def needs_parts(args):
-    return args.inventory_command == "check"
+    return args.inventory_command in {"check", "buildable"}
 
 
 def lines_import(inv, result, path):
@@ -101,6 +131,47 @@ def lines_check(report):
     for s in report["colour_substitutions"]:
         out.append(f"  {s['part']} (colour {s['wanted_colour']}) owned in: " + ", ".join(f"{o['colour']} x{o['qty']}" for o in s["owned_colours"][:6]))
     return out
+
+
+def lines_buildable(report):
+    out = [f"Inventories: {', '.join(report['inventories'])}: {report['inventory_pieces']} mapped pieces; "
+           f"{report['unmapped_pieces']} pieces ({report['unmapped_share']:.0%}) could not be mapped to LDraw and count as not owned"]
+    c = report["counts"]
+    out.append(f"Models: {c['models']} scanned, {c['parsed']} parsed, {c['skipped']} skipped (unparsable), {c['too_small']} too small, "
+               f"{c['subvariants']} sub-variants dropped, {c['ranked']} ranked")
+    out += [f"warning: {w}" for w in report["warnings"]]
+    for i, r in enumerate(report["results"], 1):
+        sub = f"  with colour substitution {r['substituted_completeness']:.1%}" if "substituted_completeness" in r else ""
+        out.append(f"{i:>3}. {r['id']:<30}{r['completeness']:>7.1%}  {r['matched']}/{r['pieces']} pieces, {r['missing']} missing in {r['missing_lines']} line(s){sub}"
+                   + (f"  ({r['custom_pieces']} on custom parts no inventory covers)" if r["custom_pieces"] else ""))
+        if r["description"]:
+            out.append(f"     {r['description'][:110]}")
+        out += [f"     missing {m['part']} colour {m['colour']} {m['colour_name']}: need {m['needed']}, have {m['owned']}" for m in r["top_missing"]]
+    return out or ["No models"]
+
+
+def buildable_report(args, library, invs):
+    scan = buildable.scan(library, root=args.models_dir, cache=args.cache_dir, build=not args.cache_only, budget=args.max_build_seconds,
+                          workers=args.workers, progress=buildable.stderr_progress)
+    base = dict(models=scan.total, cached=len(scan.entries), built=scan.built, pending=len(scan.pending), partial=bool(scan.pending),
+                skipped=[dict(file=e.name, error=e.error) for e in scan.failed])
+    if args.warm:
+        return dict(base, warm=True, results=[], inventories=[], warnings=[])
+    results, counts = buildable.rank(scan.entries, invs, library=library, descriptions=buildable.descriptions(), limit=args.limit,
+                                     min_parts=args.min_parts, max_parts=args.max_parts, max_missing=args.max_missing,
+                                     max_missing_share=args.max_missing_share, query=args.query,
+                                     substitute_colours=args.substitute_colours, keep_subvariants=args.keep_subvariants)
+    mapped, unmapped = sum(i.total_pieces for i in invs), sum(i.unmapped_pieces for i in invs)
+    warnings = []
+    if scan.pending:
+        warnings.append(f"BOM cache is incomplete: {len(scan.pending)} of {scan.total} models not scanned yet; rerun to continue")
+    if counts["skipped"]:
+        warnings.append(f"{counts['skipped']} model file(s) could not be parsed and were skipped")
+    if unmapped:
+        warnings.append("pieces that could not be mapped to LDraw parts or colours count as not owned, so completeness is understated")
+    return dict(base, inventories=[i.name for i in invs], inventory_pieces=mapped, unmapped_pieces=unmapped,
+                unmapped_share=round(unmapped / (mapped + unmapped), 4) if mapped + unmapped else 0.0, counts=counts,
+                substitute_colours=args.substitute_colours, subvariants_dropped=not args.keep_subvariants, warnings=warnings, results=results)
 
 
 def run(args, library, parts):
@@ -141,7 +212,16 @@ def run(args, library, parts):
         for ext in ("json", "csv"):
             (store / f"{inv.id}.{ext}").unlink(missing_ok=True)
         return finish(dict(removed=inv.id), [f"Removed {inv.id}"])
+    if action == "buildable" and args.warm:
+        return finish(buildable_report(args, parts, []), ["BOM cache is up to date"])
+    if not args.name:
+        raise ValueError("Name at least one inventory")
     invs = [load_inventory(store, n.strip()) for n in args.name.split(",") if n.strip()]
+    if action == "buildable":
+        report = buildable_report(args, parts, invs)
+        if args.report:
+            atomic_write(args.report, dumps(report) + "\n")
+        return finish(report, lines_buildable(report))
     if action == "show":
         data = summary(invs, args.limit, lib)
         data["unmapped_parts"] = sum(len(i.unmapped_parts) for i in invs)
