@@ -9,7 +9,8 @@ def usage_record(response) -> Optional[dict]:
 
     Providers report caching differently through litellm: Anthropic adds
     cache_read_input_tokens / cache_creation_input_tokens, OpenAI-style
-    providers put it in prompt_tokens_details.cached_tokens, and plenty
+    providers put reads in prompt_tokens_details.cached_tokens (and OpenRouter
+    writes in cache_creation_tokens / cache_write_tokens), and plenty
     report nothing. Returns None when there is nothing worth storing.
     """
     usage = getattr(response, "usage", None)
@@ -25,10 +26,11 @@ def usage_record(response) -> Optional[dict]:
 
     details = getattr(usage, "prompt_tokens_details", None)
     cached = getattr(details, "cached_tokens", None) if details is not None else None
+    written = getattr(details, "cache_creation_tokens", None) or getattr(details, "cache_write_tokens", None) if details is not None else None
     record = {"prompt": number("prompt_tokens"),
               "completion": number("completion_tokens"),
               "cache_read": number("cache_read_input_tokens") or (int(cached) if isinstance(cached, (int, float)) else 0),
-              "cache_write": number("cache_creation_input_tokens")}
+              "cache_write": number("cache_creation_input_tokens") or (int(written) if isinstance(written, (int, float)) else 0)}
     return record if any(record.values()) else None
 
 

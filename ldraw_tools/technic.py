@@ -44,6 +44,22 @@ def canonical(code):
     return registry()['aliases'].get(code, code)
 
 
+FINGERPRINT_DECIMALS = 5
+
+
+def geometry_fingerprint(points):
+    """SHA-256 of the expanded points, rounded to 1e-5 LDU.
+
+    pyldraw3 multiplies matrices with numpy, whose BLAS kernels fuse
+    multiply-adds on some CPUs and not on others, so the same library yields
+    coordinates that differ in the last bits between machines. Hashing the raw
+    floats made the registry valid on one machine only. Rounding removes that
+    noise; adding 0.0 turns -0.0 into 0.0.
+    """
+    rounded = [[round(float(c), FINGERPRINT_DECIMALS) + 0.0 for c in jsonable(v)] for v in points]
+    return hashlib.sha256(json.dumps(rounded, separators=(',', ':')).encode()).hexdigest()
+
+
 def definition(local):
     """Return a reviewed definition only for its exact expanded geometry."""
     code = canonical(local.code)
@@ -53,9 +69,7 @@ def definition(local):
     key = id(local)
     cached = _geometry_cache.get(key)
     if cached is None or cached[0] is not local:
-        digest = hashlib.sha256(json.dumps([jsonable(v) for v in local.points],
-                                          separators=(',', ':')).encode()).hexdigest()
-        cached = (local, digest)
+        cached = (local, geometry_fingerprint(local.points))
         _geometry_cache[key] = cached
         if len(_geometry_cache) > 128:
             _geometry_cache.popitem(last=False)

@@ -33,7 +33,7 @@ Record the silhouette, support/load direction, dimensions, palette and body atta
 
 The initial registry covers **34 definitions plus aliases**: common Technic bricks, straight beams, a thin beam, a rectangular frame, an axle/pin cross block, ordinary and long pins, axle-pins, a stud-ended half pin, axles and bushes. `technic parts` lists exact IDs, nominal ports, part roles and `geometry_matches`. Coordinates are **local LDU**.
 
-Each entry fingerprints its expanded geometry. Changed or unreviewed definitions do not receive curated ports. Do not update a hash without measuring and reviewing the new part. Additional connector blocks, bent/flexible members, panels and hubs need interface curation before a strict structural contract can rely on them.
+Each entry fingerprints its expanded geometry. The fingerprint hashes the points rounded to 1e-5 LDU (`geometry_fingerprint`), because numpy's BLAS yields last-bit differences between CPUs; never hash raw floats. Changed or unreviewed definitions do not receive curated ports. Do not update a hash without measuring and reviewing the new part. Additional connector blocks, bent/flexible members, panels and hubs need interface curation before a strict structural contract can rely on them.
 
 - Hole pitch is normally 20 LDU. Brick/plate body heights are 24/8. Two plates between studded Technic bricks produce a 40-LDU hole separation.
 - Three beam holes span 40 LDU between their end centres. Solid bounds are not nominal placement dimensions.

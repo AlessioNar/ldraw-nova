@@ -23,6 +23,14 @@ def test_openai_style_cached_tokens_in_details():
     assert record["cache_write"] == 0
 
 
+def test_openrouter_cache_writes_in_details():
+    """OpenRouter reports writes as prompt_tokens_details.cache_write_tokens (litellm mirrors it as cache_creation_tokens)."""
+    for field in ("cache_creation_tokens", "cache_write_tokens"):
+        record = usage.usage_record(response(prompt_tokens=900, completion_tokens=120,
+                                             prompt_tokens_details=SimpleNamespace(cached_tokens=40, **{field: 800})))
+        assert record == {"prompt": 900, "completion": 120, "cache_read": 40, "cache_write": 800}
+
+
 def test_provider_reporting_nothing():
     assert usage.usage_record(SimpleNamespace()) is None
     assert usage.usage_record(SimpleNamespace(usage=None)) is None
