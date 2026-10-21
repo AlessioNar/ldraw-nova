@@ -164,3 +164,34 @@ def test_structural_discovery_uses_selected_content_not_parent_theme():
     assert not structural_candidate(dict(row, description='Motor and gearbox'))
     assert structural_candidate({'kind': 'parts', 'part': '2780.dat'})
     assert not structural_candidate({'kind': 'parts', 'part': '3648.dat'})
+
+
+def test_fingerprint_ignores_float_noise_and_negative_zero():
+    from ldraw_tools.technic import geometry_fingerprint
+    exact = [Vector(1.5, -2.25, 0.0), Vector(4.2425805, 0.0, -3.0)]
+    noisy = [Vector(1.5 + 3e-13, -2.25 - 2e-13, -0.0), Vector(4.2425805 - 1e-13, -1e-16, -3.0 + 4e-13)]
+    assert geometry_fingerprint(exact) == geometry_fingerprint(noisy)
+    assert geometry_fingerprint(exact) != geometry_fingerprint([Vector(1.5, -2.25, 0.0), Vector(4.2426, 0.0, -3.0)])
+
+
+def test_registry_fingerprints_do_not_depend_on_fused_multiply_add(official, monkeypatch):
+    """numpy's BLAS fuses multiply-adds on some CPUs; reviewed parts must match either way."""
+    from ldraw import geometry
+    multiply, reverse = geometry.Matrix.__mul__, geometry.Matrix.__rmul__
+
+    def unfused(self, other):
+        if not isinstance(other, geometry.Vector):
+            return multiply(self, other)
+        a = self._array
+        return geometry.Vector(*(float(a[i, 0] * other.x + a[i, 1] * other.y + a[i, 2] * other.z) for i in range(3)))
+
+    def unfused_reverse(self, other):
+        if not isinstance(other, geometry.Vector):
+            return reverse(self, other)
+        a = self._array
+        return geometry.Vector(*(float(other.x * a[0, j] + other.y * a[1, j] + other.z * a[2, j]) for j in range(3)))
+
+    monkeypatch.setattr(geometry.Matrix, '__mul__', unfused)
+    monkeypatch.setattr(geometry.Matrix, '__rmul__', unfused_reverse)
+    fresh = get_parts(shadows=[])
+    assert [c for c in registry()['parts'] if not definition(fresh.geometry(c))] == []
