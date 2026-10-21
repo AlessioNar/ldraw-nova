@@ -1,0 +1,1468 @@
+{
+ "colours": {
+  "0": {
+   "exact": true,
+   "ldraw": 0,
+   "method": "name",
+   "name": "Black"
+  },
+  "1": {
+   "exact": true,
+   "ldraw": 1,
+   "method": "name",
+   "name": "Blue"
+  },
+  "10": {
+   "exact": true,
+   "ldraw": 10,
+   "method": "name",
+   "name": "Bright Green"
+  },
+  "100": {
+   "exact": true,
+   "ldraw": 100,
+   "method": "name",
+   "name": "Light Salmon"
+  },
+  "1000": {
+   "exact": true,
+   "ldraw": 329,
+   "method": "name",
+   "name": "Glow in Dark White"
+  },
+  "1002": {
+   "exact": true,
+   "ldraw": 339,
+   "method": "name",
+   "name": "Glitter Trans-Neon Green"
+  },
+  "1003": {
+   "exact": true,
+   "ldraw": 302,
+   "method": "name",
+   "name": "Glitter Trans-Light Blue"
+  },
+  "1004": {
+   "exact": true,
+   "ldraw": 231,
+   "method": "rgb",
+   "name": "Trans-Flame Yellowish Orange"
+  },
+  "1005": {
+   "exact": true,
+   "ldraw": 234,
+   "method": "name",
+   "name": "Trans-Fire Yellow"
+  },
+  "1006": {
+   "exact": false,
+   "ldraw": 39,
+   "method": "rgb",
+   "name": "Trans-Light Royal Blue"
+  },
+  "1007": {
+   "exact": true,
+   "ldraw": 218,
+   "method": "name",
+   "name": "Reddish Lilac"
+  },
+  "1011": {
+   "exact": false,
+   "ldraw": 14,
+   "method": "rgb",
+   "name": "Vintage Yellow"
+  },
+  "1012": {
+   "exact": true,
+   "ldraw": 509,
+   "method": "name",
+   "name": "Fabuland Orange"
+  },
+  "1013": {
+   "exact": true,
+   "ldraw": 30001,
+   "method": "name",
+   "name": "Modulex White"
+  },
+  "1014": {
+   "exact": true,
+   "ldraw": 30032,
+   "method": "name",
+   "name": "Modulex Light Bluish Gray"
+  },
+  "1015": {
+   "exact": true,
+   "ldraw": 30002,
+   "method": "name",
+   "name": "Modulex Light Gray"
+  },
+  "1016": {
+   "exact": true,
+   "ldraw": 30040,
+   "method": "name",
+   "name": "Modulex Charcoal Gray"
+  },
+  "1017": {
+   "exact": true,
+   "ldraw": 31000,
+   "method": "rgb",
+   "name": "Modulex Tile Gray"
+  },
+  "1018": {
+   "exact": true,
+   "ldraw": 30003,
+   "method": "name",
+   "name": "Modulex Black"
+  },
+  "1019": {
+   "exact": true,
+   "ldraw": 30054,
+   "method": "rgb",
+   "name": "Modulex Tile Brown"
+  },
+  "1020": {
+   "exact": true,
+   "ldraw": 30004,
+   "method": "name",
+   "name": "Modulex Terracotta"
+  },
+  "1021": {
+   "exact": true,
+   "ldraw": 30009,
+   "method": "name",
+   "name": "Modulex Brown"
+  },
+  "1022": {
+   "exact": true,
+   "ldraw": 30005,
+   "method": "name",
+   "name": "Modulex Buff"
+  },
+  "1023": {
+   "exact": true,
+   "ldraw": 30013,
+   "method": "name",
+   "name": "Modulex Red"
+  },
+  "1024": {
+   "exact": true,
+   "ldraw": 30033,
+   "method": "name",
+   "name": "Modulex Pink Red"
+  },
+  "1025": {
+   "exact": true,
+   "ldraw": 30012,
+   "method": "name",
+   "name": "Modulex Orange"
+  },
+  "1026": {
+   "exact": true,
+   "ldraw": 30039,
+   "method": "name",
+   "name": "Modulex Light Orange"
+  },
+  "1027": {
+   "exact": true,
+   "ldraw": 30035,
+   "method": "name",
+   "name": "Modulex Light Yellow"
+  },
+  "1028": {
+   "exact": true,
+   "ldraw": 30006,
+   "method": "name",
+   "name": "Modulex Ochre Yellow"
+  },
+  "1029": {
+   "exact": true,
+   "ldraw": 30015,
+   "method": "name",
+   "name": "Modulex Lemon"
+  },
+  "1030": {
+   "exact": true,
+   "ldraw": 30014,
+   "method": "name",
+   "name": "Modulex Pastel Green"
+  },
+  "1031": {
+   "exact": true,
+   "ldraw": 30007,
+   "method": "name",
+   "name": "Modulex Olive Green"
+  },
+  "1032": {
+   "exact": true,
+   "ldraw": 30034,
+   "method": "name",
+   "name": "Modulex Aqua Green"
+  },
+  "1033": {
+   "exact": true,
+   "ldraw": 30008,
+   "method": "name",
+   "name": "Modulex Teal Blue"
+  },
+  "1034": {
+   "exact": true,
+   "ldraw": 31001,
+   "method": "rgb",
+   "name": "Modulex Tile Blue"
+  },
+  "1035": {
+   "exact": true,
+   "ldraw": 30038,
+   "method": "name",
+   "name": "Modulex Medium Blue"
+  },
+  "1036": {
+   "exact": true,
+   "ldraw": 30011,
+   "method": "name",
+   "name": "Modulex Pastel Blue"
+  },
+  "1037": {
+   "exact": true,
+   "ldraw": 30037,
+   "method": "name",
+   "name": "Modulex Violet"
+  },
+  "1038": {
+   "exact": true,
+   "ldraw": 30016,
+   "method": "name",
+   "name": "Modulex Pink"
+  },
+  "1039": {
+   "exact": true,
+   "ldraw": 30000,
+   "method": "name",
+   "name": "Modulex Clear"
+  },
+  "1040": {
+   "exact": true,
+   "ldraw": 30082,
+   "method": "name",
+   "name": "Modulex Foil Dark Gray"
+  },
+  "1041": {
+   "exact": true,
+   "ldraw": 30083,
+   "method": "name",
+   "name": "Modulex Foil Light Gray"
+  },
+  "1042": {
+   "exact": true,
+   "ldraw": 30084,
+   "method": "name",
+   "name": "Modulex Foil Dark Green"
+  },
+  "1043": {
+   "exact": true,
+   "ldraw": 30085,
+   "method": "name",
+   "name": "Modulex Foil Light Green"
+  },
+  "1044": {
+   "exact": true,
+   "ldraw": 30086,
+   "method": "name",
+   "name": "Modulex Foil Dark Blue"
+  },
+  "1045": {
+   "exact": true,
+   "ldraw": 30087,
+   "method": "name",
+   "name": "Modulex Foil Light Blue"
+  },
+  "1046": {
+   "exact": true,
+   "ldraw": 30088,
+   "method": "name",
+   "name": "Modulex Foil Violet"
+  },
+  "1047": {
+   "exact": true,
+   "ldraw": 30089,
+   "method": "rgb",
+   "name": "Modulex Foil Red"
+  },
+  "1048": {
+   "exact": true,
+   "ldraw": 30090,
+   "method": "name",
+   "name": "Modulex Foil Yellow"
+  },
+  "1049": {
+   "exact": true,
+   "ldraw": 30091,
+   "method": "name",
+   "name": "Modulex Foil Orange"
+  },
+  "1050": {
+   "exact": true,
+   "ldraw": 353,
+   "method": "name",
+   "name": "Coral"
+  },
+  "1051": {
+   "exact": false,
+   "ldraw": 322,
+   "method": "rgb",
+   "name": "Pastel Blue"
+  },
+  "1052": {
+   "exact": true,
+   "ldraw": 341,
+   "method": "name",
+   "name": "Glitter Trans-Orange"
+  },
+  "1053": {
+   "exact": true,
+   "ldraw": 362,
+   "method": "name",
+   "name": "Opal Trans-Light Blue"
+  },
+  "1054": {
+   "exact": true,
+   "ldraw": 364,
+   "method": "name",
+   "name": "Opal Trans-Dark Pink"
+  },
+  "1055": {
+   "exact": true,
+   "ldraw": 360,
+   "method": "name",
+   "name": "Opal Trans-Clear"
+  },
+  "1058": {
+   "exact": true,
+   "ldraw": 285,
+   "method": "name",
+   "name": "Trans-Light Green"
+  },
+  "1059": {
+   "exact": true,
+   "ldraw": 365,
+   "method": "name",
+   "name": "Opal Trans-Purple"
+  },
+  "1060": {
+   "exact": true,
+   "ldraw": 367,
+   "method": "name",
+   "name": "Opal Trans-Bright Green"
+  },
+  "1061": {
+   "exact": true,
+   "ldraw": 10366,
+   "method": "name",
+   "name": "Opal Trans-Dark Blue"
+  },
+  "1062": {
+   "exact": false,
+   "ldraw": 14,
+   "method": "override",
+   "name": "Vibrant Yellow"
+  },
+  "1064": {
+   "exact": true,
+   "ldraw": 508,
+   "method": "name",
+   "name": "Fabuland Red"
+  },
+  "1065": {
+   "exact": true,
+   "ldraw": 189,
+   "method": "name",
+   "name": "Reddish Gold"
+  },
+  "1066": {
+   "exact": true,
+   "ldraw": 180,
+   "method": "rgb",
+   "name": "Curry"
+  },
+  "1067": {
+   "exact": true,
+   "ldraw": 128,
+   "method": "name",
+   "name": "Dark Nougat"
+  },
+  "1068": {
+   "exact": true,
+   "ldraw": 123,
+   "method": "rgb",
+   "name": "Bright Reddish Orange"
+  },
+  "1069": {
+   "exact": true,
+   "ldraw": 176,
+   "method": "name",
+   "name": "Pearl Red"
+  },
+  "1071": {
+   "exact": false,
+   "ldraw": 2,
+   "method": "rgb",
+   "name": "Pearl Green"
+  },
+  "1072": {
+   "exact": true,
+   "ldraw": 187,
+   "method": "name",
+   "name": "Pearl Brown"
+  },
+  "1073": {
+   "exact": true,
+   "ldraw": 83,
+   "method": "name",
+   "name": "Pearl Black"
+  },
+  "1075": {
+   "exact": false,
+   "ldraw": 321,
+   "method": "rgb",
+   "name": "Duplo Medium Blue"
+  },
+  "1076": {
+   "exact": true,
+   "ldraw": 10015,
+   "method": "rgb",
+   "name": "Duplo Lime"
+  },
+  "1077": {
+   "exact": true,
+   "ldraw": 510,
+   "method": "name",
+   "name": "Fabuland Lime"
+  },
+  "1080": {
+   "exact": false,
+   "ldraw": 68,
+   "method": "rgb",
+   "name": "Light Tan"
+  },
+  "1081": {
+   "exact": true,
+   "ldraw": 216,
+   "method": "rgb",
+   "name": "Rust Orange"
+  },
+  "1082": {
+   "exact": false,
+   "ldraw": 351,
+   "method": "rgb",
+   "name": "Clikits Pink"
+  },
+  "1083": {
+   "exact": false,
+   "ldraw": 422,
+   "method": "rgb",
+   "name": "Two-tone Copper"
+  },
+  "1084": {
+   "exact": false,
+   "ldraw": 128,
+   "method": "rgb",
+   "name": "Two-tone Gold"
+  },
+  "1085": {
+   "exact": false,
+   "ldraw": 373,
+   "method": "rgb",
+   "name": "Two-tone Silver"
+  },
+  "1086": {
+   "exact": false,
+   "ldraw": 330,
+   "method": "rgb",
+   "name": "Pearl Lime"
+  },
+  "1087": {
+   "exact": false,
+   "ldraw": 10017,
+   "method": "rgb",
+   "name": "Duplo Pink"
+  },
+  "1088": {
+   "exact": true,
+   "ldraw": 370,
+   "method": "name",
+   "name": "Medium Brown"
+  },
+  "1089": {
+   "exact": true,
+   "ldraw": 371,
+   "method": "rgb",
+   "name": "Warm Tan"
+  },
+  "1091": {
+   "exact": true,
+   "ldraw": 225,
+   "method": "name",
+   "name": "Warm Yellowish Orange"
+  },
+  "1092": {
+   "exact": true,
+   "ldraw": 300,
+   "method": "name",
+   "name": "Metallic Copper"
+  },
+  "1093": {
+   "exact": true,
+   "ldraw": 220,
+   "method": "name",
+   "name": "Light Lilac"
+  },
+  "1094": {
+   "exact": false,
+   "ldraw": 44,
+   "method": "rgb",
+   "name": "Trans-Medium Purple"
+  },
+  "1095": {
+   "exact": true,
+   "ldraw": 10375,
+   "method": "name",
+   "name": "Trans-Black"
+  },
+  "1096": {
+   "exact": true,
+   "ldraw": 10351,
+   "method": "name",
+   "name": "Glitter Trans-Bright Green"
+  },
+  "1097": {
+   "exact": false,
+   "ldraw": 44,
+   "method": "rgb",
+   "name": "Glitter Trans-Medium Purple"
+  },
+  "1098": {
+   "exact": false,
+   "ldraw": 285,
+   "method": "rgb",
+   "name": "Glitter Trans-Green"
+  },
+  "11": {
+   "exact": true,
+   "ldraw": 11,
+   "method": "name",
+   "name": "Light Turquoise"
+  },
+  "110": {
+   "exact": true,
+   "ldraw": 110,
+   "method": "name",
+   "name": "Violet"
+  },
+  "1100": {
+   "exact": false,
+   "ldraw": 14,
+   "method": "rgb",
+   "name": "Clikits Yellow"
+  },
+  "1102": {
+   "exact": true,
+   "ldraw": 158,
+   "method": "name",
+   "name": "Trans-Neon Red"
+  },
+  "1103": {
+   "exact": true,
+   "ldraw": 316,
+   "method": "override",
+   "name": "Pearl Titanium"
+  },
+  "1104": {
+   "exact": false,
+   "ldraw": 118,
+   "method": "rgb",
+   "name": "HO Aqua"
+  },
+  "1108": {
+   "exact": false,
+   "ldraw": 118,
+   "method": "rgb",
+   "name": "HO Dark Aqua"
+  },
+  "1109": {
+   "exact": false,
+   "ldraw": 272,
+   "method": "rgb",
+   "name": "HO Dark Blue"
+  },
+  "1110": {
+   "exact": false,
+   "ldraw": 72,
+   "method": "rgb",
+   "name": "HO Dark Gray"
+  },
+  "1115": {
+   "exact": false,
+   "ldraw": 3,
+   "method": "rgb",
+   "name": "HO Dark Turquoise"
+  },
+  "1118": {
+   "exact": false,
+   "ldraw": 118,
+   "method": "rgb",
+   "name": "HO Light Aqua"
+  },
+  "1119": {
+   "exact": false,
+   "ldraw": 422,
+   "method": "rgb",
+   "name": "HO Light Brown"
+  },
+  "112": {
+   "exact": true,
+   "ldraw": 112,
+   "method": "override",
+   "name": "Medium Bluish Violet"
+  },
+  "1120": {
+   "exact": false,
+   "ldraw": 19,
+   "method": "rgb",
+   "name": "HO Light Gold"
+  },
+  "1123": {
+   "exact": true,
+   "ldraw": 73,
+   "method": "rgb",
+   "name": "HO Medium Blue"
+  },
+  "1126": {
+   "exact": false,
+   "ldraw": 72,
+   "method": "rgb",
+   "name": "HO Metallic Dark Gray"
+  },
+  "1128": {
+   "exact": false,
+   "ldraw": 137,
+   "method": "rgb",
+   "name": "HO Metallic Sand Blue"
+  },
+  "1131": {
+   "exact": false,
+   "ldraw": 379,
+   "method": "rgb",
+   "name": "HO Sand Blue"
+  },
+  "1132": {
+   "exact": false,
+   "ldraw": 296,
+   "method": "rgb",
+   "name": "HO Sand Green"
+  },
+  "1134": {
+   "exact": false,
+   "ldraw": 72,
+   "method": "rgb",
+   "name": "HO Titanium"
+  },
+  "1135": {
+   "exact": false,
+   "ldraw": 296,
+   "method": "rgb",
+   "name": "Metal"
+  },
+  "1136": {
+   "exact": true,
+   "ldraw": 402,
+   "method": "name",
+   "name": "Reddish Orange"
+  },
+  "1137": {
+   "exact": true,
+   "ldraw": 422,
+   "method": "name",
+   "name": "Sienna Brown"
+  },
+  "1138": {
+   "exact": true,
+   "ldraw": 423,
+   "method": "name",
+   "name": "Umber Brown"
+  },
+  "1139": {
+   "exact": true,
+   "ldraw": 376,
+   "method": "name",
+   "name": "Opal Trans-Yellow"
+  },
+  "114": {
+   "exact": true,
+   "ldraw": 114,
+   "method": "name",
+   "name": "Glitter Trans-Dark Pink"
+  },
+  "1143": {
+   "exact": false,
+   "ldraw": 15,
+   "method": "rgb",
+   "name": "Glitter Milky White"
+  },
+  "1145": {
+   "exact": true,
+   "ldraw": 424,
+   "method": "name",
+   "name": "Ochre Yellow"
+  },
+  "1146": {
+   "exact": true,
+   "ldraw": 430,
+   "method": "name",
+   "name": "Warm Pink"
+  },
+  "115": {
+   "exact": true,
+   "ldraw": 115,
+   "method": "name",
+   "name": "Medium Lime"
+  },
+  "117": {
+   "exact": true,
+   "ldraw": 117,
+   "method": "name",
+   "name": "Glitter Trans-Clear"
+  },
+  "118": {
+   "exact": true,
+   "ldraw": 118,
+   "method": "name",
+   "name": "Aqua"
+  },
+  "12": {
+   "exact": true,
+   "ldraw": 12,
+   "method": "name",
+   "name": "Salmon"
+  },
+  "120": {
+   "exact": true,
+   "ldraw": 120,
+   "method": "name",
+   "name": "Light Lime"
+  },
+  "125": {
+   "exact": true,
+   "ldraw": 121,
+   "method": "name",
+   "name": "Light Orange"
+  },
+  "129": {
+   "exact": true,
+   "ldraw": 129,
+   "method": "name",
+   "name": "Glitter Trans-Purple"
+  },
+  "13": {
+   "exact": true,
+   "ldraw": 13,
+   "method": "name",
+   "name": "Pink"
+  },
+  "132": {
+   "exact": true,
+   "ldraw": 132,
+   "method": "name",
+   "name": "Speckle Black-Silver"
+  },
+  "133": {
+   "exact": true,
+   "ldraw": 133,
+   "method": "name",
+   "name": "Speckle Black-Gold"
+  },
+  "134": {
+   "exact": true,
+   "ldraw": 134,
+   "method": "name",
+   "name": "Copper"
+  },
+  "135": {
+   "exact": true,
+   "ldraw": 135,
+   "method": "name",
+   "name": "Pearl Light Gray"
+  },
+  "137": {
+   "exact": false,
+   "ldraw": 379,
+   "method": "rgb",
+   "name": "Pearl Sand Blue"
+  },
+  "14": {
+   "exact": true,
+   "ldraw": 14,
+   "method": "name",
+   "name": "Yellow"
+  },
+  "142": {
+   "exact": true,
+   "ldraw": 142,
+   "method": "name",
+   "name": "Pearl Light Gold"
+  },
+  "143": {
+   "exact": true,
+   "ldraw": 41,
+   "method": "name",
+   "name": "Trans-Medium Blue"
+  },
+  "148": {
+   "exact": true,
+   "ldraw": 148,
+   "method": "name",
+   "name": "Pearl Dark Gray"
+  },
+  "15": {
+   "exact": true,
+   "ldraw": 15,
+   "method": "name",
+   "name": "White"
+  },
+  "150": {
+   "exact": true,
+   "ldraw": 150,
+   "method": "name",
+   "name": "Pearl Very Light Gray"
+  },
+  "151": {
+   "exact": true,
+   "ldraw": 151,
+   "method": "name",
+   "name": "Very Light Bluish Gray"
+  },
+  "158": {
+   "exact": true,
+   "ldraw": 326,
+   "method": "name",
+   "name": "Yellowish Green"
+  },
+  "17": {
+   "exact": true,
+   "ldraw": 17,
+   "method": "name",
+   "name": "Light Green"
+  },
+  "178": {
+   "exact": false,
+   "ldraw": 92,
+   "method": "rgb",
+   "name": "Flat Dark Gold"
+  },
+  "179": {
+   "exact": true,
+   "ldraw": 179,
+   "method": "override",
+   "name": "Flat Silver"
+  },
+  "18": {
+   "exact": true,
+   "ldraw": 18,
+   "method": "name",
+   "name": "Light Yellow"
+  },
+  "182": {
+   "exact": true,
+   "ldraw": 57,
+   "method": "name",
+   "name": "Trans-Orange"
+  },
+  "183": {
+   "exact": true,
+   "ldraw": 183,
+   "method": "name",
+   "name": "Pearl White"
+  },
+  "19": {
+   "exact": true,
+   "ldraw": 19,
+   "method": "name",
+   "name": "Tan"
+  },
+  "191": {
+   "exact": true,
+   "ldraw": 191,
+   "method": "name",
+   "name": "Bright Light Orange"
+  },
+  "2": {
+   "exact": true,
+   "ldraw": 2,
+   "method": "name",
+   "name": "Green"
+  },
+  "20": {
+   "exact": true,
+   "ldraw": 20,
+   "method": "name",
+   "name": "Light Violet"
+  },
+  "21": {
+   "exact": true,
+   "ldraw": 21,
+   "method": "name",
+   "name": "Glow In Dark Opaque"
+  },
+  "212": {
+   "exact": true,
+   "ldraw": 212,
+   "method": "name",
+   "name": "Bright Light Blue"
+  },
+  "216": {
+   "exact": true,
+   "ldraw": 216,
+   "method": "name",
+   "name": "Rust"
+  },
+  "22": {
+   "exact": true,
+   "ldraw": 22,
+   "method": "name",
+   "name": "Purple"
+  },
+  "226": {
+   "exact": true,
+   "ldraw": 226,
+   "method": "name",
+   "name": "Bright Light Yellow"
+  },
+  "23": {
+   "exact": true,
+   "ldraw": 23,
+   "method": "name",
+   "name": "Dark Blue-Violet"
+  },
+  "230": {
+   "exact": true,
+   "ldraw": 45,
+   "method": "name",
+   "name": "Trans-Pink"
+  },
+  "232": {
+   "exact": true,
+   "ldraw": 232,
+   "method": "name",
+   "name": "Sky Blue"
+  },
+  "236": {
+   "exact": true,
+   "ldraw": 44,
+   "method": "rgb",
+   "name": "Trans-Light Purple"
+  },
+  "25": {
+   "exact": true,
+   "ldraw": 25,
+   "method": "name",
+   "name": "Orange"
+  },
+  "26": {
+   "exact": true,
+   "ldraw": 26,
+   "method": "name",
+   "name": "Magenta"
+  },
+  "27": {
+   "exact": true,
+   "ldraw": 27,
+   "method": "name",
+   "name": "Lime"
+  },
+  "272": {
+   "exact": true,
+   "ldraw": 272,
+   "method": "name",
+   "name": "Dark Blue"
+  },
+  "28": {
+   "exact": true,
+   "ldraw": 28,
+   "method": "name",
+   "name": "Dark Tan"
+  },
+  "288": {
+   "exact": true,
+   "ldraw": 288,
+   "method": "name",
+   "name": "Dark Green"
+  },
+  "29": {
+   "exact": true,
+   "ldraw": 29,
+   "method": "name",
+   "name": "Bright Pink"
+  },
+  "294": {
+   "exact": true,
+   "ldraw": 294,
+   "method": "name",
+   "name": "Glow In Dark Trans"
+  },
+  "297": {
+   "exact": true,
+   "ldraw": 297,
+   "method": "name",
+   "name": "Pearl Gold"
+  },
+  "3": {
+   "exact": true,
+   "ldraw": 3,
+   "method": "name",
+   "name": "Dark Turquoise"
+  },
+  "30": {
+   "exact": true,
+   "ldraw": 30,
+   "method": "name",
+   "name": "Medium Lavender"
+  },
+  "308": {
+   "exact": true,
+   "ldraw": 308,
+   "method": "name",
+   "name": "Dark Brown"
+  },
+  "31": {
+   "exact": true,
+   "ldraw": 31,
+   "method": "name",
+   "name": "Lavender"
+  },
+  "313": {
+   "exact": true,
+   "ldraw": 313,
+   "method": "name",
+   "name": "Maersk Blue"
+  },
+  "32": {
+   "exact": true,
+   "ldraw": 32,
+   "method": "name",
+   "name": "Trans-Black IR Lens"
+  },
+  "320": {
+   "exact": true,
+   "ldraw": 320,
+   "method": "name",
+   "name": "Dark Red"
+  },
+  "321": {
+   "exact": true,
+   "ldraw": 321,
+   "method": "name",
+   "name": "Dark Azure"
+  },
+  "322": {
+   "exact": true,
+   "ldraw": 322,
+   "method": "name",
+   "name": "Medium Azure"
+  },
+  "323": {
+   "exact": true,
+   "ldraw": 323,
+   "method": "name",
+   "name": "Light Aqua"
+  },
+  "326": {
+   "exact": true,
+   "ldraw": 330,
+   "method": "name",
+   "name": "Olive Green"
+  },
+  "33": {
+   "exact": true,
+   "ldraw": 33,
+   "method": "name",
+   "name": "Trans-Dark Blue"
+  },
+  "334": {
+   "exact": true,
+   "ldraw": 334,
+   "method": "name",
+   "name": "Chrome Gold"
+  },
+  "335": {
+   "exact": true,
+   "ldraw": 335,
+   "method": "name",
+   "name": "Sand Red"
+  },
+  "34": {
+   "exact": true,
+   "ldraw": 34,
+   "method": "name",
+   "name": "Trans-Green"
+  },
+  "35": {
+   "exact": true,
+   "ldraw": 35,
+   "method": "name",
+   "name": "Trans-Bright Green"
+  },
+  "351": {
+   "exact": true,
+   "ldraw": 351,
+   "method": "name",
+   "name": "Medium Dark Pink"
+  },
+  "36": {
+   "exact": true,
+   "ldraw": 36,
+   "method": "name",
+   "name": "Trans-Red"
+  },
+  "366": {
+   "exact": true,
+   "ldraw": 366,
+   "method": "name",
+   "name": "Earth Orange"
+  },
+  "373": {
+   "exact": true,
+   "ldraw": 373,
+   "method": "name",
+   "name": "Sand Purple"
+  },
+  "378": {
+   "exact": true,
+   "ldraw": 378,
+   "method": "name",
+   "name": "Sand Green"
+  },
+  "379": {
+   "exact": true,
+   "ldraw": 379,
+   "method": "name",
+   "name": "Sand Blue"
+  },
+  "383": {
+   "exact": true,
+   "ldraw": 383,
+   "method": "name",
+   "name": "Chrome Silver"
+  },
+  "4": {
+   "exact": true,
+   "ldraw": 4,
+   "method": "name",
+   "name": "Red"
+  },
+  "40": {
+   "exact": true,
+   "ldraw": 40,
+   "method": "name",
+   "name": "Trans-Brown"
+  },
+  "41": {
+   "exact": true,
+   "ldraw": 43,
+   "method": "name",
+   "name": "Trans-Light Blue"
+  },
+  "42": {
+   "exact": true,
+   "ldraw": 42,
+   "method": "name",
+   "name": "Trans-Neon Green"
+  },
+  "43": {
+   "exact": true,
+   "ldraw": 39,
+   "method": "name",
+   "name": "Trans-Very Lt Blue"
+  },
+  "45": {
+   "exact": true,
+   "ldraw": 37,
+   "method": "name",
+   "name": "Trans-Dark Pink"
+  },
+  "450": {
+   "exact": true,
+   "ldraw": 450,
+   "method": "name",
+   "name": "Fabuland Brown"
+  },
+  "46": {
+   "exact": true,
+   "ldraw": 46,
+   "method": "name",
+   "name": "Trans-Yellow"
+  },
+  "462": {
+   "exact": true,
+   "ldraw": 462,
+   "method": "name",
+   "name": "Medium Orange"
+  },
+  "47": {
+   "exact": true,
+   "ldraw": 47,
+   "method": "name",
+   "name": "Trans-Clear"
+  },
+  "484": {
+   "exact": true,
+   "ldraw": 484,
+   "method": "name",
+   "name": "Dark Orange"
+  },
+  "5": {
+   "exact": true,
+   "ldraw": 5,
+   "method": "name",
+   "name": "Dark Pink"
+  },
+  "503": {
+   "exact": true,
+   "ldraw": 503,
+   "method": "name",
+   "name": "Very Light Gray"
+  },
+  "52": {
+   "exact": true,
+   "ldraw": 52,
+   "method": "name",
+   "name": "Trans-Purple"
+  },
+  "54": {
+   "exact": true,
+   "ldraw": 54,
+   "method": "name",
+   "name": "Trans-Neon Yellow"
+  },
+  "57": {
+   "exact": true,
+   "ldraw": 38,
+   "method": "name",
+   "name": "Trans-Neon Orange"
+  },
+  "6": {
+   "exact": true,
+   "ldraw": 6,
+   "method": "name",
+   "name": "Brown"
+  },
+  "60": {
+   "exact": true,
+   "ldraw": 60,
+   "method": "name",
+   "name": "Chrome Antique Brass"
+  },
+  "61": {
+   "exact": true,
+   "ldraw": 61,
+   "method": "name",
+   "name": "Chrome Blue"
+  },
+  "62": {
+   "exact": true,
+   "ldraw": 62,
+   "method": "name",
+   "name": "Chrome Green"
+  },
+  "63": {
+   "exact": true,
+   "ldraw": 63,
+   "method": "name",
+   "name": "Chrome Pink"
+  },
+  "64": {
+   "exact": true,
+   "ldraw": 64,
+   "method": "name",
+   "name": "Chrome Black"
+  },
+  "68": {
+   "exact": true,
+   "ldraw": 68,
+   "method": "name",
+   "name": "Very Light Orange"
+  },
+  "69": {
+   "exact": false,
+   "ldraw": 10022,
+   "method": "rgb",
+   "name": "Light Purple"
+  },
+  "7": {
+   "exact": true,
+   "ldraw": 7,
+   "method": "name",
+   "name": "Light Gray"
+  },
+  "70": {
+   "exact": true,
+   "ldraw": 70,
+   "method": "name",
+   "name": "Reddish Brown"
+  },
+  "71": {
+   "exact": true,
+   "ldraw": 71,
+   "method": "name",
+   "name": "Light Bluish Gray"
+  },
+  "72": {
+   "exact": true,
+   "ldraw": 72,
+   "method": "name",
+   "name": "Dark Bluish Gray"
+  },
+  "73": {
+   "exact": true,
+   "ldraw": 73,
+   "method": "name",
+   "name": "Medium Blue"
+  },
+  "74": {
+   "exact": true,
+   "ldraw": 74,
+   "method": "name",
+   "name": "Medium Green"
+  },
+  "75": {
+   "exact": true,
+   "ldraw": 75,
+   "method": "name",
+   "name": "Speckle Black-Copper"
+  },
+  "76": {
+   "exact": true,
+   "ldraw": 76,
+   "method": "name",
+   "name": "Speckle DBGray-Silver"
+  },
+  "77": {
+   "exact": true,
+   "ldraw": 77,
+   "method": "name",
+   "name": "Light Pink"
+  },
+  "78": {
+   "exact": true,
+   "ldraw": 78,
+   "method": "name",
+   "name": "Light Nougat"
+  },
+  "79": {
+   "exact": true,
+   "ldraw": 79,
+   "method": "name",
+   "name": "Milky White"
+  },
+  "8": {
+   "exact": true,
+   "ldraw": 8,
+   "method": "name",
+   "name": "Dark Gray"
+  },
+  "80": {
+   "exact": true,
+   "ldraw": 80,
+   "method": "name",
+   "name": "Metallic Silver"
+  },
+  "81": {
+   "exact": true,
+   "ldraw": 81,
+   "method": "name",
+   "name": "Metallic Green"
+  },
+  "82": {
+   "exact": true,
+   "ldraw": 82,
+   "method": "name",
+   "name": "Metallic Gold"
+  },
+  "84": {
+   "exact": true,
+   "ldraw": 84,
+   "method": "name",
+   "name": "Medium Nougat"
+  },
+  "85": {
+   "exact": true,
+   "ldraw": 85,
+   "method": "override",
+   "name": "Dark Purple"
+  },
+  "86": {
+   "exact": true,
+   "ldraw": 86,
+   "method": "name",
+   "name": "Light Brown"
+  },
+  "89": {
+   "exact": true,
+   "ldraw": 89,
+   "method": "override",
+   "name": "Royal Blue"
+  },
+  "9": {
+   "exact": true,
+   "ldraw": 9,
+   "method": "name",
+   "name": "Light Blue"
+  },
+  "92": {
+   "exact": true,
+   "ldraw": 92,
+   "method": "name",
+   "name": "Nougat"
+  }
+ },
+ "source": "Rebrickable colors.csv (bulk download) matched to the LDConfig.ldr of the official LDraw library; see docs/plans/rebrickable-mapping.md",
+ "unmapped": [
+  "-1",
+  "1001",
+  "1008",
+  "1009",
+  "1010",
+  "1056",
+  "1057",
+  "1063",
+  "1070",
+  "1074",
+  "1078",
+  "1079",
+  "1090",
+  "1099",
+  "1101",
+  "1105",
+  "1106",
+  "1107",
+  "1111",
+  "1112",
+  "1113",
+  "1114",
+  "1116",
+  "1117",
+  "1121",
+  "1122",
+  "1124",
+  "1125",
+  "1127",
+  "1129",
+  "1130",
+  "1133",
+  "1140",
+  "1141",
+  "1142",
+  "1144",
+  "1147",
+  "9999"
+ ],
+ "version": 1
+}
