@@ -46,6 +46,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates curl unzip squashfs-tools python3
 
+# --- The reference models: unpacked from the repo's compressed shards ----------
+# The repo stores models-packed/*.tar.xz (tools/models_pack.py); the toolkit reads
+# data/models-annotated/*.mpd. Unpacking (every file checked against the manifest's
+# sha256) happens here, so the image holds the folder but never the archives.
+# Only changes when the shards or the tool do.
+FROM fetch AS models
+COPY --from=nova tools/models_pack.py /src/tools/models_pack.py
+COPY --from=nova models-packed/ /src/models-packed/
+RUN python3 /src/tools/models_pack.py --packed /src/models-packed --target /out/models-annotated unpack \
+    && python3 /src/tools/models_pack.py --packed /src/models-packed --target /out/models-annotated verify
+
 # --- LeoCAD: the pinned release's AppImage, unpacked --------------------------
 # Check https://github.com/leozide/leocad/releases for available tags.
 FROM fetch AS leocad
@@ -199,6 +210,8 @@ COPY --from=viewer-vendor /opt/web/viewer-vendor /opt/web/viewer-vendor
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=mpd2glb /opt/mpd2glb /opt/mpd2glb
 COPY --from=player /opt/web/player-vendor /opt/web/player-vendor
+# Before the app's own files below, so editing code never re-copies the 390 MB.
+COPY --from=models /out/models-annotated /opt/ldraw-nova/data/models-annotated
 
 # --- uv, and Python 3.14 managed by it (jev-rerank, and tools to come) ---------
 # https://github.com/astral-sh/uv — pinned release, checksum-verified. Python

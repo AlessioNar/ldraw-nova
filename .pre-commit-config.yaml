@@ -8,9 +8,9 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=1000]
-        # Existing large tracked files (library DB, annotated models, vendored
+        # Existing large tracked files (library DB, packed models, vendored
         # player, spec PDF, example data).
-        exclude: ^(data/|app/vendor/|docs/|examples/)
+        exclude: ^(data/|models-packed/|app/vendor/|docs/|examples/)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.1  # keep in sync with ruff.toml and CI
     hooks:

@@ -5,7 +5,11 @@
 #
 # Keep this in sync with the `COPY --from=nova` lines in app/Dockerfile:
 # data/, docs/, examples/, prompts/, ldraw_tools/, and the top-level
-# *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent.
+# *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent, plus models-packed/ and
+# tools/models_pack.py for the `models` stage (the reference models are unpacked
+# there, not copied from a materialised checkout folder).
+data/models-annotated
+data/.models-annotated.stamp
 .git
 app
 .obsidian
