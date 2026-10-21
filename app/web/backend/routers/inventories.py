@@ -3,9 +3,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+import buildable
 import inventories
 from inventories import InventoryError
 
@@ -38,6 +40,30 @@ async def inventories_create(body: NewInventory):
         return await inventories.import_csv(body.name, body.csv, bool(body.include_spares))
     except InventoryError as exc:
         raise failure(exc) from None
+
+
+# Declared before /api/inventories/{inventory_id}, which would otherwise take "buildable" as an id.
+@router.get("/api/inventories/buildable/status")
+def buildable_status():
+    return buildable.status()
+
+
+@router.post("/api/inventories/buildable/warm")
+async def buildable_warm():
+    return buildable.warm()
+
+
+@router.get("/api/inventories/buildable")
+async def buildable_list(ids: str = "", limit: int = buildable.DEFAULT_LIMIT, min_parts: int = Query(buildable.DEFAULT_MIN_PARTS, ge=0),
+                         max_missing_share: Optional[float] = Query(None, ge=0, le=1), query: str = "", substitute: bool = False):
+    try:
+        report = await buildable.ranked(buildable.clean_ids(ids), limit=limit, min_parts=min_parts,
+                                        max_missing_share=max_missing_share, query=query, substitute=substitute)
+    except InventoryError as exc:
+        raise failure(exc) from None
+    if report is None:
+        return JSONResponse(buildable.status(), status_code=202)
+    return {**report, "status": buildable.status()}
 
 
 @router.get("/api/inventories/{inventory_id}")
