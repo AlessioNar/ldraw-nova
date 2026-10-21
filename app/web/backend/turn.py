@@ -29,7 +29,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
     caps = llm_config.capabilities(entry)
     vision = caps["vision"] is True
     use_tools = caps["tools"] is not False and run.options.get("mode") != "chat"
-    ctx = ToolContext(chat_id=chat_id, store=store, emit=run.emit)
+    ctx = ToolContext(chat_id=chat_id, store=store, emit=run.emit, options=run.options)
 
     def save(message: dict) -> int:
         msg_id = store.add_message(chat_id, message)
@@ -109,7 +109,8 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
                 run.tools_running.pop(call["id"], None)
                 refs = [store.ref(chat_id, png) for png in result.images]
                 save({"role": "tool", "tool_call_id": call["id"], "name": name, "content": result.content,
-                      "_models": [m["id"] for m in result.models], "_images": refs})
+                      "_models": [m["id"] for m in result.models], "_images": refs,
+                      **({"_parts_check": result.parts_check} if result.parts_check else {})})
                 run.emit("tool_end", {"id": call["id"], "name": name})
                 images += refs
             if images and vision:

@@ -40,6 +40,8 @@ VIEWER_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_VIEWER_DIR", "/opt/web/viewer")
 VIEWER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_VIEWER_VENDOR_DIR", "/opt/web/viewer-vendor"))  # ldbi etc.
 PLAYER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_PLAYER_VENDOR_DIR", "/opt/web/player-vendor"))  # ldraw-player
 
+# The user's parts inventories: <id>.json (parsed) + <id>.csv (as uploaded). Under /data so it survives upgrades.
+
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 TOOLKIT_DIR = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_DIR", "/opt/ldraw-nova"))
 # The interpreter of the toolkit's own uv environment (the backend's Python lacks pyldraw3 and numpy).

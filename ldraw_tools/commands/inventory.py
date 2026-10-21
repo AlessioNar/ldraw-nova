@@ -66,6 +66,7 @@ def register(commands):
     p.add_argument("model")
     p.add_argument("name", help="Inventory name, or several separated by commas")
     p.add_argument("--mode", choices=["prefer", "only"], default="prefer", help="only: exit 1 when the inventory is short")
+    p.add_argument("--report", help="Also write the JSON report to this file (--json prints it; stdout may be truncated for big models)")
     common(p)
     p = sub.add_parser("remove", help="Delete a stored inventory")
     p.add_argument("name")
