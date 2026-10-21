@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context";
-import type { TurnOptions, DocumentUpload } from "../api";
+import { inventoryApi, type TurnOptions, type DocumentUpload, type Inventory } from "../api";
+import PartsControl, { loadSteering, saveSteering, type PartsSteering } from "./parts/PartsControl";
 import ModelPicker from "./ModelPicker";
 import { rememberModel, tokenLabel } from "../modelChoices";
 import DocumentIcon from "./DocumentIcon";
@@ -29,6 +30,9 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   const [images, setImages] = useState<{ name: string; url: string; size: number }[]>([]);
   const [documents, setDocuments] = useState<(DocumentUpload & { size: number })[]>([]);
   const [error, setError] = useState("");
+  const [inventories, setInventories] = useState<Inventory[]>([]);
+  const [steering, setSteering] = useState<PartsSteering>(() => initialOptions?.parts_mode
+    ? { mode: initialOptions.parts_mode, ids: initialOptions.inventory_ids ?? [] } : loadSteering());
   const model = llms.find(m => m.id === llmId);
   const profile = model?.profile;
   const disabled = running || busy;
@@ -47,6 +51,14 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     onLlmChange(id);
   }
   useEffect(() => setText(initialText), [initialText]);
+  useEffect(() => { inventoryApi.list().then(r => setInventories(r.inventories), () => {}); }, []);
+  // Only ids that still exist count; a mode other than off needs at least one, so fall back to the newest list.
+  const known = inventories.filter(i => steering.ids.includes(i.id)).map(i => i.id);
+  const effective: PartsSteering = { mode: steering.mode, ids: steering.mode !== "off" && !known.length && inventories.length ? [inventories[0].id] : known };
+  const partsOptions: Partial<TurnOptions> = !inventories.length ? { parts_mode: undefined, inventory_ids: undefined }
+    : effective.mode === "off" ? { parts_mode: "off", inventory_ids: undefined }
+    : { parts_mode: effective.mode, inventory_ids: effective.ids };
+  function changeSteering(next: PartsSteering) { setSteering(next); saveSteering(next); }
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -61,7 +73,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     setBusy(true);
     try {
       setError("");
-      await onSend(value, options, images.map(i => i.url), documents.map(({ name, data }) => ({ name, data })));
+      await onSend(value, { ...options, ...partsOptions }, images.map(i => i.url), documents.map(({ name, data }) => ({ name, data })));
       rememberModel(model.id);
       setText(""); setImages([]); setDocuments([]);
     } catch (e) { setError((e as Error).message); }
@@ -138,6 +150,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
           onChange={e => setOptions({ ...options, permissions: e.target.value as TurnOptions["permissions"] })}>
           <option value="ask">Ask first</option><option value="full">Full access</option><option value="read_only">Read only</option>
         </select>}
+        <PartsControl inventories={inventories} value={effective} onChange={changeSteering} disabled={disabled} />
         {!!profile?.efforts.length && <select className="compact-control" aria-label="Effort" title="Reasoning effort" disabled={disabled} value={options.effort ?? profile.default_effort ?? ""}
           onChange={e => setOptions({ ...options, effort: e.target.value })}>
           {profile.efforts.map(e => <option value={e} key={e}>{effortNames[e] ?? e}</option>)}
