@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, type LlmEntry, type ModelProfile, type ConnectionStatus } from "../api";
 import { useApp } from "../context";
-import { agentProvider, isLegacyBrowser, LEGACY_BROWSER_HINT, providerLabel, tokenLabel } from "../modelChoices";
+import { agentProvider, isUnsupported, UNSUPPORTED_HINT, providerLabel, tokenLabel } from "../modelChoices";
 import AgentDetails from "./AgentDetails";
 
 type AuthMethod = "api_value" | "api_env";
@@ -45,16 +45,31 @@ export function ConnectionPill({ status }: { status: ConnectionStatus }) {
   </span>;
 }
 
-export default function AgentForm({ entry, provider, catalog, onClose, onSaved, onBusy }: {
+const PROVIDERS = ["anthropic", "openai", "openrouter"];
+
+// Starting point for converting an unsupported entry: chatgpt/<id> maps to openai/<id>
+// when <id> looks like an OpenAI model, otherwise the model is left for the user to fill.
+function convertedForm(entry: LlmEntry): Form {
+  const form = toForm(entry);
+  const [prefix, ...rest] = form.model.split("/");
+  const suffix = rest.join("/");
+  const provider = prefix === "chatgpt" ? "openai" : prefix;
+  const model = prefix !== "chatgpt" ? form.model : /^(gpt|o\d|chatgpt)[\w.:-]*$/i.test(suffix) ? `${provider}/${suffix}` : `${provider}/`;
+  return { ...form, model, env_var: envName(provider), auth: "api_env" };
+}
+
+export default function AgentForm({ entry, provider: initialProvider, catalog, onClose, onSaved, onBusy }: {
   entry?: LlmEntry; provider: string; catalog: ModelProfile[];
   onClose: () => void; onSaved: (entry: LlmEntry) => void; onBusy: (busy: boolean) => void;
 }) {
   const { defaultLlmId, refreshLlms } = useApp();
-  const presets = catalog.filter(m => agentProvider(m.model) === provider);
-  const [form, setForm] = useState<Form>(() => entry ? toForm(entry) : {
-    ...EMPTY, model: provider + "/", env_var: envName(provider), auth: "api_env",
+  const legacy = !!entry && isUnsupported(entry);
+  const [form, setForm] = useState<Form>(() => entry ? (legacy ? convertedForm(entry) : toForm(entry)) : {
+    ...EMPTY, model: initialProvider + "/", env_var: envName(initialProvider), auth: "api_env",
   });
-  const [legacy, setLegacy] = useState(!!entry && isLegacyBrowser(entry));
+  // An unsupported entry lives in no provider group, so the user picks one to convert it to.
+  const [provider, setProvider] = useState(legacy ? agentProvider(form.model) : initialProvider);
+  const presets = catalog.filter(m => agentProvider(m.model) === provider);
   const [status, setStatus] = useState<ConnectionStatus>(entry?.connection_status ?? "not_tested");
   const [testedProfile, setTestedProfile] = useState<ModelProfile | undefined>(entry?.profile);
   const [message, setMessage] = useState("");
@@ -79,7 +94,7 @@ export default function AgentForm({ entry, provider, catalog, onClose, onSaved, 
   async function persist() {
     if (agentProvider(form.model) !== provider) throw new Error(`Choose an agent from ${providerLabel(provider)}.`);
     const saved = form.id ? await api.updateLlm(form.id, fromForm(form)) : await api.createLlm(fromForm(form));
-    setForm(toForm(saved)); setLegacy(isLegacyBrowser(saved)); onSaved(saved); refreshLlms();
+    setForm(toForm(saved)); onSaved(saved); refreshLlms();
     return saved;
   }
   async function save(event: FormEvent) {
@@ -108,6 +123,10 @@ export default function AgentForm({ entry, provider, catalog, onClose, onSaved, 
     catch (e) { setError((e as Error).message); }
     finally { lock(false); }
   }
+  function switchProvider(next: string) {
+    setProvider(next);
+    set({ model: next + "/", env_var: envName(next) });
+  }
   function preset(model: string) {
     const chosen = presets.find(p => p.model === model); if (!chosen) return;
     set({ model: chosen.model, model_name: chosen.name });
@@ -116,8 +135,11 @@ export default function AgentForm({ entry, provider, catalog, onClose, onSaved, 
     <header className="agent-form-head"><div><h3>{form.id ? form.model_name || "Edit agent" : "Add agent"}</h3><ConnectionPill status={status} /></div>
       {form.id && <button type="button" className="danger-text" disabled={busy} onClick={remove}>Delete</button>}
     </header>
-    {legacy && <p className="muted small">{LEGACY_BROWSER_HINT}</p>}
+    {legacy && <p className="muted small">{UNSUPPORTED_HINT}</p>}
     <fieldset className="agent-fields" disabled={busy}>
+      {legacy && <label><span>Provider</span><select aria-label="Provider" value={provider} onChange={e => switchProvider(e.target.value)}>
+        {[...new Set([...PROVIDERS, provider])].map(p => <option key={p} value={p}>{providerLabel(p)}</option>)}
+      </select></label>}
       <label><span>Agent presets</span><select aria-label="Agent presets" value={presets.some(p => p.model === form.model) ? form.model : ""} onChange={e => preset(e.target.value)}>
         <option value="">{form.model !== provider + "/" ? "Custom agent" : "Choose an agent…"}</option>
         {presets.map(m => <option key={m.model} value={m.model}>{m.name}{m.context_window ? ` · ${tokenLabel(m.context_window)}` : ""}{provider === "openrouter" && m.pricing ? ` · $${m.pricing.input} in / $${m.pricing.output} out per 1M` : ""}</option>)}

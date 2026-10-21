@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useApp } from "../context";
-import { isLegacyBrowser, LEGACY_BROWSER_HINT, providerName, recentModels, rememberModel } from "../modelChoices";
+import { isUnsupported, UNSUPPORTED_HINT, providerName, recentModels, rememberModel } from "../modelChoices";
 import type { LlmEntry } from "../api";
 
 export default function ModelPicker({ value, onChange, disabled }: {
@@ -65,9 +65,9 @@ export default function ModelPicker({ value, onChange, disabled }: {
     setRecent(rememberModel(model.id)); onChange(model.id); setOpen(false); trigger.current?.focus();
   }
   function option(model: LlmEntry) {
-    const legacy = isLegacyBrowser(model);
-    return <button type="button" className="model-choice" key={model.id} disabled={legacy} title={legacy ? LEGACY_BROWSER_HINT : undefined} onClick={() => choose(model)} aria-pressed={model.id === value}>
-      <span><strong>{model.model_name}</strong><small>{providerName(model)} · {legacy ? "Browser login removed" : "API key"}</small></span>
+    const legacy = isUnsupported(model);
+    return <button type="button" className="model-choice" key={model.id} disabled={legacy} title={legacy ? UNSUPPORTED_HINT : undefined} onClick={() => choose(model)} aria-pressed={model.id === value}>
+      <span><strong>{model.model_name}</strong><small>{providerName(model)} · {legacy ? "Needs an API key" : "API key"}</small></span>
       {model.id === value && <span aria-hidden>✓</span>}
     </button>;
   }

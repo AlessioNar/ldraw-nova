@@ -84,6 +84,7 @@ export type LlmEntry = {
   capabilities: { tools: Capability; vision: Capability };
   resolved_capabilities: { tools: boolean | null; vision: boolean | null };
   auth_mode: "api_key" | "browser";
+  unsupported?: boolean;
   profile: ModelProfile;
 };
 
