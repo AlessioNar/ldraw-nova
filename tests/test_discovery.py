@@ -7,7 +7,7 @@ import pytest
 
 from conftest import mpd, ref
 from ldraw_tools.common import atomic_write
-from ldraw_tools.discovery import DiscoveryIndex, confined, decode_description, record_id, search, part_suggestions
+from ldraw_tools.discovery import DiscoveryIndex, confined, decode_description, record_id, resolve_engine, search, part_suggestions
 from ldraw_tools.document import extract_section, selected_source
 from ldraw_tools.resources import model_sections, search_models
 from ldraw_tools.validation import validate_text
@@ -162,13 +162,92 @@ def test_jev_results_map_stable_keys_and_keep_scores(index,monkeypatch):
         stdout=json.dumps(dict(stats=dict(api_calls=1),exhaustive=False,results=[dict(source=dict(key=dict(id=identity)),score=.81,rank=1)]))
     def execute(command,**kw):commands.append(command);return Result()
     monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',execute)
-    report=search(index,'parts','brick',pool=5,limit=2,candidates=5)
+    report=search(index,'parts','brick',engine='jev',pool=5,limit=2,candidates=5)
     assert commands[0][0]=='jev-rerank' and '--project' not in commands[0]
     assert report['results'][0]['id']==identity and report['results'][0]['score']==.81
     db=Path(commands[0][commands[0].index('--db')+1])
     with sqlite3.connect(db) as c:
         assert c.execute('SELECT count(*) FROM candidates').fetchone()[0]==1
         assert c.execute('PRAGMA table_info(candidates)').fetchone()[5]==1
+
+
+def test_resolve_engine_needs_executable_and_key():
+    found=lambda name:'/usr/bin/jev-rerank'
+    assert resolve_engine('auto',env={'TYPESAFE_API_KEY':'k'},which=lambda name:None)==('fts','jev-rerank is not on PATH')
+    assert resolve_engine('auto',env={},which=found)[0]=='fts'
+    assert 'TYPESAFE_API_KEY' in resolve_engine('auto',env={'TYPESAFE_API_KEY':'  '},which=found)[1]
+    assert resolve_engine('auto',env={'TYPESAFE_API_KEY':'k'},which=found)==('jev',None)
+    for explicit in ('jev','fts'):
+        assert resolve_engine(explicit,env={},which=lambda name:None)==(explicit,None)
+    with pytest.raises(ValueError):resolve_engine('semantic')
+
+
+def jev_available(monkeypatch,key='secret-key'):
+    monkeypatch.setattr('ldraw_tools.discovery.shutil.which',lambda name:'/usr/bin/jev-rerank')
+    monkeypatch.setenv('TYPESAFE_API_KEY',key)
+
+
+def test_auto_without_executable_uses_fts_and_records_reason(index,monkeypatch):
+    monkeypatch.setattr('ldraw_tools.discovery.shutil.which',lambda name:None)
+    monkeypatch.setenv('TYPESAFE_API_KEY','secret-key')
+    monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',lambda *a,**k:pytest.fail('Jev must not run'))
+    report=search(index,'parts','brick')
+    assert (report['engine_requested'],report['engine_used'])==('auto','fts')
+    assert 'not on PATH' in report['fallback_reason'] and 'BM25' in report['ranking']
+    assert report['results']
+
+
+def test_auto_with_executable_but_no_key_uses_fts(index,monkeypatch):
+    monkeypatch.setattr('ldraw_tools.discovery.shutil.which',lambda name:'/usr/bin/jev-rerank')
+    monkeypatch.delenv('TYPESAFE_API_KEY',raising=False)
+    monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',lambda *a,**k:pytest.fail('Jev must not run'))
+    report=search(index,'parts','brick')
+    assert report['engine_used']=='fts' and 'TYPESAFE_API_KEY' in report['fallback_reason']
+
+
+def test_auto_uses_jev_when_available_and_successful(index,monkeypatch):
+    jev_available(monkeypatch)
+    identity=next(r['id'] for r in index.rows('parts') if r['part']=='3001.dat')
+    class Result:
+        returncode=0;stderr=''
+        stdout=json.dumps(dict(stats=dict(api_calls=1),exhaustive=False,results=[dict(source=dict(key=dict(id=identity)),score=.7,rank=1)]))
+    monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',lambda command,**kw:Result())
+    report=search(index,'parts','brick',pool=5,limit=2,candidates=5)
+    assert (report['engine_requested'],report['engine_used'],report['engine'])==('auto','jev','jev')
+    assert 'fallback_reason' not in report and report['results'][0]['score']==.7
+
+
+def test_auto_falls_back_once_when_jev_fails(index,monkeypatch):
+    jev_available(monkeypatch)
+    calls=[]
+    class Result:
+        returncode=1;stdout='';stderr='x'*500+'\nAuthentication rejected for secret-key'
+    monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',lambda command,**kw:calls.append(command) or Result())
+    report=search(index,'parts','brick')
+    assert len(calls)==1 and report['engine_used']=='fts' and report['engine_requested']=='auto'
+    reason=report['fallback_reason']
+    assert 'Jev call failed' in reason and 'rejected' in reason and 'secret-key' not in reason and len(reason)<400 and '\n' not in reason
+    assert report['results'] and 'fts_rank' in report['results'][0]
+
+
+def test_auto_falls_back_on_timeout_and_missing_binary(index,monkeypatch):
+    import subprocess
+    jev_available(monkeypatch)
+    for error in (subprocess.TimeoutExpired('jev-rerank',1),FileNotFoundError('jev-rerank')):
+        def failing(command,error=error,**kw):raise error
+        monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',failing)
+        assert search(index,'parts','brick')['engine_used']=='fts'
+
+
+def test_explicit_engines_are_unchanged(index,monkeypatch):
+    jev_available(monkeypatch)
+    class Failed:
+        returncode=2;stdout='';stderr='denied'
+    monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',lambda command,**kw:Failed())
+    with pytest.raises(ValueError,match='Jev search failed'):search(index,'parts','brick',engine='jev')
+    monkeypatch.setattr('ldraw_tools.discovery.subprocess.run',lambda *a,**k:pytest.fail('FTS must not call Jev'))
+    report=search(index,'parts','brick',engine='fts')
+    assert (report['engine_requested'],report['engine_used'])==('fts','fts') and 'fallback_reason' not in report
 
 
 def test_ranked_model_search_has_total_and_pagination(tmp_path):

@@ -17,7 +17,8 @@ def add_discover(commands):
     d = discovery.add_parser("search", help="Rank eligible references, inspect contents and diversify the shortlist")
     d.add_argument("kind", choices=["parts", "models", "submodels"])
     d.add_argument("query")
-    d.add_argument("--engine", choices=["jev", "fts"], default="jev")
+    d.add_argument("--engine", choices=["auto", "jev", "fts"], default="auto",
+                   help="auto uses Jev when jev-rerank and TYPESAFE_API_KEY are available or fails over to FTS (keyword/BM25), reporting engine_used")
     d.add_argument("--limit", type=positive, default=10)
     d.add_argument("--pool", type=positive, default=60)
     d.add_argument("--candidates", type=int, default=500, help="Jev candidate budget; 0 scores all eligible records")
