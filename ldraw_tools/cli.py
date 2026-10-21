@@ -8,19 +8,19 @@ import sys
 import jsonschema
 from ldraw.errors import PartError
 
-from .commands import cad, design, discover, examples, library, inventory, manual, model, spaceship, study, technic, vehicle
+from .commands import cad, design, discover, examples, library, inventory, manual, model, sets, spaceship, study, technic, vehicle
 from .commands.base import Command
 from .common import atomic_write, dumps, get_parts, library_path
 
 COMMANDS: dict[str, Command] = {}
-for module in (examples, discover, spaceship, manual, technic, vehicle, library, design, study, model, cad, inventory):
+for module in (examples, discover, spaceship, manual, technic, vehicle, library, design, study, model, cad, inventory, sets):
     COMMANDS.update(module.COMMANDS)
 
 # Registration order is the order subcommands appear in --help.
 ORDER = ["examples", "discover", "spaceship", "manual", "mechanism", "technic", "vehicle", "catalog", "design",
          "part-board", "doctor", "index", "search", "part", "colours", "spec", "sections", "study", "extract",
          "matrix", "profiles", "build", "validate", "inspect", "bom", "compare-bom", "snap", "connectors",
-         "cad-check", "render", "glb", "inventory"]
+         "cad-check", "render", "glb", "inventory", "sets"]
 assert set(ORDER) == set(COMMANDS), set(ORDER) ^ set(COMMANDS)
 
 
