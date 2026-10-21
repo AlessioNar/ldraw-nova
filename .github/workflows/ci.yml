@@ -37,6 +37,16 @@ jobs:
       # `tsc -b && vite build`: type errors fail the build, as in the image.
       - run: npm run build
 
+      # Lint only, rules in ruff.toml (same pinned version as pre-commit).
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.13"
+      - name: Ruff
+        working-directory: .
+        run: |
+          pip install ruff==0.17.1
+          ruff check
+
   # The only place the Dockerfile is built end to end and the tests that need
   # LeoCAD / the LDraw library can run. Real network access is required: the
   # image downloads LeoCAD, the LDraw library, bun, mpd2glb, uv, jev-rerank...
