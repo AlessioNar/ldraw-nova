@@ -4,8 +4,8 @@ from __future__ import annotations
 import inventories
 from tools import TOOL_SCHEMAS
 
-READ_TOOLS = {"list_files", "read_file", "view_image", "report_progress", "my_parts"}
-PARTS_TOOLS = {"my_parts"}            # only when the chat has a parts steering mode
+READ_TOOLS = {"list_files", "read_file", "view_image", "report_progress", "my_parts", "buildable_models"}
+PARTS_TOOLS = {"my_parts", "buildable_models"}            # only when the chat has a parts steering mode
 
 
 
