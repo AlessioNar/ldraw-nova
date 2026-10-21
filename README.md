@@ -49,7 +49,7 @@ docker compose up -d
 
 **4. Open** it in your browser at **http://localhost:8765**.
 
-Other devices on your network can reach the app by your computer's IP instead of `localhost`, e.g. `http://192.168.1.20:8765`. The app has no login, so only run it on networks you trust.
+The app is reachable from this computer only (`localhost`). To open it from other devices on your network, set `LDRAW_NOVA_WEB_BIND=0.0.0.0` in `app/.env` (or in your shell) before `docker compose up -d`, then browse to your computer's IP, e.g. `http://192.168.1.20:8765`. The app has no login, so only do this on networks you trust.
 
 To stop it: 
 
@@ -156,6 +156,8 @@ These are some of the guides and references given to the agent in order to make 
 | Look up a command or file-format rule | [Tool reference](docs/agent/tooling.md) and [LDraw rules](docs/agent/ldraw-reference.md)                           |
 
 ## Development
+
+Code checks are lint-only (no formatter). Install [ruff](https://docs.astral.sh/ruff/) 0.17.1 (`pip install ruff==0.17.1`) and run `ruff check` from the repo root; the rules are in `ruff.toml`. To run it together with the YAML, merge-conflict and large-file hooks, use `pip install pre-commit && pre-commit run --all-files` (or `pre-commit install` to run them on each commit). Frontend types are checked by `npm run build` in `app/web/frontend` (`tsc -b`). CI runs the same checks in the `quick` job.
 
 Being this a **first release**, there are quite some things that still require some work:
 

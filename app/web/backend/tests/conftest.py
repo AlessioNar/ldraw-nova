@@ -15,9 +15,7 @@ _tmp = Path(tempfile.mkdtemp(prefix="ldraw-nova-web-tests-"))
 os.environ["LDRAW_NOVA_DATA_DIR"] = str(_tmp / "data")
 os.environ["LDRAW_NOVA_WEB_CONFIG_DIR"] = str(_tmp / "config")
 os.environ["LDRAW_NOVA_GLB_CACHE_DIR"] = str(_tmp / "glb-cache")
-os.environ["LDRAW_NOVA_GALLERY_MODELS_DIR"] = str(_tmp / "models-gallery")     # not the image's gallery models
 (_tmp / "data" / "output").mkdir(parents=True)
-(_tmp / "models-gallery").mkdir()
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))          # web/backend
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))          # repo root: leocad_render
@@ -41,11 +39,6 @@ def offline_model_details(monkeypatch):
 @pytest.fixture
 def data_dir() -> Path:
     return _tmp / "data"
-
-
-@pytest.fixture
-def gallery_dir() -> Path:
-    return _tmp / "models-gallery"
 
 
 @pytest.fixture

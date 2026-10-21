@@ -215,3 +215,13 @@ def test_name_collision_checks_preserve_private_values_and_original_environment(
     assert check(rows[1]["name"], rows[1]["id"]) == {"preconfigured": False, "saved": False}
     assert check(rows[1]["name"])["saved"] is True
     assert check("invalid-name") == {"preconfigured": False, "saved": False}
+
+
+def test_same_origin_check_follows_the_host_header():
+    """Localhost, loopback IP and a LAN IP (after LDRAW_NOVA_WEB_BIND=0.0.0.0) all work when Origin matches Host."""
+    client = TestClient(main.app)
+    for host in ("localhost:8765", "127.0.0.1:8765", "192.168.1.20:8765"):
+        same = client.put("/api/environment", headers={"host": host, "origin": f"http://{host}"}, json={})
+        assert same.status_code != 403, host
+        other = client.put("/api/environment", headers={"host": host, "origin": "http://evil.example"}, json={})
+        assert other.status_code == 403, host

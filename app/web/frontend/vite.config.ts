@@ -8,6 +8,6 @@ const backend = "http://localhost:8765"; // LDRAW_NOVA_WEB_PORT in docker-compos
 export default defineConfig({
   plugins: [react()],
   server: {
-    proxy: Object.fromEntries(["/api", "/files", "/gallery-files", "/demo", "/ref", "/ldraw", "/ldraw-id", "/viewer"].map((p) => [p, backend])),
+    proxy: Object.fromEntries(["/api", "/files", "/ref", "/ldraw", "/ldraw-id", "/viewer"].map((p) => [p, backend])),
   },
 });

@@ -297,10 +297,6 @@ RUN set -eux; \
     find /opt/scripts -type f -exec chmod a+x {} +; \
     mpd2glb.sh --help > /dev/null
 
-# --- Gallery models, with their snapshots, BOMs and notes (.md).
-# Kept separate from generated models on the My Models page.
-COPY models-gallery/ /opt/models-gallery/
-
 COPY leocad_render.py example.py /app/
 COPY web/backend/ /app/web/backend/
 COPY web/viewer/ /opt/web/viewer/

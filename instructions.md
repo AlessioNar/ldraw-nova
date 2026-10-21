@@ -12,9 +12,9 @@ Run from this repository's root:
 ./ldraw-agent doctor
 ```
 
-Run `./setup.sh` if needed. It installs pinned Python packages in `.venv` and prepares local indexes. Use the globally available **`leocad` CLI** for snapshots, including embedded unofficial parts; the render adapter supplies those parts through an isolated temporary library. Use `./prepare-glb.sh --file MODEL.mpd MODEL.glb` for semantic GLB export through the global `mpd2glb.sh` executable.
+Run `./setup.sh` if needed, unless your environment says dependencies are already installed. It installs pinned Python packages in `.venv` and prepares local indexes. Use the globally available **`leocad` CLI** for snapshots, including embedded unofficial parts. Use `./prepare-glb.sh --file MODEL.mpd MODEL.glb` for semantic GLB export through the global `mpd2glb.sh` executable.
 
-Read:
+Read the guides below. If your system prompt already includes the full text of ldraw-reference.md, geometry.md, visual-design.md, reference-discovery.md and validation.md, do not read them again; read the others as needed:
 
 - [LDraw rules](docs/agent/ldraw-reference.md): records, coordinates, colours, MPD, BFC and headers.
 - [Geometry](docs/agent/geometry.md): origins, stacking, connectors and collision evidence.
@@ -96,7 +96,7 @@ Study references in small sections:
 
 Read `source_checks_passed`, reachability and physical counts. An annotation can describe empty or unreferenced modules. Embedded `.dat` parts count as physical leaves; their studs/primitives are geometry, not separate BOM pieces. OMR examples can contain real source errors and rounded transforms.
 
-To copy a useful module, use `extract --section NAME --namespace UNIQUE --output output/assets/NAME.mpd`. It includes transitive dependencies, renames references and preserves author/licence headers. Keep its `.manifest.json`. Read the returned `root` instead of guessing the new filename. Review source problems before using the asset. `--repair-bfc-comments` and `--normalize-rotations` are explicit, recorded changes to a copy; neither certifies the construction. Do not present copied source as an original design.
+To copy a useful module, use `extract --section NAME --namespace UNIQUE --output output/assets/NAME.mpd`. It includes transitive dependencies, renames references and preserves author/licence headers. Keep its `.manifest.json`. Read the returned `root` instead of guessing the new filename. Review source problems before using the asset. `--repair-bfc-comments` and `--normalize-rotations` are explicit, recorded changes to a copy; neither certifies the construction.
 
 ## 3. Build reproducibly with module contracts
 
@@ -162,7 +162,7 @@ Repair every error, rebuild and rerun affected checks. Explain each remaining wa
 
 Open the first whole-model PNGs and perform a visual design pass before final delivery. Check thumbnail silhouette, proportions, focal hierarchy, palette balance, depth/shadows, useful variation, quiet versus detailed areas, exposed side/rear walls, and readable entrances. Improve specific weaknesses and render again. Do not add random ornament everywhere or stop because geometry passes. Record the viewed images, problems found and revisions in a short visual-review document.
 
-Open the final PNGs. Inspect silhouette, palette, orientation, support, openings, missing parts, intersections and overhangs. Review individual floors/interiors and obscured rear/side interfaces. Compare Python and LeoCAD BOMs by reference, colour and quantity using `compare-bom`; do not reconcile a mismatch by discarding parts. The LeoCAD adapter handles embedded DAT definitions without modifying the source library.
+Open the final PNGs. Inspect silhouette, palette, orientation, support, openings, missing parts, intersections and overhangs. Review individual floors/interiors and obscured rear/side interfaces. Compare Python and LeoCAD BOMs by reference, colour and quantity using `compare-bom`; do not reconcile a mismatch by discarding parts.
 
 Inspect uncertain interfaces with close LeoCAD views and the global `ldraw-render-steps.sh` tool. Render the unfinished submodel step by step from multiple views to locate a misplaced part, hidden gap or weak support; see [construction review](docs/agent/build-manuals.md#inspect-a-model-during-construction). Fix the generator or plan and regenerate. Record any physical checks that remain unperformed. Do not claim visual review unless the images were opened, or buildability merely because a renderer succeeded.
 

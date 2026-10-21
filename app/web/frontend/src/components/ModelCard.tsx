@@ -66,7 +66,7 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
 
   return (
     <div className="model-card">
-      {onDelete && !model.gallery && <button type="button" className="model-delete" aria-label={`Delete ${model.file}`} title="Delete model" disabled={deleting} onClick={remove}>
+      {onDelete && <button type="button" className="model-delete" aria-label={`Delete ${model.file}`} title="Delete model" disabled={deleting} onClick={remove}>
         {deleting ? <span className="spinner" aria-hidden="true" /> : "×"}
       </button>}
       <button className="model-thumb" onClick={() => open()} disabled={!model.model_url} title="Open in the 3D viewer">
@@ -93,7 +93,7 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
         {model.info_heading && <p className="model-info-heading"><strong>{model.info_heading}</strong></p>}
         {model.description && <p className="model-description">{model.description}</p>}
         <div className="muted small ellipsis">
-          {model.gallery ? "From the gallery" : timeAgo(model.created_at ?? model.mtime)}
+          {timeAgo(model.created_at ?? model.mtime)}
           {showChats && model.chats && model.chats.length > 0 && (
             <>
               {" · from "}

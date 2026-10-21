@@ -6,8 +6,7 @@ import ModelCard from "../components/ModelCard";
 // that have none, and we poll until they're all rendered.
 const POLL_MS = 1500;
 
-export default function Models({ collection }: { collection: "models" | "gallery" }) {
-  const isGallery = collection === "gallery";
+export default function Models() {
   const [models, setModels] = useState<ModelFile[] | null>(null);
   const [pending, setPending] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +18,7 @@ export default function Models({ collection }: { collection: "models" | "gallery
     let timer: ReturnType<typeof setTimeout> | undefined;
     const load = async () => {
       try {
-        const r = await api.models(collection);
+        const r = await api.models();
         if (!alive) return;
         setModels(r.models.filter(model => !deleted.current.has(model.file)));
         setPending(r.pending);
@@ -34,7 +33,7 @@ export default function Models({ collection }: { collection: "models" | "gallery
       alive = false;
       clearTimeout(timer);
     };
-  }, [collection]);
+  }, []);
 
   const q = query.trim().toLowerCase();
   const shown = (models ?? []).filter(
@@ -50,11 +49,9 @@ export default function Models({ collection }: { collection: "models" | "gallery
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>{isGallery ? "Gallery" : "My Models"}</h1>
+          <h1>My Models</h1>
           <p className="muted">
-            {isGallery
-              ? "Explore the models included with LDraw Nova. Inspect them in 3D, watch them build, or download them."
-              : "Your generated models and models you’ve added. Open a model to explore it in 3D."}
+            Your generated models and models you’ve added. Open a model to explore it in 3D.
             {pending > 0 && (
               <>
                 {" "}
@@ -66,9 +63,9 @@ export default function Models({ collection }: { collection: "models" | "gallery
           </p>
         </div>
         <div className="head-actions">
-          <input type="search" aria-label="Filter models" placeholder={isGallery ? "Filter by name or description" : "Filter by name, description or chat"} value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input type="search" aria-label="Filter models" placeholder="Filter by name, description or chat" value={query} onChange={(e) => setQuery(e.target.value)} />
           {models && models.length > 0 && (
-            <a className="button" href={`/api/${collection}/zip`}>
+            <a className="button" href="/api/models/zip">
               Download all (.zip)
             </a>
           )}
@@ -77,14 +74,12 @@ export default function Models({ collection }: { collection: "models" | "gallery
       {error && <div className="banner error">{error}</div>}
       {models === null && !error && <p className="muted">Loading models…</p>}
       {models?.length === 0 && (
-        <p className="muted">{isGallery
-          ? "No gallery models yet. Add models to models-gallery to include them here."
-          : "No models yet. Ask for one in a chat, or drop .mpd/.ldr/.dat files into data/generated."}</p>
+        <p className="muted">No models yet. Ask for one in a chat, or drop .mpd/.ldr/.dat files into data/generated.</p>
       )}
       {models && models.length > 0 && shown.length === 0 && <p className="muted">No models match your search.</p>}
       <div className="card-grid">
         {shown.map((m) => (
-          <ModelCard key={m.file} model={m} showChats={!isGallery} onDelete={isGallery ? undefined : async () => {
+          <ModelCard key={m.file} model={m} showChats onDelete={async () => {
             await api.deleteModel(m.file);
             deleted.current.add(m.file);
             setModels(current => current?.filter(model => model.file !== m.file) ?? null);

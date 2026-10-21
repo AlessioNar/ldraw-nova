@@ -1,0 +1,25 @@
+# Lint only (no formatter is configured or used). Pinned version: ruff 0.17.1;
+# keep in sync with .pre-commit-config.yaml and .github/workflows/ci.yml.
+extend-exclude = [
+    "examples",
+    "data",
+    "docs",
+    "app/vendor",
+    "app/models-gallery",
+    "app/data",
+]
+
+[lint]
+# Real-bug rules only, no style: pyflakes (F), import-placement (E4), the
+# non-style pycodestyle checks (E711-E714 comparisons, E721 type comparison,
+# E722 bare except), syntax/runtime errors (E9) and bugbear (B).
+# Deliberately not E701/E702 (one-line `if x: y` / `a; b`, used widely) or
+# E731/E741 (style).
+select = ["F", "E4", "E711", "E712", "E713", "E714", "E721", "E722", "E9", "B"]
+# zip() without strict= is a Python 3.10+ nicety, not a bug here.
+ignore = ["B905"]
+
+[lint.per-file-ignores]
+# These must set up the environment / sys.path before importing the rest.
+"app/web/backend/main.py" = ["E402"]
+"app/web/backend/tests/test_prompt_cache.py" = ["E402"]

@@ -4,7 +4,11 @@ import EnvironmentSettings from "../components/EnvironmentSettings";
 import AgentForm, { ConnectionPill } from "../components/AgentForm";
 import AgentDetails from "../components/AgentDetails";
 import { useApp } from "../context";
-import { agentProvider, isLegacyBrowser, LEGACY_BROWSER_HINT, providerLabel } from "../modelChoices";
+import { agentProvider, isUnsupported, UNSUPPORTED_HINT, providerLabel } from "../modelChoices";
+
+// Pseudo-group for stored agents that cannot run until converted to an API key.
+const NEEDS_KEY = "needs-api-key";
+const groupLabel = (provider: string) => provider === NEEDS_KEY ? "Needs an API key" : providerLabel(provider);
 
 export default function Settings() {
   const { llms, defaultLlmId } = useApp();
@@ -15,7 +19,8 @@ export default function Settings() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => { api.catalog().then(r => setCatalog(r.models)).catch(e => setError(e.message)); }, []);
-  const providers = [...new Set(["anthropic", "openai", "openrouter", ...llms.map(m => agentProvider(String(m.litellm_params.model)))])];
+  const supported = llms.filter(m => !isUnsupported(m));
+  const providers = [...new Set(["anthropic", "openai", "openrouter", ...supported.map(m => agentProvider(String(m.litellm_params.model)))]), ...(supported.length < llms.length ? [NEEDS_KEY] : [])];
   const close = () => { setEditing(null); setNewId(null); };
   return <div className="page settings">
     <header className="page-head"><div><h1>Settings</h1><p className="muted">Add API keys and choose the agents you build with.</p></div></header>
@@ -27,14 +32,14 @@ export default function Settings() {
       </div></header>
       {error && <div className="banner error" role="alert">{error}</div>}
       <div className="agent-providers">{providers.map(provider => {
-        const entries = llms.filter(m => agentProvider(String(m.litellm_params.model)) === provider);
+        const entries = provider === NEEDS_KEY ? llms.filter(isUnsupported) : supported.filter(m => agentProvider(String(m.litellm_params.model)) === provider);
         const open = expanded === provider;
-        return <section className="agent-provider" key={provider} aria-label={`${providerLabel(provider)} agents`}>
+        return <section className="agent-provider" key={provider} aria-label={`${groupLabel(provider)} agents`}>
           <header className="agent-provider-head">
             <button type="button" className="provider-toggle" disabled={busy} aria-expanded={open} aria-controls={`agents-${provider}`} onClick={() => { setExpanded(open ? null : provider); close(); }}>
-              <span className="provider-chevron" aria-hidden>{open ? "⌄" : "›"}</span><strong>{providerLabel(provider)}</strong><span className="badge">{entries.length}</span>
+              <span className="provider-chevron" aria-hidden>{open ? "⌄" : "›"}</span><strong>{groupLabel(provider)}</strong><span className="badge">{entries.length}</span>
             </button>
-            <button type="button" disabled={busy} onClick={() => { setExpanded(provider); setEditing("new"); setNewId(null); }}>+ Add agent</button>
+            {provider !== NEEDS_KEY && <button type="button" disabled={busy} onClick={() => { setExpanded(provider); setEditing("new"); setNewId(null); }}>+ Add agent</button>}
           </header>
           {open && <div id={`agents-${provider}`} className="agent-provider-body">
             {editing === "new" && <AgentForm key={`new-${provider}`} provider={provider} catalog={catalog} onClose={close} onSaved={entry => setNewId(entry.id)} onBusy={setBusy} />}
@@ -44,16 +49,16 @@ export default function Settings() {
                 <div key={m.id} className="panel llm-row">
                   <div className="llm-info"><div className="llm-title"><strong>{m.model_name}</strong>
                     {m.id === defaultLlmId && <span className="badge">Default</span>}
-                    <span className={`badge ${isLegacyBrowser(m) ? "warn" : ""}`}>{isLegacyBrowser(m) ? "Browser login removed" : String(m.litellm_params.api_key ?? "").startsWith("os.environ/") ? "API key · env var" : "API key · value"}</span>
+                    <span className={`badge ${isUnsupported(m) ? "warn" : ""}`}>{isUnsupported(m) ? "Needs an API key" : String(m.litellm_params.api_key ?? "").startsWith("os.environ/") ? "API key · env var" : "API key · value"}</span>
                     <ConnectionPill status={m.connection_status ?? "not_tested"} />
                   </div><div className="muted small model-id">{String(m.litellm_params.model)}</div>
-                    {isLegacyBrowser(m) && <p className="muted small">{LEGACY_BROWSER_HINT}</p>}
+                    {isUnsupported(m) && <p className="muted small">{UNSUPPORTED_HINT}</p>}
                     <AgentDetails profile={m.profile} />
                   </div>
                   <div className="llm-actions"><button type="button" disabled={busy} onClick={() => { setEditing(m.id); setNewId(null); }}>Edit</button></div>
                 </div>
               )}
-              {!entries.length && editing !== "new" && <p className="muted small">No agents configured for {providerLabel(provider)} yet.</p>}
+              {!entries.length && editing !== "new" && <p className="muted small">No agents configured for {groupLabel(provider)} yet.</p>}
             </div>
           </div>}
         </section>;

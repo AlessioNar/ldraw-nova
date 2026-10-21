@@ -38,7 +38,7 @@ def mount_static(app: FastAPI) -> None:
         app.mount("/assets", StaticFiles(directory=settings.STATIC_DIR / "assets"), name="assets")
 
 
-RESERVED_PREFIXES = ("api/", "files/", "gallery-files/", "demo/", "ldraw/", "ldraw-id/", "viewer/", "assets/")
+RESERVED_PREFIXES = ("api/", "files/", "ldraw/", "ldraw-id/", "viewer/", "assets/")
 
 
 @router.get("/{full_path:path}", include_in_schema=False)

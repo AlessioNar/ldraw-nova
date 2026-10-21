@@ -2,7 +2,7 @@
 
 export type SnapshotStatus = "ready" | "queued" | "rendering" | "failed" | "missing";
 
-/** A model file in data/generated, or in the bundled gallery. */
+/** A model file in data/generated. */
 export type ModelFile = {
   file: string;
   name: string;
@@ -13,7 +13,6 @@ export type ModelFile = {
   parts: number | null; // total parts, from the BOM
   info_url: string | null; // the sibling .md: notes about the model (its prompt, say), if any
   info_heading: string | null; // the first H2 in the sibling .md, without the heading markers
-  gallery: boolean; // a bundled model from models-gallery/
   size: number;
   mtime: number;
   status: SnapshotStatus; // of the snapshot
@@ -84,6 +83,7 @@ export type LlmEntry = {
   capabilities: { tools: Capability; vision: Capability };
   resolved_capabilities: { tools: boolean | null; vision: boolean | null };
   auth_mode: "api_key" | "browser";
+  unsupported?: boolean;
   profile: ModelProfile;
 };
 
@@ -126,7 +126,7 @@ export const api = {
   approve: (id: string, approval: string, approved: boolean) => request(`/api/chats/${id}/approvals/${approval}`, { method: "POST", body: json({ approved }) }),
   catalog: () => request<{ models: ModelProfile[] }>("/api/model-catalog"),
   cancel: (id: string) => request(`/api/chats/${id}/cancel`, { method: "POST" }),
-  models: (collection: "models" | "gallery" = "models") => request<{ models: ModelFile[]; pending: number }>(`/api/${collection}`),
+  models: () => request<{ models: ModelFile[]; pending: number }>("/api/models"),
   deleteModel: (filename: string) => request<{ deleted: string[] }>(`/api/models/${encodeURIComponent(filename)}`, { method: "DELETE" }),
 
   llmModels: () => request<{ models: LlmEntry[]; default_id: string | null }>("/api/llm-models"),
