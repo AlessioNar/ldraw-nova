@@ -49,7 +49,6 @@ def test_delete_confines_paths_and_does_not_follow_links(collection, tmp_path):
     assert client.delete("/api/models/linked.mpd").status_code == 404
     assert client.delete("/api/models/..%2Foutside.mpd").status_code in (404, 405)
     assert client.delete("/api/models/car.md").status_code == 404
-    assert client.delete("/api/gallery/car.mpd").status_code in (404, 405)
     assert client.delete("/api/models/car.mpd", headers={"Origin": "https://other.example"}).status_code == 403
     assert client.delete("/api/models/car.mpd").status_code == 200
     assert outside.read_text() == "0 Outside"

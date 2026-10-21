@@ -24,7 +24,6 @@ export default function Sidebar() {
         + New chat
       </NavLink>
       <nav className="nav">
-        <NavLink to="/gallery">Gallery</NavLink>
         <NavLink to="/models">My Models</NavLink>
         <NavLink to="/settings">Settings</NavLink>
       </nav>

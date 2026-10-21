@@ -1,4 +1,4 @@
-"""My Models and Gallery collections: listing, deletion, GLB export and zip downloads."""
+"""My Models collection: listing, deletion, GLB export and zip downloads."""
 from __future__ import annotations
 
 import tempfile
@@ -35,17 +35,11 @@ async def models_list():
     return {"models": items, "pending": sum(1 for i in items if is_pending(i))}
 
 
-@router.get("/api/gallery")
-def gallery_list():
-    """The bundled gallery, independent of generated models with the same name."""
-    return {"models": [model_info(path) for path in gallery.collection(settings.GALLERY_MODELS_DIR)], "pending": 0}
-
-
 @router.delete("/api/models/{filename}")
 async def models_delete(filename: str):
     root = settings.GENERATED_DIR.resolve()
     # Delete only a direct, regular model file. Never follow a link or accept a
-    # URL/path supplied by a card, including links into the read-only Gallery.
+    # URL/path supplied by a card.
     model = root / filename
     if (Path(filename).name != filename or filename.startswith(".")
             or model.suffix.lower() not in MODEL_SUFFIXES or model.is_symlink()
@@ -69,15 +63,13 @@ async def models_delete(filename: str):
 
 
 def model_from_url(url: str) -> Optional[Path]:
-    """Resolve generated and gallery viewer URLs, including old /demo/ links."""
+    """Resolve a /files/generated/ viewer URL to its model file."""
     path = unquote(urlsplit(url).path)
-    for prefix, root in (("/files/generated/", settings.GENERATED_DIR),
-                         ("/gallery-files/", settings.GALLERY_MODELS_DIR),
-                         ("/demo/", settings.GALLERY_MODELS_DIR)):
-        if path.startswith(prefix):
-            model = safe_join(root, path[len(prefix):])
-            if model is not None and model.is_file() and model.suffix.lower() in MODEL_SUFFIXES:
-                return model
+    prefix = "/files/generated/"
+    if path.startswith(prefix):
+        model = safe_join(settings.GENERATED_DIR, path[len(prefix):])
+        if model is not None and model.is_file() and model.suffix.lower() in MODEL_SUFFIXES:
+            return model
     return None
 
 
@@ -85,7 +77,7 @@ def model_from_url(url: str) -> Optional[Path]:
 async def model_glb(url: str, existing_only: bool = False):
     """Prefer the model's sibling GLB. Otherwise convert and cache it, unless
     the 3D viewer is only checking for an authored alternate (existing_only)."""
-    model = model_from_url(url) or not_found("not a model in My Models or Gallery")
+    model = model_from_url(url) or not_found("not a model in My Models")
     try:
         if existing_only:
             out = glb.sibling_glb(model) or not_found("no sibling GLB")
@@ -113,7 +105,3 @@ def collection_zip(folder: Path, filename: str):
 def models_zip():
     return collection_zip(settings.GENERATED_DIR, "generated.zip")
 
-
-@router.get("/api/gallery/zip")
-def gallery_zip():
-    return collection_zip(settings.GALLERY_MODELS_DIR, "gallery.zip")

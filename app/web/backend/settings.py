@@ -12,7 +12,7 @@ from leocad_render import DATA_DIR, GENERATED_DIR, OUTPUT_DIR
 
 __all__ = [
     "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "WEB_DIRS",
-    "CONFIG_DIR", "LDRAW_DIR", "GALLERY_MODELS_DIR", "INDEX_DIR", "STATIC_DIR",
+    "CONFIG_DIR", "LDRAW_DIR", "INDEX_DIR", "STATIC_DIR",
     "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
     "COALESCE_REASONING",
 ]
@@ -32,10 +32,6 @@ CONFIG_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_CONFIG_DIR", "/config"))
 
 # Baked into the image.
 LDRAW_DIR = Path(os.environ.get("LEOCAD_LIB", "/opt/ldraw/ldraw"))
-# Gallery models (models-gallery/ in the repo), shown in their own collection. Each ships
-# with its snapshot (.png) and BOM (.csv): nothing is made or written there.
-GALLERY_MODELS_DIR = Path(os.environ.get("LDRAW_NOVA_GALLERY_MODELS_DIR",
-    os.environ.get("LDRAW_NOVA_DEMO_MODELS_DIR", "/opt/models-gallery")))
 INDEX_DIR = Path(os.environ.get("LDRAW_NOVA_INDEX_DIR", "/opt/index"))
 STATIC_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_STATIC_DIR", "/opt/web/static"))
 VIEWER_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_VIEWER_DIR", "/opt/web/viewer"))                   # viewer.html

@@ -21,8 +21,6 @@ def client():
     "/files/%2e%2e/%2e%2e/etc/passwd",
     "/files/..%2f..%2fetc%2fpasswd",
     "/ldraw/..%2f..%2f..%2fetc%2fpasswd",
-    "/demo/..%2f..%2fetc%2fpasswd",
-    "/gallery-files/..%2f..%2fetc%2fpasswd",
     "/ldraw-id/..%2f..%2f..%2fetc%2fpasswd",
 ])
 def test_file_routes_refuse_traversal(client, url):
@@ -130,89 +128,30 @@ def test_models_page_lists_generated_and_renders_missing_snapshots(client, data_
     assert z.status_code == 200 and z.headers["content-type"] == "application/zip"
 
 
-def test_gallery_and_generated_models_are_independent(client, data_dir: Path, gallery_dir: Path):
-    from routers.models_gallery import model_from_url
+def test_my_models_notes_and_zip(client, data_dir: Path):
     generated = data_dir / "generated"
     generated.mkdir(parents=True, exist_ok=True)
-    for folder, filenames in ((gallery_dir, ("gallery-only.mpd", "clash.mpd", "shared.mpd")),
-                              (generated, ("clash.ldr", "shared.mpd"))):
-        for filename in filenames:
-            model = folder / filename
-            model.write_text(f"0 FILE {model.stem}.ldr\n0 {folder.name} {model.stem}\n"
-                             "1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n")
-            model.with_suffix(".png").write_bytes(b"\x89PNG\r\n\x1a\n")
-            model.with_suffix(".csv").write_text("Part Name,Color,Quantity,Part ID,Color Code\nBrick 2 x 4,Red,1,3001,4\n")
-            if folder == gallery_dir:
-                model.with_suffix(".md").write_text(f"# Notes\n\n## {model.stem}\n\n**Prompt:** build it\n\n## Later heading")
-
-    gallery_listing = client.get("/api/gallery").json()
-    assert gallery_listing["pending"] == 0
-    gallery_models = {m["file"]: m for m in gallery_listing["models"]}
+    for filename in ("clash.ldr", "shared.mpd"):
+        model = generated / filename
+        model.write_text(f"0 FILE {model.stem}.ldr\n0 generated {model.stem}\n"
+                         "1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n")
+        model.with_suffix(".png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        model.with_suffix(".csv").write_text("Part Name,Color,Quantity,Part ID,Color Code\nBrick 2 x 4,Red,1,3001,4\n")
     mine = {m["file"]: m for m in client.get("/api/models").json()["models"]}
-    assert set(gallery_models) == {"gallery-only.mpd", "clash.mpd", "shared.mpd"}
-    assert "gallery-only.mpd" not in mine and "clash.mpd" not in mine
-    assert mine["clash.ldr"]["gallery"] is False and mine["clash.ldr"]["info_url"] is None
-    assert mine["clash.ldr"]["info_heading"] is None  # never inherit gallery siblings
+    assert mine["clash.ldr"]["info_url"] is None and mine["clash.ldr"]["info_heading"] is None
     assert mine["shared.mpd"]["model_url"] == "/files/generated/shared.mpd"
-    assert gallery_models["shared.mpd"]["model_url"] == "/gallery-files/shared.mpd"
-    assert gallery_models["shared.mpd"]["description"] != mine["shared.mpd"]["description"]
-
-    bundled = gallery_models["gallery-only.mpd"]
-    assert bundled["gallery"] is True and bundled["model_url"] == "/gallery-files/gallery-only.mpd"
-    assert bundled["status"] == "ready" and bundled["image_url"].startswith("/gallery-files/gallery-only.png?v=")
-    assert bundled["bom_status"] == "ready" and bundled["parts"] == 1
-    assert bundled["info_url"].startswith("/gallery-files/gallery-only.md?v=")
-    assert bundled["info_heading"] == "gallery-only"
-    info = client.get(bundled["info_url"])
-    assert info.status_code == 200 and info.headers["content-type"].startswith("text/markdown")
-    assert "**Prompt:** build it" in info.text and "## Later heading" in info.text
-    for url in (bundled["model_url"], "/demo/gallery-only.mpd"):
-        assert client.get(url).status_code == 200
-        assert model_from_url(url) == gallery_dir / "gallery-only.mpd"
-    download = client.get(bundled["model_url"], params={"download": 1})
-    assert "attachment" in download.headers["content-disposition"]
-    assert client.get(bundled["bom_url"]).status_code == 200
-    assert client.get("/gallery-files/missing.mpd").status_code == 404
 
     (generated / "clash.md").write_text("Notes on my model\n\n## My own heading\n\n## Another")
     updated = next(m for m in client.get("/api/models").json()["models"] if m["file"] == "clash.ldr")
     assert updated["info_url"].startswith("/files/generated/clash.md?v=")
     assert updated["info_heading"] == "My own heading"
 
-    for endpoint, source, absent, filename in (("models", generated, "gallery-only.mpd", "generated.zip"),
-                                              ("gallery", gallery_dir, "clash.ldr", "gallery.zip")):
-        z = client.get(f"/api/{endpoint}/zip")
-        assert z.status_code == 200 and filename in z.headers["content-disposition"]
-        with zipfile.ZipFile(io.BytesIO(z.content)) as zf:
-            assert absent not in zf.namelist()
-            assert {"shared.mpd", "shared.png", "shared.csv", "clash.md"} <= set(zf.namelist())
-            assert zf.read("shared.mpd") == (source / "shared.mpd").read_bytes()
-            assert zf.read("clash.md") == (source / "clash.md").read_bytes()
-
-
-def test_gallery_never_generates_missing_artifacts(client, gallery_dir: Path, monkeypatch):
-    import gallery
-    def unexpected_render(_models):
-        pytest.fail("Gallery must not queue renders")
-    monkeypatch.setattr(gallery, "ensure_artifacts", unexpected_render)
-    model = gallery_dir / "without-artifacts.mpd"
-    model.write_text("0 FILE without-artifacts.ldr\n0 No artifacts\n")
-    try:
-        listing = client.get("/api/gallery").json()
-        item = next(m for m in listing["models"] if m["file"] == model.name)
-        assert listing["pending"] == 0
-        assert item["image_url"] is None and item["bom_url"] is None
-        assert item["info_heading"] is None and item["info_url"] is None
-        assert item["status"] == item["bom_status"] == "failed"
-    finally:
-        model.unlink()
-
-
-def test_absent_gallery_is_empty(client, tmp_path, monkeypatch):
-    monkeypatch.setattr(settings, "GALLERY_MODELS_DIR", tmp_path / "absent")
-    assert client.get("/api/gallery").json() == {"models": [], "pending": 0}
-    with zipfile.ZipFile(io.BytesIO(client.get("/api/gallery/zip").content)) as zf:
-        assert zf.namelist() == []
+    z = client.get("/api/models/zip")
+    assert z.status_code == 200 and "generated.zip" in z.headers["content-disposition"]
+    with zipfile.ZipFile(io.BytesIO(z.content)) as zf:
+        assert {"shared.mpd", "shared.png", "shared.csv", "clash.md"} <= set(zf.namelist())
+        assert zf.read("shared.mpd") == (generated / "shared.mpd").read_bytes()
+        assert zf.read("clash.md") == (generated / "clash.md").read_bytes()
 
 
 def test_chat_api_resolves_model_references(client, store, data_dir: Path):
@@ -228,7 +167,7 @@ def test_chat_api_resolves_model_references(client, store, data_dir: Path):
     m = detail["models"][ref["id"]]
     assert m["model_url"] == "/files/generated/referenced.mpd" and m["description"] == "Referenced from a chat"
     assert m["warnings"] == ["w"]
-    assert m["info_heading"] == "A model built in chat" and m["gallery"] is False
+    assert m["info_heading"] == "A model built in chat"
     listing = client.get("/api/models").json()
     assert {"id": chat["id"], "title": "New chat"} in next(x for x in listing["models"] if x["file"] == "referenced.mpd")["chats"]
     assert client.delete(f"/api/chats/{chat['id']}").status_code == 200
