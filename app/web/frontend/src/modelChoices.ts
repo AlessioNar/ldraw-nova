@@ -8,9 +8,10 @@ export function setProviderCatalogue(catalogue: ProviderInfo[]) {
 }
 
 export const agentProvider = (model: string) => model.split("/")[0];
-// Entries saved before browser login was removed stay listed but cannot run.
-export const isLegacyBrowser = (model: LlmEntry) => model.auth_mode === "browser";
-export const LEGACY_BROWSER_HINT = "Browser login was removed. Edit this agent and use an API key.";
+// Entries saved before browser login was removed (browser auth or a chatgpt/ model)
+// stay listed but cannot run. The backend flags them; the fallback covers older responses.
+export const isUnsupported = (model: LlmEntry) => model.unsupported ?? model.auth_mode === "browser";
+export const UNSUPPORTED_HINT = "Browser login was removed. Edit this agent and use an API key instead.";
 export const providerLabel = (provider: string) => labels[provider] ?? provider;
 
 const RECENTS_KEY = "ldraw-nova.recent-models";
