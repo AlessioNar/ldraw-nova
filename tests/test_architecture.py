@@ -2,11 +2,10 @@
 import hashlib
 import importlib.util
 import json
-from pathlib import Path
 
 import pytest
 
-from ldraw_tools.architecture import Module, room, porch, gable, attach_roof, slab
+from ldraw_tools.architecture import Module, room, gable, attach_roof
 from ldraw_tools.builder import build_plan, load_plan
 from ldraw_tools.common import ROOT
 from ldraw_tools.geometry import analyze_geometry, profiles
@@ -34,7 +33,7 @@ def test_overlapping_paths_are_a_union_with_reserved_attachment_cells(official):
 
 def test_tiles_are_checked_for_overlap_but_not_offered_as_stud_support(official):
     m=Module('tile-overlap','Regression: paving used to escape rectangular body checks')
-    a=m.add('3068b',71,0,8,0)
+    m.add('3068b',71,0,8,0)
     m.add('3070b',71,.5,8,.5)
     _,model,_=build_plan(m.plan(),official)
     assert any(d['code']=='assembly.body_overlap' for d in analyze_geometry(model,official)['diagnostics'])

@@ -84,7 +84,7 @@ def prepare_reference(index, row, outdir, *, views=DEFAULT_VIEWS, colour=7, cont
     geometry = analyze_geometry(model, index.parts, detail='summary', contacts=contacts, output_limit=30) if contacts != 'none' else None
     size = jsonable(mesh.bounds.size) if mesh.bounds else None
     library = (index.parts.path.parent/'parts').resolve().parent
-    report = render(destination/'preview.mpd', library, destination/'renders', views=views,
+    render(destination/'preview.mpd', library, destination/'renders', views=views,
                     timeout=timeout, bounds=mesh.bounds if mesh.complete and not inventory['raw_geometry_sections'] else None)
     comparison = compare_bom(model, index.parts, destination/'renders/leocad-bom.csv')
     card = dict(version=CARD_VERSION, cache_key=key, id=row['id'], kind=row['kind'], model=row['model'],

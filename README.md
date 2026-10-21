@@ -157,6 +157,8 @@ These are some of the guides and references given to the agent in order to make 
 
 ## Development
 
+Code checks are lint-only (no formatter). Install [ruff](https://docs.astral.sh/ruff/) 0.17.1 (`pip install ruff==0.17.1`) and run `ruff check` from the repo root; the rules are in `ruff.toml`. To run it together with the YAML, merge-conflict and large-file hooks, use `pip install pre-commit && pre-commit run --all-files` (or `pre-commit install` to run them on each commit). Frontend types are checked by `npm run build` in `app/web/frontend` (`tsc -b`). CI runs the same checks in the `quick` job.
+
 Being this a **first release**, there are quite some things that still require some work:
 
 - **Adapt for low-end agents:** adapt current tooling, docs and instructions in order to improve usage by low-end models like e.g. Luna, Haiku, etc.
