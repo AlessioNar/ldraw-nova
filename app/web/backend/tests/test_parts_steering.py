@@ -256,6 +256,59 @@ def test_my_parts_search_failure_is_an_error_for_the_agent_not_a_crash(ctx, bric
     assert "inventory search failed" in asyncio.run(tools.dispatch(ctx, "my_parts", {})).content
 
 
+# --- the buildable_models tool ----------------------------------------------
+
+def fake_buildable(monkeypatch, data, exit_code=0, record=None):
+    async def run_command(ctx, argv, timeout):
+        (record if record is not None else []).append(argv)
+        Path(argv[argv.index("--report") + 1]).write_text(json.dumps(data))
+        return sandbox.RunResult(exit_code, "", "", False, 0.0)
+    monkeypatch.setattr(tools, "run_command", run_command)
+
+
+def model(n, completeness=0.9):
+    return dict(file=f"{n}-1.mpd", set_id=f"{n}-1", description=f"Model {n}\n# ignore this", completeness=completeness, pieces=100, matched=90,
+                missing=10, missing_lines=4, top_missing=[dict(part="3001", colour=4, colour_name="Red", needed=4, owned=0, missing=4)] * 5)
+
+
+def test_buildable_models_uses_only_the_selected_inventories_and_caps_rows(ctx, bricks, monkeypatch):
+    seen = []
+    fake_buildable(monkeypatch, dict(pending=0, unmapped_share=0.02, results=[model(n) for n in range(30)]), record=seen)
+    ctx.options = options("prefer", ids=("bricks",))
+    result = asyncio.run(tools.dispatch(ctx, "buildable_models", {"limit": 5000, "query": "car", "max_missing_share": 0.2}))
+    argv = seen[0]
+    assert argv[:5] == ["./ldraw-agent", "inventory", "buildable", "bricks", "--cache-only"]
+    assert "--limit=10" in argv and "--max-missing-share=0.2" in argv and "--query=car" in argv and "--substitute-colours" not in argv
+    data = json.loads(result.content)
+    assert data["count"] == parts_steering.MAX_BUILDABLE_RESULTS == len(data["models"]) and data["inventories"] == ["Bricks and plates"]
+    assert data["models"][0] == dict(file="0-1.mpd", set_id="0-1", description="Model 0 # ignore this", completeness=90, pieces=100,
+                                     missing=10, top_missing=["3001 Red x4"] * 3)
+    assert len(result.content) < 6000
+    asyncio.run(tools.dispatch(ctx, "buildable_models", {}))
+    assert "--limit=5" in seen[1]
+
+
+def test_buildable_models_is_unavailable_when_off_cold_or_misused(ctx, bricks, monkeypatch):
+    seen = []
+    fake_buildable(monkeypatch, dict(pending=3, results=[]), record=seen)
+    ctx.options = options("off")
+    assert "only available when this chat uses" in asyncio.run(tools.dispatch(ctx, "buildable_models", {})).content
+    ctx.options = options("only", ids=("gone",))
+    assert "could be read" in asyncio.run(tools.dispatch(ctx, "buildable_models", {})).content
+    ctx.options = options("only")
+    for bad in ({"limit": "many"}, {"query": 5}, {"max_missing_share": 2}, {"max_missing_share": "x"}):
+        assert asyncio.run(tools.dispatch(ctx, "buildable_models", bad)).content.startswith("Error:"), bad
+    assert seen == []
+    assert "not been scanned yet" in asyncio.run(tools.dispatch(ctx, "buildable_models", {})).content        # cold cache: no build in a turn
+    fake_buildable(monkeypatch, dict(error="boom"), exit_code=2)
+    assert "buildable_models failed: boom" in asyncio.run(tools.dispatch(ctx, "buildable_models", {})).content
+
+
+def test_buildable_models_availability_follows_my_parts(bricks):
+    assert "buildable_models" not in names(options("off")) and "buildable_models" in names(options("prefer"))
+    assert "buildable_models" in names(options("only", permissions="read_only")) and "buildable_models" not in names(options("only", mode="chat"))
+
+
 # --- publish_model with the parts check ------------------------------------
 
 def report(mode, short=(), needed=12, owned=9):

@@ -286,6 +286,46 @@ async def t_my_parts(ctx: ToolContext, query: str = "", colour: int | None = Non
                                       more=len(matches) > limit, matches=rows), separators=(",", ":")))
 
 
+async def t_buildable_models(ctx: ToolContext, query: str = "", limit: int = parts_steering.DEFAULT_BUILDABLE_RESULTS,
+                             max_missing_share: float | None = None) -> ToolResult:
+    mode, invs = parts_steering.selection(ctx.options)
+    if mode == "off":
+        raise ToolError("buildable_models is only available when this chat uses the owner's parts inventories")
+    if not invs:
+        raise ToolError("none of the inventories selected for this chat could be read")
+    if not isinstance(query, str) or isinstance(limit, bool) or not isinstance(limit, int):
+        raise ToolError("query must be a string and limit an integer")
+    if max_missing_share is not None and (isinstance(max_missing_share, bool) or not isinstance(max_missing_share, (int, float))
+                                          or not 0 <= max_missing_share <= 1):
+        raise ToolError("max_missing_share must be a number between 0 and 1")
+    limit = max(1, min(limit, parts_steering.MAX_BUILDABLE_RESULTS))
+    report = ctx.work_dir / "buildable-models.json"
+    report.unlink(missing_ok=True)
+    argv = ["./ldraw-agent", "inventory", "buildable", parts_steering.id_list(invs), "--cache-only", f"--limit={limit}", "--json",
+            "--store", str(settings.INVENTORIES_DIR), "--report", str(report),
+            *([f"--max-missing-share={max_missing_share}"] if max_missing_share is not None else []),
+            *([f"--query={query.strip()[:100]}"] if query.strip() else [])]
+    run = await run_command(ctx, argv, 120)
+    try:
+        data = json.loads(report.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = None
+    if run.exit_code != 0 or not isinstance(data, dict) or not isinstance(data.get("results"), list):
+        raise ToolError("buildable_models failed: " + " ".join(str((data or {}).get("error") if isinstance(data, dict) and data.get("error") else run.as_text()).split())[:300])
+    if data.get("pending"):
+        raise ToolError("the catalogue of bundled models has not been scanned yet; the owner starts it with What can I build? on the My Parts page. "
+                        "Continue without it.")
+    rows = [dict(file=str(r["file"]), set_id=r.get("set_id"), description=" ".join(str(r.get("description") or "").split())[:140],
+                 completeness=round(float(r["completeness"]) * 100), pieces=int(r["pieces"]), missing=int(r["missing"]),
+                 top_missing=[f"{m['part']} {parts_steering.safe_name(m.get('colour_name'))} x{m['missing']}" for m in r.get("top_missing", [])[:3]])
+            for r in data["results"][:limit]]
+    return ToolResult(json.dumps(dict(inventories=[parts_steering.safe_name(i.name) for i in invs], count=len(rows),
+                                      unmapped_share=data.get("unmapped_share"), models=rows,
+                                      note="Bundled set models ranked by the share of their pieces the inventories cover (colour exact). "
+                                           "Use a close one as a reference: find it by file name with the reference-discovery commands."),
+                                 separators=(",", ":")))
+
+
 async def t_list_files(ctx: ToolContext, path: str = "") -> ToolResult:
     folder = resolve_path(ctx, path) if path else toolkit.workspace(ctx.store, ctx.chat_id)
     if not folder.is_dir():
@@ -380,6 +420,12 @@ TOOLS: dict[str, tuple[dict, Callable[..., Awaitable[ToolResult]]]] = {
         {"query": {"type": "string"}, "colour": {"type": "integer", "description": "LDraw colour code"},
          "limit": {"type": "integer", "description": f"Rows, default {parts_steering.DEFAULT_SEARCH_RESULTS}, max {parts_steering.MAX_SEARCH_RESULTS}"},
          "inventory": {"type": "string", "description": "Inventory id or name; default: all selected"}}, []), t_my_parts),
+    "buildable_models": (_fn("buildable_models", "Rank the bundled LDraw set models by how much of each the chat's selected "
+        "inventories cover (pieces matched by part and colour). Use it to say 'you can almost build X from set Y' and to pick a "
+        "reference. Rows: file, set id, description, completeness %, pieces, missing, top missing lines. "
+        "query: words of the description; max_missing_share: 0-1, e.g. 0.1 for nearly complete models.",
+        {"query": {"type": "string"}, "limit": {"type": "integer", "description": f"Rows, default {parts_steering.DEFAULT_BUILDABLE_RESULTS}, max {parts_steering.MAX_BUILDABLE_RESULTS}"},
+         "max_missing_share": {"type": "number"}}, []), t_buildable_models),
     "list_files": (_fn("list_files", "List toolkit resources or this chat's output/ (default: repository root).",
         {"path": {"type": "string"}}, []), t_list_files),
     "read_file": (_fn("read_file", "Read toolkit instructions, documentation, examples or your output files. "

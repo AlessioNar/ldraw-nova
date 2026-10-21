@@ -84,3 +84,25 @@
   .pager { flex-wrap: wrap; }
   .parts-trigger-label { max-width: 150px; }
 }
+
+/* what can I build? */
+.parts-tabs { margin: 4px 0 12px; }
+.buildable { display: flex; flex-direction: column; gap: 10px; }
+.buildable > p { margin: 0; }
+.build-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 16px; align-items: start; }
+.build-filters .parts-lists { grid-column: 1 / -1; max-height: 140px; }
+.build-filters .check { grid-column: 1 / -1; }
+.build-filters .parts-lists .check { grid-column: auto; }
+.build-filters input[type="number"], .build-filters select { width: 100%; }
+.build-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.build-card { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.build-card header h2 { font-size: 15px; line-height: 1.3; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.build-card p { margin: 0; }
+.build-score { display: flex; align-items: center; gap: 10px; }
+.build-score strong { font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+.build-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+.build-bar span { display: block; height: 100%; background: var(--accent); }
+.build-missing { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+.build-missing li { display: flex; align-items: center; min-width: 0; }
+.build-missing .swatch { flex: none; margin-top: 0; }
+.build-card .card-actions { flex-wrap: wrap; justify-content: flex-start; }

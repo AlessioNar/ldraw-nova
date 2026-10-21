@@ -37,6 +37,7 @@ IMPORT_TIMEOUT = 180
 MAX_REPORT_BYTES = 256 * 1024 * 1024
 PARTS_MODES = ("off", "prefer", "only")
 ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]{0,59}")
+RESERVED_IDS = ("buildable",)               # /api/inventories/buildable is a route, not an inventory
 
 _lock = threading.Lock()                    # check-then-write of ids and names
 _cache: OrderedDict[tuple, dict] = OrderedDict()
@@ -285,6 +286,8 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False) -> 
     if len(raw) > MAX_CSV_BYTES:
         raise InventoryError(413, f"File exceeds the {MAX_CSV_BYTES // (1024 * 1024)} MB limit")
     inventory_id = slugify(name)
+    if inventory_id in RESERVED_IDS:
+        raise InventoryError(400, f"The name {name!r} is reserved; choose another one")
     if _name_taken(name):
         raise InventoryError(409, f"An inventory called {name!r} already exists")
     folder = settings.INVENTORIES_DIR
