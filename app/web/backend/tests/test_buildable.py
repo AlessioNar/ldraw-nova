@@ -191,3 +191,15 @@ def test_the_buildable_routes_do_not_shadow_inventory_ids(client):
     assert client.get("/api/inventories/box").json()["inventory"]["id"] == "box"
     assert client.get("/api/inventories/buildable/status").status_code == 200
     assert client.post("/api/inventories", json={"name": "Buildable", "csv": "Part,Color,Quantity\n3001,4,1\n"}).status_code == 400
+
+
+def test_bundled_models_are_served_to_the_viewer_and_confined(client, monkeypatch, tmp_path):
+    folder = tmp_path / "toolkit" / "data" / "models-annotated"
+    folder.mkdir(parents=True)
+    (folder / "8448-1_Racer.mpd").write_text("0 FILE 8448-1_Racer.mpd\n")
+    (tmp_path / "toolkit" / "secret.txt").write_text("no")
+    monkeypatch.setattr(settings, "TOOLKIT_DIR", tmp_path / "toolkit")
+    r = client.get("/reference-models/8448-1_Racer.mpd")
+    assert r.status_code == 200 and r.text.startswith("0 FILE") and r.headers["content-type"].startswith("text/plain")
+    assert client.get("/reference-models/nope.mpd").status_code == 404
+    assert client.get("/reference-models/..%2F..%2Fsecret.txt").status_code == 404

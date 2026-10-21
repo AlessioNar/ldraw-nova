@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { api, type TurnOptions, type DocumentUpload } from "../api";
 import Composer from "../components/Composer";
 import { useApp } from "../context";
@@ -14,8 +14,9 @@ const EXAMPLES = [
 export default function Home() {
   const { llms, defaultLlmId, refreshChats } = useApp();
   const navigate = useNavigate();
+  const prompt = (useLocation().state as { prompt?: string } | null)?.prompt ?? "";   // "Design something like this" on What can I build?
   const [llmId, setLlmId] = useState<string | null>(defaultLlmId);
-  const [example, setExample] = useState("");
+  const [example, setExample] = useState(prompt);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

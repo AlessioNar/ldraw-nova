@@ -195,6 +195,19 @@ export type Inventory = {
   distinct_parts: number; distinct_colours: number; total_pieces: number; spare_pieces: number;
   unmapped_parts: number; unmapped_colours: number;
 };
+type BuildableLine = { part: string; colour: number; colour_name: string; description: string; needed: number; owned: number; missing: number };
+export type BuildableModel = {
+  file: string; id: string; set_id: string | null; description: string; pieces: number; matched: number; completeness: number;
+  missing: number; missing_lines: number; custom_pieces: number; top_missing: BuildableLine[];
+  substituted_matched?: number; substituted_completeness?: number; // only with substitute=true; never mixed into completeness
+};
+export type BuildableStatus = { state: "idle" | "building" | "ready"; done: number; total: number; error?: string };
+export type BuildableReport = {
+  inventories: string[]; inventory_pieces: number; unmapped_pieces: number; unmapped_share: number; substitute_colours: boolean;
+  counts: { models: number; parsed: number; skipped: number; too_small: number; subvariants: number; ranked: number };
+  warnings: string[]; results: BuildableModel[]; status: BuildableStatus;
+};
+export type BuildableQuery = { ids: string[]; limit?: number; min_parts?: number; max_missing_share?: number | null; query?: string; substitute?: boolean };
 export type ImportReport = {
   dialect: string; total_rows: number; total_pieces: number; spare_pieces: number;
   unmapped_parts: { rb_part: string; colour: number; qty: number }[];
@@ -227,4 +240,19 @@ export const inventoryApi = {
   rename: (id: string, name: string) =>
     request<{ inventory: Inventory }>(`/api/inventories/${encodeURIComponent(id)}`, { method: "PATCH", body: json({ name }) }),
   remove: (id: string) => request<{ ok: true }>(`/api/inventories/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  /** The ranked list, or the cache build's progress (HTTP 202) while the bundled models' parts lists are still being scanned. */
+  buildable: (q: BuildableQuery) => {
+    const params = new URLSearchParams({ ids: q.ids.join(",") });
+    if (q.limit != null) params.set("limit", String(q.limit));
+    if (q.min_parts != null) params.set("min_parts", String(q.min_parts));
+    if (q.max_missing_share != null) params.set("max_missing_share", String(q.max_missing_share));
+    if (q.query) params.set("query", q.query);
+    if (q.substitute) params.set("substitute", "true");
+    return request<BuildableReport | BuildableStatus>(`/api/inventories/buildable?${params}`);
+  },
+  buildableStatus: () => request<BuildableStatus>("/api/inventories/buildable/status"),
+  buildableWarm: () => request<BuildableStatus>("/api/inventories/buildable/warm", { method: "POST" }),
 };
+
+/** A bundled set model (data/models-annotated) as the 3D viewer can load it. */
+export const referenceModelUrl = (file: string) => `/reference-models/${encodeURIComponent(file)}`;

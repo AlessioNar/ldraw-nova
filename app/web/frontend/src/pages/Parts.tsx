@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { inventoryApi, timeAgo, type Inventory } from "../api";
+import BuildablePanel from "../components/parts/BuildablePanel";
 import InventoryDetailView from "../components/parts/InventoryDetailView";
 import UploadDialog from "../components/parts/UploadDialog";
 
@@ -8,6 +9,8 @@ import UploadDialog from "../components/parts/UploadDialog";
 export default function Parts() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [search, setSearch] = useSearchParams();
+  const tab = search.get("view") === "build" ? "build" : "lists";
   const [items, setItems] = useState<Inventory[] | null>(null);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -68,13 +71,18 @@ export default function Parts() {
       <p className="muted">Upload the bricks you own as a Rebrickable CSV. In a chat, choose Prefer or Only my parts and the agent designs with them.</p></div>
       <div className="head-actions">{upload}</div></header>
     {error && <div className="banner error" role="alert">{error}</div>}
+    {!!items?.length && <div className="segmented parts-tabs" role="group" aria-label="My Parts view">
+      <button type="button" aria-pressed={tab === "lists"} onClick={() => setSearch({})}>Parts lists</button>
+      <button type="button" aria-pressed={tab === "build"} onClick={() => setSearch({ view: "build" })}>What can I build?</button>
+    </div>}
+    {!!items?.length && tab === "build" && <BuildablePanel inventories={items} />}
     {!items && !error && <p className="muted"><span className="spinner" aria-hidden /> Loading…</p>}
     {items && !items.length && !error && <div className="panel parts-empty-state">
       <h2>No parts lists yet</h2>
       <p className="muted">Export your inventory from Rebrickable (My Parts, Export, Rebrickable CSV) or any tool that writes Part, Color and Quantity columns, then upload it here.</p>
       {upload}
     </div>}
-    {!!items?.length && <div className="card-grid parts-grid">{items.map(inv => <article className="panel inventory-card" key={inv.id}>
+    {!!items?.length && tab === "lists" && <div className="card-grid parts-grid">{items.map(inv => <article className="panel inventory-card" key={inv.id}>
       <h2 className="ellipsis"><Link to={`/parts/${inv.id}`}>{inv.name}</Link></h2>
       <p className="muted small ellipsis">{inv.source_filename ?? "No source file"} · {timeAgo(inv.created_at)}</p>
       <p className="inventory-pieces"><strong>{inv.total_pieces.toLocaleString()}</strong> pieces</p>

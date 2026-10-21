@@ -38,6 +38,12 @@ def files(path: str, download: bool = False):
     return _serve(settings.DATA_DIR, path, download=download)
 
 
+@router.get("/reference-models/{path:path}")
+def reference_models(path: str):
+    """The bundled set models (data/models-annotated) that What can I build? ranks, for the 3D viewer. Read-only."""
+    return _serve(settings.TOOLKIT_DIR / "data" / "models-annotated", path)
+
+
 LIBRARY_CACHE = "public, max-age=31536000, immutable"   # baked into the image, never changes
 
 
