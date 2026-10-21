@@ -11,7 +11,7 @@ from pathlib import Path
 from leocad_render import DATA_DIR, GENERATED_DIR, OUTPUT_DIR
 
 __all__ = [
-    "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "WEB_DIRS",
+    "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "INVENTORIES_DIR", "WEB_DIRS",
     "CONFIG_DIR", "LDRAW_DIR", "INDEX_DIR", "STATIC_DIR",
     "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
     "COALESCE_REASONING",
@@ -21,7 +21,9 @@ __all__ = [
 #   generated/          the model collection (flat): <name>.mpd|.ldr|.dat + <name>.png snapshot
 #   chats/<chat-id>/    one folder per chat: chat.json, messages.jsonl, models.jsonl, renders/
 #   output/<chat-id>/   each chat's agent work folder (notes, plans, scratch files) — never served
+#   inventories/        the user's parts inventories: <id>.json + the uploaded <id>.csv — never served
 CHATS_DIR = DATA_DIR / "chats"
+INVENTORIES_DIR = Path(os.environ.get("LDRAW_NOVA_INVENTORIES_DIR", DATA_DIR / "inventories"))
 
 # Top-level folders of /data the web UI may serve. output/ is agent-only.
 WEB_DIRS = ("generated", "chats")
@@ -40,6 +42,8 @@ PLAYER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_PLAYER_VENDOR_DIR", "/op
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 TOOLKIT_DIR = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_DIR", "/opt/ldraw-nova"))
+# The interpreter of the toolkit's own uv environment (the backend's Python lacks pyldraw3 and numpy).
+TOOLKIT_PYTHON = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_PYTHON") or TOOLKIT_DIR / ".venv/bin/python")
 
 
 # --- agent history tuning (history.py, tools.py) ---------------------------
