@@ -19,55 +19,37 @@ def not_found(what: str = "not found"):
 
 
 
-def is_gallery(path: Path) -> bool:
-    """A file from the gallery baked into the image."""
-    return path.parent.resolve() == settings.GALLERY_MODELS_DIR.resolve()
-
-
 def file_url(path: Path, versioned: bool = False) -> Optional[str]:
     """URL of an existing file the web UI may load, else None: /files/... in a
-    web-visible folder of /data (generated/, chats/), or /gallery-files/... for gallery
-    models. data/output is agent-only: never served.
+    web-visible folder of /data (generated/, chats/). data/output is agent-only: never served.
 
     `versioned` adds the file's mtime, for images that can be re-rendered under
     the same name: browsers reuse an image already on the page by URL alone."""
-    if is_gallery(path):
-        url = "/gallery-files/" + quote(path.name)
-    else:
-        try:
-            rel = rel_to(path, settings.DATA_DIR)
-        except ValueError:
-            return None
-        if rel.split("/", 1)[0] not in settings.WEB_DIRS:
-            return None
-        url = "/files/" + quote(rel)
+    try:
+        rel = rel_to(path, settings.DATA_DIR)
+    except ValueError:
+        return None
+    if rel.split("/", 1)[0] not in settings.WEB_DIRS:
+        return None
+    url = "/files/" + quote(rel)
     if not path.is_file():
         return None
     return f"{url}?v={path.stat().st_mtime_ns}" if versioned else url
 
 
-def _status(path: Path, kind: str, in_gallery: bool) -> tuple[str, Optional[str]]:
-    if not in_gallery:
-        return gallery.status_of(path, kind)
-    # Gallery models come with their siblings: nothing is made for them.
-    sibling = snapshot_path_for(path) if kind == "snapshot" else bom_path_for(path)
-    return ("ready", None) if sibling.exists() else ("failed", "none included with this gallery model")
-
-
 def model_info(path: Path) -> dict:
     """A model file in the collection, as the UI sees it: its snapshot (status,
     image_url), BOM (bom_status, bom_url), part count (from the BOM), notes
-    (info_url and info_heading, from its .md) and its collection."""
+    (info_url and info_heading, from its .md)."""
     exists = path.is_file()
-    in_gallery = is_gallery(path)
-    status, error = _status(path, "snapshot", in_gallery) if exists else ("missing", None)
-    bom_status, bom_error = _status(path, "bom", in_gallery) if exists else ("missing", None)
+    status, error = gallery.status_of(path, "snapshot") if exists else ("missing", None)
+    bom_status, bom_error = gallery.status_of(path, "bom") if exists else ("missing", None)
     stat = path.stat() if exists else None
     return {
         "file": path.name, "name": path.stem, "description": gallery.description_of(path) if exists else "",
         "model_url": file_url(path), "image_url": file_url(snapshot_path_for(path), versioned=True),
         "bom_url": file_url(bom_path_for(path), versioned=True), "parts": gallery.part_count(path) if exists else None,
-        "info_url": file_url(gallery.info_path_for(path), versioned=True), "gallery": in_gallery,
+        "info_url": file_url(gallery.info_path_for(path), versioned=True),
         "info_heading": gallery.info_heading_of(path) if exists else None,
         "size": stat.st_size if stat else 0, "mtime": stat.st_mtime if stat else 0,
         "status": status, "error": error, "bom_status": bom_status, "bom_error": bom_error,

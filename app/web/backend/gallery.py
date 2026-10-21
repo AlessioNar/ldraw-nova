@@ -9,9 +9,6 @@ A failed one isn't retried until the model file changes.
 
 An optional third sibling, <name>.md, is whatever its author wants to say
 about the model (the prompt that made it, say), shown under Info.
-
-The separate Gallery page shows models baked into the image (models-gallery/
-in the repo), which ship with their siblings. The collections are independent.
 """
 from __future__ import annotations
 

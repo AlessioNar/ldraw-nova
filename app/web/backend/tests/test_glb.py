@@ -19,11 +19,9 @@ def client():
         yield client
 
 
-@pytest.mark.parametrize("collection", ["generated", "gallery", "demo"])
 @pytest.mark.parametrize("folder", ["", "nested/"])
-def test_sibling_is_canonical_even_over_cached_conversion(client, data_dir, gallery_dir, monkeypatch, collection, folder):
-    root = data_dir / "generated" if collection == "generated" else gallery_dir
-    root = root / folder
+def test_sibling_is_canonical_even_over_cached_conversion(client, data_dir, monkeypatch, folder):
+    root = data_dir / "generated" / folder
     root.mkdir(exist_ok=True, parents=True)
     model = root / "alternate model.mpd"
     model.write_text("0 Original LDraw model\n")
@@ -34,8 +32,7 @@ def test_sibling_is_canonical_even_over_cached_conversion(client, data_dir, gall
     cached.write_bytes(b"glTF-old-conversion")
     convert = AsyncMock(side_effect=AssertionError("must not convert an authored GLB"))
     monkeypatch.setattr(glb, "_convert", convert)
-    prefix = {"generated": "/files/generated/", "gallery": "/gallery-files/", "demo": "/demo/"}[collection]
-    url = prefix + folder + "alternate%20model.mpd"
+    url = "/files/generated/" + folder + "alternate%20model.mpd"
 
     for existing_only in (True, False):
         response = client.get("/api/glb", params={"url": url, "existing_only": existing_only})
@@ -51,19 +48,6 @@ def test_sibling_is_canonical_even_over_cached_conversion(client, data_dir, gall
     sibling.unlink()
     assert client.get("/api/glb", params={"url": url, "existing_only": True}).status_code == 404
     assert client.get("/api/glb", params={"url": url}).content == cached.read_bytes()
-    convert.assert_not_called()
-
-
-def test_viewer_probe_does_not_generate_or_use_the_other_collection(client, data_dir, gallery_dir, monkeypatch):
-    generated = data_dir / "generated"
-    generated.mkdir(exist_ok=True)
-    model = generated / "only-in-gallery.mpd"
-    model.write_text("0 No generated alternate\n")
-    (gallery_dir / model.with_suffix(".glb").name).write_bytes(b"glTF-gallery-only")
-    convert = AsyncMock(side_effect=AssertionError("existence checks must not convert"))
-    monkeypatch.setattr(glb, "_convert", convert)
-    response = client.get("/api/glb", params={"url": "/files/generated/only-in-gallery.mpd", "existing_only": True})
-    assert response.status_code == 404
     convert.assert_not_called()
 
 

@@ -49,7 +49,7 @@ const snapshot = page => page.evaluate(() => ({
   camera: scene.camera.position.toArray(),
 }));
 
-for (const collection of ['/files/generated/', '/gallery-files/']) {
+for (const collection of ['/files/generated/', '/files/chats/']) {
   test(`GLB animation, rendering and camera controls: ${collection}`, async t => {
     const { page, requests, source } = await open(t, animated, collection);
     await ready(page);
@@ -147,7 +147,7 @@ test('a malformed canonical GLB reports an error instead of silently showing MPD
 });
 
 test('the player requests MPD even when an animated sibling is available', async t => {
-  const { page, requests } = await open(t, animated, '/gallery-files/', true);
+  const { page, requests } = await open(t, animated, '/files/chats/', true);
   if (!requests.some(url => new URL(url).pathname.endsWith('.mpd'))) {
     await page.waitForRequest(request => new URL(request.url()).pathname.endsWith('.mpd'));
   }

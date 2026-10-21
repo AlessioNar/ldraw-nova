@@ -1,4 +1,4 @@
-"""File routes: generated/chat files, the gallery and the LDraw library."""
+"""File routes: generated/chat files and the LDraw library."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -36,13 +36,6 @@ def files(path: str, download: bool = False):
     if file is None or file_url(file) is None:
         not_found()
     return _serve(settings.DATA_DIR, path, download=download)
-
-
-@router.get("/demo/{path:path}", include_in_schema=False)  # preserve existing viewer links
-@router.get("/gallery-files/{path:path}")
-def gallery_files(path: str, download: bool = False):
-    """The gallery models baked into the image, with their snapshots, BOMs and notes."""
-    return _serve(settings.GALLERY_MODELS_DIR, path, download=download)
 
 
 LIBRARY_CACHE = "public, max-age=31536000, immutable"   # baked into the image, never changes
