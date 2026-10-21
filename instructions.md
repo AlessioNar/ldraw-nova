@@ -12,9 +12,9 @@ Run from this repository's root:
 ./ldraw-agent doctor
 ```
 
-Run `./setup.sh` if needed. It installs pinned Python packages in `.venv` and prepares local indexes. Use the globally available **`leocad` CLI** for snapshots, including embedded unofficial parts. Use `./prepare-glb.sh --file MODEL.mpd MODEL.glb` for semantic GLB export through the global `mpd2glb.sh` executable.
+Run `./setup.sh` if needed, unless your environment says dependencies are already installed. It installs pinned Python packages in `.venv` and prepares local indexes. Use the globally available **`leocad` CLI** for snapshots, including embedded unofficial parts. Use `./prepare-glb.sh --file MODEL.mpd MODEL.glb` for semantic GLB export through the global `mpd2glb.sh` executable.
 
-Read:
+Read the guides below. If your system prompt already includes the full text of ldraw-reference.md, geometry.md, visual-design.md, reference-discovery.md and validation.md, do not read them again; read the others as needed:
 
 - [LDraw rules](docs/agent/ldraw-reference.md): records, coordinates, colours, MPD, BFC and headers.
 - [Geometry](docs/agent/geometry.md): origins, stacking, connectors and collision evidence.
