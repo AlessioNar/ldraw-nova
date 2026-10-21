@@ -8,7 +8,7 @@ import pytest
 from conftest import mpd, ref
 from ldraw_tools.common import atomic_write
 from ldraw_tools.discovery import DiscoveryIndex, confined, decode_description, record_id, search, part_suggestions
-from ldraw_tools.document import extract_section, parse_source, selected_source
+from ldraw_tools.document import extract_section, selected_source
 from ldraw_tools.resources import model_sections, search_models
 from ldraw_tools.validation import validate_text
 

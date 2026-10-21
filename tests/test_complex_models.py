@@ -1,7 +1,6 @@
 """Regression coverage for MPD physical boundaries and modular construction."""
 import hashlib
 import json
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -11,7 +10,7 @@ from conftest import mpd, ref
 from ldraw_tools.builder import build_plan, load_plan
 from ldraw_tools.common import ROOT, atomic_write, models_path
 from ldraw_tools.document import (assembly_view, dependency_closure, extract_section,
-                                  parse_source, physical_context, selected_source, study_model)
+                                  parse_source, physical_context, selected_source)
 from ldraw_tools.geometry import analyze_geometry
 from ldraw_tools.validation import validate_file, validate_text
 
