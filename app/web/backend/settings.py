@@ -13,7 +13,7 @@ from leocad_render import DATA_DIR, GENERATED_DIR, OUTPUT_DIR
 __all__ = [
     "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "WEB_DIRS",
     "CONFIG_DIR", "LDRAW_DIR", "INDEX_DIR", "STATIC_DIR",
-    "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
+    "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR", "INVENTORIES_DIR",
     "COALESCE_REASONING",
 ]
 
@@ -37,6 +37,9 @@ STATIC_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_STATIC_DIR", "/opt/web/static")
 VIEWER_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_VIEWER_DIR", "/opt/web/viewer"))                   # viewer.html
 VIEWER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_VIEWER_VENDOR_DIR", "/opt/web/viewer-vendor"))  # ldbi etc.
 PLAYER_VENDOR_DIR = Path(os.environ.get("LDRAW_NOVA_WEB_PLAYER_VENDOR_DIR", "/opt/web/player-vendor"))  # ldraw-player
+
+# The user's parts inventories: <id>.json (parsed) + <id>.csv (as uploaded). Under /data so it survives upgrades.
+INVENTORIES_DIR = Path(os.environ.get("LDRAW_NOVA_INVENTORY_DIR", DATA_DIR / "inventories"))
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 TOOLKIT_DIR = Path(os.environ.get("LDRAW_NOVA_TOOLKIT_DIR", "/opt/ldraw-nova"))

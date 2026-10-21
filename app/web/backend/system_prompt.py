@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import parts_steering
 import providers
 import settings
 import toolkit
@@ -143,9 +144,9 @@ def outbound_messages(store: ChatStore, chat_id: str, messages: list[dict], mode
 
 
 def mode_prompt(options: dict) -> str:
+    """Volatile notes after the cached prefix: plan/chat mode and, when the chat has one, the parts steering block."""
     if options.get("mode") == "plan":
-        return "\nPLAN MODE: inspect with read-only tools and propose a plan. Do not execute commands or change files."
+        return "\nPLAN MODE: inspect with read-only tools and propose a plan. Do not execute commands or change files." + parts_steering.prompt_block(options)
     if options.get("mode") == "chat":
         return "\nCHAT MODE: answer without using tools."
-    return ""
-
+    return parts_steering.prompt_block(options)
