@@ -12,7 +12,7 @@ def test_stable_part_carries_the_guides_and_no_volatile_state(ctx):
     stable, volatile = system_prompt.system_prompt_parts(ctx.store, ctx.chat_id)
     # The expensive, re-sent-every-step content is what sits behind the breakpoint.
     assert toolkit.instructions() in stable
-    for path in toolkit.BUILDER_GUIDES:
+    for path in toolkit.guide_paths():
         assert (settings.TOOLKIT_DIR / path).read_text() in stable
     # ... and the parts that change as the agent works are not.
     assert "Current output files:" in volatile

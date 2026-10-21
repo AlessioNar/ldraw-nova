@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import shutil
 import sqlite3
 import subprocess
 from collections import Counter
@@ -21,6 +23,31 @@ from .resources import model_sections
 VERSION = 1
 FIELDS = {kind: f'{table}_DESCRIPTIONS_JEV.full_description' for kind, table in
           [('parts', 'PARTS'), ('models', 'MODELS'), ('submodels', 'SUBMODELS')]}
+
+
+ENGINES = ('auto', 'jev', 'fts')
+JEV_KEY = 'TYPESAFE_API_KEY'  # the only credential jev-rerank reads
+
+
+def resolve_engine(engine='auto', *, env=None, which=None):
+    """(engine, reason): auto picks Jev only with the executable and key present; reason explains an FTS choice."""
+    if engine not in ENGINES:
+        raise ValueError('Choose engine auto, jev or fts')
+    if engine != 'auto':
+        return engine, None
+    env = os.environ if env is None else env
+    if not (which or shutil.which)('jev-rerank'):
+        return 'fts', 'jev-rerank is not on PATH'
+    if not (env.get(JEV_KEY) or '').strip():
+        return 'fts', f'{JEV_KEY} is not set'
+    return 'jev', None
+
+
+def short_reason(text, env=None):
+    """One trimmed line for a failure message, with the key scrubbed."""
+    key = ((os.environ if env is None else env).get(JEV_KEY) or '').strip()
+    text = ' '.join(str(text).replace(key, '***').split()) if key else ' '.join(str(text).split())
+    return text[-300:]
 
 
 def digest(value):
@@ -251,11 +278,11 @@ def mechanism_candidate(row, inventory=None):
     return True
 
 
-def search(index, kind, query, *, engine='jev', limit=10, candidates=500, pool=60, system=True, construction=None,
+def search(index, kind, query, *, engine='auto', limit=10, candidates=500, pool=60, system=True, construction=None,
            max_parts=None, min_parts=2, max_technic_share=0.5, parent_cap=2, yes=None, no=None,
            timeout=240):
-    if kind not in FIELDS or not query.strip() or engine not in {'jev','fts'}:
-        raise ValueError('Choose parts/models/submodels, a nonblank query and jev/fts')
+    if kind not in FIELDS or not query.strip() or engine not in ENGINES:
+        raise ValueError('Choose parts/models/submodels, a nonblank query and auto/jev/fts')
     if limit < 1 or pool < limit or candidates < 0 or (candidates and pool > candidates) or parent_cap < 1 or min_parts < 0:
         raise ValueError('Invalid result/candidate/parent/part budgets')
     if not 0 <= max_technic_share <= 1 or (max_parts is not None and max_parts < min_parts):
@@ -270,34 +297,41 @@ def search(index, kind, query, *, engine='jev', limit=10, candidates=500, pool=6
     allowed = {r['id']:r for r in index.rows(kind) if eligible(r, system=system)
                and (construction != 'technic-structure' or structural_candidate(r))
                and (construction != 'mechanism' or mechanism_candidate(r))}
+    requested = engine
+    engine, fallback = resolve_engine(requested)
     ranked, stats = [], {}
     if engine == 'jev':
-        snapshot = index.cache/'queries'/(digest([manifest['signature'], kind, system, construction, sorted(allowed)])+'.sqlite')
-        if not snapshot.exists():
-            snapshot.parent.mkdir(parents=True, exist_ok=True)
-            with NamedTemporaryFile(dir=snapshot.parent, suffix='.sqlite', delete=False) as f:
-                temp = Path(f.name)
-            try:
-                with sqlite3.connect(temp) as con:
-                    con.execute('CREATE TABLE candidates(id TEXT PRIMARY KEY, full_description TEXT NOT NULL)')
-                    con.executemany('INSERT INTO candidates VALUES(?,?)', [(r['id'],r['full_description']) for r in allowed.values()])
-                temp.replace(snapshot)
-            finally:
-                temp.unlink(missing_ok=True)
-        command = ['jev-rerank','--db',str(snapshot),'--table-field','candidates.full_description',
-                   '--query',json.dumps(dict(query=query,yes=yes,no=no)) if yes is not None else query,
-                   '--top',str(pool),'--candidates',str(candidates),'--model','jev-1.13.0','--json','--show']
-        result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
-        if result.returncode:
-            raise ValueError('Jev search failed; use --engine fts for explicit offline search. '+result.stderr[-1500:])
-        data = json.loads(result.stdout)
-        stats = dict(data['stats'], exhaustive=data.get('exhaustive'), command=command, eligible_records=len(allowed))
-        for r in data['results']:
-            identity = r['source']['key']['id']
-            if identity not in allowed:
-                raise ValueError('Jev returned an identity outside the filtered snapshot')
-            ranked.append(dict(allowed[identity], score=r['score'], retrieval_rank=r['rank']))
-    else:
+        try:
+            snapshot = index.cache/'queries'/(digest([manifest['signature'], kind, system, construction, sorted(allowed)])+'.sqlite')
+            if not snapshot.exists():
+                snapshot.parent.mkdir(parents=True, exist_ok=True)
+                with NamedTemporaryFile(dir=snapshot.parent, suffix='.sqlite', delete=False) as f:
+                    temp = Path(f.name)
+                try:
+                    with sqlite3.connect(temp) as con:
+                        con.execute('CREATE TABLE candidates(id TEXT PRIMARY KEY, full_description TEXT NOT NULL)')
+                        con.executemany('INSERT INTO candidates VALUES(?,?)', [(r['id'],r['full_description']) for r in allowed.values()])
+                    temp.replace(snapshot)
+                finally:
+                    temp.unlink(missing_ok=True)
+            command = ['jev-rerank','--db',str(snapshot),'--table-field','candidates.full_description',
+                       '--query',json.dumps(dict(query=query,yes=yes,no=no)) if yes is not None else query,
+                       '--top',str(pool),'--candidates',str(candidates),'--model','jev-1.13.0','--json','--show']
+            result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+            if result.returncode:
+                raise ValueError('Jev search failed; use --engine fts for explicit offline search. '+result.stderr[-1500:])
+            data = json.loads(result.stdout)
+            stats = dict(data['stats'], exhaustive=data.get('exhaustive'), command=command, eligible_records=len(allowed))
+            for r in data['results']:
+                identity = r['source']['key']['id']
+                if identity not in allowed:
+                    raise ValueError('Jev returned an identity outside the filtered snapshot')
+                ranked.append(dict(allowed[identity], score=r['score'], retrieval_rank=r['rank']))
+        except (ValueError, OSError, KeyError, sqlite3.Error, subprocess.SubprocessError) as exc:
+            if requested != 'auto':
+                raise
+            engine, fallback, ranked = 'fts', 'Jev call failed, used FTS instead: '+short_reason(exc), []
+    if engine == 'fts':
         terms = re.findall(r'\w+', query.casefold())
         stop = {'a','an','the','with','for','of','and','to','in','on','from'}
         expression = ' OR '.join('"'+t+'"' for t in terms if t not in stop)
@@ -340,10 +374,16 @@ def search(index, kind, query, *, engine='jev', limit=10, candidates=500, pool=6
                 row['mechanism_study'] = 'inspect source steps, parts and parent context; analytical mechanism verification is deferred'
         except (OSError, ValueError, RecursionError) as exc:
             rejected.append(dict(id=row['id'], reason='inventory_failed', error=str(exc)))
-    return dict(query=query, kind=kind, engine=engine, source_field=FIELDS[kind], index_signature=manifest['signature'],
+    ranking = ('Jev semantic ranking' if engine == 'jev' else
+               'Keyword/BM25 ranking (FTS), not Jev semantic ranking; wording matters')
+    out = dict(query=query, kind=kind, engine=engine, engine_requested=requested, engine_used=engine, ranking=ranking,
+               source_field=FIELDS[kind], index_signature=manifest['signature'],
                 results=kept[:limit], eligible_after_measurement=len(kept), rejected=rejected, stats=stats,
                 filters=dict(system=system,construction=construction or ('system' if system else 'all'),min_parts=min_parts,max_parts=max_parts,max_technic_share=max_technic_share,parent_cap=parent_cap),
-                note='Scores describe textual relevance. Results still require geometry, scale and visual review; no hidden fallback or automatic import approval.')
+                note='Scores describe textual relevance. Results still require geometry, scale and visual review; no automatic import approval.')
+    if fallback and engine == 'fts':
+        out['fallback_reason'] = fallback
+    return out
 
 
 def part_suggestions(results, *, limit=20):

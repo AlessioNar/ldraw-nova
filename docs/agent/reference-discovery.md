@@ -2,28 +2,23 @@
 
 Use whole models for proportions, palettes and a module checklist; use submodels for construction ideas and details. Compare the source images and measured contents before choosing a construction. The [reference atlas](../../examples/reference-atlas/README.md) contains a reproducible 220-reference catalog manifest, curated examples and selected parameterized recipes.
 
-## Check Jev availability before searching
+## Search engines: `auto` picks Jev or keyword search
 
-Before the first Jev search in a task, check that the global `jev-rerank` executable is on `PATH`, `data/ldraw-info.db` exists and `TYPESAFE_API_KEY` is nonempty. Check the key's presence without printing its value. If those prerequisites exist, verify authentication and service access with one bounded, uncached query from the repository root:
+`discover search` defaults to `--engine auto`. It uses Jev (semantic reranking by `jev-rerank`) when that executable is on `PATH` and `TYPESAFE_API_KEY` is set; otherwise it uses local FTS (keyword/BM25 ranking). If a Jev call fails at run time (rejected key, network, timeout, non-zero exit), it falls back to FTS once for that search. There is no availability check to run: do not probe Jev, print the key or retry a failed service.
 
-```sh
-jev-rerank \
-  --db "data/ldraw-info.db" \
-  --table-field PARTS_DESCRIPTIONS_JEV.full_description \
-  --query 'brick' --top 1 --candidates 1 --model jev-1.13.0 \
-  --no-score-cache --timeout 10 --retries 0 --json
-```
+Read these fields in every result before relying on the order:
 
-Require a successful exit, a nonempty result and a positive `stats.api_calls`; `--help` or a cached result alone does not verify the live service. The timeout applies to the API request, not local indexing.
+- `engine_requested` is what was asked (`auto` unless you passed `--engine`); `engine_used` is `jev` or `fts`.
+- `fallback_reason` appears only when `auto` ended on FTS (missing executable or key, or a short trimmed Jev error). Mention it once, briefly, and keep searching; do not call Jev again for that task unless the configuration changes.
+- `ranking` states the ranking type. Report FTS results as keyword/BM25 ranking, not Jev semantic ranking, and Jev results as semantic scores.
 
-If prerequisites are missing, the key is rejected, or the service/network fails, state the reason briefly and continue with **explicit offline FTS**. Apply the same fallback if Jev fails later in the task. Avoid repeatedly attempting an unavailable service; retry when configuration or availability changes. Local database/path errors need their own correction because FTS also requires the local resources.
+With FTS, write the query as several distinctive keywords or short phrases for the part or construction (tokens are ORed, stop words dropped); try synonyms and a second query for each role, because BM25 matches wording rather than meaning. Explicit `--engine jev` fails with an error instead of falling back; explicit `--engine fts` never calls Jev. Local database or path errors need their own correction because both engines require the local resources.
 
 ```sh
-./ldraw-agent discover search submodels 'street lamp' --engine fts \
-  --max-parts 150 --limit 8 --report output/lamps.json
+./ldraw-agent discover search submodels 'street lamp' --max-parts 150 --limit 8 --report output/lamps.json
 ```
 
-Select `parts`, `models` or `submodels` and suitable keywords for the current role. Record that results use keyword/BM25 ranking, not Jev semantic ranking. Continue with the existing catalogs, examples, part lookup and visual review; generation, rendering and validation do not require TypeSafe. This is an agent-directed fallback: the CLI does not switch engines automatically.
+Select `parts`, `models` or `submodels` and suitable keywords for the current role. Generation, rendering and validation do not require TypeSafe.
 
 ## Find a few distinct constructions
 
@@ -39,7 +34,7 @@ Select `parts`, `models` or `submodels` and suitable keywords for the current ro
 ./ldraw-agent examples --family reference --limit 8
 ```
 
-`discover search` invokes the global `jev-rerank` CLI with model `jev-1.13.0` and its configured credentials. Use `--engine fts` for an explicit offline BM25 search. There is no silent fallback. Natural-language FTS queries use token OR; the older `search models|submodels` commands retain their raw FTS5 syntax, now ranked and paginated with `--offset`.
+With Jev, `discover search` invokes the global `jev-rerank` CLI with model `jev-1.13.0`; `--engine fts` forces offline BM25 search. Natural-language FTS queries use token OR; the older `search models|submodels` commands retain their raw FTS5 syntax, now ranked and paginated with `--offset`.
 
 The source is the three `*_DESCRIPTIONS_JEV.full_description` fields in `data/ldraw-info.db`, with annotated sources in `data/models-annotated/`. A local index resolves their pipe-prefixed identifiers, corrects descriptions against source headers and classifies records. The supplied database and source files remain untouched. Only the parts library is configured externally: `--library`, then `LDRAW_DIR`, then `LDRAWDIR`.
 
@@ -49,11 +44,11 @@ The defaults hide embedded part definitions, empty/raw-geometry-only sections, i
 
 Use `--min-parts`, `--max-parts`, `--max-technic-share` and `--parent-cap` deliberately. The default Technic title-prefix share is at most 0.5; this is a content filter, not a complete taxonomy. Inspect incidental pins and axles separately from a Technic mechanism. `--max-technic-share 0` requests no Technic-prefixed placements; `--all-families` disables family/share restrictions. Source names do not establish minifigure fit or physical scale.
 
-For stage-1 Technic work, use `--construction technic-structure`. It selects structural descriptions and inspects the selected assembly's BOM for obvious mechanism parts; parent themes do not exclude useful static sections. Part searches use the reviewed structural registry. Results still require parent-context, joint-role, restraint and insertion review: a shaft in a “chassis” can serve a mechanism. `--construction system` preserves System defaults; `--construction all` exposes all families. The same availability-first Jev/offline workflow applies. See [Technic structures](technic.md).
+For stage-1 Technic work, use `--construction technic-structure`. It selects structural descriptions and inspects the selected assembly's BOM for obvious mechanism parts; parent themes do not exclude useful static sections. Part searches use the reviewed structural registry. Results still require parent-context, joint-role, restraint and insertion review: a shaft in a “chassis” can serve a mechanism. `--construction system` preserves System defaults; `--construction all` exposes all families. Both engines apply. See [Technic structures](technic.md).
 
 For the authorized Stage 2, use `--construction mechanism`. It selects mechanism vocabulary in the chosen description and checks the measured BOM for relevant parts. It includes useful partial assemblies, such as a steering rack whose pinion belongs to the parent. Use `mechanism prepare FILE --section NAME --outdir DIR` to create attributed source, step renderings, per-step parts and parent context, then follow the [mechanism workflow](mechanisms.md). Analytical mechanism verification is deferred; study and visual-review status are distinct from physical operation.
 
-`--pool 60` asks Jev for enough ranked results to filter and diversify into the requested `--limit`. `--candidates 500` is the bounded lexical shortlist before scoring; `--candidates 3000` broadens it, and `0` scores all eligible records. If few useful results remain, refine the role or broaden this budget. Do not fill the list with poor matches just to reach ten. Returned `stats`, exclusions and original scores make those decisions visible.
+`--pool 60` asks the engine for enough ranked results to filter and diversify into the requested `--limit`. `--candidates 500` is the bounded lexical shortlist before Jev scoring (FTS ignores it); `--candidates 3000` broadens it, and `0` scores all eligible records. If few useful results remain, refine the role or broaden this budget. Do not fill the list with poor matches just to reach ten. Returned `stats`, exclusions and original scores make those decisions visible.
 
 For difficult roles, supply **both** `--yes` and `--no`, for example a criterion for a System aircraft engine pod and one rejecting car engines and spacecraft body slabs. Parent context is shown separately rather than silently added to the scored text. A semantic score is not an import approval.
 

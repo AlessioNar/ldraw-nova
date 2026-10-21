@@ -20,6 +20,10 @@ BUILDER_GUIDES = (
 )
 
 
+# Without a TypeSafe key the Jev procedure is dead weight in every prompt.
+KEYWORD_GUIDE = {"docs/agent/reference-discovery.md": "docs/agent/reference-discovery-fts.md"}
+
+
 def root() -> Path:
     path = settings.TOOLKIT_DIR
     if not (path / "instructions.md").is_file() or not (path / ".venv/bin/python").exists():
@@ -70,6 +74,14 @@ def instructions() -> str:
     return (root() / "instructions.md").read_text()
 
 
+def guide_paths() -> list[str]:
+    # Chosen by the configured key alone, so it is stable within a chat and
+    # changes only when the owner adds or removes the key.
+    keyword_only = not environment_config.snapshot().get("TYPESAFE_API_KEY", "").strip()
+    return [KEYWORD_GUIDE.get(path, path) if keyword_only else path for path in BUILDER_GUIDES]
+
+
 def builder_guides() -> str:
     source = root()
-    return "\n\n".join(f"--- {path} (complete) ---\n{(source / path).read_text()}" for path in BUILDER_GUIDES)
+    paths = guide_paths()
+    return "\n\n".join(f"--- {path} (complete) ---\n{(source / path).read_text()}" for path in paths)

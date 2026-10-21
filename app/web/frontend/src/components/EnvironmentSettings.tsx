@@ -79,7 +79,7 @@ export default function EnvironmentSettings() {
               onChange={e => change(row.key, { value: e.target.value })} />
               <ReplacementWarning row={row} /></span>
           </label>
-          <small id="typesafe-hint" className="muted typesafe-hint"><em>This is required for finding required parts via Jev's semantic search</em></small>
+          <small id="typesafe-hint" className="muted typesafe-hint"><em>Optional. Enables Jev semantic search for parts and models. Without it, searches use keyword (BM25) ranking, which works but ranks less well.</em></small>
         </div> : <div className="environment-row" key={row.key}>
           <label>
             <span>Name</span>

@@ -49,7 +49,7 @@ The supplied `data/offLibShadow/` is loaded automatically. `LDRAW_SHADOW` overri
 ./ldraw-agent discover search submodels 'braced frame' --construction technic-structure --engine fts
 ```
 
-The [Technic workflow](technic.md) covers supported ports, seated pins, axle intervals, structural restraints and contracts. Normal geometry checks remain required. Generated contracts bind to the model revision; `technic check` returns exit 1 for failed checks and exit 2 for invalid inputs. Use the authorized [mechanism workflow](mechanisms.md) for moving assemblies; analytical mechanism verification is deferred. Use Jev only after its availability check; `fts` is the explicit offline alternative.
+The [Technic workflow](technic.md) covers supported ports, seated pins, axle intervals, structural restraints and contracts. Normal geometry checks remain required. Generated contracts bind to the model revision; `technic check` returns exit 1 for failed checks and exit 2 for invalid inputs. Use the authorized [mechanism workflow](mechanisms.md) for moving assemblies; analytical mechanism verification is deferred. `discover search` chooses Jev or keyword (FTS) ranking itself; check `engine_used`.
 
 ### System vehicles
 
@@ -109,7 +109,7 @@ Model/submodel search reuses the supplied `data/ldraw-info.db` **read-only**, wi
 
 ## Jev part discovery
 
-First follow the [Jev availability check](reference-discovery.md#check-jev-availability-before-searching). Missing tooling/credentials, rejected API keys and service/network failures should lead the agent to `discover search parts|models|submodels ... --engine fts`. State the fallback and continue using local resources; the CLI does not switch engines automatically.
+`discover search` uses `--engine auto` by default: Jev when `jev-rerank` and `TYPESAFE_API_KEY` are available, otherwise (or if the call fails) FTS, reported as `engine_used` and `fallback_reason`; see [search engines](reference-discovery.md#search-engines-auto-picks-jev-or-keyword-search). The direct CLI below needs both and has no fallback.
 
 For the integrated parts/models/submodels workflow, use [reference discovery](reference-discovery.md): `discover index`, `discover search`, `discover show`, `discover parts`, `discover prepare`, `discover catalog`, `discover review`, `discover example` and `discover recipe`. It consumes the three `full_description` views through a typed local index, repairs single-section header descriptions locally, filters actual contents, diversifies results and supplies measured image cards. The global CLI below also supports direct queries, but its original-table key instructions do not apply to the synthetic row keys returned by the new views.
 
