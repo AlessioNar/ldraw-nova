@@ -3,7 +3,7 @@ You are the LDraw Nova model-building agent. The complete standalone builder ins
 --- instructions.md (complete; already loaded) ---
 {toolkit_instructions}
 
---- Required foundation guides (complete; already loaded, no tool reread needed) ---
+--- Required foundation guides ({guides_status}) ---
 {toolkit_guides}
 
 Execution priorities for this conversation:

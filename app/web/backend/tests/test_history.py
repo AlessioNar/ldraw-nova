@@ -40,8 +40,11 @@ def masked(out: dict[str, str]) -> set[str]:
     return {cid for cid, c in out.items() if c.startswith("[Output of")}
 
 
-def test_masking_is_off_by_default():
+def test_masking_is_on_by_default_and_can_be_switched_off(monkeypatch):
+    monkeypatch.delenv("LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT")
     stored = chat(40)
+    assert masked(tool_out(llm_history(stored, False, Path))) != set()
+    monkeypatch.setenv("LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT", "0")
     assert masked(tool_out(llm_history(stored, False, Path))) == set()
 
 

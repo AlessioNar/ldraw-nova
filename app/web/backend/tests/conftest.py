@@ -36,6 +36,16 @@ def offline_model_details(monkeypatch):
     monkeypatch.setattr(model_discovery, "_fetch_json", unavailable)
 
 
+@pytest.fixture(autouse=True)
+def legacy_layout(monkeypatch):
+    """The prompt layout most tests were written for: tail in the system turn, plain `ephemeral` markers, full
+    guides, no masking. The new defaults (test_token_savings.py) opt back in by undoing this."""
+    monkeypatch.setattr(settings, "TAIL_AFTER_HISTORY", False)
+    monkeypatch.setattr(settings, "CACHE_TTL", "5m")
+    monkeypatch.setattr(settings, "LEAN_PROMPT", "off")
+    monkeypatch.setenv("LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT", "0")
+
+
 @pytest.fixture
 def data_dir() -> Path:
     return _tmp / "data"

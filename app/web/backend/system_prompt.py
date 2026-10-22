@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import model_catalog
 import parts_steering
 import providers
 import settings
@@ -28,7 +29,38 @@ def work_listing(work_dir: Path) -> str:
 
 
 
-def system_prompt_parts(store: ChatStore, chat_id: str) -> tuple[str, str]:
+LEAN_NOTE = """
+
+Working efficiently (every step re-sends this conversation, so wasted steps cost tokens):
+- Read each foundation guide listed above once, in full, before you build; do not re-read files you already have, and do not read the toolkit's Python source: use `--help` and the documented commands.
+- Use the toolkit's generators and examples (`vehicle plan`, `examples`, `build`) as the starting point instead of writing geometry from scratch.
+- Batch work: several searches in one `my_parts` call (`queries`), several commands in one `run_shell` or `run_python`, and write a generator in one go instead of many small edits.
+- Redirect large command output to a file under output/ and print only what you need.
+- Keep going until the model is built, checked, rendered and published; do not stop to ask for confirmation between phases."""
+
+
+def use_lean_prompt(model: str, options: dict) -> bool:
+    """Lean prompt (guides listed, not inlined): for models that cannot cache the prefix, so they would pay for
+    it on every step, and for small context windows. LDRAW_NOVA_LEAN_PROMPT=on/off overrides."""
+    if settings.LEAN_PROMPT in ("on", "1", "true", "yes"):
+        return True
+    if settings.LEAN_PROMPT in ("off", "0", "false", "no"):
+        return False
+    if not providers.supports_prompt_caching(model):
+        return True
+    window = (options or {}).get("context_tokens") or model_catalog.profile(model)["context_window"]
+    return bool(window) and window < settings.LEAN_CONTEXT_TOKENS
+
+
+def cache_control(model: str) -> dict:
+    """The cache marker; Anthropic is asked to keep the prefix for CACHE_TTL (other providers get the plain marker)."""
+    marker = {"type": "ephemeral"}
+    if settings.CACHE_TTL == "1h" and providers.of(model).prefix == "anthropic/":
+        marker["ttl"] = "1h"
+    return marker
+
+
+def system_prompt_parts(store: ChatStore, chat_id: str, lean: bool = False) -> tuple[str, str]:
     """The system prompt split at its stability boundary, for prompt caching.
 
     The first part is byte-identical on every turn of a chat (instructions.md
@@ -43,7 +75,11 @@ def system_prompt_parts(store: ChatStore, chat_id: str) -> tuple[str, str]:
                 .replace("{ldraw_dir}", str(settings.LDRAW_DIR))
                 .replace("{artifact_base}", f"/api/chats/{chat_id}/artifacts")
                 .replace("{toolkit_instructions}", toolkit.instructions())
-                .replace("{toolkit_guides}", toolkit.builder_guides())).rstrip()
+                .replace("{guides_status}", "NOT preloaded: read each with read_file before building" if lean
+                         else "complete; already loaded, no tool reread needed")
+                .replace("{toolkit_guides}", toolkit.guide_index() if lean else toolkit.builder_guides())).rstrip()
+    if lean:
+        stable += LEAN_NOTE
     volatile = "\n\nCurrent output files:\n" + work_listing(work_dir)
     notes = work_dir / "NOTES.md"
     if notes.is_file() and not notes.is_symlink():
@@ -68,13 +104,13 @@ def system_message(store: ChatStore, chat_id: str, model: str, options: dict,
     sent by outbound_messages() after the history instead; the caching shape
     keeps an empty second block, where bounded_history() appends its trim note.
     """
-    stable, volatile = system_prompt_parts(store, chat_id)
+    stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options))
     tail = "" if tail_in_system is False or (tail_in_system is None and settings.TAIL_AFTER_HISTORY) \
         else volatile + mode_prompt(options)
     if not providers.supports_prompt_caching(model):
         return {"role": "system", "content": stable + tail}
     return {"role": "system", "content": [
-        {"type": "text", "text": stable, "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": stable, "cache_control": cache_control(model)},
         {"type": "text", "text": tail},
     ]}
 
@@ -106,11 +142,11 @@ def with_rolling_breakpoint(messages: list[dict], model: str) -> list[dict]:
     last = dict(messages[-1])
     content = last.get("content")
     if isinstance(content, str) and content:
-        last["content"] = [{"type": "text", "text": content, "cache_control": {"type": "ephemeral"}}]
+        last["content"] = [{"type": "text", "text": content, "cache_control": cache_control(model)}]
     elif isinstance(content, list) and content and isinstance(content[-1], dict):
-        last["content"] = [*content[:-1], {**content[-1], "cache_control": {"type": "ephemeral"}}]
+        last["content"] = [*content[:-1], {**content[-1], "cache_control": cache_control(model)}]
     else:
-        last["cache_control"] = {"type": "ephemeral"}
+        last["cache_control"] = cache_control(model)
     return [*messages[:-1], last]
 
 
@@ -125,7 +161,7 @@ def outbound_messages(store: ChatStore, chat_id: str, messages: list[dict], mode
     breakpoint, so the history stays one unbroken cached prefix.
     """
     if settings.TAIL_AFTER_HISTORY:
-        stable, volatile = system_prompt_parts(store, chat_id)
+        stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options))
         system, history = dict(messages[0]), messages[1:]
         content = system["content"]
         if isinstance(content, str):

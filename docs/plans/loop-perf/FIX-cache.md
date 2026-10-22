@@ -11,7 +11,7 @@
 | env | default | effect |
 |---|---|---|
 | `LDRAW_NOVA_ROLLING_CACHE_BREAKPOINT` | on | (a) kill switch. Only has an effect for caching models. |
-| `LDRAW_NOVA_TAIL_AFTER_HISTORY` | **off** | (b) work listing, NOTES.md, mode prompt and `bounded_history`'s trim note go into a trailing message after the history instead of the system turn. Changes what the model sees; applies to all providers, caching or not (it also keeps implicit-prefix caches such as OpenAI's intact). |
+| `LDRAW_NOVA_TAIL_AFTER_HISTORY` | **on** (`0` restores the system-turn layout) | (b) work listing, NOTES.md, mode prompt and `bounded_history`'s trim note go into a trailing message after the history instead of the system turn. Changes what the model sees; applies to all providers, caching or not (it also keeps implicit-prefix caches such as OpenAI's intact). |
 
 ### Shape of (b) and why
 
@@ -83,3 +83,13 @@ Reading it:
 - `reasoning_details` deltas are stored as streamed; with `LDRAW_NOVA_COALESCE_REASONING` the stored and re-sent blocks are merged with identical concatenated text.
 
 Not verifiable offline: that the real providers honour the markers (cache hits), pricing/TTL behaviour, and whether OpenRouter forwards a marker inside a `tool` message's block list to Anthropic. `live_check.py` in this folder answers that with one command against a running app.
+
+## Token-saving defaults (later change)
+
+| Variable | Default | Effect |
+|---|---|---|
+| `LDRAW_NOVA_CACHE_TTL` | `1h` | Lifetime asked of Anthropic for every cache breakpoint (`5m` = their default). Only sent for `anthropic/` models. |
+| `LDRAW_NOVA_LEAN_PROMPT` | `auto` | `auto`: models that cannot cache the prefix, or with a context window under 200k, get the foundation guides as a list to `read_file` instead of inlined, plus a short efficiency note. `on` / `off` force it. |
+| `LDRAW_NOVA_MAX_STEPS` | `80` | Model calls per turn before it stops and asks the user to continue (was a fixed 150). |
+
+`my_parts` returns 10 rows by default and takes `queries` (up to 5) to search several things in one call.

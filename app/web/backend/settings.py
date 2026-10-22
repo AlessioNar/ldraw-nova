@@ -57,10 +57,15 @@ def _env_int(name: str, default: int, minimum: int = 0) -> int:
         return default
 
 
+def _flag(name: str, default: bool) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    return default if not value else value not in ("0", "false", "no", "off")
+
+
 def mask_old_tool_output() -> bool:
-    """Replace old bulky tool results with a stub in the history sent to the LLM. Off by default:
-    it changes what the model sees."""
-    return os.environ.get("LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT", "").strip().lower() in ("1", "true", "yes", "on")
+    """Replace old bulky tool results with a stub in the history sent to the LLM. On by default
+    (LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT=0 turns it off): old output is the bulk of a long build's input tokens."""
+    return _flag("LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT", True)
 
 
 def mask_after_steps() -> int:
@@ -98,5 +103,19 @@ COALESCE_REASONING = os.environ.get("LDRAW_NOVA_COALESCE_REASONING", "").strip()
 # Prompt-cache layout of the agent loop (see docs/plans/loop-perf/FIX-cache.md).
 # A cache breakpoint on the last message of the history, for providers that cache.
 ROLLING_CACHE_BREAKPOINT = os.environ.get("LDRAW_NOVA_ROLLING_CACHE_BREAKPOINT", "1").lower() not in ("0", "false", "no", "off")
-# Send the work listing, NOTES.md and mode note after the history instead of in the system turn. Off by default: it changes what the model sees.
-TAIL_AFTER_HISTORY = os.environ.get("LDRAW_NOVA_TAIL_AFTER_HISTORY", "0").lower() in ("1", "true", "yes", "on")
+# Send the work listing, NOTES.md and mode note after the history instead of in the system turn. On by default
+# (LDRAW_NOVA_TAIL_AFTER_HISTORY=0 restores the old layout): a changing listing in the system turn invalidated the
+# cached history on every file the agent wrote.
+TAIL_AFTER_HISTORY = _flag("LDRAW_NOVA_TAIL_AFTER_HISTORY", True)
+# How long Anthropic keeps the cached prefix: "5m" (their default) or "1h". An approval prompt or a long tool run
+# easily exceeds five minutes, and the whole prompt is then re-billed as a cache write.
+CACHE_TTL = os.environ.get("LDRAW_NOVA_CACHE_TTL", "1h").strip().lower()
+
+
+def max_steps() -> int:
+    """Model calls in one turn before it stops and asks the user to continue."""
+    return _env_int("LDRAW_NOVA_MAX_STEPS", 80, 1)
+
+
+LEAN_CONTEXT_TOKENS = 200_000         # models with a smaller context get the lean prompt
+LEAN_PROMPT = os.environ.get("LDRAW_NOVA_LEAN_PROMPT", "auto").strip().lower()   # auto | on | off

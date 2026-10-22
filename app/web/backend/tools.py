@@ -252,7 +252,13 @@ async def parts_check(ctx: ToolContext, model: Path) -> tuple[dict | None, str]:
 
 
 async def t_my_parts(ctx: ToolContext, query: str = "", colour: int | None = None, limit: int = parts_steering.DEFAULT_SEARCH_RESULTS,
-                     inventory: str | None = None) -> ToolResult:
+                     inventory: str | None = None, queries: list | None = None) -> ToolResult:
+    if queries is not None:
+        if (not isinstance(queries, list) or not 0 < len(queries) <= parts_steering.MAX_BATCH_QUERIES
+                or not all(isinstance(q, str) for q in queries)):
+            raise ToolError(f"queries must be a list of 1 to {parts_steering.MAX_BATCH_QUERIES} strings")
+        found = [json.loads((await t_my_parts(ctx, q, colour, limit, inventory)).content) for q in queries]
+        return ToolResult(json.dumps(dict(results=[dict(query=q.strip()[:200], **r) for q, r in zip(queries, found)]), separators=(",", ":")))
     mode, invs = parts_steering.selection(ctx.options)
     if mode == "off":
         raise ToolError("my_parts is only available when this chat uses the owner's parts inventories")
@@ -416,10 +422,12 @@ TOOLS: dict[str, tuple[dict, Callable[..., Awaitable[ToolResult]]]] = {
         "Rows: LDraw part number, LDraw colour code, colour name, owned quantity, description. Use it to pick parts and "
         "colours the user has before designing, and to find an owned substitute. query: words of the part number or "
         "description (all must match, e.g. 'plate 2 x 4'); empty lists the most owned. colour: LDraw colour code. "
-        "inventory: one selected inventory (id or name), default all selected.",
+        "inventory: one selected inventory (id or name), default all selected. "
+        "queries: up to 5 queries in one call (same colour/limit/inventory) instead of one call each; returns {results:[{query,...}]}.",
         {"query": {"type": "string"}, "colour": {"type": "integer", "description": "LDraw colour code"},
          "limit": {"type": "integer", "description": f"Rows, default {parts_steering.DEFAULT_SEARCH_RESULTS}, max {parts_steering.MAX_SEARCH_RESULTS}"},
-         "inventory": {"type": "string", "description": "Inventory id or name; default: all selected"}}, []), t_my_parts),
+         "inventory": {"type": "string", "description": "Inventory id or name; default: all selected"},
+         "queries": {"type": "array", "items": {"type": "string"}, "description": f"Up to {parts_steering.MAX_BATCH_QUERIES} queries in one call"}}, []), t_my_parts),
     "buildable_models": (_fn("buildable_models", "Rank the bundled LDraw set models by how much of each the chat's selected "
         "inventories cover (pieces matched by part and colour). Use it to say 'you can almost build X from set Y' and to pick a "
         "reference. Rows: file, set id, description, completeness %, pieces, missing, top missing lines. "

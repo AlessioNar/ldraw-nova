@@ -179,7 +179,7 @@ def test_my_parts_exists_only_with_a_parts_mode(bricks):
     assert "my_parts" in names(options("only", permissions="read_only")) and "publish_model" not in names(options("only", permissions="read_only"))
     assert names(options("only", mode="chat")) == set()
     schema = next(t for t in tools.TOOL_SCHEMAS if t["function"]["name"] == "my_parts")["function"]["parameters"]
-    assert set(schema["properties"]) == {"query", "colour", "limit", "inventory"} and schema["required"] == []
+    assert set(schema["properties"]) == {"query", "colour", "limit", "inventory", "queries"} and schema["required"] == []
 
 
 def test_my_parts_is_denied_by_the_loop_when_the_mode_is_off(ctx):
@@ -219,6 +219,26 @@ def test_my_parts_searches_only_the_selected_inventories(ctx, bricks, monkeypatc
     asyncio.run(tools.dispatch(ctx, "my_parts", {"inventory": "Wheel box"}))              # by name
     asyncio.run(tools.dispatch(ctx, "my_parts", {}))
     assert seen[1][3] == "wheels" and seen[2][3] == "bricks,wheels" and "--" not in seen[2]
+
+
+def test_my_parts_runs_several_queries_in_one_call(ctx, bricks, monkeypatch):
+    seen = []
+    fake_run(monkeypatch, json.dumps({"matches": [match(1)]}), record=seen)
+    ctx.options = options("prefer")
+    data = json.loads(asyncio.run(tools.dispatch(ctx, "my_parts", {"queries": ["wheel", "slope 45"], "colour": 4})).content)
+    assert [r["query"] for r in data["results"]] == ["wheel", "slope 45"] and len(seen) == 2
+    assert all(r["count"] == 1 and r["matches"][0]["part"] == "3001" for r in data["results"])
+    assert seen[0][-1] == "wheel" and seen[1][-1] == "slope 45" and "--colour" in seen[0]
+    for bad in ([], ["a"] * (parts_steering.MAX_BATCH_QUERIES + 1), [1], "wheel"):
+        assert asyncio.run(tools.dispatch(ctx, "my_parts", {"queries": bad})).content.startswith("Error:") and len(seen) == 2
+
+
+def test_my_parts_defaults_to_a_short_list(ctx, bricks, monkeypatch):
+    seen = []
+    fake_run(monkeypatch, json.dumps({"matches": [match(n) for n in range(40)]}), record=seen)
+    ctx.options = options("prefer")
+    data = json.loads(asyncio.run(tools.dispatch(ctx, "my_parts", {})).content)
+    assert parts_steering.DEFAULT_SEARCH_RESULTS == 10 and data["count"] == 10 and data["more"] is True
 
 
 def test_my_parts_caps_the_rows(ctx, bricks, monkeypatch):

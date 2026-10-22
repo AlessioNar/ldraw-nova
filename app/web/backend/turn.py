@@ -21,9 +21,6 @@ from usage import usage_record
 
 log = logging.getLogger("agent")
 
-MAX_STEPS = 150
-
-
 async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> None:
     chat_id = run.chat_id
     caps = llm_config.capabilities(entry)
@@ -38,7 +35,8 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
 
     try:
         params = await inference.params_for(entry, run.options)
-        for _step in range(MAX_STEPS):
+        max_steps = settings.max_steps()
+        for _step in range(max_steps):
             messages = [system_message(store, chat_id, entry["litellm_params"]["model"], run.options),
                         *llm_history(store.messages(chat_id), vision, lambda ref: store.resolve(chat_id, ref), entry["litellm_params"]["model"], mark_turns=True)]
             budget = run.options.get("context_tokens") or model_catalog.profile(entry["litellm_params"]["model"])["context_window"]
@@ -118,7 +116,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
                       "_images_for_llm": images, "_hidden": True})
         else:
             save({"role": "assistant", "_ui_only": True, "_notice": True,
-                  "content": f"Stopped after {MAX_STEPS} steps. Send a message to continue."})
+                  "content": f"Stopped after {max_steps} steps. Send a message to continue."})
     except asyncio.CancelledError:
         if run.draft:
             save({"role": "assistant", "content": run.draft})

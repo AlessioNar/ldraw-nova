@@ -38,7 +38,7 @@ Now: the oldest `(n - 2) // B * B` render messages are dropped (`B = LDRAW_NOVA_
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT` | off (`1/true/yes/on` enables) | master switch for masking |
+| `LDRAW_NOVA_MASK_OLD_TOOL_OUTPUT` | on (`0/false/no/off` disables) | master switch for masking |
 | `LDRAW_NOVA_MASK_AFTER_STEPS` (N) | 10 | min age in assistant steps |
 | `LDRAW_NOVA_MASK_MIN_CHARS` (M) | 2000 (min 200) | only longer results are masked |
 | `LDRAW_NOVA_MASK_BATCH_STEPS` (K) | 10 | boundary advances in chunks of K steps |

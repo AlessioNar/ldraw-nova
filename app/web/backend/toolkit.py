@@ -82,6 +82,16 @@ def guide_paths() -> list[str]:
     return [KEYWORD_GUIDE.get(path, path) if keyword_only else path for path in BUILDER_GUIDES]
 
 
+def guide_index() -> str:
+    """The foundation guides as a list (path and title), for the lean prompt that does not inline them."""
+    source = root()
+    lines = []
+    for path in guide_paths():
+        title = next((l.lstrip("# ").strip() for l in (source / path).read_text().splitlines() if l.startswith("#")), path)
+        lines.append(f"- {path}: {title}")
+    return "\n".join(lines)
+
+
 def builder_guides() -> str:
     source = root()
     paths = guide_paths()
