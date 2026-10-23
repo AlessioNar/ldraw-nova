@@ -43,6 +43,7 @@ class ToolContext:
     store: ChatStore
     emit: Callable[[str, dict], None]
     options: dict = field(default_factory=dict)           # the turn's validated options (parts steering, ...)
+    write_root: Path | None = None                        # a worker's own folder: file tools write only here (planner: None)
 
     @property
     def work_dir(self) -> Path:
@@ -81,6 +82,7 @@ def resolve_path(ctx: ToolContext, path: str, *, write: bool = False) -> Path:
     roots = [ctx.work_dir] if write else [ctx.work_dir, settings.GENERATED_DIR, settings.TOOLKIT_DIR]
     if any(p.startswith(".") for p in Path(path).parts if p not in (".", "..")):
         raise ToolError("Hidden configuration and runtime files are not accessible through file tools")
+    base = ctx.write_root or ctx.work_dir               # a worker's relative paths are relative to its own folder
     if path.startswith("output/") or path == "output":
         path = str(ctx.work_dir / path.removeprefix("output").lstrip("/"))
     elif not write and not path.startswith("/") and (settings.TOOLKIT_DIR / path).exists():
@@ -93,35 +95,42 @@ def resolve_path(ctx: ToolContext, path: str, *, write: bool = False) -> Path:
         else:
             raise ToolError(f"{path} is outside the allowed folders: {', '.join(map(str, roots))}")
     else:
-        resolved = safe_join(ctx.work_dir, path)
+        resolved = safe_join(base, path)
     if resolved is None:
         raise ToolError(f"{path} escapes the allowed folders")
+    if write and ctx.write_root is not None:
+        root = ctx.write_root.resolve()
+        if resolved != root and root not in resolved.parents:
+            raise ToolError(f"{path} is outside your write folder; write only inside {ctx.write_root}")
     return resolved
 
 
-async def _run_and_collect(ctx: ToolContext, argv: list[str], timeout: int) -> ToolResult:
-    result = await run_command(ctx, argv, timeout)
+async def _run_and_collect(ctx: ToolContext, argv: list[str], timeout: int, cwd: Path | None = None) -> ToolResult:
+    result = await run_command(ctx, argv, timeout, cwd)
     return ToolResult(result.as_text())
 
 
-async def run_command(ctx: ToolContext, argv: list[str], timeout: int) -> sandbox.RunResult:
+async def run_command(ctx: ToolContext, argv: list[str], timeout: int, cwd: Path | None = None) -> sandbox.RunResult:
     env = toolkit.environment()
     key = environment_config.snapshot().get("TYPESAFE_API_KEY", "")
     if key:
         env["TYPESAFE_API_KEY"] = key
-    return await sandbox.run(argv, toolkit.workspace(ctx.store, ctx.chat_id), timeout=max(1, min(timeout, 1800)),
+    workspace = toolkit.workspace(ctx.store, ctx.chat_id)       # also links output/ and the toolkit
+    return await sandbox.run(argv, cwd or workspace, timeout=max(1, min(timeout, 1800)),
                              env_extra=env, secrets=(key,),
                              on_output=lambda channel, text: ctx.emit("tool_output", {"channel": channel, "delta": text}))
 
 
 async def t_run_python(ctx: ToolContext, code: str, timeout: int = 60) -> ToolResult:
-    scripts = ctx.work_dir / "generators"
+    # A worker's script and cwd are its own folder. This only steers relative paths: the process can still open
+    # absolute paths under output/, which the stray-write guard (worker_isolation) detects and undoes afterwards.
+    scripts = (ctx.write_root or ctx.work_dir) / "generators"
     scripts.mkdir(parents=True, exist_ok=True)
     script = scripts / f"run-{time.strftime('%Y%m%d-%H%M%S')}-{int(time.time() * 1000) % 1000:03d}.py"
     script.write_text(code)
     sandbox.give_to_agent(scripts)
     sandbox.give_to_agent(script)
-    result = await _run_and_collect(ctx, ["python3", str(script)], timeout)
+    result = await _run_and_collect(ctx, ["python3", str(script)], timeout, ctx.write_root)
     result.content += f"\nSaved generator: {artifact_url(ctx, script)}"
     return result
 

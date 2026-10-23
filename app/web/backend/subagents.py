@@ -8,14 +8,18 @@ also saved in the chat as a hidden `_subagent` message, so usage_totals and the 
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import posixpath
 import secrets
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from pathlib import Path
 
 import inference
 import llm_config
 import model_catalog
 import usage
+import worker_isolation
 from agent_loop import FileSink, run_steps
 from history import llm_history
 from system_prompt import cache_control, with_rolling_breakpoint
@@ -191,6 +195,33 @@ def worker_prompt(contract: Contract) -> str:
     return ROLE_PROMPTS[contract.role] + _RULES.format(dir=contract.dir, chars=contract.summary_chars)
 
 
+def worker_context(ctx: ToolContext, root: Path) -> ToolContext:
+    """The worker's tool context: writes confined to its folder, no events into the planner's stream, no approvals.
+
+    The options are the chat's (mode, parts steering) minus any approval flag; workers never ask the user:
+    a tool outside the contract is denied in run_tool below, and dispatch itself never asks.
+    """
+    options = {k: v for k, v in ctx.options.items() if k != "delegation_approved"}
+    return replace(ctx, write_root=root, emit=lambda *_: None, options=options)
+
+
+def approval_contract(arguments: str | dict, options: dict) -> dict:
+    """What the user sees once when approving a delegation under `ask`: the whole validated contract."""
+    entry = llm_config.get(settings.worker_llm_id()) if settings.subagents_enabled() else None
+    if entry is None:
+        return {"error": "delegate is not configured"}
+    try:
+        args = json.loads(arguments or "{}") if isinstance(arguments, str) else dict(arguments or {})
+        c = validate_contract(args, entry, "<id>")
+        import tool_policy
+        tools, refusal = tool_policy.worker_tools(c.tools, ROLE_TOOLS[c.role], c.role, options)
+    except (ToolError, ValueError, TypeError) as exc:
+        return {"error": str(exc)}
+    return {"error": refusal} if refusal else {
+        "role": c.role, "task": c.task, "tools": tools, "inputs": c.inputs, "outputs": c.outputs, "max_steps": c.max_steps,
+        "max_eur": c.max_eur, "model": entry["litellm_params"]["model"], "write_folder": "output/workers/<assigned at start>/"}
+
+
 def _task_message(contract: Contract) -> str:
     lines = [f"Task: {contract.task}"]
     if contract.inputs:
@@ -217,13 +248,21 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
     entry = worker_entry(ctx.options)
     if entry is None:
         raise ToolError("delegate is not configured")
-    if ctx.options.get("permissions") != "full":
-        raise ToolError("delegate needs Full access: workers run tools without asking for each one")
+    if ctx.options.get("permissions") != "full" and not ctx.options.get("delegation_approved"):
+        raise ToolError("delegate needs Full access, or the user's approval of the whole contract: workers never ask")
     args = {"role": role, "task": task, "inputs": inputs, "tools": tools, "outputs": outputs, "max_steps": max_steps,
             "max_eur": max_eur, "summary_chars": summary_chars}
     contract = validate_contract(args, entry, secrets.token_hex(4))
     model = entry["litellm_params"]["model"]
-    (ctx.work_dir / "workers" / contract.id).mkdir(parents=True, exist_ok=True)
+    import tool_policy                            # local: tool_policy imports this module
+    allowed, refusal = tool_policy.worker_tools(contract.tools, ROLE_TOOLS[contract.role], contract.role, ctx.options, ctx.chat_id)
+    if refusal:
+        raise ToolError(refusal)
+    contract.tools = tuple(allowed)
+    root = ctx.work_dir / "workers" / contract.id
+    root.mkdir(parents=True, exist_ok=True)
+    wctx = worker_context(ctx, root)
+    before = worker_isolation.snapshot(ctx.work_dir)
     sink = FileSink(ctx.chat_dir / "workers" / f"{contract.id}.jsonl")
     sink.add({"role": "user", "content": _task_message(contract)})
     system = worker_prompt(contract)
@@ -254,7 +293,7 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
         name = call["function"]["name"]
         if name not in contract.tools:
             return ToolResult(f"Error: tool {name!r} is not available to this worker (allowed: {', '.join(contract.tools)}).")
-        out = await dispatch(ctx, name, call["function"]["arguments"])
+        out = await dispatch(wctx, name, call["function"]["arguments"])
         out.content = out.content[:RESULT_CHARS]
         out.models = []                           # only the planner publishes
         return out
@@ -266,10 +305,14 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
                                 build_messages=build_messages, run_tool=run_tool,
                                 ref=lambda png: ctx.store.ref(ctx.chat_id, png), before_step=before_step,
                                 after_message=record_usage)
+    except asyncio.CancelledError:                # Stop cancels the planner task, and with it this worker
+        worker_isolation.restore(before)
+        raise
     except Exception as exc:  # noqa: BLE001 - a worker failing must not end the planner's turn
         error = exc.__class__.__name__
     final = next((m["content"] for m in reversed(sink.messages())
                   if m["role"] == "assistant" and m.get("content") and not m.get("tool_calls")), "")
+    stray = worker_isolation.stray_line(worker_isolation.restore(before), contract.dir)
     files = _files(ctx, contract)
     names = {path for path, _size in files}
     missing = [o for o in contract.outputs if f"{contract.dir}/{o}" not in names]
@@ -293,6 +336,8 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
         lines.append(f"Stopped because {reason}.")
     if missing:
         lines.append(f"Missing outputs: {', '.join(missing)}")
+    if stray:
+        lines.append(stray)
     lines.append("Summary: " + (final[:contract.summary_chars] or "(none)"))
     lines.append("Files: " + ("; ".join(f"{path} ({size} bytes)" for path, size in files) or "none"))
     lines.append(f"Cost: {totals['steps']} model calls, about EUR {totals['cost_eur']:.4f}")
