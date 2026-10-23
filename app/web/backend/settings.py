@@ -126,5 +126,15 @@ def max_steps() -> int:
     return _env_int("LDRAW_NOVA_MAX_STEPS", 80, 1)
 
 
-LEAN_CONTEXT_TOKENS = 200_000         # models with a smaller context get the lean prompt
+def subagents_enabled() -> bool:
+    """Prototype: offer the planner a delegate_task tool that runs jobs on a cheap worker model. Off by default."""
+    return _flag("LDRAW_NOVA_SUBAGENTS", False)
+
+
+def worker_llm_id() -> str:
+    """Id of the configured LLM entry the delegated worker steps run on."""
+    return os.environ.get("LDRAW_NOVA_WORKER_LLM_ID", "").strip()
+
+
+LEAN_CONTEXT_TOKENS = 200_000        # models with a smaller context get the lean prompt
 LEAN_PROMPT = os.environ.get("LDRAW_NOVA_LEAN_PROMPT", "auto").strip().lower()   # auto | on | off

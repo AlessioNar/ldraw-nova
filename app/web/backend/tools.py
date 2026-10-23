@@ -446,6 +446,19 @@ TOOLS: dict[str, tuple[dict, Callable[..., Awaitable[ToolResult]]]] = {
         ["path", "content"]), t_write_file),
 }
 
+async def t_delegate_task(ctx: ToolContext, task: str, files: list[str] | None = None, max_steps: int = 12) -> ToolResult:
+    import subagents                                      # lazy: subagents imports this module
+    return await subagents.delegate_task(ctx, task, files, max_steps)
+
+
+TOOLS["delegate_task"] = (_fn("delegate_task",
+    "Hand a bounded job (reading files, writing a script or notes, running a command) to a cheaper worker model. "
+    "The worker has list_files, read_file, write_file, run_python, run_shell and run_toolkit only, and returns a short "
+    "summary. Give it a self-contained task.",
+    {"task": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}},
+     "max_steps": {"type": "integer", "description": "Default 12, maximum 25"}},
+    ["task"]), t_delegate_task)
+
 TOOL_SCHEMAS = [schema for schema, _fn_ in TOOLS.values()]
 
 
