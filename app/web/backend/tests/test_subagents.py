@@ -23,11 +23,20 @@ def worker(monkeypatch):
 
 
 def names(options=None):
-    return {t["function"]["name"] for t in tool_policy.available_tools(options or {})}
+    return {t["function"]["name"] for t in tool_policy.available_tools({"permissions": "full", **(options or {})})}
 
 
 def delegate(ctx, **args):
+    ctx.options = {"permissions": "full", **(ctx.options or {})}
     return asyncio.run(subagents.delegate_task(ctx, **args))
+
+
+def test_only_offered_and_allowed_with_full_access(worker, ctx):
+    for permissions in ("ask", "read_only"):
+        assert "delegate_task" not in {t["function"]["name"] for t in tool_policy.available_tools({"permissions": permissions})}
+    ctx.options = {"permissions": "ask"}
+    with pytest.raises(subagents.ToolError, match="Full access"):
+        asyncio.run(subagents.delegate_task(ctx, task="anything"))
 
 
 def test_tool_absent_unless_flag_and_worker_configured(monkeypatch, worker):

@@ -15,7 +15,7 @@ def available_tools(options: dict) -> list[dict]:
         return []
     tools = TOOL_SCHEMAS if inventories.parts_options(options)[0] != "off" else \
         [t for t in TOOL_SCHEMAS if t["function"]["name"] not in PARTS_TOOLS]
-    if not subagents.enabled():
+    if not subagents.enabled() or options.get("permissions") != "full":      # workers run tools without asking
         tools = [t for t in tools if t["function"]["name"] != "delegate_task"]
     if options.get("mode") == "plan" or options.get("permissions") == "read_only":
         return [t for t in tools if t["function"]["name"] in READ_TOOLS]

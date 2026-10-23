@@ -43,6 +43,8 @@ async def delegate_task(ctx: ToolContext, task: str, files: list[str] | None = N
     entry = llm_config.get(settings.worker_llm_id()) if settings.subagents_enabled() else None
     if entry is None:
         raise ToolError("delegate_task is not configured")
+    if ctx.options.get("permissions") != "full":
+        raise ToolError("delegate_task needs Full access: workers run tools without asking for each one")
     max_steps = max(1, min(int(max_steps or DEFAULT_STEPS), MAX_STEPS))
     model = entry["litellm_params"]["model"]
     params = await inference.params_for(entry, {})
