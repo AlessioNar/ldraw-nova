@@ -46,7 +46,7 @@ The delegate tool result is: the contract echo, a status (`ok`, `partial`, `fail
 - Planner: the chat's model, as today (Sonnet 5.5 as the cost target; Opus 5.5 for hard models).
 - Worker: a separate entry from `llm_config`, chosen by chat option `worker_model_id`, falling back to env `LDRAW_NOVA_WORKER_MODEL_ID`, falling back to none. With none set, the `delegate` tool is not offered, so nothing changes for existing chats. The Settings page already manages model entries; the worker is one more entry plus a picker next to the budget field in the chat box.
 - Capability check at the start of the turn, reusing `model_catalog.builder_supported` and `llm_config.capabilities`: tool calling required; vision required for roles that call `view_image`. Fail with a visible notice, never a silent downgrade.
-- Pricing comes from `model_catalog.entry_profile(worker_entry)["pricing"]` and the same `step_cost_usd`. **The brief puts Haiku 5.5 at about $0.1 / $0.5 per 1M tokens. The bundled catalogue (`app/web/backend/model_catalog_data.json`, verified 2026-09-30) lists Claude Haiku 4.5 at $1 / $5, ten times higher, and no Haiku 5.5 entry. Task 01 settles the real number first, because the cost target depends on it (section 8).**
+- Pricing comes from `model_catalog.entry_profile(worker_entry)["pricing"]` and the same `step_cost_usd`. **LiteLLM's catalogue puts Haiku 5.5 at about $0.1 / $0.5 per 1M tokens (the owner never quoted this figure; it is unverified). The bundled catalogue (`app/web/backend/model_catalog_data.json`, verified 2026-09-30) lists Claude Haiku 4.5 at $1 / $5, ten times higher, and no Haiku 5.5 entry. Task 01 settles the real number first, because the cost target depends on it (section 8).**
 - Workers run at the lowest reasoning effort the model offers (`options.effort`); hidden reasoning was most of the output tokens in the measured red-car chat.
 
 ## 4. One shared budget
@@ -95,7 +95,7 @@ Failure handling (the planner receives the status and decides to retry once, do 
 
 USD unless stated; EUR at the app's 0.92 EUR per USD (`settings.eur_per_usd`). Every number is an assumption unless marked measured.
 
-Prices per 1M tokens: Opus 5.5 $4 in / $20 out (catalogue). Cache read 0.1x, write 1.25x (5 minute TTL; the app default is 1h at 2x, which raises writes). Sonnet 5.5 $2 / $10 (from the brief, not in the catalogue). Haiku-class worker, case A $0.1 / $0.5 (the brief, unverified), case B $1 / $5 (the catalogue's Haiku 4.5).
+Prices per 1M tokens: Opus 5.5 $4 in / $20 out (catalogue). Cache read 0.1x, write 1.25x (5 minute TTL; the app default is 1h at 2x, which raises writes). Sonnet 5.5 $2 / $10 (LiteLLM's catalogue; the bundled catalogue lists Sonnet 5 at the same price). Haiku-class worker, case A $0.1 / $0.5 (LiteLLM's catalogue, unverified), case B $1 / $5 (the catalogue's Haiku 4.5).
 
 **Check against the measured chat.** 0.5M cache writes x $5.0 + 1.0M reads x $0.4 (assuming the other 1.0M input were all reads) + 62k output x $20 = 2.50 + 0.40 + 1.24 = $4.14, versus the measured $4.2. The price model reproduces that chat.
 
