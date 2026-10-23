@@ -11,10 +11,11 @@ type Form = {
 };
 const BASIC = ["model", "api_key", "api_base", "api_version"];
 const EMPTY: Form = { model_name: "", model: "", api_key: "", env_var: "", api_base: "", api_version: "", extra: [], auth: "api_value" };
-const envName = (provider: string) => ({ openai: "OPENAI_API_KEY", anthropic: "ANTHROPIC_API_KEY", openrouter: "OPENROUTER_API_KEY", gemini: "GEMINI_API_KEY" }[provider] ?? "");
+const envName = (provider: string) => ({ openai: "OPENAI_API_KEY", anthropic: "ANTHROPIC_API_KEY", openrouter: "OPENROUTER_API_KEY", mistral: "MISTRAL_API_KEY", gemini: "GEMINI_API_KEY" }[provider] ?? "");
 const providerHelp: Record<string, { models: string; keys: string }> = {
   openai: { models: "https://developers.openai.com/api/docs/models", keys: "https://platform.openai.com/api-keys" },
   anthropic: { models: "https://platform.claude.com/docs/en/models/overview", keys: "https://platform.claude.com/settings/keys" },
+  mistral: { models: "https://docs.mistral.ai/models/overview", keys: "https://console.mistral.ai/api-keys" },
   openrouter: { models: "https://openrouter.ai/models?order=context-high-to-low&input_modalities=text,file,image", keys: "https://openrouter.ai/settings/keys" },
 };
 
@@ -45,7 +46,7 @@ export function ConnectionPill({ status }: { status: ConnectionStatus }) {
   </span>;
 }
 
-const PROVIDERS = ["anthropic", "openai", "openrouter"];
+const PROVIDERS = ["anthropic", "openai", "mistral", "openrouter"];
 
 // Starting point for converting an unsupported entry: chatgpt/<id> maps to openai/<id>
 // when <id> looks like an OpenAI model, otherwise the model is left for the user to fill.

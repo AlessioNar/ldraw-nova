@@ -157,6 +157,7 @@ KEY_CHECKS = {
                   lambda key: {"x-api-key": key, "anthropic-version": "2023-06-01"}),
     "openai": ("OPENAI_API_KEY", "https://api.openai.com/v1/models", lambda key: {"Authorization": f"Bearer {key}"}),
     # OpenRouter's model list is public; /key is the free call that actually checks the key.
+    "mistral": ("MISTRAL_API_KEY", "https://api.mistral.ai/v1/models", lambda key: {"Authorization": f"Bearer {key}"}),
     "openrouter": ("OPENROUTER_API_KEY", "https://openrouter.ai/api/v1/key", lambda key: {"Authorization": f"Bearer {key}"}),
 }
 

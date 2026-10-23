@@ -7,6 +7,7 @@ import { priceLabel } from "./ModelPicker";
 export const PROVIDERS = [
   { id: "anthropic", name: "Anthropic", env: "ANTHROPIC_API_KEY", keysUrl: "https://platform.claude.com/settings/keys" },
   { id: "openai", name: "OpenAI", env: "OPENAI_API_KEY", keysUrl: "https://platform.openai.com/api-keys" },
+  { id: "mistral", name: "Mistral", env: "MISTRAL_API_KEY", keysUrl: "https://console.mistral.ai/api-keys" },
   { id: "openrouter", name: "OpenRouter", env: "OPENROUTER_API_KEY", keysUrl: "https://openrouter.ai/settings/keys" },
 ];
 

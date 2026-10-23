@@ -36,7 +36,7 @@ def test_effort_styles():
     assert providers.of("anthropic/x").effort == "anthropic"
     assert providers.of("openrouter/x/y").effort == "openrouter"
     assert providers.of("gemini/x").effort == "reasoning_effort"
-    assert providers.of("mistral/x").effort is None
+    assert providers.of("mistral/x").effort == "mistral"
 
 
 def test_only_openrouter_streams_reasoning_details():
