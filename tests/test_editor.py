@@ -130,6 +130,20 @@ def test_invalid_operations_are_rejected_with_messages(parts):
         apply(solo, [{"op": "delete", "id": "only"}], parts)
 
 
+def test_a_batch_can_add_a_part_and_snap_it(connected):
+    from ldraw_tools.editor import _next_id
+    pre = {"version": 1, "author": "Tests", "sections": [
+        {"name": "main.ldr", "description": "snappable", "steps": [
+            [{"id": "base", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0]}]]}]}
+    edits = [{"op": "add", "section": "main.ldr", "part": "3022.dat", "colour": 14, "position": [0, -50, 0]},
+             {"op": "snap", "id": _next_id(pre)}]
+    post = roundtrip(pre, edits, connected)                # one batch, one undo: the inverse restores the plan
+    added = post["sections"][0]["steps"][-1][-1]
+    assert added["ref"] == "3022.dat" and added["at"] == [0, -8, 0]       # snapped, as in the snap test above
+    with pytest.raises(ValueError):                        # a snap of an id nothing adds is still refused
+        apply(pre, [{"op": "snap", "id": "nope"}], connected)
+
+
 def test_repeated_entry_is_rejected_with_a_message(parts):
     repeated = plan()
     repeated["sections"][0]["steps"][0][1]["repeat"] = {"count": 3, "step": [20, 0, 0]}

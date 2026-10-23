@@ -364,10 +364,11 @@ def apply(plan, edits, parts=None):
     if not isinstance(edits, (list, tuple)):
         _fail("edits must be a list of operations")
     _check_plan(plan)
-    for edit in edits:
-        _validate(plan, edit, parts)
     result = copy.deepcopy(plan)
     for edit in edits:
+        # Each edit is checked against the plan the earlier edits produced, so one batch can add a part and
+        # snap it (or move something it just added); any invalid edit still rejects the whole batch.
+        _validate(result, edit, parts)
         _apply_op(result, edit, parts)
     try:
         check_schema(result)

@@ -37,14 +37,13 @@ export default function EditorPage() {
 
   const onAdd = useCallback(async (edits: Record<string, unknown>[]) => {
     try {
-      // The API checks a whole batch against the plan as it is before the batch, so a snap of an entry the
-      // same batch adds is "Unknown entry id": send the add first, then the snap against the new revision.
-      const adds = edits.filter(e => e.op !== "snap");
-      const snaps = edits.filter(e => e.op === "snap");
-      const view = await editorApi.edits(id, adds, revision.current);
-      if (snaps.length) {
-        try { await editorApi.edits(id, snaps, view.revision); }
-        catch { /* nothing to snap to: the part stays where it was dropped */ }
+      // One batch (add + snap), so one undo removes the part. If the snap is refused (nothing to snap to) the
+      // part is added where it was dropped; an add that is refused itself (inventory) fails the same way again.
+      try { await editorApi.edits(id, edits, revision.current); }
+      catch (e) {
+        const adds = edits.filter(x => x.op !== "snap");
+        if ((e as { status?: number }).status !== 400 || adds.length === edits.length) throw e;
+        await editorApi.edits(id, adds, revision.current);
       }
     } catch (e) {
       if ((e as { status?: number }).status === 409) reload();      // stale: fetch the current plan before retrying
