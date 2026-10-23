@@ -48,11 +48,15 @@ def step_cost_usd(record: dict, pricing: Optional[dict], model: str, cache_ttl: 
     if not pricing or pricing.get("currency") != "USD" or pricing.get("input") is None or pricing.get("output") is None:
         return None
     anthropic = providers.of(model).prefix == "anthropic/"
-    read_x = 0.1 if anthropic else 1.0
+    read_x = pricing.get("cache_read_x", 0.1) if anthropic else 1.0
     write_x = (2.0 if cache_ttl == "1h" else 1.25) if anthropic else 1.0
     fresh = max(record["prompt"] - record["cache_read"] - record["cache_write"], 0)
     weighted = fresh + record["cache_read"] * read_x + record["cache_write"] * write_x
-    return (weighted * pricing["input"] + record["completion"] * pricing["output"]) / 1_000_000
+    price_in, price_out = pricing["input"], pricing["output"]
+    for tier in sorted(pricing.get("tiers") or [], key=lambda t: t["over_prompt_tokens"]):
+        if record["prompt"] > tier["over_prompt_tokens"]:      # e.g. Haiku 5.5: a prompt over 100k tokens costs 5x
+            price_in, price_out = tier["input"], tier["output"]
+    return (weighted * price_in + record["completion"] * price_out) / 1_000_000
 
 
 def usage_totals(messages: list[dict]) -> dict:

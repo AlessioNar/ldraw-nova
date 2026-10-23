@@ -19,7 +19,28 @@ CATALOG = [entry for entry in _PROFILES if entry["preset"]]
 OPENROUTER_CATALOG = [entry for entry in CATALOG if entry["model"].startswith("openrouter/")]
 
 
+# Prices and cache terms read from https://platform.claude.com/docs/en/about-claude/pricing on 2026-10-23. They
+# overlay the catalogue and LiteLLM's figures, which miss two things the page states: Haiku 5.5 costs 5x more for
+# prompts over 100,000 tokens, and cache reads on Opus 5.5 / Sonnet 5.5 / Fable 5.1 are 0.05x / 0.05x / 0.025x of
+# the input price (0.1x for the other models). Cache writes are 1.25x (5 minutes) and 2x (1 hour) everywhere.
+PRICE_BOOK = {
+    "anthropic/claude-haiku-5-5": {"input": 0.1, "output": 0.5, "cache_read_x": 0.1,
+                                   "tiers": [{"over_prompt_tokens": 100_000, "input": 0.5, "output": 2.5}]},
+    "anthropic/claude-sonnet-5-5": {"input": 2, "output": 10, "cache_read_x": 0.05},
+    "anthropic/claude-opus-5-5": {"input": 4, "output": 20, "cache_read_x": 0.05},
+    "anthropic/claude-fable-5-1": {"input": 10, "output": 50, "cache_read_x": 0.025},
+}
+
+
 def profile(model: str) -> dict:
+    spec = _profile(model)
+    book = PRICE_BOOK.get(model.replace("responses/", ""))
+    if book:
+        spec["pricing"] = {**(spec.get("pricing") or {}), **copy.deepcopy(book), "currency": "USD"}
+    return spec
+
+
+def _profile(model: str) -> dict:
     canonical = model.replace("responses/", "")
     known = next((m for m in _PROFILES if m["model"] == canonical), None)
     if known:

@@ -28,6 +28,31 @@ def test_anthropic_step_cost_weights_cache_reads_and_writes():
     assert one_hour == pytest.approx((1000 + 800 + 2000) * 4 / 1e6 + 500 * 20 / 1e6)
 
 
+def test_price_book_matches_the_pricing_page_and_reaches_the_profile():
+    haiku = model_catalog.profile("anthropic/claude-haiku-5-5")["pricing"]
+    assert (haiku["input"], haiku["output"], haiku["currency"]) == (0.1, 0.5, "USD")
+    assert haiku["tiers"] == [{"over_prompt_tokens": 100_000, "input": 0.5, "output": 2.5}]
+    assert model_catalog.profile("anthropic/claude-opus-5-5")["pricing"]["cache_read_x"] == 0.05
+    assert model_catalog.profile("anthropic/claude-sonnet-5-5")["pricing"]["input"] == 2
+    assert model_catalog.profile("anthropic/claude-opus-5-5")["pricing"]["note"]          # the catalogue's own fields survive
+
+
+def test_opus_and_sonnet_55_cache_reads_cost_a_twentieth():
+    pricing = model_catalog.profile("anthropic/claude-opus-5-5")["pricing"]
+    cost = usage.step_cost_usd(record(1_000_000, 0, read=1_000_000), pricing, "anthropic/claude-opus-5-5")
+    assert cost == pytest.approx(0.20)                                                  # $0.20 per MTok read, per the pricing page
+
+
+def test_haiku_55_prompts_over_100k_tokens_cost_five_times_more():
+    pricing = model_catalog.profile("anthropic/claude-haiku-5-5")["pricing"]
+    short = usage.step_cost_usd(record(100_000, 1000), pricing, "anthropic/claude-haiku-5-5")
+    long = usage.step_cost_usd(record(100_001, 1000), pricing, "anthropic/claude-haiku-5-5")
+    assert short == pytest.approx(100_000 * 0.1 / 1e6 + 1000 * 0.5 / 1e6)
+    assert long == pytest.approx(100_001 * 0.5 / 1e6 + 1000 * 2.5 / 1e6)
+    read = usage.step_cost_usd(record(200_000, 0, read=200_000), pricing, "anthropic/claude-haiku-5-5")
+    assert read == pytest.approx(200_000 * 0.1 * 0.5 / 1e6)                              # $0.05 per MTok read above 100k
+
+
 def test_other_providers_pay_full_price_for_cached_tokens():
     step = record(10_000, 500, read=8000)
     cost = usage.step_cost_usd(step, OPUS, "openai/gpt-6-luna")

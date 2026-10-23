@@ -71,7 +71,7 @@ export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" 
 export type ModelProfile = {
   model: string; name: string; context_window: number | null; efforts: string[]; default_effort: string | null; context_budgets: number[];
   max_output_tokens?: number | null; tools?: boolean | null; vision?: boolean | null; reasoning?: boolean | null;
-  pricing?: { input: number | null; output: number | null; currency: string; note?: string } | null;
+  pricing?: { input: number | null; output: number | null; currency: string; note?: string; tiers?: { over_prompt_tokens: number; input: number; output: number }[] } | null;
   source_url?: string | null; source_label?: string | null; verified_at?: string | null;
   lookup_status?: "live" | "published" | "unavailable"; recommendation?: string | null;
 };

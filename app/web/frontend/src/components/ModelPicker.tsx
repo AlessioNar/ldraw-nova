@@ -10,7 +10,8 @@ function priceLabel(model: LlmEntry): string {
   const p = model.profile.pricing;
   if (!p || p.input == null || p.output == null) return "price unknown";
   const fmt = (n: number) => (n >= 1 ? String(+n.toFixed(2)) : n.toFixed(2));
-  return `$${fmt(p.input)} in · $${fmt(p.output)} out per 1M tokens`;
+  const tier = p.tiers?.[0];
+  return `$${fmt(p.input)} in · $${fmt(p.output)} out per 1M tokens${tier ? ` (up to ${tier.over_prompt_tokens / 1000}k prompts; $${fmt(tier.input)} / $${fmt(tier.output)} above)` : ""}`;
 }
 
 export default function ModelPicker({ value, onChange, disabled }: {
