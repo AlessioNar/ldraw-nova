@@ -151,7 +151,7 @@ async def run_steps(*, entry: dict, params: dict, sink, tools: list[dict] | None
             refs = [ref(png) for png in result.images]
             sink.add({"role": "tool", "tool_call_id": call["id"], "name": name, "content": result.content,
                       "_models": [m["id"] for m in result.models], "_images": refs,
-                      **({"_parts_check": result.parts_check} if result.parts_check else {})})
+                      **({"_parts_check": result.parts_check} if result.parts_check else {}), **result.record})
             emit("tool_end", {"id": call["id"], "name": name})
             images += refs
         if images and vision:

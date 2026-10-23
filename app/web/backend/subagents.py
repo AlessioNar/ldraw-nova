@@ -2,9 +2,9 @@
 
 The worker runs the same step loop as the planner (agent_loop.run_steps) on its own model, from a validated
 contract (docs/plans/swarm-subagents/README.md section 2). Its transcript goes to chats/<chat>/workers/<id>.jsonl,
-not to messages.jsonl, so the planner's history and prompt cache are untouched. Each worker step's `_usage` is
-also saved in the chat as a hidden `_subagent` message, so usage_totals and the chat budget cover workers
-(until the shared budget ledger replaces this).
+not to messages.jsonl, so the planner's history and prompt cache are untouched. Cost is shared through
+budget.BudgetLedger: the worker reserves its max_eur, every step is added to the ledger, and when it ends one
+aggregate `_usage` plus `_worker` lands on the delegate tool result (or on a hidden record if it was cancelled).
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 
 import inference
 import llm_config
+import model_catalog
 import settings
 import usage
 from agent_loop import FileSink, run_steps
@@ -171,9 +172,13 @@ def _task_message(contract: Contract) -> str:
     return "\n".join(lines)
 
 
-def _budget_reached(ctx: ToolContext) -> bool:
-    budget = ctx.options.get("budget_eur")
-    return bool(budget) and usage.usage_totals(ctx.store.messages(ctx.chat_id))["cost_eur"] >= budget
+def _aggregate(worker_id: str, model: str, sink: FileSink, status: str) -> dict:
+    """The worker's one chat record: summed tokens and cost as `_usage`, plus `_worker` for the totals and display."""
+    totals = usage.usage_totals(sink.messages())
+    summed = {k: totals[k] for k in ("prompt", "completion", "cache_read", "cache_write")}
+    if not totals["unpriced_steps"]:
+        summed["cost_usd"] = totals["cost_usd"]
+    return {"_usage": summed, "_worker": {"id": worker_id, "model": model, "steps": totals["steps"], "status": status}}
 
 
 def _files(ctx: ToolContext, contract: Contract) -> list[tuple[str, int]]:
@@ -194,6 +199,12 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
             "max_eur": max_eur, "summary_chars": summary_chars}
     contract = validate_contract(args, entry, secrets.token_hex(4))
     model = entry["litellm_params"]["model"]
+    ledger = ctx.ledger
+    ledger.limit_eur = ctx.options.get("budget_eur") or None
+    if ledger.limit_eur and usage.step_cost_usd({"prompt": 1, "completion": 1, "cache_read": 0, "cache_write": 0},
+                                                model_catalog.entry_profile(entry)["pricing"], model) is None:
+        raise ToolError("delegate refused: the worker model has no known price, so it cannot run under a chat budget")
+    cap_eur = ledger.reserve(contract.id, contract.max_eur, ctx.store.messages(ctx.chat_id))   # clamped to what is left
     (ctx.work_dir / "workers" / contract.id).mkdir(parents=True, exist_ok=True)
     sink = FileSink(ctx.chat_dir / "workers" / f"{contract.id}.jsonl")
     sink.add({"role": "user", "content": _task_message(contract)})
@@ -204,10 +215,10 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
 
     def before_step(stored: list[dict]) -> bool:
         nonlocal reason
-        if _budget_reached(ctx):
+        if ledger.chat_exhausted(contract.id, ctx.store.messages(ctx.chat_id)):
             reason = "the chat budget was reached"
-        elif usage.usage_totals(stored)["cost_eur"] >= contract.max_eur:
-            reason = f"the worker's budget of EUR {contract.max_eur:.2f} was reached"
+        elif ledger.spent_eur(contract.id) >= cap_eur:
+            reason = f"the worker's budget of EUR {cap_eur:.2f} was reached"
         return bool(reason)
 
     def build_messages(stored: list[dict]) -> list[dict]:
@@ -217,9 +228,8 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
         return with_rolling_breakpoint([{"role": "system", "content": sys_content}, *history], model)
 
     def record_usage(message: dict) -> None:
-        if message.get("_usage"):                 # hidden chat record: keeps the chat's totals and budget exact
-            ctx.store.add_message(ctx.chat_id, {"role": "assistant", "content": "", "_ui_only": True, "_hidden": True,
-                                                "_subagent": True, "_worker": contract.id, "_usage": message["_usage"]})
+        if message.get("_usage"):
+            ledger.add(contract.id, message["_usage"].get("cost_usd"))
 
     async def run_tool(call: dict) -> ToolResult:
         name = call["function"]["name"]
@@ -230,15 +240,21 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
         out.models = []                           # only the planner publishes
         return out
 
-    ended, error = "", ""
+    ended, error, finished = "", "", False
     try:
         params = await inference.params_for(entry, {})
         ended = await run_steps(entry=entry, params=params, sink=sink, tools=schemas, max_steps=contract.max_steps,
                                 build_messages=build_messages, run_tool=run_tool,
                                 ref=lambda png: ctx.store.ref(ctx.chat_id, png), before_step=before_step,
                                 after_message=record_usage)
+        finished = True
     except Exception as exc:  # noqa: BLE001 - a worker failing must not end the planner's turn
-        error = exc.__class__.__name__
+        error, finished = exc.__class__.__name__, True
+    finally:
+        ledger.release(contract.id)
+        if not finished:                                      # Stop or another abort: the worker's cost still counts
+            ctx.store.add_message(ctx.chat_id, {"role": "assistant", "content": "", "_ui_only": True, "_hidden": True,
+                                                **_aggregate(contract.id, model, sink, "cancelled")})
     final = next((m["content"] for m in reversed(sink.messages())
                   if m["role"] == "assistant" and m.get("content") and not m.get("tool_calls")), "")
     files = _files(ctx, contract)
@@ -268,4 +284,4 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
     lines.append("Files: " + ("; ".join(f"{path} ({size} bytes)" for path, size in files) or "none"))
     lines.append(f"Cost: {totals['steps']} model calls, about EUR {totals['cost_eur']:.4f}")
     lines.append("Validation: not run by the app; check the files before using them.")
-    return ToolResult("\n".join(lines))
+    return ToolResult("\n".join(lines), record=_aggregate(contract.id, model, sink, status))

@@ -65,6 +65,7 @@ def usage_totals(messages: list[dict]) -> dict:
     totals = {field: 0 for field in fields}
     totals["steps"] = 0
     cost = 0.0
+    worker_cost = 0.0
     unpriced = 0
     for message in messages:
         record = message.get("_usage")
@@ -78,8 +79,11 @@ def usage_totals(messages: list[dict]) -> dict:
         step = record.get("cost_usd")
         if isinstance(step, (int, float)) and not isinstance(step, bool):
             cost += step
+            if message.get("_worker"):                    # a worker's aggregate record (or an old hidden `_subagent` step)
+                worker_cost += step
         else:
             unpriced += 1
     rate = settings.eur_per_usd()
-    totals.update(cost_usd=round(cost, 6), cost_eur=round(cost * rate, 4), eur_per_usd=rate, unpriced_steps=unpriced)
+    totals.update(cost_usd=round(cost, 6), cost_eur=round(cost * rate, 4), eur_per_usd=rate, unpriced_steps=unpriced,
+                  worker_cost_eur=round(worker_cost * rate, 4))
     return totals
