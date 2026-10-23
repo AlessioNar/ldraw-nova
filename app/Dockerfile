@@ -299,6 +299,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && chmod a+x ldraw-agent setup.sh check-model.sh prepare-glb.sh
 ENV LDRAW_DIR=/opt/ldraw/ldraw LDRAW_NOVA_TOOLKIT_DIR=/opt/ldraw-nova
 
+# Build the discovery catalogue (about 45 s, 94 MB) now, not inside the first chat's first search. It has to be
+# built by the agent user, who reads it later (a root-owned 0600 cache would lock agent code out), and with the
+# same paths the app uses at run time: the cache directory is keyed by the models, database and library paths.
+RUN cd /opt/ldraw-nova \
+    && runuser -u agent -- env XDG_CACHE_HOME=/opt/ldraw-nova/.cache ./ldraw-agent discover search parts wing --engine fts --limit 1 > /dev/null
+
 # --- scripts/: the whole folder, on everyone's PATH ----------------------------
 # Whatever is in scripts/ runs from anywhere in the container, by name, for
 # every user (agents too: web/backend/sandbox.py). mpd2glb.sh is the way to
