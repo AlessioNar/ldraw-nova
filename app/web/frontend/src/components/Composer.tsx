@@ -2,10 +2,10 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import { Link } from "react-router-dom";
 import { useApp } from "../context";
 import { inventoryApi, type TurnOptions, type DocumentUpload, type Inventory } from "../api";
-import PartsControl, { loadSteering, saveSteering, type PartsSteering } from "./parts/PartsControl";
+import { loadSteering, saveSteering, type PartsSteering } from "./parts/PartsControl";
 import ModelPicker from "./ModelPicker";
-import WorkerModelPicker from "./WorkerModelPicker";
-import { rememberModel, tokenLabel } from "../modelChoices";
+import ChatSettings, { budgetLabel, loadChatDefaults, saveChatDefaults } from "./ChatSettings";
+import { rememberModel } from "../modelChoices";
 import DocumentIcon from "./DocumentIcon";
 
 const DOCUMENT_TYPES = ".pdf,.txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.rtf,.docx,.xlsx,.pptx,.mpd,.ldr,.dat";
@@ -26,8 +26,16 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   const ref = useRef<HTMLTextAreaElement>(null);
   const upload = useRef<HTMLInputElement>(null);
   const documentUpload = useRef<HTMLInputElement>(null);
-  const [selection, setSelection] = useState<{ modelId: string | null; options: TurnOptions }>({ modelId: llmId,
-    options: { ...initialOptions, mode: initialOptions && initialOptions.mode !== "agent" ? "plan" : "agent", permissions: initialOptions?.permissions ?? "ask" } });
+  const settingsButton = useRef<HTMLButtonElement>(null);
+  const budgetButton = useRef<HTMLButtonElement>(null);
+  const attachButton = useRef<HTMLButtonElement>(null);
+  const attachMenu = useRef<HTMLDivElement>(null);
+  const [panel, setPanel] = useState<"settings" | "budget" | null>(null);
+  const [attachOpen, setAttachOpen] = useState(false);
+  // An existing chat keeps its own saved options; a new chat starts from the last-used ones.
+  const [selection, setSelection] = useState<{ modelId: string | null; options: TurnOptions }>(() => ({ modelId: llmId,
+    options: initialOptions?.mode ? { ...initialOptions, mode: initialOptions.mode !== "agent" ? "plan" : "agent", permissions: initialOptions.permissions ?? "ask", budget_eur: initialOptions.budget_eur ?? null }
+      : loadChatDefaults() }));
   const [images, setImages] = useState<{ name: string; url: string; size: number }[]>([]);
   const [documents, setDocuments] = useState<(DocumentUpload & { size: number })[]>([]);
   const [error, setError] = useState("");
@@ -46,13 +54,25 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     worker_model_id: saved.worker_model_id !== undefined ? saved.worker_model_id : defaultWorkerId,
     context_tokens: sameModel && saved.context_tokens && profile?.context_budgets.includes(saved.context_tokens) ? saved.context_tokens : profile?.context_window ?? null,
   };
-  const setOptions = (next: TurnOptions) => setSelection({ modelId: llmId, options: next });
+  const setOptions = (next: TurnOptions) => { setSelection({ modelId: llmId, options: next }); saveChatDefaults(next); };
   function chooseModel(id: string) {
     const next = llms.find(m => m.id === id)?.profile;
     setSelection({ modelId: id, options: { ...options, effort: next?.default_effort ?? null, context_tokens: next?.context_window ?? null } });
     onLlmChange(id);
   }
   useEffect(() => setText(initialText), [initialText]);
+  useEffect(() => {
+    if (!attachOpen) return;
+    const onDown = (e: PointerEvent) => { if (!attachMenu.current?.contains(e.target as Node) && !attachButton.current?.contains(e.target as Node)) setAttachOpen(false); };
+    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === "Escape") { setAttachOpen(false); attachButton.current?.focus(); } };
+    document.addEventListener("pointerdown", onDown); document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("pointerdown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [attachOpen]);
+  function closePanel() {
+    const opener = panel === "budget" ? budgetButton.current : settingsButton.current;
+    setPanel(null);
+    opener?.focus();
+  }
   useEffect(() => { inventoryApi.list().then(r => setInventories(r.inventories), () => {}); }, []);
   // Only ids that still exist count; a mode other than off needs at least one, so fall back to the newest list.
   const known = inventories.filter(i => steering.ids.includes(i.id)).map(i => i.id);
@@ -110,21 +130,27 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
-  const effortNames: Record<string, string> = { none: "No reasoning", low: "Low", medium: "Medium", high: "High", xhigh: "XHigh", max: "Max" };
+  // A dot on the settings button when something other than the defaults is active.
+  const nonDefault = options.mode !== "agent" || (options.mode === "agent" && options.permissions !== "ask")
+    || (!!inventories.length && effective.mode !== "off") || (options.worker_model_id ?? null) !== (defaultWorkerId ?? null)
+    || (!!profile?.efforts.length && options.effort !== profile.default_effort)
+    || (!!profile?.context_budgets.length && options.context_tokens !== profile.context_window);
 
   return <form className="composer" onSubmit={submit}>
     {!llms.length && <div className="composer-notice">No model configured yet. <Link to="/settings">Add a model in Settings</Link> to start building.</div>}
     <div className="composer-input">
-      <button type="button" className="attach-button" aria-label="Attach images" title="Attach images (up to 4)" disabled={disabled || !model} onClick={() => upload.current?.click()}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8" cy="8" r="1.5" /><path d="m3 16 5-5 4 4 4-5 5 6" />
-        </svg>
-      </button>
-      <button type="button" className="attach-button" aria-label="Attach documents" title="Attach documents (up to 4)" disabled={disabled || !model} onClick={() => documentUpload.current?.click()}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-          <path d="m8 13 7-7a3 3 0 0 1 4 4L9 20a5 5 0 0 1-7-7L13 2a2 2 0 0 1 3 3L5 16" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+      <div className="attach-wrap">
+        <button type="button" className="attach-button" ref={attachButton} aria-label="Attach" aria-haspopup="menu" aria-expanded={attachOpen} title="Attach images or documents (up to 4 each)"
+          disabled={disabled || !model} onClick={() => setAttachOpen(!attachOpen)}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <path d="m8 13 7-7a3 3 0 0 1 4 4L9 20a5 5 0 0 1-7-7L13 2a2 2 0 0 1 3 3L5 16" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {attachOpen && <div className="attach-menu" role="menu" ref={attachMenu}>
+          <button type="button" role="menuitem" onClick={() => { setAttachOpen(false); upload.current?.click(); }}>Attach image</button>
+          <button type="button" role="menuitem" onClick={() => { setAttachOpen(false); documentUpload.current?.click(); }}>Attach document</button>
+        </div>}
+      </div>
       <input ref={documentUpload} hidden type="file" aria-label="Document files" accept={DOCUMENT_TYPES} multiple disabled={disabled} onChange={e => {
         const files = Array.from(e.target.files ?? []); e.target.value = ""; void attach(files, "document");
       }} />
@@ -144,33 +170,24 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     <div className="composer-toolbar">
       <div className="turn-options">
         <ModelPicker value={llmId} onChange={chooseModel} disabled={disabled || !llms.length} />
-        <select className="compact-control" aria-label="Mode" title="Build with Agent, or work out a design in Plan" disabled={disabled} value={options.mode}
-          onChange={e => setOptions({ ...options, mode: e.target.value as TurnOptions["mode"] })}>
-          <option value="agent">Agent</option><option value="plan">Plan</option>
-        </select>
-        {options.mode === "agent" && <select className="compact-control" aria-label="Permissions" title="Permissions for tools in the container" disabled={disabled} value={options.permissions}
-          onChange={e => setOptions({ ...options, permissions: e.target.value as TurnOptions["permissions"] })}>
-          <option value="ask">Ask first</option><option value="full">Full access</option><option value="read_only">Read only</option>
-        </select>}
-        <PartsControl inventories={inventories} value={effective} onChange={changeSteering} disabled={disabled} />
-        {!!profile?.efforts.length && <select className="compact-control" aria-label="Effort" title="Reasoning effort" disabled={disabled} value={options.effort ?? profile.default_effort ?? ""}
-          onChange={e => setOptions({ ...options, effort: e.target.value })}>
-          {profile.efforts.map(e => <option value={e} key={e}>{effortNames[e] ?? e}</option>)}
-        </select>}
-        {!!profile?.context_budgets.length && <select className="compact-control" aria-label="Context budget" title="Model context window (tokens)" disabled={disabled} value={options.context_tokens ?? profile.context_window ?? ""}
-          onChange={e => setOptions({ ...options, context_tokens: Number(e.target.value) })}>
-          {profile.context_budgets.map(n => <option value={n} key={n}>{tokenLabel(n)}</option>)}
-        </select>}
-        <WorkerModelPicker value={options.worker_model_id ?? null} disabled={disabled} onChange={id => setOptions({ ...options, worker_model_id: id })} />
-        <select className="compact-control" aria-label="Budget" title="Stop when this chat has cost about this much (estimated from list prices)" disabled={disabled}
-          value={options.budget_eur ?? ""} onChange={e => setOptions({ ...options, budget_eur: e.target.value ? Number(e.target.value) : null })}>
-          <option value="">No budget</option>
-          {[1, 2, 5, 10, 20].map(n => <option value={n} key={n}>Budget €{n}</option>)}
-        </select>
+        <button type="button" ref={budgetButton} className="compact-control chat-settings-trigger budget-chip" aria-haspopup="dialog" aria-expanded={panel === "budget"}
+          title="Stop when this chat has cost about this much. Click to change." onClick={() => setPanel(panel === "budget" ? null : "budget")}>
+          {budgetLabel(options.budget_eur)}
+        </button>
+        <button type="button" ref={settingsButton} className="compact-control chat-settings-trigger settings-button" aria-haspopup="dialog" aria-expanded={panel === "settings"}
+          aria-label={nonDefault ? "Chat settings (changed from defaults)" : "Chat settings"} title="Mode, permissions, parts, workers, budget and more"
+          onClick={() => setPanel(panel === "settings" ? null : "settings")}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" />
+          </svg>
+          {nonDefault && <span className="settings-dot" aria-hidden="true" />}
+        </button>
       </div>
       {running ? <button type="button" className="danger send-button" onClick={onStop}>Stop</button> :
         <button type="submit" className="primary send-button" disabled={!text.trim() || busy || !model}>Send <span aria-hidden>↑</span></button>}
     </div>
+    {panel && <ChatSettings options={options} onChange={setOptions} profile={profile} defaultWorkerId={defaultWorkerId ?? null} inventories={inventories}
+      steering={effective} onSteering={changeSteering} disabled={disabled} focus={panel} onClose={closePanel} />}
     <div className="composer-hint muted">Enter to send · Shift+Enter for a new line</div>
   </form>;
 }
