@@ -9,7 +9,7 @@ type Bridge = {
   revision: number;
   plan: PlanLike;
   parts: { mode: PartsMode; rows: UsedRow[] };
-  selection: { id: string; position: [number, number, number] }[];
+  selection: { id: string; position: [number, number, number]; section: string; leaf: boolean; repeated: boolean }[];
 };
 
 // The 3D editor is its own page (viewer/editor.html) in an iframe, for the same
@@ -53,7 +53,8 @@ export default function EditorPage() {
   }, [id]);
 
   const first = bridge?.selection[0];
-  const selection: SelectionPoint | null = first ? { id: first.id, at: first.position } : null;
+  const selection: SelectionPoint | null = first
+    ? { id: first.id, at: first.position, section: first.section, leaf: first.leaf, repeated: first.repeated } : null;
 
   return (
     <div className="editor-page">

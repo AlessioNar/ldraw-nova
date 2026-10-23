@@ -339,3 +339,190 @@ test('load: 2000 parts rebuild in a measured time and a drag sends no request pe
   assert.equal(posts.filter(p => p.url.endsWith('/editor/edits')).length, 1, 'exactly one edit for the drag');
   note('2000-part model: server rebuild for that edit as the page saw the request (ms)', posts.find(p => p.url.endsWith('/editor/edits')).ms);
 });
+
+// ---- an agent-built plan: sub-models, repeated placements, choosing the plan --------------
+
+// The wing sub-model is placed twice (the right one turned half a circle), a run of three bricks, and a brick.
+const SHIP = { version: 1, author: 'editor test', sections: [
+  { name: 'ship.ldr', description: 'Test ship - sub-models and a repeated run', steps: [
+    [{ id: 'wl', ref: 'wing.ldr', colour: 15, at: [-80, 0, 0] }, { id: 'wr', ref: 'wing.ldr', colour: 15, at: [80, 0, 0], yaw: 180 }],
+    [{ id: 'row', ref: '3005.dat', colour: 4, at: [0, -24, 100], repeat: { count: 3, step: [20, 0, 0] } },
+     { id: 'top', ref: '3001.dat', colour: 1, at: [0, -24, -100] }]] },
+  { name: 'wing.ldr', description: 'wing', steps: [[
+    { id: 'w1', ref: '3020.dat', colour: 14, at: [10, 0, 20] }, { id: 'w2', ref: '3020.dat', colour: 14, at: [10, 0, 80] }]] },
+] };
+
+function putPlan(chat, name, plan) {
+  const local = join(mkdtempSync(join(tmpdir(), 'ship-')), name);
+  writeFileSync(local, JSON.stringify(plan, null, 2));
+  docker('exec', container, 'mkdir', '-p', `/data/output/${chat}`);
+  docker('cp', local, `${container}:/data/output/${chat}/${name}`);
+}
+
+// Click the middle of one part's box, as the editor drew it (key = ids from the root down, "wl/w1").
+async function clickPart(page, key) {
+  const at = await page.evaluate(key => {
+    const node = editorState.shown.placements.find(p => p.key === key);
+    const box = editorState.shown.boxes[node.ref], m = node.matrix, p = node.position;
+    const c = [0, 1, 2].map(k => (box.min[k] + box.max[k]) / 2);
+    const w = [0, 1, 2].map(r => m[3 * r] * c[0] + m[3 * r + 1] * c[1] + m[3 * r + 2] * c[2] + p[r]);
+    const s = EditorCore.ldrawToScene(w, editorState.shown.offset.toArray());
+    const rect = scene.renderer.domElement.getBoundingClientRect(), q = new THREE.Vector3(...s).project(scene.camera);
+    return [rect.left + (q.x + 1) / 2 * rect.width, rect.top + (1 - q.y) / 2 * rect.height];
+  }, key);
+  await page.mouse.click(...at);
+  await page.waitForFunction(k => editorState.selected[0] === k, key, { timeout: 5000 });
+}
+const selected = page => page.evaluate(() => editorState.selected.slice());
+const section = (view, name) => view.plan.sections.find(s => s.name === name).steps.flat();
+const entry = (view, name, id) => section(view, name).find(e => e.id === id);
+
+test('an agent-built plan: pick it, edit inside sub-models and a repeated run, undo, publish, reload', async t => {
+  const chat = await newChat();
+  putPlan(chat, 'ship.plan.json', SHIP);
+  const { page } = await openEditor(t, chat, { wait: 'No editor plan' });
+
+  // The chat has a plan but no editor session: the page offers that plan, not just a blank brick.
+  await page.locator('#plans button').first().waitFor();
+  assert.match(await page.locator('#plans button').first().textContent(), /ship\.plan\.json/);
+  assert.match(await page.locator('#start-text').textContent(), /Which model/);
+  await shot(page, '10-choose-plan.png');
+  await page.locator('#plans button').first().click();
+  await waitStatus(page, /^Revision 1/);
+  const view0 = await session(chat);
+  assert.equal(view0.name, 'Test ship');
+  assert.match(await status(page), /8 parts used/);
+
+  // A part inside a sub-model is selectable, and the status says where it lives and that edits hit both copies.
+  await clickPart(page, 'wl/w1');
+  await waitStatus(page, /1 selected · 3020\.dat in sub-model wing\.ldr · wing\.ldr is drawn 2 times/);
+  await shot(page, '11-submodel-part.png');
+
+  // Move it one stud east: the edit lands in wing.ldr, in the wing's own frame.
+  await rebuilt(page, () => dragArrow(page, 'x', 20));
+  let view = await session(chat);
+  assert.deepEqual(entry(view, 'wing.ldr', 'w1').at, [30, 0, 20]);
+  assert.deepEqual(entry(view, 'ship.ldr', 'wl').at, [-80, 0, 0], 'the instance did not move');
+
+  // The right wing is turned half a circle, so a world move east is a move west inside it.
+  await clickPart(page, 'wr/w1');
+  await rebuilt(page, () => dragArrow(page, 'x', 20));
+  view = await session(chat);
+  assert.deepEqual(entry(view, 'wing.ldr', 'w1').at, [10, 0, 20], 'wr/w1 moved -20 inside the turned wing');
+
+  // Group: one level up selects the wing instance, and a drag moves the whole wing.
+  await clickPart(page, 'wl/w2');
+  await page.locator('#widen').click();
+  assert.deepEqual(await selected(page), ['wl']);
+  await waitStatus(page, /sub-model wing\.ldr \(the whole group\)/);
+  await rebuilt(page, () => dragArrow(page, 'z', 20));
+  view = await session(chat);
+  assert.deepEqual(entry(view, 'ship.ldr', 'wl').at, [-80, 0, 20]);
+
+  // A repeated run: one click says what it is, a drag moves the whole run (its template).
+  await clickPart(page, 'row-1');
+  await waitStatus(page, /one of 3 from a repeated placement/);
+  await rebuilt(page, () => dragArrow(page, 'x', 20));
+  view = await session(chat);
+  assert.deepEqual(entry(view, 'ship.ldr', 'row').at, [20, -24, 100]);
+  // Rotating it is refused in words, and nothing is sent.
+  await page.locator('button[data-tool="rotate"]').click();
+  const sent = view.revision;
+  const ring = await page.evaluate(() => {
+    const gizmo = scene.overlay.children.find(c => c.children.some(m => m.userData && m.userData.axis));
+    gizmo.updateMatrixWorld(true);
+    const mesh = gizmo.children.find(m => m.userData.axis === 'y' && m.geometry.type === 'TorusGeometry');
+    const rect = scene.renderer.domElement.getBoundingClientRect();
+    const pos = mesh.geometry.attributes.position, v = new THREE.Vector3();
+    const screen = i => { v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld).project(scene.camera); return [rect.left + (v.x + 1) / 2 * rect.width, rect.top + (1 - v.y) / 2 * rect.height]; };
+    return { from: screen(0), to: screen(Math.floor(pos.count / 8)) };
+  });
+  await page.mouse.move(...ring.from);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(ring.from[0] + (ring.to[0] - ring.from[0]) * i / 8, ring.from[1] + (ring.to[1] - ring.from[1]) * i / 8);
+  await page.mouse.up();
+  await page.waitForFunction(() => /cannot be rotated/.test(document.getElementById('status').textContent));
+  assert.equal((await session(chat)).revision, sent, 'a refused rotate sends nothing');
+  await page.locator('button[data-tool="move"]').click();
+
+  // Delete inside a sub-model, then undo puts it back where it was.
+  await clickPart(page, 'wr/w2');
+  await rebuilt(page, () => page.locator('#delete').click());
+  view = await session(chat);
+  assert.deepEqual(section(view, 'wing.ldr').map(e => e.id), ['w1']);
+  await rebuilt(page, () => page.locator('#undo').click());
+  assert.deepEqual(section(await session(chat), 'wing.ldr').map(e => e.id), ['w1', 'w2']);
+  // Keyboard nudge (as in LeoCAD): ArrowRight moves the selection one stud east, PageUp one plate up.
+  await clickPart(page, 'wl/w1');
+  const x0 = entry(await session(chat), 'wing.ldr', 'w1').at;
+  await rebuilt(page, () => page.keyboard.press('ArrowRight'));
+  assert.deepEqual(entry(await session(chat), 'wing.ldr', 'w1').at, [x0[0] + 20, x0[1], x0[2]]);
+  await rebuilt(page, () => page.keyboard.press('PageUp'));
+  assert.deepEqual(entry(await session(chat), 'wing.ldr', 'w1').at, [x0[0] + 20, x0[1] - 8, x0[2]]);
+  await shot(page, '12-edited.png');
+
+  // Publish, reload: the model is in the chat's models and the page shows the same revision.
+  const revision = (await session(chat)).revision;
+  await page.locator('#publish').click();
+  await waitStatus(page, /^Published/);
+  const models = await api('GET', `/api/chats/${chat}`);
+  assert.ok(Object.values(models.models || {}).some(m => /Test ship/.test(m.name)), JSON.stringify(models.models));
+  const again = await openEditor(t, chat);
+  assert.match(await status(again.page), new RegExp(`^Revision ${revision} `));
+  assert.equal(await again.page.evaluate(() => editorState.shown.placements.length), 10);
+
+  // "Open plan...": another plan from the chat's folder replaces the session, the old one is kept aside.
+  putPlan(chat, 'other.plan.json', { version: 1, author: 'editor test', sections: [{ name: 'other.ldr', description: 'Other', steps: [[
+    { id: 'only', ref: '3001.dat', colour: 2, at: [0, 0, 0] }]] }] });
+  await again.page.locator('#open-other').click();
+  await again.page.locator('#plans button', { hasText: 'other.plan.json' }).click();
+  await waitStatus(again.page, /^Revision 1 · 1 part used/);
+  assert.deepEqual(entries(await session(chat)).map(e => e.id), ['only']);
+  const archived = docker('exec', container, 'sh', '-c', `ls /data/output/${chat}/editor/archive/*/plan.json`);
+  assert.match(archived, /archive\/.*\/plan\.json/);
+});
+
+// Screen point of a point of the model (LDraw coordinates).
+const spotAt = (page, world) => page.evaluate(world => {
+  const s = EditorCore.ldrawToScene(world, editorState.shown.offset.toArray());
+  const r = scene.renderer.domElement.getBoundingClientRect(), q = new THREE.Vector3(...s).project(scene.camera);
+  return [r.left + (q.x + 1) / 2 * r.width, r.top + (1 - q.y) / 2 * r.height];
+}, world);
+
+test('overlapping parts: another click on the same spot steps to the next part; a sub-model\'s only part is deleted with its instance', async t => {
+  const chat = await newChat();
+  putPlan(chat, 'stack.plan.json', { version: 1, author: 'editor test', sections: [
+    { name: 'stack.ldr', description: 'Stack', steps: [[
+      { id: 'pod', ref: 'pod.ldr', colour: 15, at: [0, 0, 0] },
+      { id: 'cap', ref: '3001.dat', colour: 4, at: [0, -24, 0] }]] },
+    { name: 'pod.ldr', description: 'pod', steps: [[{ id: 'p1', ref: '3001.dat', colour: 1, at: [0, 0, 0] }]] }] });
+  const { page } = await openEditor(t, chat, { wait: 'No editor plan' });
+  await page.locator('#plans button').first().click();
+  await waitStatus(page, /^Revision 1/);
+
+  // The picking box of a brick is in LDraw's frame: it rises to -y (24 LDU tall, a little below 0 for the stud
+  // cavities), not the other way up as ldbi's flipped geometry would give.
+  const brick = await page.evaluate(() => editorState.shown.boxes['3001.dat']);
+  assert.ok(brick.min[1] <= -24 && brick.max[1] <= 8 && brick.max[1] >= 0, `3001 box ${JSON.stringify(brick)}`);
+
+  // The cap sits on the brick: the middle of the seam between them is under both boxes.
+  const spot = await spotAt(page, [0, -24, 0]);
+  const seen = [];
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.click(...spot);
+    seen.push((await selected(page))[0]);
+  }
+  assert.deepEqual(seen, [seen[0], seen[1], seen[0]], `clicks cycle through the two parts: ${seen}`);
+  assert.deepEqual([...seen.slice(0, 2)].sort(), ['cap', 'pod/p1']);
+  assert.match(await status(page), /\d of 2 under the pointer, click again for the next/);
+
+  // pod.ldr has one part: deleting it removes the pod instance (the sub-model stays valid), and undo brings it back.
+  if ((await selected(page))[0] !== 'pod/p1') await page.mouse.click(...spot);
+  assert.equal((await selected(page))[0], 'pod/p1');
+  await rebuilt(page, () => page.locator('#delete').click());
+  let view = await session(chat);
+  assert.deepEqual(view.plan.sections[0].steps.flat().map(e => e.id), ['cap']);
+  await rebuilt(page, () => page.locator('#undo').click());
+  view = await session(chat);
+  assert.deepEqual(view.plan.sections[0].steps.flat().map(e => e.id), ['pod', 'cap']);
+});

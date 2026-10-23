@@ -19,7 +19,7 @@
   const status = document.getElementById('status');
   const setStatus = statusSetter(status);
   const $ = id => document.getElementById(id);
-  const buttons = { undo: $('undo'), redo: $('redo'), del: $('delete'), publish: $('publish'), home: $('home') };
+  const buttons = { undo: $('undo'), redo: $('redo'), del: $('delete'), widen: $('widen'), publish: $('publish'), home: $('home') };
   const toolButtons = document.querySelectorAll('button[data-tool]');
 
   if (!chatId) { setStatus('No chat given: add ?chat=<chat id>', true); return; }
@@ -91,6 +91,8 @@
     stale: false,         // the last rebuild could not be drawn: block edits until the page is reloaded
     gesture: null,        // { down, drag }
   };
+
+  window.editorState = state;                     // read by the browser tests (which part is picked, where it is)
 
   // ---- loading a scene --------------------------------------------------------
 
@@ -197,7 +199,7 @@
 
   function resetView(shown) {
     const camera = shown.scene.camera, controls = shown.scene.orbitControls;
-    const distance = Core.fitDistance(shown.radius, FOV, camera.aspect, 0.33);
+    const distance = Core.fitDistance(shown.radius, FOV, camera.aspect, Core.framingFill(shown.radius));
     camera.position.copy(shown.center).addScaledVector(new THREE.Vector3(1, 0.7, 1).normalize(), distance);
     controls.target.copy(shown.center);
     camera.lookAt(shown.center);
@@ -214,7 +216,11 @@
     const type = loader.getPartType(id.toLowerCase());
     if (!type || depth > 8) return null;
     const own = type.geometry && type.geometry.boundingBox;
-    if (own && !own.isEmpty()) return own.clone();
+    // ldbi keeps a part's geometry already flipped into three.js axes (y and z negated); the picking boxes and the
+    // placements are in LDraw's, where a brick's studs point to -y. Without this flip the box sits upside down.
+    if (own && !own.isEmpty()) {
+      return new THREE.Box3(new THREE.Vector3(own.min.x, -own.max.y, -own.max.z), new THREE.Vector3(own.max.x, -own.min.y, -own.min.z));
+    }
     const box = new THREE.Box3();
     for (const step of type.steps || []) {
       for (const pd of step.subModels || []) {
@@ -273,11 +279,11 @@
       return false;
     }
     const { scene, pane, missing } = built;
-    const rootName = session.plan.sections[0].name;
-    const placements = Core.parsePlacements(session.mpd, rootName);
-    placements.forEach(p => { p.section = rootName; });      // edits name the plan's section, not the FILE line
+    // Every placement of the model with its sub-models expanded; each knows the plan section and entry it came from.
+    const { nodes: placements, truncated } = Core.flatten(session.mpd, session.plan);
     const shown = {
-      scene, pane, placements, boxes: boxesFor(scene, placements), center: new THREE.Vector3(), radius: 100,
+      scene, pane, placements, leaves: placements.filter(p => p.leaf), boxes: boxesFor(scene, placements),
+      center: new THREE.Vector3(), radius: 100,
       offset: scene.baseObject.position.clone(),
     };
     scene.onFirstFrame = () => frame(shown, previous);
@@ -289,13 +295,14 @@
     state.shown = shown;
     state.session = session;
     state.stale = false;
-    state.editable = Core.entryIds(session.plan);
-    state.selected = state.selected.filter(id => shown.placements.some(p => p.id === id));
+    state.editable = new Set(placements.filter(p => p.editable).map(p => p.key));
+    state.selected = state.selected.filter(key => state.editable.has(key) || shown.placements.some(p => p.key === key));
     drawOverlay();
     refreshControls();
     $('file').textContent = session.name || 'manual model';
     const missingNote = missing.size ? ` · ${missing.size} part(s) not found` : '';
-    setStatus(`Revision ${session.revision} · ${Core.describeParts(session.parts)}${missingNote}`, false);
+    const truncatedNote = truncated ? ' · very large model: only the first 20000 placements can be picked' : '';
+    setStatus(`Revision ${session.revision} · ${Core.describeParts(session.parts)}${missingNote}${truncatedNote}`, false);
     return true;
   }
 
@@ -305,8 +312,10 @@
     buttons.undo.disabled = !(idle && s && s.undo_depth > 0);
     buttons.redo.disabled = !(idle && s && s.redo_depth > 0);
     buttons.del.disabled = !(idle && state.selected.length);
+    buttons.widen.disabled = !(idle && s && state.shown && state.selected.some(k => (state.shown.placements.find(p => p.key === k) || {}).parentKey));
     buttons.publish.disabled = !(idle && s);
     buttons.home.disabled = !state.shown;
+    $('open-other').disabled = !(idle && s);
     toolButtons.forEach(b => {
       b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool));
       b.disabled = !canEdit();
@@ -327,7 +336,7 @@
     scene.overlay = overlay;
     shown.selectionBoxes = null;
     shown.gizmo = null;
-    const chosen = shown.placements.filter(p => state.selected.includes(p.id));
+    const chosen = shown.placements.filter(p => state.selected.includes(p.key));
     if (chosen.length) {
       const boxes = new THREE.Group();
       for (const p of chosen) {
@@ -341,7 +350,7 @@
                          0, 0, 0, 1);
         const size = [0, 1, 2].map(k => Math.max(box.max[k] - box.min[k], 1));
         const lines = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(size[0], size[1], size[2])),
-                                             new THREE.LineBasicMaterial({ color: state.editable.has(p.id) ? 0xff8800 : 0x888888, depthTest: false }));
+                                             new THREE.LineBasicMaterial({ color: p.editable ? 0xff8800 : 0x888888, depthTest: false }));
         lines.position.set((box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2, (box.min[2] + box.max[2]) / 2);
         lines.renderOrder = 998;
         group.add(lines);
@@ -350,7 +359,7 @@
       boxes.matrixAutoUpdate = false;
       overlay.add(boxes);
       shown.selectionBoxes = boxes;
-      const pivot = Core.centroid(shown.placements, state.selected.filter(id => state.editable.has(id)));
+      const pivot = Core.centroid(shown.placements, state.selected.filter(key => state.editable.has(key)));
       if (pivot && state.tool !== 'select' && canEdit()) {
         const gizmo = makeGizmo(state.tool);
         gizmo.position.fromArray(Core.ldrawToScene(pivot, shown.offset.toArray()));
@@ -371,10 +380,10 @@
   function postState() {
     const s = state.session;
     if (window.parent === window || !s) return;
-    const chosen = state.shown ? state.shown.placements.filter(p => state.selected.includes(p.id)) : [];
+    const chosen = state.shown ? state.shown.placements.filter(p => state.selected.includes(p.key)) : [];
     window.parent.postMessage({
       source: 'ldraw-editor', type: 'state', revision: s.revision, plan: s.plan, parts: s.parts,
-      selection: chosen.map(p => ({ id: p.id, position: p.position })),
+      selection: chosen.map(p => ({ id: p.entryId, position: p.localPosition, section: p.section, leaf: p.leaf, repeated: p.repeated })),
     }, location.origin);
   }
 
@@ -502,27 +511,48 @@
     const g = state.gesture, shown = state.shown;
     state.gesture = null;
     if (!g || !shown) return;
-    if (g.drag) {
-      shown.scene.orbitControls.enabled = true;
+    if (g.drag) shown.scene.orbitControls.enabled = true;
+    // A click on a gizmo handle that did not move anything is a click on the part behind it (the gizmo sits on the
+    // selection, so otherwise a second click there could never step to the next overlapping part).
+    const plainClick = g.drag && !cancelled && !g.drag.amount && Math.hypot(e.clientX - g.x, e.clientY - g.y) <= CLICK_PIXELS;
+    if (g.drag && !plainClick) {
       const d = g.drag;
-      const ids = state.selected.filter(id => state.editable.has(id));
-      const edits = cancelled || !d.amount ? [] :
-        d.kind === 'move'
-          ? Core.moveEdits(shown.placements, ids, Core.AXES[d.axis].map(v => v * d.amount))
-          : Core.rotateEdits(shown.placements, ids, d.axis, d.amount);
+      const ids = state.selected.filter(key => state.editable.has(key));
+      let edits = [];
+      try {
+        edits = cancelled || !d.amount ? [] :
+          d.kind === 'move'
+            ? Core.moveEdits(shown.placements, ids, Core.AXES[d.axis].map(v => v * d.amount))
+            : Core.rotateEdits(shown.placements, ids, d.axis, d.amount);
+      } catch (error) {
+        drawOverlay();
+        setStatus(`${error.message} (the model is unchanged)`, true);
+        return;
+      }
       if (!edits.length) { drawOverlay(); setRestingStatus(); return; }
       await submit(() => call('/edits', Core.editsBody(edits, state.session.revision)));    // one drag, one request
       return;
     }
     // Not a gizmo drag: a click (little movement) selects; a longer drag was an orbit.
     if (cancelled || Math.hypot(e.clientX - g.x, e.clientY - g.y) > CLICK_PIXELS) return;
-    const hit = Core.pick(pointerRay(e).ldraw, shown.placements, shown.boxes);
-    state.selected = Core.nextSelection(state.selected, hit ? hit.id : null, g.shift || e.shiftKey);
+    // Overlapping boxes: a second click on the same spot steps to the next part under the pointer.
+    const hits = Core.pickAll(pointerRay(e).ldraw, shown.leaves, shown.boxes);
+    const last = state.lastClick;
+    const again = last && last.session === shown && Math.hypot(e.clientX - last.x, e.clientY - last.y) <= CLICK_PIXELS;
+    const hit = Core.nextHit(hits, again && !(g.shift || e.shiftKey) ? last.key : undefined);
+    state.lastClick = hit ? { x: e.clientX, y: e.clientY, key: hit.key, session: shown } : null;
+    state.selected = Core.nextSelection(state.selected, hit ? hit.key : null, g.shift || e.shiftKey);
     drawOverlay();
     refreshControls();
-    if (hit && !state.editable.has(hit.id)) {
-      setStatus(`${hit.id} comes from a repeated placement in the plan and cannot be edited here.`, true);
-    } else setRestingStatus();
+    if (hit && !hit.editable) {
+      setStatus(`${hit.id} is not an entry of the plan, so it cannot be edited here.`, true);
+    } else {
+      setRestingStatus();
+      if (hits.length > 1) {
+        const text = $('status').textContent;
+        setStatus(`${text} · ${hits.indexOf(hit) + 1} of ${hits.length} under the pointer, click again for the next`, false);
+      }
+    }
   }
   stage.addEventListener('pointerup', e => endGesture(e, false));
   stage.addEventListener('pointercancel', e => endGesture(e, true));
@@ -531,7 +561,8 @@
     const s = state.session;
     if (!s) return;
     const picked = state.selected.length ? ` · ${state.selected.length} selected` : '';
-    setStatus(`Revision ${s.revision} · ${Core.describeParts(s.parts)}${picked}`, false);
+    const note = state.shown ? Core.describeSelection(state.shown.placements, state.selected) : '';
+    setStatus(`Revision ${s.revision} · ${Core.describeParts(s.parts)}${picked}${note ? ` · ${note}` : ''}`, false);
   }
 
   // ---- sending edits --------------------------------------------------------------
@@ -562,7 +593,8 @@
   const redo = () => state.session && state.session.redo_depth > 0 &&
     submit(() => call('/redo', { base_revision: state.session.revision }));
   const remove = () => {
-    const edits = Core.deleteEdits(state.shown.placements, state.selected.filter(id => state.editable.has(id)));
+    const keys = Core.deleteTargets(state.shown.placements, state.selected.filter(key => state.editable.has(key)), state.session.plan);
+    const edits = Core.deleteEdits(state.shown.placements, keys);
     if (!edits.length) return;
     state.selected = [];
     return submit(() => call('/edits', Core.editsBody(edits, state.session.revision)));
@@ -571,6 +603,15 @@
   buttons.undo.addEventListener('click', undo);
   buttons.redo.addEventListener('click', redo);
   buttons.del.addEventListener('click', remove);
+  // One level up: the part becomes the sub-model it sits in (then gizmo drags move the whole group).
+  const widen = () => {
+    if (!state.shown || buttons.widen.disabled) return;
+    state.selected = Core.widenSelection(state.shown.placements, state.selected);
+    drawOverlay();
+    refreshControls();
+    setRestingStatus();
+  };
+  buttons.widen.addEventListener('click', widen);
   buttons.home.addEventListener('click', () => state.shown && resetView(state.shown));
   buttons.publish.addEventListener('click', async () => {
     state.busy = true;
@@ -596,6 +637,14 @@
     if (mod && key === 'z') { e.preventDefault(); (e.shiftKey ? redo : undo)(); }
     else if (mod && key === 'y') { e.preventDefault(); redo(); }
     else if (!mod && (e.key === 'Delete' || e.key === 'Backspace') && state.selected.length) { e.preventDefault(); remove(); }
+    else if (!mod && key === 'g' && state.selected.length) widen();
+    else if (!mod && /^(Arrow(Left|Right|Up|Down)|Page(Up|Down))$/.test(e.key) && state.selected.length) {
+      e.preventDefault();                        // nudge: one stud / plate per press, one undo step each
+      let edits = [];
+      try { edits = Core.nudgeEdits(state.shown.placements, state.selected.filter(k => state.editable.has(k)), e.key, e.shiftKey); }
+      catch (error) { setStatus(`${error.message} (the model is unchanged)`, true); return; }
+      if (edits.length) submit(() => call('/edits', Core.editsBody(edits, state.session.revision)));
+    }
     else if (e.key === 'Escape' && state.selected.length) { state.selected = []; drawOverlay(); refreshControls(); setRestingStatus(); }
   });
 
@@ -628,12 +677,58 @@
 
   // ---- start ------------------------------------------------------------------------
 
+  // The start panel: the plans the chat's folder holds (what the agent built) to open, or a new one-brick model.
+  // With a model already open ("Open plan...") the choice replaces it; the old plan is kept aside by the server.
+  async function showStart(replace) {
+    const list = $('plans');
+    list.textContent = '';
+    $('start').hidden = false;
+    $('start-cancel').hidden = !replace;
+    $('start-button').hidden = Boolean(replace);
+    $('start-text').textContent = replace
+      ? 'Open another plan from this chat. The model you are editing is put aside in the chat folder, not deleted.'
+      : 'This chat has no model to edit yet.';
+    let plans = [];
+    try { plans = (await call('/plans')).plans; } catch (e) { /* the list is a convenience: starting a new model still works */ }
+    if (!replace && plans.length) $('start-text').textContent = 'Which model do you want to edit?';
+    else if (replace && !plans.length) $('start-text').textContent = 'This chat has no other plan files to open.';
+    for (const plan of plans) {
+      const li = document.createElement('li'), button = document.createElement('button');
+      const small = document.createElement('small');
+      button.textContent = plan.path;
+      small.textContent = `${plan.entries} placements \u00b7 ${plan.sections} section${plan.sections === 1 ? '' : 's'} \u00b7 ${plan.title}`;
+      button.appendChild(small);
+      button.addEventListener('click', () => openPlan(plan, replace));
+      li.appendChild(button);
+      list.appendChild(li);
+    }
+  }
+
+  async function openPlan(plan, replace) {
+    $('plans').querySelectorAll('button').forEach(b => { b.disabled = true; });
+    setStatus(`Opening ${plan.path}...`, false);
+    try {
+      const name = plan.title.split(/ [-\u2013\u2014] /)[0].trim().slice(0, 60) || plan.path;
+      const session = await call('', { source: plan.path, name, replace: Boolean(replace) });
+      $('start').hidden = true;
+      state.selected = [];
+      await show(session, true);
+      $('open-other').disabled = false;
+    } catch (e) {
+      setStatus(`Could not open ${plan.path}: ${e.message}`, true);
+      $('plans').querySelectorAll('button').forEach(b => { b.disabled = false; });
+    }
+  }
+  $('open-other').addEventListener('click', () => showStart(true));
+  $('start-cancel').addEventListener('click', () => { $('start').hidden = true; setRestingStatus(); });
+
   async function begin() {
     try {
       await show(await call(''));
+      $('open-other').disabled = false;
     } catch (e) {
       if (e.status === 404 && /no editor plan/i.test(e.message)) {
-        $('start').hidden = false;
+        await showStart(false);
         setStatus('No editor plan for this chat yet.', false);
       } else setStatus(`Could not open the editor: ${e.message}`, true);
     }
@@ -644,6 +739,7 @@
       const session = await call('', {});
       $('start').hidden = true;
       await show(session);
+      $('open-other').disabled = false;
     } catch (e) { setStatus(`Could not start a model: ${e.message}`, true); }
     finally { $('start-button').disabled = false; }
   });

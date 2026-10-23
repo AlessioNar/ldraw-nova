@@ -156,3 +156,55 @@ test('palette beside the editor: search, add, undo, and live refresh', { timeout
   assert.match(await palette.getByRole('alert').textContent(), /changed elsewhere/i);
   if (process.env.EDITOR_SHOTS) await shot('4-conflict');
 });
+
+test('palette: a part picked inside a sub-model gets its new neighbour inside that sub-model, snapped onto it', { timeout: 600_000 }, async t => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const id = (await api('/api/chats', {})).payload.id;
+  t.after(() => api(`/api/chats/${id}`, undefined, 'DELETE'));
+  const local = join(mkdtempSync(join(tmpdir(), 'sub-')), 'ship.plan.json');
+  writeFileSync(local, JSON.stringify({ version: 1, author: 'palette test', sections: [
+    { name: 'ship.ldr', description: 'Ship', steps: [[{ id: 'wing', ref: 'wing.ldr', colour: 15, at: [0, 0, 0] }]] },
+    { name: 'wing.ldr', description: 'wing', steps: [[{ id: 'w1', ref: '3020.dat', colour: 14, at: [0, 0, 0] }]] }] }));
+  execFileSync('docker', ['exec', container, 'mkdir', '-p', `/data/output/${id}`]);
+  execFileSync('docker', ['cp', local, `${container}:/data/output/${id}/ship.plan.json`]);
+  assert.equal((await api(`/api/chats/${id}/editor`, { source: 'ship.plan.json', name: 'Ship' })).status, 200);
+
+  const page = await browser.newPage({ viewport: { width: 1400, height: 850 } });
+  t.after(() => page.close());
+  await page.goto(`${base}/chat/${id}/edit`);
+  const ready = () => page.waitForFunction(() => /^Revision/.test(document.querySelector('iframe.editor-frame')?.contentDocument?.getElementById('status')?.textContent ?? ''), null, { timeout: SLOW });
+  await ready();
+  const frame = page.frames().find(f => f.url().includes('editor.html'));
+  const at = await frame.evaluate(() => {
+    const node = editorState.shown.placements.find(p => p.key === 'wing/w1');
+    const box = editorState.shown.boxes[node.ref], m = node.matrix, p = node.position;
+    const c = [0, 1, 2].map(k => (box.min[k] + box.max[k]) / 2);
+    const w = [0, 1, 2].map(r => m[3 * r] * c[0] + m[3 * r + 1] * c[1] + m[3 * r + 2] * c[2] + p[r]);
+    const s = EditorCore.ldrawToScene(w, editorState.shown.offset.toArray());
+    const rect = scene.renderer.domElement.getBoundingClientRect(), f = window.frameElement.getBoundingClientRect();
+    const q = new THREE.Vector3(...s).project(scene.camera);
+    return [f.left + rect.left + (q.x + 1) / 2 * rect.width, f.top + rect.top + (1 - q.y) / 2 * rect.height];
+  });
+  // A click during the editor's own poll request is ignored by design, so click until the part is selected.
+  for (let i = 0; i < 10 && !(await frame.evaluate(() => editorState.selected[0] === 'wing/w1')); i++) {
+    await page.mouse.click(...at);
+    await page.waitForTimeout(300);
+  }
+  assert.equal(await frame.evaluate(() => editorState.selected[0]), 'wing/w1');
+
+  const palette = page.locator('aside.editor-palette');
+  await palette.getByPlaceholder('Part number or name').fill('3005');
+  const row = palette.locator('li', { has: page.locator('strong', { hasText: /^3005$/ }) });
+  await row.waitFor({ timeout: 20_000 });
+  await row.getByRole('button', { name: 'Add' }).click();
+  await page.waitForFunction(() => /^Revision [2-9]/.test(document.querySelector('iframe.editor-frame').contentDocument.getElementById('status').textContent), null, { timeout: SLOW });
+  await row.getByRole('button', { name: 'Add' }).and(page.locator(':not([disabled])')).waitFor({ timeout: SLOW });
+  const view = (await api(`/api/chats/${id}/editor`)).payload;
+  const [ship, wing] = view.plan.sections.map(s => s.steps.flat());
+  assert.equal(ship.length, 1, 'nothing was added to the root');
+  assert.deepEqual(wing.map(e => e.ref), ['3020.dat', '3005.dat'], 'the new brick is in the sub-model');
+  assert.equal(wing[1].at[1], -24, 'snapped on top of the plate (a brick is 24 LDU tall), not underneath it at +8');
+  assert.ok(!('snap' in wing[1]), 'the snap is baked into a position');
+});

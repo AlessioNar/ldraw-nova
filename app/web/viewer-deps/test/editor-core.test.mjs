@@ -134,3 +134,136 @@ test("fitDistance frames a sphere to the requested fraction and snapStep reports
   assert.equal(C.snapStep("x"), 20);
   assert.equal(C.snapStep("y"), 8);
 });
+
+// ---- sub-models and repeated placements ------------------------------------------------
+// The root places the wing sub-model twice (the right one turned 180 degrees about y), a repeated run, and one brick.
+const SHIP_MPD = `0 FILE ship.ldr
+0 // wl: left wing
+1 15 -80 0 0 1 0 0 0 1 0 0 0 1 wing.ldr
+0 // wr: right wing
+1 15 80 0 0 -1 0 0 0 1 0 0 0 -1 wing.ldr
+0 // row-0: run
+1 4 0 -24 100 1 0 0 0 1 0 0 0 1 3005.dat
+0 // row-1: run
+1 4 20 -24 100 1 0 0 0 1 0 0 0 1 3005.dat
+0 // row-2: run
+1 4 40 -24 100 1 0 0 0 1 0 0 0 1 3005.dat
+0 // top: brick
+1 1 0 -24 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 FILE wing.ldr
+0 // w1: panel
+1 1 10 0 20 1 0 0 0 1 0 0 0 1 3020.dat
+0 // w2: tip
+1 1 30 0 60 1 0 0 0 1 0 0 0 1 3020.dat
+`;
+const SHIP_PLAN = { sections: [
+  { name: "ship.ldr", steps: [[{ id: "wl", ref: "wing.ldr", at: [-80, 0, 0] }, { id: "wr", ref: "wing.ldr", at: [80, 0, 0], yaw: 180 }],
+    [{ id: "row", ref: "3005.dat", at: [0, -24, 100], repeat: { count: 3, step: [20, 0, 0] } }, { id: "top", ref: "3001.dat", at: [0, -24, 0] }]] },
+  { name: "wing.ldr", steps: [[{ id: "w1", ref: "3020.dat", at: [10, 0, 20] }, { id: "w2", ref: "3020.dat", at: [30, 0, 60] }]] },
+] };
+
+test("flatten walks into sub-models and puts every part in the root's frame", () => {
+  const { nodes, truncated } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  assert.equal(truncated, false);
+  assert.deepEqual(nodes.map(n => n.key), ["wl", "wl/w1", "wl/w2", "wr", "wr/w1", "wr/w2", "row-0", "row-1", "row-2", "top"]);
+  const byKey = Object.fromEntries(nodes.map(n => [n.key, n]));
+  assert.deepEqual(byKey["wl/w1"].position, [-70, 0, 20]);
+  assert.deepEqual(byKey["wr/w1"].position, [70, 0, -20]);          // the right wing is turned half a circle: x and z flip
+  assert.deepEqual(byKey["wl/w1"].localPosition, [10, 0, 20]);
+  assert.equal(byKey["wr/w1"].section, "wing.ldr");
+  assert.equal(byKey["wl"].leaf, false);
+  assert.equal(byKey["wl/w1"].leaf, true);
+  assert.equal(byKey["wl/w1"].copies, 2);
+  assert.equal(byKey["top"].copies, 1);
+  assert.equal(byKey["top"].editable, true);
+  assert.equal(byKey["row-1"].entryId, "row");
+  assert.equal(byKey["row-1"].repeated, true);
+  assert.deepEqual(byKey["row-1"].templateAt, [0, -24, 100]);
+});
+
+test("a part inside a turned sub-model moves by the drag as seen from inside it", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  // Dragging the right wing's panel +40 in world x is -40 in the wing's own x.
+  assert.deepEqual(C.moveEdits(nodes, ["wr/w1"], [40, 0, 0]), [{ op: "move", id: "w1", section: "wing.ldr", position: [-30, 0, 20] }]);
+  assert.deepEqual(C.moveEdits(nodes, ["wl/w1"], [40, 0, 0]), [{ op: "move", id: "w1", section: "wing.ldr", position: [50, 0, 20] }]);
+  // Both copies of the same part are one edit.
+  assert.equal(C.moveEdits(nodes, ["wl/w1", "wr/w1"], [40, 0, 0]).length, 1);
+  // A sub-model instance moves in the root's own frame.
+  assert.deepEqual(C.moveEdits(nodes, ["wr"], [0, 0, 20]), [{ op: "move", id: "wr", section: "ship.ldr", position: [80, 0, 20] }]);
+});
+
+test("a repeated run moves by its template and is deleted whole, but cannot be rotated", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  assert.deepEqual(C.moveEdits(nodes, ["row-2"], [0, -8, 0]), [{ op: "move", id: "row", section: "ship.ldr", position: [0, -32, 100] }]);
+  assert.deepEqual(C.deleteEdits(nodes, ["row-0", "row-2"]), [{ op: "delete", id: "row", section: "ship.ldr" }]);
+  assert.throws(() => C.rotateEdits(nodes, ["row-1"], "y", 90), /repeated placement .* cannot be rotated/);
+});
+
+test("rotating a part inside a turned sub-model uses the sub-model's own axis", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  // The right wing is turned about y, so world y is its own y; world x is its own -x.
+  assert.deepEqual(C.rotateEdits(nodes, ["wr/w1"], "y", 90), [{ op: "rotate", id: "w1", section: "wing.ldr", axis: "y", degrees: 90 }]);
+  assert.deepEqual(C.rotateEdits(nodes, ["wr/w1"], "x", 90), [{ op: "rotate", id: "w1", section: "wing.ldr", axis: "x", degrees: -90 }]);
+  const tilted = SHIP_MPD.replace("1 15 80 0 0 -1 0 0 0 1 0 0 0 -1 wing.ldr", "1 15 80 0 0 1 0 0 0 0.7071067811865476 -0.7071067811865476 0 0.7071067811865476 0.7071067811865476 wing.ldr");
+  const tiltedNodes = C.flatten(tilted, SHIP_PLAN).nodes;
+  assert.throws(() => C.rotateEdits(tiltedNodes, ["wr/w1"], "y", 90), /tilted sub-model/);
+  assert.equal(C.rotateEdits(tiltedNodes, ["wr"], "y", 90).length, 1);        // the instance itself can still turn
+});
+
+test("widenSelection goes up one level and describeSelection says what an edit touches", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  assert.deepEqual(C.widenSelection(nodes, ["wl/w1", "wl/w2", "top"]), ["wl", "top"]);
+  assert.deepEqual(C.widenSelection(nodes, ["wl"]), ["wl"]);
+  assert.match(C.describeSelection(nodes, ["wl/w1"]), /3020\.dat in sub-model wing\.ldr.*drawn 2 times/);
+  assert.match(C.describeSelection(nodes, ["wl"]), /sub-model wing\.ldr \(the whole group\)/);
+  assert.match(C.describeSelection(nodes, ["row-1"]), /one of 3 from a repeated placement/);
+  assert.equal(C.describeSelection(nodes, ["top"]), "");
+});
+
+test("framingFill: a one-brick model keeps its third of the view, a big one fills more, capped", () => {
+  assert.equal(C.framingFill(19), 0.33);
+  assert.ok(C.framingFill(150) > 0.5);
+  assert.equal(C.framingFill(100000), 0.6);
+});
+
+test("pickAll lists every part under the ray, nearest first, and nextHit cycles through them", () => {
+  const big = { key: "wing", id: "wing", ref: "big.dat", position: [0, 0, 0], matrix: IDENTITY };
+  const small = { key: "canopy", id: "canopy", ref: "small.dat", position: [0, -10, 0], matrix: IDENTITY };
+  const boxes = { "big.dat": { min: [-50, -4, -50], max: [50, 4, 50] }, "small.dat": { min: [-10, -10, -10], max: [10, 10, 10] } };
+  const ray = { origin: [0, -100, 0], direction: [0, 1, 0] };
+  const hits = C.pickAll(ray, [big, small], boxes);
+  assert.deepEqual(hits.map(h => h.key), ["canopy", "wing"]);
+  assert.equal(C.pick(ray, [big, small], boxes).key, "canopy");
+  assert.equal(C.nextHit(hits, undefined).key, "canopy");
+  assert.equal(C.nextHit(hits, "canopy").key, "wing");
+  assert.equal(C.nextHit(hits, "wing").key, "canopy");
+  assert.equal(C.nextHit([], "wing"), null);
+  assert.deepEqual(C.pickAll({ origin: [200, -100, 0], direction: [0, 1, 0] }, [big, small], boxes), []);
+});
+
+test("deleteTargets: the only part of a sub-model goes with its instance", () => {
+  const plan = { sections: [
+    { name: "ship.ldr", steps: [[{ id: "wl" }, { id: "solo" }, { id: "top" }]] },
+    { name: "wing.ldr", steps: [[{ id: "w1" }, { id: "w2" }]] },
+    { name: "pod.ldr", steps: [[{ id: "p1" }]] },
+    { name: "outer.ldr", steps: [[{ id: "inner" }]] },
+  ] };
+  const node = (key, section, parentKey) => ({ key, id: key.split("/").pop(), section, parentKey: parentKey || "" });
+  const nodes = [node("wl", "ship.ldr"), node("wl/w1", "wing.ldr", "wl"), node("solo", "ship.ldr"), node("solo/p1", "pod.ldr", "solo"),
+                 node("top", "ship.ldr"), node("outer", "ship.ldr"), node("outer/inner", "outer.ldr", "outer"), node("outer/inner/p1", "pod.ldr", "outer/inner")];
+  assert.deepEqual(C.deleteTargets(nodes, ["wl/w1", "top"], plan), ["wl/w1", "top"]);        // wing.ldr has another part
+  assert.deepEqual(C.deleteTargets(nodes, ["solo/p1"], plan), ["solo"]);
+  assert.deepEqual(C.deleteTargets(nodes, ["outer/inner/p1"], plan), ["outer"]);                // pod's only part, then outer's only part
+  assert.deepEqual(C.deleteTargets(nodes, ["solo/p1", "solo"], plan), ["solo"]);
+});
+
+test("nudgeEdits: arrows move a stud, Page Up/Down a plate, Shift+arrow turns a quarter", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  assert.deepEqual(C.nudgeEdits(nodes, ["top"], "ArrowRight", false), [{ op: "move", id: "top", section: "ship.ldr", position: [20, -24, 0] }]);
+  assert.deepEqual(C.nudgeEdits(nodes, ["wr/w1"], "ArrowRight", false)[0].position, [-10, 0, 20]);       // east in the world is west inside the turned wing
+  assert.deepEqual(C.nudgeEdits(nodes, ["top"], "PageUp", false)[0].position, [0, -32, 0]);
+  assert.deepEqual(C.nudgeEdits(nodes, ["top"], "ArrowUp", false)[0].position, [0, -24, -20]);
+  assert.deepEqual(C.nudgeEdits(nodes, ["top"], "ArrowRight", true), [{ op: "rotate", id: "top", section: "ship.ldr", axis: "y", degrees: 90 }]);
+  assert.deepEqual(C.nudgeEdits(nodes, ["top"], "ArrowUp", true), []);
+  assert.deepEqual(C.nudgeEdits(nodes, ["top"], "a", false), []);
+});

@@ -252,6 +252,9 @@
               "minimum": 0,
               "maximum": 99
             },
+            "nearest": {
+              "type": "boolean"
+            },
             "moving_feature": {
               "$ref": "#/$defs/text"
             },
