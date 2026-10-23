@@ -212,3 +212,37 @@
   .chat-settings .setting-row > label { padding-top: 0; flex-direction: row; gap: 8px; align-items: baseline; }
   .chat-settings .setting-row select, .chat-settings .setting-row input[type="number"] { min-height: 40px; }
 }
+
+/* --- build header (BuildHeader.tsx): strip under the chat title, outside the scrolling transcript --- */
+.build-header { padding: 8px 32px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 13px; font-variant-numeric: tabular-nums; }
+.bh-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; }
+.bh-line > *, .bh-cost span { white-space: nowrap; }
+.bh-line.top { flex-wrap: nowrap; }
+.bh-line + .bh-line { margin-top: 6px; }
+.bh-step, .bh-state { font-weight: 600; white-space: nowrap; }
+.bh-state { color: var(--ok); }
+.bh-phase { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.build-header time { white-space: nowrap; color: var(--muted); }
+.bh-cost { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.bh-cost strong { font-size: 18px; color: var(--fg); line-height: 1.2; }
+.bh-cost.near strong { color: var(--warn); }
+.bh-cost.over strong { color: var(--danger); }
+.bh-cost:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; }
+.bh-bar { display: block; width: 110px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.bh-bar b { display: block; height: 100%; background: var(--ok); transition: width 0.3s; }
+.bh-cost.near .bh-bar b { background: var(--warn); }
+.bh-cost.over .bh-bar b { background: var(--danger); }
+.bh-workers { flex: 1; color: var(--muted); white-space: nowrap; }
+.bh-stop, .bh-jump { margin-left: auto; }
+.bh-workers + .bh-stop { margin-left: 0; }
+.bh-panel { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); }
+.bh-panel p { margin: 0 0 4px; }
+.bh-panel ul { margin: 4px 0 0; padding-left: 18px; }
+.bh-panel .usage { color: var(--muted); }
+@media (max-width: 720px) {
+  .build-header { padding: 8px 16px; }
+  .bh-line { gap: 4px 10px; }
+  .bh-bar { width: 40px; }
+  .bh-cost { gap: 6px; }
+  .bh-workers { flex: 0 1 auto; font-size: 12px; }
+}

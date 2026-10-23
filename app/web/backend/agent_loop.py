@@ -81,7 +81,6 @@ async def run_steps(*, entry: dict, params: dict, sink, tools: list[dict] | None
             return "stopped"
         messages = build_messages(stored)
         kwargs = {"tools": tools} if tools is not None else {}
-        emit("progress", {"summary": "Agent is reviewing the request and choosing the next step."})
         stream = await litellm.acompletion(**params, messages=messages, stream=True, num_retries=2, **kwargs)
         inference.preserve_openrouter_reasoning_chunks(stream, params["model"])
 

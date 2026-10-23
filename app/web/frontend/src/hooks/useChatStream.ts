@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Approval, LiveWorker } from "../api";
 
 export type RunningTool = { id: string; name: string; arguments: string; output?: string; started_at?: number };
-export type Activity = { started_at: number; last_event_at: number; phase: string };
+export type Activity = { started_at: number; last_event_at: number; progress: string };
 
 /** Live state of a chat's running turn, fed by its server-sent event stream.
  * The DB stays the source of truth: every "saved" event triggers `reload`; the stream only carries in-flight text/tools. */
@@ -53,7 +53,7 @@ export function useChatStream(id: string, reload: () => Promise<unknown>, refres
     es.addEventListener("activity", e => setActivity(data(e)));
     es.addEventListener("progress", e => setActivity(a => ({
       started_at: a?.started_at ?? Date.now() / 1000,
-      last_event_at: Date.now() / 1000, phase: data(e).summary,
+      last_event_at: Date.now() / 1000, progress: data(e).summary,
     })));
     es.addEventListener("tool_output", e => {
       const d = data(e);

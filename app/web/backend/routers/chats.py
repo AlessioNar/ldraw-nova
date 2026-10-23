@@ -48,6 +48,7 @@ def chats_list():
     for chat in chats:
         chat["running"] = run_state.is_running(chat["id"])
         chat["models"] = list(chat_models(store, chat["id"]).values())
+        chat.update(usage.turn_stats(store.messages(chat["id"])))
     return {"chats": chats}
 
 
@@ -78,7 +79,7 @@ async def chats_get(chat_id: str):
     gallery.ensure_artifacts(store.resolve(chat_id, ref["model"]) for ref in store.models(chat_id)
                              if store.resolve(chat_id, ref["model"]).is_file())
     return {"chat": {**chat, "running": run_state.is_running(chat_id)}, "messages": messages, "models": models,
-            "usage": usage.usage_totals(messages)}
+            "usage": {**usage.usage_totals(messages), **usage.turn_stats(messages)}}
 
 
 @router.patch("/api/chats/{chat_id}")
