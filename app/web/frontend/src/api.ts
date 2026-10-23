@@ -172,6 +172,8 @@ export type ViewerMode = "viewer" | "player";
 export const viewerUrl = (modelUrl: string, parts?: number | null, mode: ViewerMode = "viewer") =>
   `/viewer/${mode}.html?model=${encodeURIComponent(modelUrl)}` + (parts != null ? `&parts=${parts}` : "");
 
+export const editorUrl = (chatId: string) => `/viewer/editor.html?chat=${encodeURIComponent(chatId)}`;
+
 export const partsLabel = (parts: number) => `${parts.toLocaleString()} part${parts === 1 ? "" : "s"}`;
 
 export const isPending = (m: { status: SnapshotStatus; bom_status: SnapshotStatus }) =>

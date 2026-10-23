@@ -1,0 +1,11 @@
+/* editor.html (on top of viewer-common.css and viewer.css) */
+#stage { outline: none; }
+#stage .pane { position: absolute; inset: 0; }
+#stage .pane canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#start { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; z-index: 3;
+         background: var(--bg); }
+#start[hidden] { display: none; }
+#desktop-note { position: fixed; left: 12px; right: 12px; top: 56px; z-index: 2; padding: 6px 10px; border-radius: 6px;
+                background: var(--bar); border: 1px solid var(--btn-border); }
+#desktop-note[hidden] { display: none; }
+body.readonly .editing { display: none; }

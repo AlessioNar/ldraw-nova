@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  LDraw 3D editor: the viewer's scene (ldbi, three.js r139) with picking and a move/rotate gizmo.
+  Usage: /viewer/editor.html?chat=<chat id>
+  The plan lives on the server (task 02's /api/chats/<id>/editor endpoints); this page sends an edit
+  when a drag ends and shows the model the backend rebuilt. viewer.html stays read-only.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LDraw Editor</title>
+<link rel="stylesheet" href="viewer-common.css">
+<link rel="stylesheet" href="viewer.css">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<div id="bar">
+  <span id="title"><strong id="file">LDraw Editor</strong><span id="parts"></span></span>
+  <span class="segmented editing" role="group" aria-label="Tool">
+    <button data-tool="select" aria-pressed="false" title="Click a part to select it, Shift-click to add more">Select</button>
+    <button data-tool="move" aria-pressed="true" title="Drag an arrow to move the selection (snaps to studs and plates, hold Alt for free)">Move</button>
+    <button data-tool="rotate" aria-pressed="false" title="Drag a ring to turn the selection (15 degree steps, hold Alt for free)">Rotate</button>
+  </span>
+  <span class="editing">
+    <button id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
+    <button id="redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
+    <button id="delete" title="Delete the selected parts (Delete)" disabled>Delete</button>
+    <button id="publish" title="Publish the model as it is now" disabled>Publish</button>
+  </span>
+  <button id="home" class="icon" title="Reset view" aria-label="Reset view" disabled>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9V5a2 2 0 0 1 2-2h4v2H5v4zm12-6h4a2 2 0 0 1 2 2v4h-2V5h-4zM3 15h2v4h4v2H5a2 2 0 0 1-2-2zm16 0h2v4a2 2 0 0 1-2 2h-4v-2h4zM12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"/></svg>
+  </button>
+</div>
+<div id="stage" tabindex="0" aria-label="3D model editor"></div>
+<div id="start" hidden>
+  <p>This chat has no model to edit yet.</p>
+  <button id="start-button">Start a new model</button>
+</div>
+<div id="desktop-note" hidden>Editing needs a desktop browser with a mouse. You can still look around.</div>
+<div id="status" role="status">Loading…</div>
+
+<script src="vendor/ldbi/js/three.min.js"></script>
+<script src="vendor/js/WebGL.js"></script>
+<script src="vendor/ldbi/js/OrbitControls.js"></script>
+<script src="vendor/ldbi/js/LDConfig.js"></script>
+<script src="vendor/ldbi/js/CopyShader.js"></script>
+<script src="vendor/ldbi/js/Pass.js"></script>
+<script src="vendor/ldbi/js/OutlinePass.js"></script>
+<script src="vendor/ldbi/js/ShaderPass.js"></script>
+<script src="vendor/ldbi/js/RenderPass.js"></script>
+<script src="vendor/ldbi/js/MaskPass.js"></script>
+<script src="vendor/ldbi/js/EffectComposer.js"></script>
+<script src="vendor/js/ldraworgscene.js"></script>
+<script src="vendor/ldbi/js/ClientStorage.js"></script>
+<script src="vendor/ldbi/js/LDROptions.js"></script>
+<script src="vendor/ldbi/js/LDRShaders.js"></script>
+<script src="vendor/ldbi/js/LDRColorMaterials.js"></script>
+<script src="vendor/ldbi/js/LDRGeometries.js"></script>
+<script src="vendor/ldbi/js/LDRBFCGeometries.js"></script>
+<script src="vendor/ldbi/js/LDRMeasurer.js"></script>
+<script src="vendor/ldbi/js/LDRLoader.js"></script>
+<script src="vendor/ldbi/js/LDRGenerator.js"></script>
+<script src="vendor/ldbi/js/LDRStuds.js"></script>
+<script src="viewer-common.js"></script>
+<script src="editor-core.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

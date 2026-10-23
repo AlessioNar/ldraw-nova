@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { api, isPending, type ChatDetail, type TurnOptions, type DocumentUpload } from "../api";
 import Composer from "../components/Composer";
 import MessageList from "../components/MessageList";
@@ -96,6 +96,7 @@ export default function ChatPage() {
     <div className="chat-page">
       <header className="chat-head">
         <h2 className="ellipsis">{detail.chat.title}</h2>
+        <Link className="chat-edit-link" to={`/chat/${id}/edit`} title="Place and move parts in 3D (desktop)">Edit in 3D</Link>
         {!!detail.usage?.steps && <UsageBadge usage={detail.usage} steps={detail.usage.steps} budget={detail.chat.options?.budget_eur} />}
       </header>
       <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} now={now} error={error}
