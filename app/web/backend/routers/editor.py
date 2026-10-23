@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import uuid
 from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -118,15 +119,22 @@ def _outcome(report: dict, exit_code: int) -> dict:
 
 
 async def _run(store, chat_id: str, arguments: list[str]) -> dict:
-    result = await sandbox.run(["./ldraw-agent", "editor", *arguments],
-                               cwd=toolkit.workspace(store, chat_id), timeout=TIMEOUT,
-                               env_extra=toolkit.environment())
+    # The report carries the whole plan and MPD, which the sandbox's 20,000-character stdout cap
+    # truncates for models of a few hundred parts, so read it from a file the tool writes.
+    cwd = toolkit.workspace(store, chat_id)
+    report_path = store.work_dir(chat_id) / f".editor-report-{uuid.uuid4().hex}.json"
+    result = await sandbox.run(["./ldraw-agent", "editor", "--report", str(report_path), *arguments],
+                               cwd=cwd, timeout=TIMEOUT, env_extra=toolkit.environment())
     if result.timed_out or result.exit_code is None:
+        report_path.unlink(missing_ok=True)
         raise HTTPException(504, "The editor operation timed out")
     try:
-        return json.loads(result.stdout)
-    except json.JSONDecodeError:
+        text = report_path.read_text(encoding="utf-8") if report_path.is_file() else result.stdout
+        return json.loads(text)
+    except (json.JSONDecodeError, OSError):
         raise HTTPException(500, f"The editor tool did not report JSON (exit code {result.exit_code})") from None
+    finally:
+        report_path.unlink(missing_ok=True)
 
 
 class EditorOpen(BaseModel):

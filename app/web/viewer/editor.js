@@ -145,6 +145,7 @@
     const controls = new THREE.OrbitControls(camera, scene.renderer.domElement);
     controls.addEventListener('change', () => scene.render());
     controls.screenSpacePanning = true;
+    controls.zoomSpeed = 3;
     controls.mouseButtons.RIGHT = -1;
     scene.orbitControls = controls;
     scene.render = function () {
@@ -196,9 +197,7 @@
 
   function resetView(shown) {
     const camera = shown.scene.camera, controls = shown.scene.orbitControls;
-    const halfV = THREE.MathUtils.degToRad(FOV / 2);
-    const half = Math.min(halfV, Math.atan(Math.tan(halfV) * camera.aspect));
-    const distance = shown.radius / Math.sin(half) * 1.02;
+    const distance = Core.fitDistance(shown.radius, FOV, camera.aspect, 0.33);
     camera.position.copy(shown.center).addScaledVector(new THREE.Vector3(1, 0.7, 1).normalize(), distance);
     controls.target.copy(shown.center);
     camera.lookAt(shown.center);
@@ -480,7 +479,7 @@
       d.amount = angle === null ? 0 : Core.snapRotate(angle, !free);
     }
     previewDrag(d);
-    setStatus(d.kind === 'move' ? `Move ${d.axis.toUpperCase()} ${d.amount > 0 ? '+' : ''}${d.amount} LDU` : `Rotate ${d.axis.toUpperCase()} ${d.amount}°`, false);
+    setStatus(d.kind === 'move' ? `Move ${d.axis.toUpperCase()} ${d.amount > 0 ? '+' : ''}${d.amount} LDU (${free ? 'free, Alt held' : `snapping to ${Core.snapStep(d.axis)} LDU, hold Alt for free`})` : `Rotate ${d.axis.toUpperCase()} ${d.amount}° (${free ? 'free, Alt held' : 'snapping to 15°, hold Alt for free'})`, false);
   });
 
   // The selection's outline follows the pointer; nothing is sent until release.
