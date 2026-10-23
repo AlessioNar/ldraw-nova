@@ -446,18 +446,26 @@ TOOLS: dict[str, tuple[dict, Callable[..., Awaitable[ToolResult]]]] = {
         ["path", "content"]), t_write_file),
 }
 
-async def t_delegate_task(ctx: ToolContext, task: str, files: list[str] | None = None, max_steps: int = 12) -> ToolResult:
+async def t_delegate(ctx: ToolContext, role: str | None = None, task: str | None = None, inputs: list[str] | None = None,
+                     tools: list[str] | None = None, outputs: list[str] | None = None, max_steps: int | None = None,
+                     max_eur: float | None = None, summary_chars: int | None = None) -> ToolResult:
     import subagents                                      # lazy: subagents imports this module
-    return await subagents.delegate_task(ctx, task, files, max_steps)
+    return await subagents.delegate(ctx, role, task, inputs, tools, outputs, max_steps, max_eur, summary_chars)
 
 
-TOOLS["delegate_task"] = (_fn("delegate_task",
-    "Hand a bounded job (reading files, writing a script or notes, running a command) to a cheaper worker model. "
-    "The worker has list_files, read_file, write_file, run_python, run_shell and run_toolkit only, and returns a short "
-    "summary. Give it a self-contained task.",
-    {"task": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}},
-     "max_steps": {"type": "integer", "description": "Default 12, maximum 25"}},
-    ["task"]), t_delegate_task)
+TOOLS["delegate"] = (_fn("delegate",
+    "Hand one bounded, self-contained job to a cheaper worker model; it returns status, a short summary, its output "
+    "files and cost. role: builder (writes a submodel), researcher (finds parts), reviewer (checks files). task: what to "
+    "produce incl. interface dimensions, at most 1500 chars. inputs: paths under output/ it may read. tools: optional "
+    "subset of read_file, list_files, my_parts, view_image, write_file, run_toolkit, run_python (default per role; never "
+    "publish_model, delegate or run_shell). outputs: plain file names it must create; they land in output/workers/<id>/. "
+    "max_steps default per role (builder 20), at most 40. max_eur default 0.10, at most 1. summary_chars default 600, "
+    "at most 1500. An invalid contract is rejected with the reason; fix it and call again.",
+    {"role": {"type": "string", "enum": ["builder", "researcher", "reviewer"]}, "task": {"type": "string"},
+     "inputs": {"type": "array", "items": {"type": "string"}}, "tools": {"type": "array", "items": {"type": "string"}},
+     "outputs": {"type": "array", "items": {"type": "string"}}, "max_steps": {"type": "integer"},
+     "max_eur": {"type": "number"}, "summary_chars": {"type": "integer"}},
+    ["role", "task"]), t_delegate)
 
 import editor_tools  # noqa: E402 - needs ToolResult above; adds editor_open / editor_state / editor_edit
 TOOLS.update({name: (editor_tools.SCHEMAS[name], fn) for name, fn in editor_tools.FUNCTIONS.items()})
