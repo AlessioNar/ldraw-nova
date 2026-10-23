@@ -4,7 +4,7 @@ import { api, isPending, type ChatDetail, type TurnOptions, type DocumentUpload 
 import Composer from "../components/Composer";
 import MessageList from "../components/MessageList";
 import TurnStatus from "../components/TurnStatus";
-import UsageBadge from "../components/UsageBadge";
+import BuildHeader from "../components/BuildHeader";
 import { useApp } from "../context";
 import { useChatStream } from "../hooks/useChatStream";
 
@@ -12,7 +12,7 @@ export default function ChatPage() {
   const { id = "" } = useParams();
   const { hash } = useLocation();
   const anchored = useRef("");
-  const { llms, defaultLlmId, refreshChats } = useApp();
+  const { chats, llms, defaultLlmId, refreshChats } = useApp();
   const [detail, setDetail] = useState<ChatDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [llmId, setLlmId] = useState<string | null>(null);
@@ -97,13 +97,13 @@ export default function ChatPage() {
       <header className="chat-head">
         <h2 className="ellipsis">{detail.chat.title}</h2>
         <Link className="chat-edit-link" to={`/chat/${id}/edit`} title="Place and move parts in 3D (desktop)">Edit in 3D</Link>
-        {!!detail.usage?.steps && <UsageBadge usage={detail.usage} steps={detail.usage.steps} budget={detail.chat.options?.budget_eur} />}
       </header>
+      <BuildHeader detail={detail} chats={chats} running={running} connected={connected} activity={activity} tools={tools}
+        workers={workers} approvals={approvals} now={now} onStop={() => api.cancel(id)} />
       <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} workers={workers} now={now} error={error}
         scrollerRef={scrollerRef} bottomRef={bottomRef} onScroll={onScroll} />
       <div className="composer-wrap">
-        <TurnStatus chatId={id} running={running} connected={connected} approvals={approvals} workers={workers} activity={activity} now={now}
-          contextNotice={contextNotice} onError={setError} />
+        <TurnStatus chatId={id} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer
           key={id}
           initialOptions={detail.chat.options}

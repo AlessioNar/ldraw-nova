@@ -20,26 +20,16 @@ class Run:
     approvals: dict[str, tuple[dict, asyncio.Future]] = field(default_factory=dict)
     started_at: float = field(default_factory=time.time)
     last_event_at: float = field(default_factory=time.time)
-    phase: str = "Preparing the build workspace"
+    progress: str = ""     # the latest report_progress summary of this turn
     ledger: BudgetLedger = field(default_factory=BudgetLedger)
     workers: dict[str, dict] = field(default_factory=dict)     # this turn's delegated workers, for the reconnect snapshot
 
     def emit(self, event: str, data: dict) -> None:
         self.last_event_at = time.time()
         if event == "progress":
-            self.phase = data["summary"]
+            self.progress = data["summary"]
         elif event == "tool_start":
             data.setdefault("started_at", time.time())
-            self.phase = {
-                "run_toolkit": "Running LDraw Nova",
-                "run_python": "Running the model generator",
-                "run_shell": "Running a build command",
-                "publish_model": "Checking and publishing the model",
-                "view_image": "Reviewing a rendered image",
-                "read_file": "Reading build instructions or reports",
-                "write_file": "Saving build files",
-                "list_files": "Inspecting available files",
-            }.get(data.get("name"), self.phase)
         elif event == "worker_start":
             self.workers[data["id"]] = {**data, "status": "running", "steps": 0, "eur": 0.0}
         elif event in ("worker_step", "worker_end") and data.get("id") in self.workers:
@@ -65,7 +55,7 @@ class Run:
                 queue.put_nowait((event, dict(data)))
 
     def activity(self) -> dict:
-        return {"started_at": self.started_at, "last_event_at": self.last_event_at, "phase": self.phase}
+        return {"started_at": self.started_at, "last_event_at": self.last_event_at, "progress": self.progress}
 
 
 _runs: dict[str, Run] = {}

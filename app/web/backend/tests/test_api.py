@@ -207,3 +207,13 @@ def test_glb_export_with_mpd2glb(client, data_dir: Path):
     for bad in ("/files/generated/..%2F..%2Fetc%2Fpasswd", "/files/generated/nope.mpd", "/files/chats/a/b.mpd",
                 "/files/output/x/y.mpd", "/files/generated/glb-test.png", "https://example.com/x.mpd"):
         assert client.get("/api/glb", params={"url": bad}).status_code == 404, bad
+
+
+def test_chat_list_and_detail_carry_turn_stats(client, store):
+    chat = store.create_chat()
+    store.add_message(chat["id"], {"role": "user", "content": "build"})
+    store.add_message(chat["id"], {"role": "assistant", "content": "ok", "_usage": {"prompt": 1, "completion": 1}})
+    row = next(c for c in client.get("/api/chats").json()["chats"] if c["id"] == chat["id"])
+    assert row["turn_steps"] == 1 and row["duration_s"] is not None
+    totals = client.get(f"/api/chats/{chat['id']}").json()["usage"]
+    assert totals["turn_steps"] == 1 and totals["steps"] == 1

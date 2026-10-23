@@ -87,3 +87,13 @@ def usage_totals(messages: list[dict]) -> dict:
     totals.update(cost_usd=round(cost, 6), cost_eur=round(cost * rate, 4), eur_per_usd=rate, unpriced_steps=unpriced,
                   worker_cost_eur=round(worker_cost * rate, 4))
     return totals
+
+
+def turn_stats(messages: list[dict]) -> dict:
+    """Steps and wall-clock duration of a chat's latest turn (everything after the last user message)."""
+    start = max((i for i, m in enumerate(messages) if m.get("role") == "user"), default=-1)
+    turn = messages[start + 1:]
+    steps = sum(isinstance(m.get("_usage"), dict) for m in turn)
+    stamps = [m["created_at"] for m in messages[max(start, 0):] if isinstance(m.get("created_at"), (int, float))]
+    duration = round(stamps[-1] - stamps[0]) if start >= 0 and len(stamps) > 1 else None
+    return {"turn_steps": steps, "duration_s": duration}

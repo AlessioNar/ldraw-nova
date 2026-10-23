@@ -32,6 +32,8 @@ export type Chat = {
   created_at: number;
   updated_at: number;
   running?: boolean;
+  turn_steps?: number;   // model steps of the latest turn (list and detail)
+  duration_s?: number | null; // wall-clock length of the latest turn
   options?: TurnOptions;
   models?: ChatModel[];
 };
@@ -60,7 +62,7 @@ export type Message = {
 };
 
 export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number; cost_usd?: number };
-export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number; worker_cost_eur?: number };
+export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number; worker_cost_eur?: number; turn_steps?: number; duration_s?: number | null };
 export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals };
 
 type Capability = boolean | "auto";

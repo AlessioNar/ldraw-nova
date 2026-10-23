@@ -65,3 +65,14 @@ def test_totals_of_an_untouched_chat():
     assert {k: totals[k] for k in ("prompt", "completion", "cache_read", "cache_write", "steps")} == {
         "prompt": 0, "completion": 0, "cache_read": 0, "cache_write": 0, "steps": 0}
     assert totals["cost_usd"] == 0 and totals["cost_eur"] == 0
+
+
+def test_turn_stats_cover_only_the_latest_turn():
+    step = {"role": "assistant", "_usage": {"prompt": 1}}
+    messages = [
+        {"role": "user", "created_at": 100}, {**step, "created_at": 110},
+        {"role": "user", "created_at": 1000}, {**step, "created_at": 1030}, {**step, "created_at": 1090},
+    ]
+    assert usage.turn_stats(messages) == {"turn_steps": 2, "duration_s": 90}
+    assert usage.turn_stats([]) == {"turn_steps": 0, "duration_s": None}
+    assert usage.turn_stats([{"role": "user", "created_at": 5}])["duration_s"] is None
