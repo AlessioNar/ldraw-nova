@@ -6,7 +6,7 @@ import { isUnsupported, UNSUPPORTED_HINT, providerName, recentModels, rememberMo
 import type { LlmEntry } from "../api";
 
 /** List price per million tokens, as the provider quotes it (dollars); "price unknown" when the catalogue has none. */
-function priceLabel(model: LlmEntry): string {
+export function priceLabel(model: LlmEntry): string {
   const p = model.profile.pricing;
   if (!p || p.input == null || p.output == null) return "price unknown";
   const fmt = (n: number) => (n >= 1 ? String(+n.toFixed(2)) : n.toFixed(2));
@@ -14,8 +14,10 @@ function priceLabel(model: LlmEntry): string {
   return `$${fmt(p.input)} in · $${fmt(p.output)} out per 1M tokens${tier ? ` (up to ${tier.over_prompt_tokens / 1000}k prompts; $${fmt(tier.input)} / $${fmt(tier.output)} above)` : ""}`;
 }
 
-export default function ModelPicker({ value, onChange, disabled }: {
+export default function ModelPicker({ value, onChange, disabled, emptyLabel, label = "Model" }: {
   value: string | null; onChange: (id: string) => void; disabled: boolean;
+  /** When set, the list starts with this choice (for example "No workers"); choosing it calls onChange(""). */
+  emptyLabel?: string; label?: string;
 }) {
   const { llms, chats } = useApp();
   const [open, setOpen] = useState(false);
@@ -71,8 +73,10 @@ export default function ModelPicker({ value, onChange, disabled }: {
   useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
 
   function choose(model: LlmEntry) {
-    setRecent(rememberModel(model.id)); onChange(model.id); setOpen(false); trigger.current?.focus();
+    if (!emptyLabel) setRecent(rememberModel(model.id));
+    onChange(model.id); setOpen(false); trigger.current?.focus();
   }
+  const shown = selected?.model_name ?? emptyLabel ?? "Choose a model";
   function option(model: LlmEntry) {
     const legacy = isUnsupported(model);
     return <button type="button" className="model-choice" key={model.id} disabled={legacy} title={legacy ? UNSUPPORTED_HINT : undefined} onClick={() => choose(model)} aria-pressed={model.id === value}>
@@ -84,13 +88,15 @@ export default function ModelPicker({ value, onChange, disabled }: {
 
   return <>
     <button ref={trigger} type="button" className="model-picker-trigger compact-control" disabled={disabled}
-      aria-label={`Model: ${selected?.model_name ?? "Choose a model"}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined}
+      aria-label={`${label}: ${shown}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined}
       onClick={() => { setOpen(!open); setQuery(""); setProvider(null); setRecent(recentModels()); }}>
-      <span className="ellipsis">{selected?.model_name ?? "Choose a model"}</span><span className="chevron" aria-hidden>⌄</span>
+      <span className="ellipsis">{shown}</span><span className="chevron" aria-hidden>⌄</span>
     </button>
-    {open && createPortal(<div ref={panel} id={id} role="dialog" aria-label="Choose a model" className="model-picker-panel" style={position}>
+    {open && createPortal(<div ref={panel} id={id} role="dialog" aria-label={`Choose: ${label}`} className="model-picker-panel" style={position}>
       <input ref={search} type="search" aria-label="Search models" placeholder="Search your models…" value={query} onChange={e => setQuery(e.target.value)} />
       <div className="model-picker-options">
+        {emptyLabel && <button type="button" className="model-choice" aria-pressed={!selected}
+          onClick={() => { onChange(""); setOpen(false); trigger.current?.focus(); }}><span><strong>{emptyLabel}</strong></span>{!selected && <span aria-hidden>✓</span>}</button>}
         {query ? <>{matches.map(option)}{!matches.length && <p className="muted small pad">No matching models.</p>}</> : <>
           {!!recentEntries.length && <><div className="picker-label">Recent</div>{recentEntries.map(option)}</>}
           <div className="picker-label">Providers</div>

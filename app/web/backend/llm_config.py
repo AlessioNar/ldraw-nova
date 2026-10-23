@@ -44,6 +44,7 @@ def _load() -> dict:
         data = {}
     data.setdefault("models", [])
     data.setdefault("default_id", None)
+    data.setdefault("worker_id", None)
     for entry in data["models"]:
         params = entry.get("litellm_params", {})
         _upgrade_key_ref(params)
@@ -243,6 +244,8 @@ def delete(entry_id: str) -> bool:
         data["models"] = [m for m in data["models"] if m["id"] != entry_id]
         if data["default_id"] == entry_id:
             data["default_id"] = data["models"][0]["id"] if data["models"] else None
+        if data["worker_id"] == entry_id:
+            data["worker_id"] = None
         _save(data)
         return len(data["models"]) < before
 
@@ -253,6 +256,27 @@ def set_default(entry_id: str) -> None:
         if any(m["id"] == entry_id for m in data["models"]):
             data["default_id"] = entry_id
             _save(data)
+
+
+def worker_default() -> Optional[str]:
+    """The entry chosen in Settings as the default worker model, if it still exists."""
+    data = _load()
+    return data["worker_id"] if any(m["id"] == data["worker_id"] for m in data["models"]) else None
+
+
+def set_worker_default(entry_id: Optional[str]) -> None:
+    """Choose the default worker entry; None means no workers by default."""
+    with _lock:
+        data = _load()
+        if entry_id is not None and not any(m["id"] == entry_id for m in data["models"]):
+            raise ValueError("Unknown model")
+        data["worker_id"] = entry_id
+        _save(data)
+
+
+def default_worker_id() -> str:
+    """Worker for a chat that does not say: the Settings default, else the env var (only with the subagents flag on)."""
+    return worker_default() or (settings.worker_llm_id() if settings.subagents_enabled() else "")
 
 
 def import_model_list(model_list: list[dict]) -> list[dict]:

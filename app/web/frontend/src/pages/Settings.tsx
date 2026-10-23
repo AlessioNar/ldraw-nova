@@ -4,6 +4,7 @@ import EnvironmentSettings from "../components/EnvironmentSettings";
 import AgentForm, { ConnectionPill } from "../components/AgentForm";
 import AgentDetails from "../components/AgentDetails";
 import { useApp } from "../context";
+import WorkerModelPicker from "../components/WorkerModelPicker";
 import { agentProvider, isUnsupported, UNSUPPORTED_HINT, providerLabel } from "../modelChoices";
 
 // Pseudo-group for stored agents that cannot run until converted to an API key.
@@ -11,7 +12,7 @@ const NEEDS_KEY = "needs-api-key";
 const groupLabel = (provider: string) => provider === NEEDS_KEY ? "Needs an API key" : providerLabel(provider);
 
 export default function Settings() {
-  const { llms, defaultLlmId } = useApp();
+  const { llms, defaultLlmId, defaultWorkerId, refreshLlms } = useApp();
   const [catalog, setCatalog] = useState<ModelProfile[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -25,6 +26,13 @@ export default function Settings() {
   return <div className="page settings">
     <header className="page-head"><div><h1>Settings</h1><p className="muted">Add API keys and choose the agents you build with.</p></div></header>
     <EnvironmentSettings />
+    <section aria-labelledby="workers-heading">
+      <header className="page-head settings-models-head"><div><h2 id="workers-heading">Worker model</h2>
+        <p className="muted small">The cheap model the main agent hands bounded jobs to (needs Full access). Each chat can override it in the chat box; "No workers" turns delegation off.</p>
+      </div></header>
+      <WorkerModelPicker value={defaultWorkerId} disabled={busy}
+        onChange={id => { setBusy(true); api.setWorkerDefault(id).then(refreshLlms, e => setError(e.message)).finally(() => setBusy(false)); }} />
+    </section>
     <section aria-labelledby="agents-heading">
       <header className="page-head settings-models-head"><div><h2 id="agents-heading">Agents</h2>
         <p className="muted small">Building LDraw models needs image input to inspect designs, reasoning to plan builds, and tool calling to run the app’s building tools.</p>

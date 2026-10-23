@@ -106,5 +106,12 @@ def validate_options(entry: dict, options: dict | None) -> dict:
         prices = spec.get("pricing") or {}
         if prices.get("input") is None or prices.get("output") is None or prices.get("currency") != "USD":
             raise ValueError("This model has no known prices, so a budget cannot be enforced")
+    worker = value.get("worker_model_id", True)
+    if worker is True:                                    # not given: the Settings / env default
+        import llm_config                                 # lazy: llm_config imports this module
+        worker = llm_config.default_worker_id()
+    if worker is not None and not isinstance(worker, str):
+        raise ValueError("The worker model must be a model id or empty")
+    value["worker_model_id"] = worker or None
     inventories.validate_parts_options(value)
     return value

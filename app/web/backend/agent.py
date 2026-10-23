@@ -23,6 +23,7 @@ import llm_config
 import model_catalog
 from run_state import Run, _runs, is_running
 from store import ChatStore
+import subagents
 from tool_policy import READ_TOOLS, available_tools
 from tools import ToolContext, ToolResult, dispatch
 from turn import run_turn
@@ -48,6 +49,7 @@ async def start_turn(store: ChatStore, chat_id: str, text: str, llm_model_id: Op
         raise ValueError("Choose a model with tool calling and image input support in Settings")
 
     options = model_catalog.validate_options(entry, options)
+    subagents.check_worker(options)
     if images and llm_config.capabilities(entry)["vision"] is not True:
         raise ValueError("Select a model with image input support")
 

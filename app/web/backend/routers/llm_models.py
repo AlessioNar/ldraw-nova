@@ -35,7 +35,7 @@ def model_catalog_list():
 @router.get("/api/llm-models")
 def llm_models_list():
     entries, default_id = llm_config.builder_entries()
-    return {"models": [llm_config.public(e) for e in entries], "default_id": default_id}
+    return {"models": [llm_config.public(e) for e in entries], "default_id": default_id, "worker_id": llm_config.worker_default()}
 
 
 @router.get("/api/llm-models/{entry_id}/edit")
@@ -70,6 +70,19 @@ def llm_models_delete(entry_id: str):
 def llm_models_default(entry_id: str):
     llm_config.set_default(entry_id)
     return {"default_id": llm_config.list_entries()[1]}
+
+
+class WorkerBody(BaseModel):
+    id: Optional[str] = None
+
+
+@router.put("/api/llm-workers/default")
+def llm_worker_default(body: WorkerBody):
+    try:
+        llm_config.set_worker_default(body.id or None)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+    return {"worker_id": llm_config.worker_default()}
 
 
 @router.post("/api/llm-models/{entry_id}/test")

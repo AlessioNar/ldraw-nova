@@ -9,6 +9,7 @@ export type AppState = {
   refreshChats: () => void;
   llms: LlmEntry[];
   defaultLlmId: string | null;
+  defaultWorkerId: string | null;
   refreshLlms: () => void;
   openViewer: (target: ViewerTarget) => void;
 };

@@ -67,7 +67,7 @@ export type EnvironmentVariable = { id: string; name: string; value: null; has_v
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
 export type ConnectionStatus = "not_tested" | "connected" | "not_connected";
-export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; effort?: string | null; context_tokens?: number | null; budget_eur?: number | null; parts_mode?: PartsMode; inventory_ids?: string[] };
+export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; worker_model_id?: string | null; effort?: string | null; context_tokens?: number | null; budget_eur?: number | null; parts_mode?: PartsMode; inventory_ids?: string[] };
 export type ModelProfile = {
   model: string; name: string; context_window: number | null; efforts: string[]; default_effort: string | null; context_budgets: number[];
   max_output_tokens?: number | null; tools?: boolean | null; vision?: boolean | null; reasoning?: boolean | null;
@@ -131,7 +131,8 @@ export const api = {
   models: () => request<{ models: ModelFile[]; pending: number }>("/api/models"),
   deleteModel: (filename: string) => request<{ deleted: string[] }>(`/api/models/${encodeURIComponent(filename)}`, { method: "DELETE" }),
 
-  llmModels: () => request<{ models: LlmEntry[]; default_id: string | null }>("/api/llm-models"),
+  llmModels: () => request<{ models: LlmEntry[]; default_id: string | null; worker_id?: string | null }>("/api/llm-models"),
+  setWorkerDefault: (id: string | null) => request<{ worker_id: string | null }>("/api/llm-workers/default", { method: "PUT", body: json({ id }) }),
   editLlm: (id: string) => request<LlmEntry>(`/api/llm-models/${id}/edit`),
   createLlm: (entry: Partial<LlmEntry>) => request<LlmEntry>("/api/llm-models", { method: "POST", body: json(entry) }),
   updateLlm: (id: string, entry: Partial<LlmEntry>) =>
