@@ -17,7 +17,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import shutil
+import time
 import uuid
+from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -37,6 +41,9 @@ TIMEOUT = 600
 MAX_EDITS = 100
 MAX_NAME = 60
 MAX_ROWS = 5000
+MAX_PLANS = 20
+MAX_SCAN_DEPTH = 3
+MAX_PLAN_BYTES = 5_000_000
 
 _locks: dict[str, asyncio.Lock] = {}
 
@@ -140,6 +147,7 @@ async def _run(store, chat_id: str, arguments: list[str]) -> dict:
 class EditorOpen(BaseModel):
     source: Optional[str] = None      # a plan file inside the chat's work folder
     name: Optional[str] = None
+    replace: bool = False             # archive the chat's current editor plan and open this one instead
 
 
 class EditorEdits(BaseModel):
@@ -163,6 +171,14 @@ def _arguments(store, chat_id: str, action: str, base_revision: Optional[int] = 
     return arguments
 
 
+@router.get("/api/chats/{chat_id}/editor/plans")
+def editor_plans(chat_id: str):
+    """The plan files the chat's work folder holds, for the "which model do you want to edit" choice."""
+    store = get_store()
+    _chat(store, chat_id)
+    return {"plans": plan_files(store, chat_id)}
+
+
 @router.get("/api/chats/{chat_id}/editor")
 def editor_get(chat_id: str):
     store = get_store()
@@ -174,7 +190,7 @@ def editor_get(chat_id: str):
 async def editor_open(chat_id: str, body: EditorOpen):
     """Start the chat's editor session: from a plan file in its work folder, or a one-brick skeleton."""
     store = get_store()
-    return await open_session(store, chat_id, body.source, body.name)
+    return await open_session(store, chat_id, body.source, body.name, body.replace)
 
 
 async def apply_edits(store, chat_id: str, edits: list, base_revision: int) -> dict:
@@ -201,12 +217,54 @@ async def apply_edits(store, chat_id: str, edits: list, base_revision: int) -> d
         return _view(store, chat_id)
 
 
-async def open_session(store, chat_id: str, source: Optional[str] = None, name: Optional[str] = None) -> dict:
+def _archive(folder) -> None:
+    """Move the session files aside (editor/archive/<time>/) so a new session can start; nothing is deleted."""
+    target = folder / "archive" / time.strftime("%Y%m%d-%H%M%S")
+    target.mkdir(parents=True, exist_ok=True)
+    for name in ("plan.json", "state.json", "preview.mpd", "request.json", "owned.json"):
+        if (folder / name).exists():
+            shutil.move(str(folder / name), str(target / name))
+
+
+def plan_files(store, chat_id: str) -> list[dict]:
+    """The plan files in the chat's work folder (what the agent built), newest first.
+
+    A plan is a JSON file with a `sections` list of named sections with steps. The editor's own folder
+    and hidden files are skipped; the scan is shallow and capped so a big work folder stays cheap.
+    """
+    root = store.work_dir(chat_id)
+    found = []
+    for folder, dirs, files in os.walk(root):
+        depth = len(Path(folder).relative_to(root).parts)
+        dirs[:] = [d for d in dirs if not d.startswith(".") and not (depth == 0 and d == "editor")] if depth < MAX_SCAN_DEPTH else []
+        for file in files:
+            path = Path(folder) / file
+            if not file.lower().endswith(".json") or file.startswith("."):
+                continue
+            try:
+                if path.stat().st_size > MAX_PLAN_BYTES:
+                    continue
+                plan = json.loads(path.read_text(encoding="utf-8"))
+                sections = plan["sections"]
+                entries = sum(len(step) for section in sections for step in section["steps"])
+                title = str(sections[0].get("description") or sections[0]["name"])
+                found.append({"path": path.relative_to(root).as_posix(), "title": title[:120],
+                              "sections": len(sections), "entries": entries, "modified": path.stat().st_mtime})
+            except (OSError, ValueError, KeyError, TypeError, AttributeError, IndexError):
+                continue
+    return sorted(found, key=lambda item: -item["modified"])[:MAX_PLANS]
+
+
+async def open_session(store, chat_id: str, source: Optional[str] = None, name: Optional[str] = None,
+                       replace: bool = False) -> dict:
     """Start the chat's editor session (shared by the route and the agent's editor_open tool)."""
     _chat(store, chat_id)
     _, plan_path, state_path, _ = _paths(store, chat_id)
     if plan_path.exists() or state_path.exists():
-        raise HTTPException(409, "This chat already has an editor plan")
+        if not replace:
+            raise HTTPException(409, "This chat already has an editor plan")
+        async with _lock(chat_id):
+            _archive(plan_path.parent)
     arguments = _arguments(store, chat_id, "open")
     if source is not None:
         found = safe_join(store.work_dir(chat_id), source.strip())

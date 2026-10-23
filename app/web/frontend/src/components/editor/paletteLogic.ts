@@ -35,11 +35,18 @@ export function nextEntryId(plan: PlanLike): string {
   return `e${n}`;
 }
 
-export type SelectionPoint = { id: string; at: [number, number, number] };
+/** The selected part: where it is in its own section (`at`), which section and entry, and whether it is a part (leaf) or a sub-model instance. */
+export type SelectionPoint = { id: string; at: [number, number, number]; section?: string; leaf?: boolean; repeated?: boolean };
 
-/** Add at the selection's position (one brick height above it) or just above the origin; with `snap` the batch ends with a snap of the new entry. */
+/**
+ * Add one brick height above the selection, in the selection's own section (so a part picked inside a sub-model gets
+ * its new neighbour inside it), or just above the origin of the root. With `snap` the batch ends with a snap of the
+ * new entry, onto the selected part itself when that is a real part of the same section.
+ */
 export function addEdits(plan: PlanLike, part: string, colour: number, selection?: SelectionPoint | null, snap = true) {
   const at = selection ? [selection.at[0], selection.at[1] - 24, selection.at[2]] : [0, -24, 0];
-  const add = { op: "add", section: plan.sections[0].name, part: `${partKey(part)}.dat`, colour, position: at };
-  return snap ? [add, { op: "snap", id: nextEntryId(plan) }] : [add];
+  const section = selection?.section ?? plan.sections[0].name;
+  const add = { op: "add", section, part: `${partKey(part)}.dat`, colour, position: at };
+  const to = selection?.leaf && !selection.repeated ? { to: selection.id } : {};
+  return snap ? [add, { op: "snap", id: nextEntryId(plan), ...to }] : [add];
 }

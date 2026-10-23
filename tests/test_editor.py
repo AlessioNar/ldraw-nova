@@ -210,6 +210,18 @@ def test_snap_explicit_target(connected):
     assert post["sections"][0]["steps"][0][2]["at"] == [0, -8, 0]
 
 
+def test_snap_keeps_the_side_a_part_was_dropped_on(connected):
+    """A part dropped under another snaps underneath it, one dropped on top stays on top (not the toolkit's first-ranked way)."""
+    def dropped(y):
+        pre = {"version": 1, "author": "Tests", "sections": [
+            {"name": "main.ldr", "description": "snappable", "steps": [
+                [{"id": "base", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0]},
+                 {"id": "lid", "ref": "3022.dat", "colour": 14, "at": [0, y, 0]}]]}]}
+        return snap(pre, "lid", connected)["sections"][0]["steps"][0][1]["at"]
+    assert dropped(-50) == [0, -8, 0]
+    assert dropped(40) == [0, 24, 0]
+
+
 def test_usage_counts_leaves_repeats_and_colour_inheritance(parts):
     nested = {"version": 1, "author": "Tests", "sections": [
         {"name": "main.ldr", "description": "d", "steps": [[

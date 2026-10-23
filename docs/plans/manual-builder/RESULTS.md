@@ -58,3 +58,43 @@ After each restart `plan.json` and `state.json` parsed, the revision was the old
 3. Hand-editing `plan.json` on disk is reported to the editor as a conflict on the next edit (by design), documented above.
 
 Not verified: a real mouse wheel on a physical device (the test sends wheel events), touch input, and the React wrapper page (the checks use the plain `viewer/editor.html`).
+
+# Real-model pass: the editor on an agent-built model (2026-10-23)
+
+Run against an isolated instance (port 8785) with the benchmark starfighter `azure-dart` (51 parts, 7 sections: a root that only places six sub-models) and a purpose-made model with a sub-model placed twice (one copy turned half a circle) and a repeated run. Chrome, software rendering, Playwright.
+
+## What a user hit, and what changed
+
+| # | What the user saw | Cause | Fix |
+|---|---|---|---|
+| 1 | "Edit in 3D" on a chat with an agent-built plan: "This chat has no model to edit yet" and only "Start a new model" (a one-brick skeleton). The agent's model was unreachable from the UI (screenshot `before-no-plan-offered.png`). | Opening an existing plan needed `POST /editor` with a `source`; nothing in the page offered it. | New `GET /api/chats/{id}/editor/plans` lists the plan files in the chat's folder, newest first; the start panel shows them and opens the one clicked (`after-plan-choice.png`). A new "Open plan..." button swaps in another plan; the current session is moved to `editor/archive/<time>/`, not deleted (`replace` flag on the open call). |
+| 2 | Only whole sub-models could be selected: a click on the starfighter picked "hull" (everything), never a keel plate. | Only the root section's placements were parsed and picked. | `EditorCore.flatten` walks the MPD into sub-models; every part is pickable (key `hull/a-plate`). Edits name the plan section that holds the part and convert the drag into the sub-model's own frame, so a turned wing moves the right way (`after-part-inside-submodel.png`). Moving a part of a sub-model drawn N times changes all N copies; the status line says so. "Group" (key G) selects the sub-model instance so a drag moves the whole group. |
+| 3 | Repeated placements: "cannot be edited here". | Their ids (`row-1`) are not plan entries. | They map back to their entry: move acts on the whole run through its template, delete removes the run, rotate is refused with a reason ("repeated placement ... cannot be rotated"). A part in a tilted sub-model likewise gets a message instead of a silent no-op. |
+| 4 | The orange selection box floated at the wrong height and the upper half of a brick was not clickable. | ldbi keeps part geometry flipped (y and z negated); the editor used it as if it were LDraw's. | Part boxes are flipped back (pre-existing bug, found with the stacked-parts test). |
+| 5 | A canopy over a wing: the wing could not be picked. | The nearest box always wins. | A repeated click on the same spot steps through everything under the pointer ("2 of 3 under the pointer"); a click on the gizmo that did not drag counts as a click on the part behind it. |
+| 6 | Delete on the only part of a sub-model failed with "section would have no steps left". | The plan format needs one entry per section. | The sub-model instance is deleted instead; undo restores it. |
+| 7 | A brick added from the palette next to a sub-model part went into the root, snapped to the sub-model instance, and ended under the hull. | Add used the root section and the toolkit's first-ranked connection (brick underneath is ranked before brick on top). | Add goes into the selected part's own section and snaps to that part; the toolkit snap takes a new `nearest` option (editor only) that chooses the connection closest to the drop point. |
+| 8 | The model filled a third of the view, tiny for a 50-part ship. | Fixed framing for a one-brick model. | Framing grows with the model, up to 60% (1-brick framing unchanged). |
+| 9 | No keyboard control. | - | Arrows move a stud, Page Up/Down a plate, Shift+Left/Right a quarter turn (see below). |
+
+Checked in the browser on the real model: open from the chat link, select parts inside sub-models, move, add from the palette, undo, redo, delete, publish; the published model appears as a card in the chat and in My Models (52 parts for the starfighter plus one added brick).
+
+Tests: `npm run test:core` 23 pass; `editor.browser.mjs` (open, delete, round trip, load, agent-built plan, overlapping parts) and `editor-palette.browser.mjs` pass; backend `test_editor_api.py` gained three tests; `tests/test_editor.py` one. The fault test (kill the server mid-edit) fails the same way on an unmodified build in this environment (`fetch failed` after `docker start`), so it is not affected by these changes.
+
+Not done: a ghost preview while placing a part, a snap on/off toggle (Alt for free movement exists for drags), camera keys, snapping to parts inside sub-models from the palette when the selection is a whole group.
+
+## What other editors do (read 2026-10-23)
+
+Sources: LeoCAD tutorial 1 (https://www.leocad.org/docs/tutorial1.html), LeoCAD README on GitHub (leozide/leocad), the Bricksmith home page (https://bricksmith.sourceforge.io/) and its GitHub mirror (bsupnik/bricksmith), and a search for web LDraw editors. The Bricksmith pages only say "drag-and-drop building" and "support for steps and submodels"; they do not describe snapping, nudging or submodel selection, so nothing is claimed about them beyond that. The web search found viewers and loaders (LasseD/buildinginstructions.js, brigl, three.js LDrawLoader) and one beta editor (Gr8brik) with no documented stud snapping; its repository page could not be fetched.
+
+LeoCAD, as its tutorial describes it:
+- Parts are dragged from the parts list into the view with a live preview of where the part will land; Insert also adds one.
+- Movement snap is shown in the status bar and set per axis (Snap XY: "1 Stud"); a magnet button switches it off.
+- Arrow keys, Page Up and Page Down move the selection; Shift with them rotates.
+- Ctrl-click adds to the selection; Alt-drag orbits, pans and zooms with the three mouse buttons.
+
+Borrowed, in order of value for this task:
+1. Keyboard nudging (arrows = one stud, Page Up/Down = one plate, Shift+arrows = quarter turn), each press one undo step.
+2. The status bar naming the active step and what is selected: ours now says which sub-model a part sits in, how many copies an edit changes, and how many parts are under the pointer.
+3. A free-movement escape from the grid (their magnet toggle): we already had Alt while dragging; unchanged.
+4. Preview while placing: not built; the palette still adds then snaps. It is the next thing worth doing.

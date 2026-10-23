@@ -26,16 +26,20 @@
     <button id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
     <button id="redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
     <button id="delete" title="Delete the selected parts (Delete)" disabled>Delete</button>
+    <button id="widen" title="Select the sub-model this part belongs to, so a drag moves the whole group (G)" disabled>Group</button>
     <button id="publish" title="Publish the model as it is now" disabled>Publish</button>
   </span>
+  <button id="open-other" class="editing"title="Open another plan from this chat's folder instead of the current model" disabled>Open plan…</button>
   <button id="home" class="icon" title="Reset view" aria-label="Reset view" disabled>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9V5a2 2 0 0 1 2-2h4v2H5v4zm12-6h4a2 2 0 0 1 2 2v4h-2V5h-4zM3 15h2v4h4v2H5a2 2 0 0 1-2-2zm16 0h2v4a2 2 0 0 1-2 2h-4v-2h4zM12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"/></svg>
   </button>
 </div>
 <div id="stage" tabindex="0" aria-label="3D model editor"></div>
 <div id="start" hidden>
-  <p>This chat has no model to edit yet.</p>
+  <p id="start-text">This chat has no model to edit yet.</p>
+  <ul id="plans"></ul>
   <button id="start-button">Start a new model</button>
+  <button id="start-cancel" hidden>Cancel</button>
 </div>
 <div id="desktop-note" hidden>Editing needs a desktop browser with a mouse. You can still look around.</div>
 <div id="status" role="status">Loading…</div>

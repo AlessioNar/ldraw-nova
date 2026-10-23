@@ -125,6 +125,69 @@ def test_open_from_a_plan_in_the_work_folder(client, chat):
     assert client.post(f"/api/chats/{other}/editor", json={"source": "../etc/passwd"}).status_code == 404
 
 
+SHIP = {"version": 1, "author": "Tests", "sections": [
+    {"name": "ship.ldr", "description": "Ship - two wings", "steps": [
+        [{"id": "wl", "ref": "wing.ldr", "colour": 15, "at": [-80, 0, 0]},
+         {"id": "wr", "ref": "wing.ldr", "colour": 15, "at": [80, 0, 0], "yaw": 180}],
+        [{"id": "row", "ref": "3005.dat", "colour": 4, "at": [0, -24, 100], "repeat": {"count": 3, "step": [20, 0, 0]}}]]},
+    {"name": "wing.ldr", "description": "wing", "steps": [
+        [{"id": "w1", "ref": "3020.dat", "colour": 14, "at": [10, 0, 20]},
+         {"id": "w2", "ref": "3020.dat", "colour": 14, "at": [10, 0, 80]}]]}]}
+
+
+def test_plans_lists_the_plan_files_of_the_work_folder_newest_first(client, chat):
+    work = get_store().work_dir(chat)
+    (work / "sub").mkdir(parents=True)
+    (work / "editor").mkdir()
+    old, new = work / "old.plan.json", work / "sub" / "new.plan.json"
+    old.write_text(json.dumps(SHIP))
+    new.write_text(json.dumps({**SHIP, "sections": [SHIP["sections"][1]]}))
+    os.utime(old, (1000, 1000))
+    (work / "notes.json").write_text('{"hello": 1}')               # JSON, but not a plan
+    (work / "broken.json").write_text("{not json")
+    (work / "editor" / "plan.json").write_text(json.dumps(SHIP))   # the editor's own copy is not offered
+    (work / ".hidden.json").write_text(json.dumps(SHIP))
+    plans = client.get(f"/api/chats/{chat}/editor/plans").json()["plans"]
+    assert [p["path"] for p in plans] == ["sub/new.plan.json", "old.plan.json"]
+    assert plans[1]["entries"] == 5 and plans[1]["sections"] == 2 and plans[1]["title"] == "Ship - two wings"
+    assert client.get("/api/chats/nonexistent/editor/plans").status_code == 404
+    assert client.get(f"/api/chats/{get_store().create_chat()['id']}/editor/plans").json() == {"plans": []}
+
+
+def test_open_with_replace_puts_the_old_session_aside(client, chat):
+    work = get_store().work_dir(chat)
+    (work / "ship.plan.json").write_text(json.dumps(SHIP))
+    open_editor(client, chat)
+    refused = client.post(f"/api/chats/{chat}/editor", json={"source": "ship.plan.json"})
+    assert refused.status_code == 409
+    opened = open_editor(client, chat, source="ship.plan.json", name="Ship", replace=True)
+    assert opened["revision"] == 1 and opened["name"] == "Ship"
+    assert [e["id"] for e in opened["plan"]["sections"][0]["steps"][0]] == ["wl", "wr"]
+    archived = list((work / "editor" / "archive").glob("*/plan.json"))
+    assert len(archived) == 1 and json.loads(archived[0].read_text())["sections"][0]["name"] == "model.ldr"
+    # The archived copy is not offered as a plan to open.
+    assert [p["path"] for p in client.get(f"/api/chats/{chat}/editor/plans").json()["plans"]] == ["ship.plan.json"]
+
+
+def test_edit_inside_a_sub_model_changes_every_copy(client, chat):
+    work = get_store().work_dir(chat)
+    (work / "ship.plan.json").write_text(json.dumps(SHIP))
+    open_editor(client, chat, source="ship.plan.json")
+    moved = apply_edits(client, chat, [{"op": "move", "id": "w1", "section": "wing.ldr", "position": [50, 0, 20]}], 1)
+    assert moved.status_code == 200, moved.text
+    assert "1 14 50 0 20" in moved.json()["mpd"].split("0 FILE wing.ldr")[1]
+    # A repeated run moves by its template, and rotating it is refused with a reason.
+    run = apply_edits(client, chat, [{"op": "move", "id": "row", "section": "ship.ldr", "position": [20, -24, 100]}], 2)
+    assert run.status_code == 200 and "1 4 40 -24 100" in run.json()["mpd"]
+    turned = apply_edits(client, chat, [{"op": "rotate", "id": "row", "section": "ship.ldr", "axis": "y", "degrees": 90}], 3)
+    assert turned.status_code == 400 and "repeated placement" in turned.text
+    # The last part of a sub-model cannot be deleted from it (the editor deletes the instance instead).
+    first = apply_edits(client, chat, [{"op": "delete", "id": "w1", "section": "wing.ldr"}], 3)
+    assert first.status_code == 200, first.text
+    last = apply_edits(client, chat, [{"op": "delete", "id": "w2", "section": "wing.ldr"}], 4)
+    assert last.status_code == 400 and "no steps left" in last.text
+
+
 def test_only_mode_refuses_and_prefer_flags(client, chat, inventories_dir):
     (inventories_dir / "bricks.json").write_text(json.dumps(
         {"name": "bricks", "rows": [{"part": "3005", "colour": 4, "qty": 2}]}))

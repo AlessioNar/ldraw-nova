@@ -334,8 +334,9 @@ def _apply_snap(plan, edit, parts):
     if "at" not in entry:
         _fail(f"entry {entry['id']} has no explicit position; only dropped parts can snap")
     target = _snap_target(plan, section, si, ti, ei, edit, parts)
+    # `nearest`: of the ways to connect the two parts, take the one closest to where the part was dropped.
     snapped = {"id": entry["id"], "ref": entry["ref"], "colour": entry["colour"],
-               "snap": {"to": target["id"], "near": copy.deepcopy(entry["at"])}}
+               "snap": {"to": target["id"], "near": copy.deepcopy(entry["at"]), "nearest": True}}
     for key in ("purpose", "yaw", "matrix"):
         if key in entry:
             snapped[key] = copy.deepcopy(entry[key])

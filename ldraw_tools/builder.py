@@ -142,12 +142,21 @@ def snap_placement(entry, model, models, placed, parts, matrix, instance_limit):
     except IndexError as exc:
         raise ValueError('snap leaf index is outside the selected part/submodel') from exc
     candidate_index = options.get('candidate', 0)
+    nearest = bool(options.get('nearest')) and 'candidate' not in options and 'near' in options
     report = snap_report(preview, parts, moving_index, fixed_index, moving_depth=0,
-                         limit=candidate_index+1, instance_limit=instance_limit,
+                         limit=64 if nearest else candidate_index+1, instance_limit=instance_limit,
                          moving_feature=options.get('moving_feature'), fixed_feature=options.get('fixed_feature'))
     if candidate_index >= len(report['candidates']):
         raise ValueError(f"snap {entry['id']}: no candidate {candidate_index}; inspect connector coverage/occupancy")
-    candidate = report['candidates'][candidate_index]
+    candidates = report['candidates']
+    if nearest:
+        # The toolkit's ranking is not about where the part was dropped; with `nearest` the connection closest to
+        # `near` wins (a brick dropped on top of a plate stays on top instead of snapping to its underside).
+        usable = [c for c in candidates if c['collision']['status'] != 'blocked'] or candidates
+        near = options['near']
+        candidate = min(usable, key=lambda c: sum((a - b) ** 2 for a, b in zip(c['local_placement']['at'], near)))
+    else:
+        candidate = candidates[candidate_index]
     if candidate['collision']['status'] == 'blocked':
         raise ValueError(f"snap {entry['id']}: candidate collides with a rectangular body")
     local = candidate['local_placement']
