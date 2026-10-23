@@ -349,7 +349,7 @@ TASKS = [
     {"id": "door", "output": "output/door.mpd",
      "task": "Build a door submodel: a door frame 4 studs wide and 6 bricks (144 LDU) high, centred on x=0,z=0, bottom edge on y=0, with a door leaf in the frame. Use a real door frame part and matching door part; verify they fit (matching dimensions) with the part bounds. One connected structure."},
 ]
-MAX_TOKENS = 4096                     # output cap per call
+MAX_TOKENS = 16000                    # output cap per call (4096 truncated two of five tasks in the first live run)
 RESULT_CHARS = 6000                   # tool results are cut to this before the model sees them
 WORKER_TOOLS = ("list_files", "read_file", "write_file", "run_python", "run_toolkit")
 CHARS_PER_TOKEN = 2.5                 # deliberately low, so the pre-call cost bound is an overestimate
@@ -416,7 +416,8 @@ def record_of(response) -> dict:
 class RunResult:
     task: str
     steps: int = 0
-    stop: str = ""                                    # finished | step_cap | cap_eur | error
+    stop: str = ""                                    # finished | truncated | step_cap | cap_eur | error
+    finish_reasons: list = field(default_factory=list)
     verdicts: list = field(default_factory=list)      # harness validation after each change of the output file
     self_validations: int = 0
     tokens: dict = field(default_factory=lambda: {"prompt": 0, "completion": 0, "cache_read": 0, "cache_write": 0})
@@ -433,7 +434,7 @@ class RunResult:
                 "steps": self.steps, "stop": self.stop, **{f"tokens_{k}": v for k, v in self.tokens.items()},
                 "cost_usd": round(self.cost_usd, 6), "cost_eur": round(self.cost_usd * eur_per_usd, 6),
                 "cache_read_total": self.tokens["cache_read"], "prefix_cached_from_step_2": self.prefix_cached,
-                "final_reply": self.final[:400], "error": self.error}
+                "final_reply": self.final[:400], "finish_reasons": self.finish_reasons, "error": self.error}
 
 
 def with_cache_marks(system: str, messages: list[dict], marker: dict) -> list[dict]:
@@ -480,11 +481,14 @@ async def run_task(task: dict, *, complete, dispatch, validate, cost_fn, row: di
         if step >= 1 and rec["cache_read"] > 0:
             result.prefix_cached = True
         reply = response.choices[0].message
+        result.finish_reasons.append(getattr(response.choices[0], "finish_reason", None))
         calls = [{"id": tc.id, "type": "function", "function": {"name": tc.function.name, "arguments": tc.function.arguments or "{}"}}
                  for tc in (getattr(reply, "tool_calls", None) or [])]
         history.append({"role": "assistant", "content": reply.content or (None if calls else ""), **({"tool_calls": calls} if calls else {})})
         if not calls:
-            result.stop, result.final = "finished", reply.content or ""
+            # A reply cut off at the output limit has no usable tool call: that is a failed run, not a finished one.
+            result.stop = "truncated" if result.finish_reasons[-1] == "length" else "finished"
+            result.final = reply.content or ""
             break
         for call in calls:
             name, raw = call["function"]["name"], call["function"]["arguments"]
@@ -584,7 +588,8 @@ async def live(args, model: str, key: str, row: dict, rate: float, usage) -> int
     (root / "output").mkdir(mode=0o755)
     store = ChatStore(root / "chats", root / "output")
     results = []
-    for task in TASKS:
+    only = {t.strip() for t in (args.only or "").split(",") if t.strip()}
+    for task in [t for t in TASKS if not only or t["id"] in only]:
         chat_id = f"measure-{task['id']}-{int(time.time())}"
         (root / "chats" / chat_id).mkdir(parents=True, exist_ok=True)
         ctx = tools.ToolContext(chat_id=chat_id, store=store, emit=lambda *_: None, options={})
@@ -635,6 +640,7 @@ def main(argv=None) -> int:
     c.add_argument("--model", default="anthropic/claude-haiku-5-5")
     c.add_argument("--cap-eur", type=float, default=1.00, help="hard total cap in EUR at settings.eur_per_usd()")
     c.add_argument("--max-steps", type=int, default=20)
+    c.add_argument("--only", default="", help="comma-separated task ids to run (default: all five)")
     c.add_argument("--out", default="capability-results.json")
     args = ap.parse_args(argv)
     return {"prices": cmd_prices, "baseline": cmd_baseline, "history": cmd_history, "capability": cmd_capability}[args.cmd](args)
