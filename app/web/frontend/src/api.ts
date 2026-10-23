@@ -256,3 +256,30 @@ export const inventoryApi = {
 
 /** A bundled set model (data/models-annotated) as the 3D viewer can load it. */
 export const referenceModelUrl = (file: string) => `/reference-models/${encodeURIComponent(file)}`;
+
+// ---- Manual editor palette (task 04) -------------------------------------------------------------
+export type EditorColour = { code: number; name: string; hex: string };
+export type PaletteColourRow = { colour: number; name: string; owned: number; used: number; available: number };
+export type PaletteItem = {
+  part: string; ref: string; description: string; colours: PaletteColourRow[]; in_inventory: boolean;
+  owned_total: number | null; available_total: number | null; used_up: boolean;
+};
+export type PaletteResult = { mode: PartsMode; items: PaletteItem[]; more: boolean };
+export type PaletteCheck = {
+  allowed: boolean; warning: string | null; message: string | null;
+  owned: number | null; used: number; available: number | null; short?: [string, number, number, number][];
+};
+
+export const paletteApi = {
+  colours: () => request<{ colours: EditorColour[] }>("/api/editor/colours"),
+  search: (chatId: string, q: { query?: string; colour?: number | null; inventoryOnly?: boolean; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (q.query) params.set("query", q.query);
+    if (q.colour != null) params.set("colour", String(q.colour));
+    if (q.inventoryOnly) params.set("inventory_only", "true");
+    if (q.limit != null) params.set("limit", String(q.limit));
+    return request<PaletteResult>(`/api/chats/${encodeURIComponent(chatId)}/editor/palette?${params}`);
+  },
+  check: (chatId: string, part: string, colour: number, quantity = 1) =>
+    request<PaletteCheck>(`/api/chats/${encodeURIComponent(chatId)}/editor/palette/check`, { method: "POST", body: json({ part, colour, quantity }) }),
+};
