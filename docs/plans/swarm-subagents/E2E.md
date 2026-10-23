@@ -15,7 +15,7 @@ Other configurations (single Opus, Opus planner + Haiku workers) and the medium 
 | wall time | 25.0 min | 24.0 min | |
 | model seconds / tool seconds | not split | not split | |
 | steps | 23 | 29 | |
-| output tokens | 100k | about 145k | |
+| output tokens | 100,011 | 145,113 | |
 | EUR total | 1.51 | 2.05 | |
 | EUR planner / workers | all planner | all planner | |
 | delegations, statuses | none | none | |
@@ -25,7 +25,7 @@ Other configurations (single Opus, Opus planner + Haiku workers) and the medium 
 | validate verdict | n/a | n/a | |
 | parts check | n/a | n/a | |
 
-(The 145k output figure for run 2 is the one quoted in the brief's hand-off; confirm against the recorded chat. The README table estimate for this configuration is 0.94 EUR; for single Sonnet 5.0 EUR for a finished model, which the two runs did not reach.)
+(Baseline figures are from the two recorded benchmark results, 2026-10-23: run 1 1,499.9 s, 23 steps, EUR 1.5106, 100,011 output tokens; run 2 1,441.0 s, 29 steps, EUR 2.0513, 145,113 output tokens. The README table estimate for this configuration is 0.94 EUR; for single Sonnet 5.0 EUR for a finished model, which the two runs did not reach.)
 
 Is the 2 EUR target met for this prompt? ____ . At what quality? ____ . Note that the brief's medium prompt is NOT run under the 3 EUR cap, so the medium-model claim stays unmeasured.
 
