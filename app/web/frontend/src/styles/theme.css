@@ -20,6 +20,7 @@
   --shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 2px 8px rgb(0 0 0 / 0.04);
   --radius: 10px;
   --sidebar-w: 288px;
+  --rail-w: 48px;
   color-scheme: light;
 }
 

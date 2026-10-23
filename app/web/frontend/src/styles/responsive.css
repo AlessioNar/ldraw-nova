@@ -22,3 +22,13 @@
   .modal-backdrop { padding: 0; }
   .modal { border-radius: 0; height: 100%; }
 }
+
+/* --- small screens: sidebar drawer (no rail) --- */
+@media (max-width: 820px) {
+  .sidebar-toggle { display: none; }
+  .sidebar-close { display: block; }
+  .chat-item:hover .chat-time { visibility: visible; }
+  .chat-delete { opacity: 1; top: 50%; transform: translateY(-50%); }
+  .chat-item { padding: 9px 8px; }
+  .chat-link { padding-right: 18px; }
+}
