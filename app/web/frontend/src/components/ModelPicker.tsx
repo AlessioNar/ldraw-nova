@@ -6,7 +6,7 @@ import { isUnsupported, UNSUPPORTED_HINT, providerName, recentModels, rememberMo
 import type { LlmEntry } from "../api";
 
 /** List price per million tokens, as the provider quotes it (dollars); "price unknown" when the catalogue has none. */
-export function priceLabel(model: LlmEntry): string {
+export function priceLabel(model: Pick<LlmEntry, "profile">): string {
   const p = model.profile.pricing;
   if (!p || p.input == null || p.output == null) return "price unknown";
   const fmt = (n: number) => (n >= 1 ? String(+n.toFixed(2)) : n.toFixed(2));

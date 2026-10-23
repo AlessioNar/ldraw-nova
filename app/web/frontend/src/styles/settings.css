@@ -66,3 +66,18 @@
 .environment-tooltip { display: none; position: absolute; right: 0; bottom: calc(100% + 8px); width: 240px; max-width: 65vw; padding: 8px 10px; font-size: 12px; font-weight: normal; color: var(--fg); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 6px; z-index: 3; }
 .environment-warning:hover .environment-tooltip, .environment-warning:focus .environment-tooltip { display: block; }
 .settings-workers { margin-bottom: 28px; }
+.provider-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.provider-card { display: flex; flex-direction: column; gap: 10px; }
+.provider-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.provider-key { display: flex; flex-direction: column; gap: 4px; }
+.provider-key input { min-width: 0; width: 100%; }
+.provider-card-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.provider-card p { margin: 0; }
+.models-provider { margin-bottom: 12px; }
+.model-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.model-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.role-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.role-picker { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.advanced-settings { margin-top: 24px; }
+.advanced-settings > summary { cursor: pointer; font-weight: 600; margin-bottom: 14px; }
+@media (max-width: 640px) { .role-pickers { grid-template-columns: 1fr; } }

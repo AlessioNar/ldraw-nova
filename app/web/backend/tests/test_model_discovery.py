@@ -127,3 +127,26 @@ def test_explicit_standard_api_base_still_discovers_metadata(monkeypatch):
         result = asyncio.run(model_discovery.discover({"litellm_params": {"model": "openrouter/x-ai/grok-4.20", "api_base": base}}))
         assert result["lookup_status"] == "live" and result["context_window"] == 2_000_000
     assert len(calls) == 2
+
+
+def test_provider_key_status_and_free_check(monkeypatch):
+    import httpx
+    import environment_config
+    monkeypatch.setattr(environment_config, "snapshot", lambda: {"ANTHROPIC_API_KEY": "sk-secret"})
+    client = TestClient(main.app)
+    assert client.get("/api/llm-providers/keys").json() == {"keys": {"anthropic": True, "openai": False, "openrouter": False}}
+    assert client.post("/api/llm-providers/openai/test").json()["ok"] is False
+    assert client.post("/api/llm-providers/gemini/test").status_code == 400
+    seen = {}
+    async def fetch(http, url, headers=None):
+        seen.update(url=url, headers=headers)
+        return {"data": []}
+    monkeypatch.setattr(model_discovery, "_fetch_json", fetch)
+    result = client.post("/api/llm-providers/anthropic/test").json()
+    assert result["ok"] and "sk-secret" not in json.dumps(result)
+    assert seen["url"].startswith("https://api.anthropic.com/v1/models") and seen["headers"]["x-api-key"] == "sk-secret"
+    async def rejected(http, url, headers=None):
+        raise httpx.HTTPStatusError("no", request=httpx.Request("GET", url), response=httpx.Response(401))
+    monkeypatch.setattr(model_discovery, "_fetch_json", rejected)
+    bad = client.post("/api/llm-providers/anthropic/test").json()
+    assert bad["ok"] is False and "rejected" in bad["error"]
