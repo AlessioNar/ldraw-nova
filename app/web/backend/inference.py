@@ -52,10 +52,14 @@ async def params_for(entry: dict, options: dict) -> dict:
     elif options.get("effort") and style == "anthropic":
         params["thinking"] = {"type": "adaptive"}
         params["output_config"] = {"effort": options["effort"]}
+    elif options.get("effort") and style == "mistral":
+        # LiteLLM drops reasoning_effort for Mistral, so send it as a raw body field.
+        params.pop("reasoning_effort", None)
+        params["extra_body"] = {**params.get("extra_body", {}), "reasoning_effort": options["effort"]}
     elif options.get("effort") and style == "reasoning_effort":
         params["reasoning_effort"] = options["effort"]
     elif options.get("effort"):
-        # The provider has no effort field (e.g. Mistral); sending one 400s.
+        # The provider has no effort field ; sending one 400s.
         params.pop("reasoning_effort", None)
     elif style == "openrouter" and model_catalog.entry_profile(entry).get("reasoning") is True:
         # Some providers expose only an on/off switch, not effort levels. A

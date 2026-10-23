@@ -20,17 +20,17 @@ from dataclasses import dataclass, field
 class Provider:
     prefix: str                       # litellm model prefix, including the slash
     label: str                        # what the UI calls it
-    effort: str | None = None         # "reasoning_effort" | "openrouter" | "anthropic" | None
+    effort: str | None = None         # "reasoning_effort" | "openrouter" | "anthropic" | "mistral" | None
     prompt_caching: bool = False      # accepts cache_control on a content block
     caching_models: tuple[str, ...] = ()  # or only for model names starting with one of these
     reasoning_details: bool = False   # streams OpenRouter-style reasoning_details blocks
-    discovery: str | None = None      # live capability lookup: "openrouter" | "anthropic" | None
+    discovery: str | None = None      # live capability lookup: "openrouter" | "anthropic" | "mistral" | None
     gateway: bool = False             # serves other providers' models under its own prefix
     api_bases: frozenset[str] = field(default_factory=frozenset)
 
 
 # `effort=None` means the provider rejects or ignores an effort field; sending
-# `reasoning_effort` to one of those is how Mistral used to 400.
+# `reasoning_effort` to one of those is how Mistral used to 400 (it now has its own style).
 REGISTRY: tuple[Provider, ...] = (
     Provider(prefix="anthropic/", label="Claude", effort="anthropic", prompt_caching=True,
              discovery="anthropic",
@@ -48,7 +48,12 @@ REGISTRY: tuple[Provider, ...] = (
     # so caching is matched on the name rather than resolved through `inner`.
     Provider(prefix="bedrock/", label="Amazon Bedrock", gateway=True,
              caching_models=("anthropic.",)),
-    Provider(prefix="mistral/", label="Mistral"),
+    # Mistral (docs.mistral.ai, read 2026-10-23): prompt caching is keyed by `prompt_cache_key` and has no
+    # cache_control block, so prompt_caching stays False (Mistral bills cached tokens at 10% but they are priced in
+    # full here, see usage.step_cost_usd). `reasoning_effort` is a chat-completions field for some models only
+    # (Small 4, Medium 3.5, Large 4), and LiteLLM drops it for Mistral, so it travels in extra_body.
+    Provider(prefix="mistral/", label="Mistral", effort="mistral", discovery="mistral",
+             api_bases=frozenset({"https://api.mistral.ai", "https://api.mistral.ai/v1"})),
     Provider(prefix="ollama_chat/", label="Ollama"),
     Provider(prefix="ollama/", label="Ollama"),
 )

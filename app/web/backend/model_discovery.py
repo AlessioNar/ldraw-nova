@@ -1,7 +1,7 @@
 """Best-effort model details, refreshed only when the user clicks Test.
 
 OpenAI's Models API does not publish limits/capabilities/prices: use the sourced
-documentation snapshot there. OpenRouter publishes all three; Claude's Models
+documentation snapshot there. OpenRouter publishes all three; Mistral publishes context and vision/tools flags, not prices; Claude's Models
 API publishes input/output limits and selected capabilities, but not pricing.
 Never infer unknown features from an OK reply or forward keys to a catalogue.
 """
@@ -50,6 +50,20 @@ def openrouter_profile(model: str, data: dict) -> dict:
             "source_url": "https://openrouter.ai/" + model.removeprefix("openrouter/"),
             "source_label": "OpenRouter catalogue", "verified_at": datetime.now(timezone.utc).isoformat(),
             "lookup_status": "live"}
+
+
+def mistral_profile(data: dict) -> dict:
+    """Fields Mistral's models API publishes: context length and capability flags, no prices or output limit."""
+    update = {"lookup_status": "live", "verified_at": datetime.now(timezone.utc).isoformat(),
+              "source_label": "Mistral API + published pricing"}
+    window = positive_int(data.get("max_context_length"))
+    if window:
+        update.update(context_window=window, context_budgets=[window])
+    caps = data.get("capabilities") or {}
+    for ours, theirs in (("vision", "vision"), ("tools", "function_calling")):
+        if isinstance(caps.get(theirs), bool):
+            update[ours] = caps[theirs]
+    return update
 
 
 async def _fetch_json(client, url, headers=None):
@@ -105,6 +119,12 @@ async def discover(entry: dict) -> dict:
                             spec["default_effort"] = None
                     spec.update(lookup_status="live", verified_at=datetime.now(timezone.utc).isoformat(),
                                 source_label="Claude API + published pricing")
+            elif provider.discovery == "mistral":
+                key = llm_config.resolve_params(entry).get("api_key") or environment_config.snapshot().get("MISTRAL_API_KEY")
+                if key:
+                    data = await _fetch_json(client, "https://api.mistral.ai/v1/models/" + quote(model.split("/", 1)[1], safe=""),
+                                             headers={"Authorization": f"Bearer {key}"})
+                    spec.update(mistral_profile(data))
     except Exception:
         # Discovery must not turn a working connection into a failed Test, or
         # expose a provider error that could contain submitted credentials.

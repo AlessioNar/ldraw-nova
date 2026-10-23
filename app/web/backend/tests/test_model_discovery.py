@@ -134,7 +134,7 @@ def test_provider_key_status_and_free_check(monkeypatch):
     import environment_config
     monkeypatch.setattr(environment_config, "snapshot", lambda: {"ANTHROPIC_API_KEY": "sk-secret"})
     client = TestClient(main.app)
-    assert client.get("/api/llm-providers/keys").json() == {"keys": {"anthropic": True, "openai": False, "openrouter": False}}
+    assert client.get("/api/llm-providers/keys").json() == {"keys": {"anthropic": True, "openai": False, "mistral": False, "openrouter": False}}
     assert client.post("/api/llm-providers/openai/test").json()["ok"] is False
     assert client.post("/api/llm-providers/gemini/test").status_code == 400
     seen = {}

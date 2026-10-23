@@ -23,7 +23,7 @@ export default function Settings() {
   const [error, setError] = useState("");
   useEffect(() => { api.catalog().then(r => setCatalog(r.models)).catch(e => setError(e.message)); }, []);
   const supported = llms.filter(m => !isUnsupported(m));
-  const providers = [...new Set(["anthropic", "openai", "openrouter", ...supported.map(m => agentProvider(String(m.litellm_params.model)))]), ...(supported.length < llms.length ? [NEEDS_KEY] : [])];
+  const providers = [...new Set(["anthropic", "openai", "mistral", "openrouter", ...supported.map(m => agentProvider(String(m.litellm_params.model)))]), ...(supported.length < llms.length ? [NEEDS_KEY] : [])];
   const close = () => { setEditing(null); setNewId(null); };
   return <div className="page settings">
     <header className="page-head"><div><h1>Settings</h1><p className="muted">Add a provider key, pick your models, then choose who builds.</p></div></header>
