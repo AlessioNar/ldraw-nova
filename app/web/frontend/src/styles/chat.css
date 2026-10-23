@@ -81,6 +81,13 @@
 .composer-notice { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; }
 
 .editor-page { display: flex; flex-direction: column; height: 100%; }
-.editor-frame { flex: 1; width: 100%; border: 0; }
+.editor-body { flex: 1; min-height: 0; display: flex; }
+.editor-frame { flex: 1; min-width: 0; border: 0; }
+.editor-side { flex: none; width: 320px; border-left: 1px solid var(--border); overflow-y: auto; }
+@media (max-width: 800px) {
+  .editor-body { flex-direction: column; }
+  .editor-frame { flex: 1 1 60%; min-height: 240px; }
+  .editor-side { width: auto; max-height: 40%; border-left: 0; border-top: 1px solid var(--border); }
+}
 .chat-head:has(.chat-edit-link) { display: flex; align-items: center; gap: 12px; }
 .chat-head h2 { flex: 1; min-width: 0; }

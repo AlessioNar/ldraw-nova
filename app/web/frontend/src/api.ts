@@ -97,11 +97,12 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+      const d = body.detail;
+      detail = typeof d === "string" ? d : typeof d?.detail === "string" ? d.detail : JSON.stringify(d);
     } catch {
       /* not JSON */
     }
-    throw new Error(detail || `HTTP ${res.status}`);
+    throw Object.assign(new Error(detail || `HTTP ${res.status}`), { status: res.status });
   }
   const type = res.headers.get("content-type") || "";
   return (type.includes("json") ? res.json() : res.text()) as Promise<T>;
@@ -270,6 +271,12 @@ export type PaletteResult = { mode: PartsMode; items: PaletteItem[]; more: boole
 export type PaletteCheck = {
   allowed: boolean; warning: string | null; message: string | null;
   owned: number | null; used: number; available: number | null; short?: [string, number, number, number][];
+};
+
+export const editorApi = {
+  edits: (chatId: string, edits: Record<string, unknown>[], baseRevision: number) =>
+    request<{ revision: number }>(`/api/chats/${encodeURIComponent(chatId)}/editor/edits`,
+      { method: "POST", body: json({ edits, base_revision: baseRevision }) }),
 };
 
 export const paletteApi = {

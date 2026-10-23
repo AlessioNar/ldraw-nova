@@ -37,7 +37,7 @@ export function nextEntryId(plan: PlanLike): string {
 
 export type SelectionPoint = { id: string; at: [number, number, number] };
 
-/** Add at the selection's position (one brick height above it) or just above the origin, then snap to the nearest connection. */
+/** Add at the selection's position (one brick height above it) or just above the origin; with `snap` the batch ends with a snap of the new entry. The API validates a batch against the plan before it, so a caller must send the snap as a second request (EditorPage does). */
 export function addEdits(plan: PlanLike, part: string, colour: number, selection?: SelectionPoint | null, snap = true) {
   const at = selection ? [selection.at[0], selection.at[1] - 24, selection.at[2]] : [0, -24, 0];
   const add = { op: "add", section: plan.sections[0].name, part: `${partKey(part)}.dat`, colour, position: at };

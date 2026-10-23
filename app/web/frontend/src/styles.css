@@ -18,3 +18,7 @@
 .editor-palette-results li.used-up { opacity: 0.6; }
 .editor-palette-qty, .editor-palette-more { font-size: 0.85em; opacity: 0.75; }
 .editor-palette-warning, .editor-palette-message { font-size: 0.85em; color: #b45309; }
+.editor-palette-search { display: flex; flex-direction: column; gap: 4px; }
+.editor-palette-search label { display: flex; align-items: center; justify-content: flex-start; gap: 6px; font-size: 0.9em; }
+.editor-palette-search input[type="checkbox"] { width: auto; flex: none; }
+.editor-palette-message { color: #b91c1c; }
