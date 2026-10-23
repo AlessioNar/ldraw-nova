@@ -107,19 +107,23 @@
       const missing = new Set();
       let scene;
       const fail = message => {
+        clearTimeout(timer);
         URL.revokeObjectURL(url);
         try { scene && scene.dispose && scene.dispose(); } catch (e) { /* ignore */ }
         pane.remove();
         reject(new Error(message));
       };
+      // A load that never reports back (a throwing callback in the vendored scene code) must not leave the page stuck.
+      const timer = setTimeout(() => fail('Loading the model timed out'), 30000);
       LDR.Colors.load(() => {
         try {
           scene = new LDrawOrg.Model(canvas, url, {
             idToUrl, idToTextureUrl: id => `${LIB}/parts/textures/${id.toLowerCase()}`,
             onProgress: () => {},
-            onLoaded: () => { URL.revokeObjectURL(url); resolve({ scene, pane, missing }); },
+            onLoaded: () => { clearTimeout(timer); URL.revokeObjectURL(url); resolve({ scene, pane, missing }); },
             physicalRenderingAge: 0,
           });
+          window.scene = scene;                       // ldraworgscene.js refers to a global `scene` (viewer.js declares it too)
           scene.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
           scene.renderer.shadowMap.enabled = false;
           usePerspective(scene);
