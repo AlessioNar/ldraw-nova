@@ -5,6 +5,8 @@ import AgentForm, { ConnectionPill } from "../components/AgentForm";
 import AgentDetails from "../components/AgentDetails";
 import { useApp } from "../context";
 import WorkerModelPicker from "../components/WorkerModelPicker";
+import ModelPicker from "../components/ModelPicker";
+import ProviderSettings from "../components/ProviderSettings";
 import { agentProvider, isUnsupported, UNSUPPORTED_HINT, providerLabel } from "../modelChoices";
 
 // Pseudo-group for stored agents that cannot run until converted to an API key.
@@ -24,21 +26,31 @@ export default function Settings() {
   const providers = [...new Set(["anthropic", "openai", "openrouter", ...supported.map(m => agentProvider(String(m.litellm_params.model)))]), ...(supported.length < llms.length ? [NEEDS_KEY] : [])];
   const close = () => { setEditing(null); setNewId(null); };
   return <div className="page settings">
-    <header className="page-head"><div><h1>Settings</h1><p className="muted">Add API keys and choose the agents you build with.</p></div></header>
-    <EnvironmentSettings />
-    <section aria-labelledby="workers-heading">
-      <header className="page-head settings-models-head"><div><h2 id="workers-heading">Worker model</h2>
-        <p className="muted small">The cheap model the main agent hands bounded jobs to (needs Full access). Each chat can override it in the chat box; "No workers" turns delegation off.</p>
-      </div></header>
-      <WorkerModelPicker value={defaultWorkerId} disabled={busy}
-        onChange={id => { setBusy(true); api.setWorkerDefault(id).then(refreshLlms, e => setError(e.message)).finally(() => setBusy(false)); }} />
+    <header className="page-head"><div><h1>Settings</h1><p className="muted">Add a provider key, pick your models, then choose who builds.</p></div></header>
+    <ProviderSettings catalog={catalog} onError={setError} />
+    {error && <div className="banner error" role="alert">{error}</div>}
+    <section aria-labelledby="roles-heading">
+      <header className="page-head settings-models-head"><div><h2 id="roles-heading">Roles</h2>
+        <p className="muted small">Pick which of your models does which job.</p></div></header>
+      <div className="role-pickers settings-workers">
+        <div className="panel role-picker"><strong>Main model (builds)</strong>
+          <small className="muted">The default for new chats. It plans and builds the model.</small>
+          <ModelPicker value={defaultLlmId} disabled={busy || !llms.length} label="Main model"
+            onChange={id => { setBusy(true); api.defaultLlm(id).then(refreshLlms, e => setError(e.message)).finally(() => setBusy(false)); }} /></div>
+        <div className="panel role-picker"><strong>Worker model (cheap jobs, optional)</strong>
+          <small className="muted">Needs Full access in the chat. "No workers" turns delegation off.</small>
+          <WorkerModelPicker value={defaultWorkerId} disabled={busy}
+            onChange={id => { setBusy(true); api.setWorkerDefault(id).then(refreshLlms, e => setError(e.message)).finally(() => setBusy(false)); }} /></div>
+      </div>
     </section>
+    <details className="advanced-settings">
+      <summary>Advanced: custom model IDs, base URLs, environment variables</summary>
+      <EnvironmentSettings />
     <section aria-labelledby="agents-heading">
-      <header className="page-head settings-models-head"><div><h2 id="agents-heading">Agents</h2>
+      <header className="page-head settings-models-head"><div><h2 id="agents-heading">Custom agents</h2>
         <p className="muted small">Building LDraw models needs image input to inspect designs, reasoning to plan builds, and tool calling to run the app’s building tools.</p>
         <p className="muted small">Choose a provider, click Add agent, and select a preset. Add an API key, then click Test to check the connection and available model details.</p>
       </div></header>
-      {error && <div className="banner error" role="alert">{error}</div>}
       <div className="agent-providers">{providers.map(provider => {
         const entries = provider === NEEDS_KEY ? llms.filter(isUnsupported) : supported.filter(m => agentProvider(String(m.litellm_params.model)) === provider);
         const open = expanded === provider;
@@ -72,5 +84,6 @@ export default function Settings() {
         </section>;
       })}</div>
     </section>
+    </details>
   </div>;
 }

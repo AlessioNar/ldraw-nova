@@ -4,12 +4,14 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Optional
 
+import httpx
 import litellm
 import yaml
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
+import environment_config
 import inference
 import llm_config
 import model_catalog
@@ -147,3 +149,39 @@ def llm_provider_models(provider: str):
     presets = [m["model"] for m in model_catalog.CATALOG if m["model"].startswith(provider + "/")]
     candidates = {m if m.startswith(provider + "/") else provider + "/" + m for m in models} | set(presets)
     return {"models": sorted(m for m in candidates if model_catalog.builder_supported(m))}
+
+
+# Provider key checks use each provider's free lookup, never a completion, so Test spends no tokens.
+KEY_CHECKS = {
+    "anthropic": ("ANTHROPIC_API_KEY", "https://api.anthropic.com/v1/models?limit=1",
+                  lambda key: {"x-api-key": key, "anthropic-version": "2023-06-01"}),
+    "openai": ("OPENAI_API_KEY", "https://api.openai.com/v1/models", lambda key: {"Authorization": f"Bearer {key}"}),
+    # OpenRouter's model list is public; /key is the free call that actually checks the key.
+    "openrouter": ("OPENROUTER_API_KEY", "https://openrouter.ai/api/v1/key", lambda key: {"Authorization": f"Bearer {key}"}),
+}
+
+
+@router.get("/api/llm-providers/keys")
+def llm_provider_keys():
+    """Which providers have a key set (saved here or inherited); never the key itself."""
+    env = environment_config.snapshot()
+    return {"keys": {p: bool(env.get(name)) for p, (name, _url, _h) in KEY_CHECKS.items()}}
+
+
+@router.post("/api/llm-providers/{provider}/test")
+async def llm_provider_test(provider: str):
+    if provider not in KEY_CHECKS:
+        raise HTTPException(400, "No free key check exists for this provider")
+    name, url, headers = KEY_CHECKS[provider]
+    key = environment_config.snapshot().get(name)
+    if not key:
+        return {"ok": False, "error": f"No key saved. Paste your {name} first."}
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
+            await model_discovery._fetch_json(client, url, headers(key))
+        return {"ok": True, "message": "Key accepted (checked with the provider's free models lookup; no tokens used)."}
+    except httpx.HTTPStatusError as exc:
+        code = exc.response.status_code
+        return {"ok": False, "error": "The provider rejected this key." if code in (401, 403) else f"The provider answered HTTP {code}."}
+    except Exception:  # noqa: BLE001 - never echo an error that could contain the key
+        return {"ok": False, "error": "Could not reach the provider. Check the network and try again."}
