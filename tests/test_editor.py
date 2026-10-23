@@ -1,12 +1,15 @@
 """Manual plan editing: operations, inverse history, rebuild and snapping."""
 import copy
+import json
+import subprocess
+import sys
 
 import pytest
 from ldraw import Parts
 
 from ldraw_tools.builder import build_plan, load_plan
 from ldraw_tools.common import ROOT, dumps
-from ldraw_tools.editor import apply, inverse, placements, rebuild, snap
+from ldraw_tools.editor import apply, inverse, placements, rebuild, snap, usage
 
 
 def plan():
@@ -191,3 +194,104 @@ def test_snap_explicit_target(connected):
              {"id": "lid", "ref": "3022.dat", "colour": 14, "at": [0, -50, 0]}]]}]}
     post = snap(pre, "lid", connected, to="base")
     assert post["sections"][0]["steps"][0][2]["at"] == [0, -8, 0]
+
+
+def test_usage_counts_leaves_repeats_and_colour_inheritance(parts):
+    nested = {"version": 1, "author": "Tests", "sections": [
+        {"name": "main.ldr", "description": "d", "steps": [[
+            {"id": "a", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0]},
+            {"id": "row", "ref": "unit.ldr", "colour": 14, "at": [60, 0, 0], "repeat": {"count": 2, "step": [40, 0, 0]}},
+            {"id": "blue", "ref": "unit.ldr", "colour": 1, "at": [200, 0, 0]}]]},
+        {"name": "unit.ldr", "description": "d", "steps": [[
+            {"id": "leaf", "ref": "3003.dat", "colour": 16, "at": [0, 0, 0]},
+            {"id": "own", "ref": "3022.dat", "colour": 0, "at": [0, 0, 0]}]]}]}
+    assert usage(nested) == {("3001", 4): 1, ("3003", 14): 2, ("3003", 1): 1, ("3022", 0): 3}
+
+
+def run_editor_cli(library, *arguments):
+    return subprocess.run([sys.executable, "-c",
+                           "from ldraw_tools.cli import main; import sys; sys.exit(main())",
+                           "--library", str(library), "editor", *arguments],
+                          capture_output=True, text=True, cwd=ROOT)
+
+
+def small_plan():
+    return {"version": 1, "author": "Tests", "sections": [
+        {"name": "model.ldr", "description": "d", "steps": [
+            [{"id": "base", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0]}]]}]}
+
+
+def editor_session(parts, tmp_path):
+    library = parts.path.parent
+    plan_path, state_path, mpd_path = (tmp_path / n for n in ("plan.json", "state.json", "preview.mpd"))
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(small_plan()))
+    opened = run_editor_cli(library, "open", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path,
+                            "--from", source, "--name", "cli test")
+    return library, plan_path, state_path, mpd_path, json.loads(opened.stdout)
+
+
+def test_editor_cli_open_apply_undo_roundtrip(parts, tmp_path):
+    library, plan_path, state_path, mpd_path, report = editor_session(parts, tmp_path)
+    assert report["ok"] and report["revision"] == 1 and report["undo_depth"] == 0
+    assert report["plan"]["sections"][0]["steps"][0][0]["id"] == "base"
+    assert "3001.dat" in mpd_path.read_text()
+
+    edits = tmp_path / "edits.json"
+    edits.write_text(json.dumps([{"op": "add", "section": "model.ldr", "part": "3003.dat",
+                                 "colour": 1, "position": [0, -24, 0]}]))
+    applied = run_editor_cli(library, "apply", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path,
+                             "--base-revision", "1", "--edits", edits)
+    report = json.loads(applied.stdout)
+    assert applied.returncode == 0 and report["ok"] and report["revision"] == 2 and report["undo_depth"] == 1
+    assert report["used"] == [["3001", 4, 1], ["3003", 1, 1]]
+
+    stale = run_editor_cli(library, "apply", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path,
+                           "--base-revision", "1", "--edits", edits)
+    report = json.loads(stale.stdout)
+    assert stale.returncode == 1 and report["conflict"] and report["revision"] == 2
+
+    undid = run_editor_cli(library, "undo", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path)
+    report = json.loads(undid.stdout)
+    assert undid.returncode == 0 and report["ok"] and report["undo_depth"] == 0 and report["redo_depth"] == 1
+    assert report["used"] == [["3001", 4, 1]]
+
+    redone = run_editor_cli(library, "redo", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path)
+    report = json.loads(redone.stdout)
+    assert redone.returncode == 0 and report["ok"] and report["undo_depth"] == 1 and report["redo_depth"] == 0
+
+
+def test_editor_cli_only_mode_refuses_a_short_edit(parts, tmp_path):
+    library, plan_path, state_path, mpd_path, report = editor_session(parts, tmp_path)
+    assert report["ok"]
+    owned = tmp_path / "owned.json"
+    owned.write_text(json.dumps([["3001", 4, 1]]))          # the plan already uses the only owned brick
+    edits = tmp_path / "edits.json"
+    edits.write_text(json.dumps([{"op": "add", "section": "model.ldr", "part": "3003.dat",
+                                 "colour": 1, "position": [0, -24, 0]}]))
+    refused = run_editor_cli(library, "apply", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path,
+                             "--base-revision", "1", "--mode", "only", "--owned", owned, "--edits", edits)
+    report = json.loads(refused.stdout)
+    assert refused.returncode == 1 and not report["ok"]
+    assert report["short"] == [["3003", 1, 1, 0]]
+    assert len(json.loads(plan_path.read_text())["sections"][0]["steps"][0]) == 1  # nothing was written
+    assert json.loads(state_path.read_text())["revision"] == 1
+
+    allowed = run_editor_cli(library, "apply", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path,
+                             "--base-revision", "1", "--mode", "prefer", "--owned", owned, "--edits", edits)
+    report = json.loads(allowed.stdout)
+    assert allowed.returncode == 0 and report["ok"] and report["short"] == [["3003", 1, 1, 0]]
+
+
+def test_editor_cli_failed_rebuild_leaves_files_untouched(parts, tmp_path):
+    library, plan_path, state_path, mpd_path, report = editor_session(parts, tmp_path)
+    assert report["ok"]
+    before = (plan_path.read_text(), state_path.read_text(), mpd_path.read_text())
+    edits = tmp_path / "edits.json"
+    edits.write_text(json.dumps([{"op": "add", "section": "model.ldr", "part": "3001.dat",
+                                 "colour": 4, "position": [0, 0, 0]}]))     # same transform twice fails validation
+    failed = run_editor_cli(library, "apply", "--plan", plan_path, "--state", state_path, "--mpd", mpd_path,
+                            "--base-revision", "1", "--edits", edits)
+    report = json.loads(failed.stdout)
+    assert failed.returncode == 2 and report.get("error") and "same world transform" in report["error"]
+    assert (plan_path.read_text(), state_path.read_text(), mpd_path.read_text()) == before

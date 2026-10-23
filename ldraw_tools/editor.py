@@ -14,7 +14,7 @@ import numpy as np
 from ldraw import Piece
 from ldraw.lines import Comment
 
-from .builder import build_plan, check_schema, rotation
+from .builder import build_plan, check_schema, repeated, rotation
 from .common import jsonable, normalized
 
 PUBLIC_OPS = ("add", "move", "rotate", "recolour", "delete", "snap")
@@ -437,3 +437,32 @@ def rebuild(plan, parts):
 def snap(plan, entry_id, parts, to=None):
     """Lock an explicitly placed entry onto the nearest earlier connection."""
     return apply(plan, [{"op": "snap", "id": entry_id, "to": to}], parts)
+
+
+def usage(plan, parts=None):
+    """Leaf pieces per (part, colour), expanded the way the build counts them.
+
+    Repeats count per copy, submodel references recurse, and colour 16 inside a
+    referenced section inherits the referencing placement's colour. Only the
+    root section is walked: parts in unreferenced sections are not in the model.
+    Keys match `inventory.model_bom`: the part number without .dat, casefolded.
+    """
+    if parts is not None:
+        from .catalog import resolve_plan
+        plan = resolve_plan(plan, parts)
+    sections = {normalized(s["name"]): s for s in plan["sections"]}
+    result: dict[tuple[str, int], int] = {}
+
+    def walk(section, inherit):
+        for step in section["steps"]:
+            for entry in repeated(step):
+                colour = entry["colour"]
+                ref = normalized(entry["ref"])
+                if ref in sections:
+                    walk(sections[ref], colour if colour != 16 else inherit)
+                    continue
+                key = (ref.removesuffix(".dat"), colour if colour != 16 else inherit)
+                result[key] = result.get(key, 0) + 1
+
+    walk(plan["sections"][0], 16)
+    return result
