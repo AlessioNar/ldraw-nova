@@ -25,7 +25,7 @@
   if (!chatId) { setStatus('No chat given: add ?chat=<chat id>', true); return; }
   if (!WEBGL.isWebGLAvailable()) { setStatus('WebGL is not available in this browser.', true); return; }
 
-  const narrow = matchMedia('(max-width: 800px), (pointer: coarse)');
+  const narrow = matchMedia('(max-width: 560px), (pointer: coarse)');
   const canEdit = () => !narrow.matches;
   function showDeviceNote() {
     document.body.classList.toggle('readonly', !canEdit());
@@ -260,9 +260,9 @@
   }
 
   // Draw `session.mpd`; the previous picture stays until the new one is built.
-  async function show(session) {
+  async function show(session, reframe) {
     const old = state.shown;
-    const previous = old ? cameraInLdraw(old) : null;
+    const previous = old && !reframe ? cameraInLdraw(old) : null;
     let built;
     try {
       built = await loadScene(session.mpd);
@@ -363,6 +363,20 @@
     scene.scene.add(overlay);
     scaleGizmo(scene);
     scene.render();
+    postState();
+  }
+
+  // ---- bridge to the React page that may embed this one -------------------------------
+  // The parent shows the parts palette; it needs the live plan, used rows and selection,
+  // and asks for a reload after it posts edits of its own.
+  function postState() {
+    const s = state.session;
+    if (window.parent === window || !s) return;
+    const chosen = state.shown ? state.shown.placements.filter(p => state.selected.includes(p.id)) : [];
+    window.parent.postMessage({
+      source: 'ldraw-editor', type: 'state', revision: s.revision, plan: s.plan, parts: s.parts,
+      selection: chosen.map(p => ({ id: p.id, position: p.position })),
+    }, location.origin);
   }
 
   function handleMaterial(colour) {
@@ -437,7 +451,7 @@
   stage.addEventListener('pointerdown', e => {
     stage.focus({ preventScroll: true });
     const shown = state.shown;
-    if (!shown || e.button !== 0 || state.busy) return;
+    if (!shown || e.button !== 0 || state.busy || refreshing) return;
     state.gesture = { x: e.clientX, y: e.clientY, shift: e.shiftKey, drag: null };
     if (!canEdit() || state.stale) return;
     const ray = pointerRay(e);
@@ -584,6 +598,30 @@
     else if (mod && key === 'y') { e.preventDefault(); redo(); }
     else if (!mod && (e.key === 'Delete' || e.key === 'Backspace') && state.selected.length) { e.preventDefault(); remove(); }
     else if (e.key === 'Escape' && state.selected.length) { state.selected = []; drawOverlay(); refreshControls(); setRestingStatus(); }
+  });
+
+  // ---- live refresh: pick up changes made by the agent, the palette or another tab ------
+
+  let refreshing = false;
+  const idle = () => !state.busy && !state.stale && !state.gesture && !refreshing && state.session;
+  async function refresh(reframe) {
+    if (!idle()) return;
+    refreshing = true;                           // a request in flight: no second poll, no drag start (see pointerdown)
+    try {
+      const session = await call('');
+      if (session.revision === state.session.revision || state.busy || state.gesture) return;
+      state.busy = true;                         // blocks a drag from starting while the model is rebuilt
+      refreshControls();
+      try { await show(session, reframe); } finally { state.busy = false; refreshControls(); }
+    } catch (e) { /* offline or no plan yet: try again at the next tick */ }
+    finally { refreshing = false; }
+  }
+  setInterval(() => { if (!document.hidden) refresh(); }, 3000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  addEventListener('message', e => {
+    if (e.source !== window.parent || e.origin !== location.origin || !e.data) return;
+    if (e.data.type === 'reload') refresh(true);   // the palette added a part: frame the whole model
+    else if (e.data.type === 'ping') postState();
   });
 
   addEventListener('resize', () => state.shown && state.shown.scene.onChange());
