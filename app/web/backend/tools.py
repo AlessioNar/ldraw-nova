@@ -446,6 +446,8 @@ TOOLS: dict[str, tuple[dict, Callable[..., Awaitable[ToolResult]]]] = {
         ["path", "content"]), t_write_file),
 }
 
+import editor_tools  # noqa: E402 - needs ToolResult above; adds editor_open / editor_state / editor_edit
+TOOLS.update({name: (editor_tools.SCHEMAS[name], fn) for name, fn in editor_tools.FUNCTIONS.items()})
 TOOL_SCHEMAS = [schema for schema, _fn_ in TOOLS.values()]
 
 
