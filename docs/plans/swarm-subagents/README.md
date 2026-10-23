@@ -129,6 +129,8 @@ Prices per 1M tokens: Opus 5.5 $4 in / $20 out (catalogue). Cache read 0.1x, wri
 
 Reading: with a Sonnet planner and case A workers the 2 EUR target is met with margin (0.94 EUR), and an Opus planner still fits (1.65 EUR). With case B worker prices the target is missed (2.8 and 3.5 EUR) unless the swarm shrinks to about 3 workers at 15 steps. Against simply switching to Sonnet, the swarm gains about 5x in case A and only about 1.8x in case B. The result is driven by (1) the planner's step count and output tokens, (2) the worker price, (3) how many repair rounds a weak model needs.
 
+**Intended configuration (owner, 2026-10-23).** Workers run on Haiku 5.5; the planner is Opus 5.5 or Sonnet 5.5. That is the "Opus planner + workers A" row (about 1.65 EUR) and the "Sonnet planner + workers A" row (about 0.94 EUR), valid only if Haiku 5.5 really costs about $0.1 / $0.5 per 1M tokens. That figure is LiteLLM's and unverified, and the bundled catalogue has no Haiku 5.5 entry, so the app prices the worker through LiteLLM's fallback until one is added. At $1 / $5 the Opus planner row becomes about 3.5 EUR. Brief 01 checks the price and that the model is available on the account before anything else is built. Once the price is confirmed, add a Haiku 5.5 entry to `app/web/backend/model_catalog_data.json` with its source and date.
+
 Not modelled: image tokens of renders (a reviewer viewing 6 renders can add 10-30k tokens per step), the 1h cache TTL, tool-result sizes, the planner redoing failed pieces, and any minimum cacheable prompt length on the worker model.
 
 ## 9. What is uncertain, and what to measure first
