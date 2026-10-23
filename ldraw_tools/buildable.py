@@ -18,7 +18,7 @@ from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .common import CACHE, atomic_write, database_path, models_path
+from .common import CACHE, atomic_write, database_path, models_path, readonly_uri
 from .inventory import colour_name, combine, describe, index_owned, match_bom, substituted_pieces
 
 VERSION = 1
@@ -47,7 +47,7 @@ def model_files(root=None):
 def descriptions(database=None):
     """{model file name: description} from the discovery database; empty when it is unavailable."""
     try:
-        with sqlite3.connect(database_path(database).as_uri() + "?mode=ro", uri=True) as db:
+        with sqlite3.connect(readonly_uri(database_path(database)), uri=True) as db:
             return dict(db.execute("SELECT model, description FROM MODELS_DESCRIPTIONS"))
     except (sqlite3.Error, OSError):
         return {}

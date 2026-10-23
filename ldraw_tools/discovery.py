@@ -16,7 +16,7 @@ from collections import Counter
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 
-from .common import CACHE, atomic_write, database_path, dumps, jsonable, models_path, normalized
+from .common import CACHE, atomic_write, database_path, dumps, jsonable, models_path, normalized, readonly_uri
 from .document import dependency_closure, is_part, parse_source, physical_context, resolve_section, section_table
 from .resources import model_sections
 
@@ -126,7 +126,7 @@ class DiscoveryIndex:
                 return report
         inventories = {}
         rows, errors = [], []
-        with sqlite3.connect(self.database.as_uri()+'?mode=ro', uri=True) as source:
+        with sqlite3.connect(readonly_uri(self.database), uri=True) as source:
             for kind, field in FIELDS.items():
                 table, column = field.split('.')
                 for (text,) in source.execute(f'SELECT {column} FROM {table}'):

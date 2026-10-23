@@ -6,7 +6,7 @@ import sqlite3
 import subprocess
 from pathlib import Path
 
-from .common import ROOT, CACHE, atomic_write, database_path, models_path
+from .common import ROOT, CACHE, atomic_write, database_path, models_path, readonly_uri
 
 
 def spec_pages(pdf=None):
@@ -49,7 +49,7 @@ def search_models(query, *, root=None, database=None, limit=10, submodels=False,
     root = models_path(root)
     db = database_path(database)
     if db.exists():
-        with sqlite3.connect(db.as_uri() + "?mode=ro", uri=True) as con:
+        with sqlite3.connect(readonly_uri(db), uri=True) as con:
             con.row_factory = sqlite3.Row
             table = "SUBMODELS_DESCRIPTIONS_FTS" if submodels else "MODELS_DESCRIPTIONS_FTS"
             columns = "model, submodel, description" if submodels else "model, description"

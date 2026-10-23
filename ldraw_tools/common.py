@@ -32,6 +32,17 @@ def database_path(value=None):
     return Path(value or RESOURCE_DATA / "ldraw-info.db").expanduser().resolve()
 
 
+def readonly_uri(path):
+    """SQLite URI for reading a shipped database from a folder the caller may not write to.
+
+    The shipped ldraw-info.db is in WAL mode. Opened with only mode=ro, SQLite still has to create a -shm file
+    beside it, which an unprivileged user in a root-owned folder cannot do: "attempt to write a readonly
+    database". immutable=1 reads the file as it is and creates nothing. Use it only for files that do not
+    change while the process runs.
+    """
+    return Path(path).resolve().as_uri() + "?mode=ro&immutable=1"
+
+
 def atomic_write(path, text):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
