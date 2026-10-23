@@ -23,3 +23,21 @@ def available_tools(options: dict, chat_id: str | None = None) -> list[dict]:
     # editor tools: agent mode only; state/edit once the chat has an editor plan, editor_open until then
     hidden = editor_tools.OPEN_TOOLS if editor_tools.has_plan(chat_id) else editor_tools.EDIT_TOOLS
     return [t for t in tools if t["function"]["name"] not in hidden]
+
+
+def worker_tools(contract_tools, role_defaults, role: str, options: dict, chat_id: str | None = None) -> tuple[list[str], str | None]:
+    """A worker's tool names and, if the chat's policy forbids the delegation, a refusal message.
+
+    Contract tools intersected with the role default, then bounded by the chat: mode plan or permissions
+    read_only leaves READ_TOOLS only and refuses a builder; the parts tools need a parts steering mode.
+    Workers never get run_shell, publish_model or delegate (the contract validator already rejects them).
+    """
+    read_only = options.get("mode") == "plan" or options.get("permissions") == "read_only"
+    if read_only and role == "builder":
+        return [], "builder delegation refused: this chat is read-only (plan mode or read-only permissions), a builder would write files"
+    tools = [t for t in contract_tools if t in role_defaults]
+    if inventories.parts_options(options)[0] == "off":
+        tools = [t for t in tools if t not in PARTS_TOOLS]
+    if read_only:
+        tools = [t for t in tools if t in READ_TOOLS]
+    return tools, None

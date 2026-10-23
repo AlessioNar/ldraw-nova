@@ -84,6 +84,9 @@ async def execute_tool(run: Run, ctx: ToolContext, call_id: str, name: str, argu
         approval_id = uuid.uuid4().hex
         future = asyncio.get_running_loop().create_future()
         info = {"id": approval_id, "call_id": call_id, "name": name, "arguments": arguments}
+        if name == "delegate":                      # approved once, with the whole contract shown; workers never ask
+            import subagents
+            info["contract"] = subagents.approval_contract(arguments, run.options)
         run.approvals[approval_id] = (info, future)
         run.emit("approval", info)
         try:
@@ -95,6 +98,8 @@ async def execute_tool(run: Run, ctx: ToolContext, call_id: str, name: str, argu
             run.emit("approval_resolved", {"id": approval_id})
         if not approved:
             return ToolResult("Tool denied by the user or approval timed out. Do not retry without a new user instruction.")
+    if name == "delegate" and ctx.options.get("permissions", "ask") == "ask":
+        ctx = replace(ctx, options={**ctx.options, "delegation_approved": True})      # only reachable after approval above
     scoped = replace(ctx, emit=lambda event, data: run.emit(event, {**data, "id": call_id} if event == "tool_output" else data))
     return await dispatch(scoped, name, arguments)
 

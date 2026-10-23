@@ -66,6 +66,7 @@ def test_flag_off_leaves_tools_unchanged(monkeypatch, worker):
 def test_worker_runs_and_cost_lands_in_totals(monkeypatch, worker, ctx):
     fake, calls = scripted([[*tool_call_chunks("w1", "list_files", {})], [chunk(content="Listed.")]])
     monkeypatch.setattr(litellm, "acompletion", fake)
+    ctx.options = {"parts_mode": "prefer", "inventory_ids": []}
     result = delegate(ctx, role="researcher", task="look around", inputs=["a.txt"])
     assert "status ok" in result.content.splitlines()[0] and "Summary: Listed." in result.content
     assert "a.txt" in calls[0]["messages"][1]["content"]
