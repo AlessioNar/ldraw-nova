@@ -39,6 +39,15 @@ Working efficiently (every step re-sends this conversation, so wasted steps cost
 - Keep going until the model is built, checked, rendered and published; do not stop to ask for confirmation between phases."""
 
 
+DELEGATION_NOTE = """
+
+Delegation (the `delegate` tool, cheap workers; you plan, integrate and publish):
+- Delegate only independent pieces you can state as a contract: a sub-assembly with a fixed interface, parts research, or a validate-and-render review. Do not delegate a model under about 40 parts, pieces whose shared geometry is undecided, integration, or publishing; a small model should usually build it all itself.
+- Contract: role (builder, researcher, reviewer), task (max 1500 chars, with interface dimensions), inputs, outputs, max_steps, max_eur, summary_chars. State interface dimensions in the task, e.g. builder: "wheel sub-assembly at its own origin, axle along x, axle holes at x=+-80, y=24, z=0, width 160 LDU, outputs wheels.ldr"; researcher: "find owned parts for a 2x4 wedge roof, return 5 candidates with ids, colours, counts"; reviewer: "validate output/body.ldr, render front and side, list defects".
+- Each result carries a status and the app's validate verdict. Never place a submodel whose verdict is not ok: fix a small defect yourself or redelegate that piece once, then do it yourself.
+- Several independent delegate calls in one step run in parallel."""
+
+
 def use_lean_prompt(model: str, options: dict) -> bool:
     """Lean prompt (guides listed, not inlined): for models that cannot cache the prefix, so they would pay for
     it on every step, and for small context windows. LDRAW_NOVA_LEAN_PROMPT=on/off overrides."""
@@ -60,7 +69,13 @@ def cache_control(model: str) -> dict:
     return marker
 
 
-def system_prompt_parts(store: ChatStore, chat_id: str, lean: bool = False) -> tuple[str, str]:
+def delegation_offered(options: dict | None, chat_id: str | None = None) -> bool:
+    """True when the chat's tool set includes `delegate` (constant for a chat, so the stable prefix is too)."""
+    from tool_policy import available_tools          # lazy: tool_policy -> subagents -> this module
+    return any(t["function"]["name"] == "delegate" for t in available_tools(options or {}, chat_id))
+
+
+def system_prompt_parts(store: ChatStore, chat_id: str, lean: bool = False, delegation: bool = False) -> tuple[str, str]:
     """The system prompt split at its stability boundary, for prompt caching.
 
     The first part is byte-identical on every turn of a chat (instructions.md
@@ -80,6 +95,8 @@ def system_prompt_parts(store: ChatStore, chat_id: str, lean: bool = False) -> t
                 .replace("{toolkit_guides}", toolkit.guide_index() if lean else toolkit.builder_guides())).rstrip()
     if lean:
         stable += LEAN_NOTE
+    if delegation:
+        stable += DELEGATION_NOTE
     volatile = "\n\nCurrent output files:\n" + work_listing(work_dir)
     notes = work_dir / "NOTES.md"
     if notes.is_file() and not notes.is_symlink():
@@ -104,7 +121,8 @@ def system_message(store: ChatStore, chat_id: str, model: str, options: dict,
     sent by outbound_messages() after the history instead; the caching shape
     keeps an empty second block, where bounded_history() appends its trim note.
     """
-    stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options))
+    stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options),
+                                          delegation_offered(options, chat_id))
     tail = "" if tail_in_system is False or (tail_in_system is None and settings.TAIL_AFTER_HISTORY) \
         else volatile + mode_prompt(options)
     if not providers.supports_prompt_caching(model):
@@ -161,7 +179,8 @@ def outbound_messages(store: ChatStore, chat_id: str, messages: list[dict], mode
     breakpoint, so the history stays one unbroken cached prefix.
     """
     if settings.TAIL_AFTER_HISTORY:
-        stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options))
+        stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options),
+                                              delegation_offered(options, chat_id))
         system, history = dict(messages[0]), messages[1:]
         content = system["content"]
         if isinstance(content, str):
