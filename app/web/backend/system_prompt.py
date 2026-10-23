@@ -44,7 +44,8 @@ DELEGATION_NOTE = """
 Delegation (the `delegate` tool, cheap workers; you plan, integrate and publish):
 - Delegate only independent pieces you can state as a contract: a sub-assembly with a fixed interface, parts research, or a validate-and-render review. Do not delegate a model under about 40 parts, pieces whose shared geometry is undecided, integration, or publishing; a small model should usually build it all itself.
 - Contract: role (builder, researcher, reviewer), task (max 1500 chars, with interface dimensions), inputs, outputs, max_steps, max_eur, summary_chars. State interface dimensions in the task, e.g. builder: "wheel sub-assembly at its own origin, axle along x, axle holes at x=+-80, y=24, z=0, width 160 LDU, outputs wheels.ldr"; researcher: "find owned parts for a 2x4 wedge roof, return 5 candidates with ids, colours, counts"; reviewer: "validate output/body.ldr, render front and side, list defects".
-- Each result carries a status, the files written and their cost. Validate a worker's file yourself (`validate --geometry`, and check it is one connected structure) before placing it; if it fails, fix a small defect yourself or redelegate that piece once, then do it yourself."""
+- Several delegate calls in one step run in parallel (a few at a time; the number per turn is capped); put independent pieces in the same step.
+- Each result carries a status, the files written, their cost and the app's own validation verdict (validate plus a one-connected-structure check, after one automatic repair round). Never place a submodel whose verdict is not ok; fix a small defect yourself, or redelegate that piece once, then do it yourself."""
 
 
 def use_lean_prompt(model: str, options: dict) -> bool:

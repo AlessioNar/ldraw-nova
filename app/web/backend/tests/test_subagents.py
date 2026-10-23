@@ -85,13 +85,16 @@ def test_worker_runs_and_cost_lands_in_totals(monkeypatch, worker, ctx):
     assert "about EUR" in result.content
 
 
+GOOD_LDR = "0 good\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n1 15 0 -24 0 1 0 0 0 1 0 0 0 1 3003.dat\n"
+
+
 def test_worker_writes_outputs_and_result_format(monkeypatch, worker, ctx):
     state = {}
 
     async def fake(**kwargs):
         state.setdefault("calls", []).append(kwargs)
         wid = re.search(r"output/workers/(\w+)/", kwargs["messages"][0]["content"]).group(1)
-        chunks = (tool_call_chunks("w1", "write_file", {"path": f"output/workers/{wid}/part.ldr", "content": "0 hi\n"})
+        chunks = (tool_call_chunks("w1", "write_file", {"path": f"output/workers/{wid}/part.ldr", "content": GOOD_LDR})
                   if len(state["calls"]) == 1 else [chunk(content="Made part.ldr with width 160. No defects.")])
 
         async def stream():
@@ -103,8 +106,9 @@ def test_worker_writes_outputs_and_result_format(monkeypatch, worker, ctx):
     lines = result.content.splitlines()
     assert re.fullmatch(r"Worker \w+: status ok", lines[0])
     assert any(line == "Summary: Made part.ldr with w" for line in lines)      # capped at 20 chars
-    assert any(re.search(r"Files: output/workers/\w+/part\.ldr \(5 bytes\)", line) for line in lines)
+    assert any(re.search(r"Files: output/workers/\w+/part\.ldr \(\d+ bytes\)", line) for line in lines)
     assert any(line.startswith("Cost: 2 model calls, about EUR") for line in lines)
+    assert any(line.startswith("Validation: ok") for line in lines)
     # transcript: side file only
     wid = lines[0].split()[1].rstrip(":")
     side = ctx.chat_dir / "workers" / f"{wid}.jsonl"
