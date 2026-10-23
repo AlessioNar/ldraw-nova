@@ -1,0 +1,31 @@
+{
+ "case": "box_chassis",
+ "plan_s": 2.66,
+ "build_s": 19.21,
+ "build_rc": 0,
+ "validate_s": 19.07,
+ "validate_rc": 0,
+ "checks_passed": true,
+ "parts": 55,
+ "components": 5,
+ "diag": [
+  [
+   "assembly.disconnected_evidence",
+   "warning"
+  ],
+  [
+   "coverage.collision_review",
+   "warning"
+  ]
+ ],
+ "errors": [],
+ "render_s": 32.51,
+ "render_rc": 0,
+ "render_views": [
+  "home",
+  "front",
+  "right",
+  "top"
+ ],
+ "total_s": 73.45
+}
