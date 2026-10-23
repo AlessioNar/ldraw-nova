@@ -114,3 +114,32 @@ def test_turn_stops_before_calling_the_model_once_the_budget_is_spent(monkeypatc
     # A larger budget lets the next turn go through.
     asyncio.run(run(5.0))
     assert len(calls) == 1
+
+
+def test_budget_stops_a_turn_between_steps_not_only_before_the_first(monkeypatch, store):
+    """Step 1 uses a tool and pushes the chat over its budget: the model must not be called a second time."""
+    import importlib
+    entry = llm_config.create({"model_name": "opus", "litellm_params": {"model": "anthropic/claude-opus-5-5", "api_key": "k"},
+                               "capabilities": {"tools": True, "vision": True}})
+    from test_agent import tool_call_chunks
+    fake, calls = scripted([[*tool_call_chunks("c1", "list_files", {})], [chunk(content="should not be asked")]])
+    monkeypatch.setattr(litellm, "acompletion", fake)
+    monkeypatch.setenv("LDRAW_NOVA_EUR_PER_USD", "1")
+    for name in ("agent_loop", "turn"):                    # wherever the step loop lives in this version
+        try:
+            module = importlib.import_module(name)
+        except ImportError:
+            continue
+        if hasattr(module, "usage_record"):
+            monkeypatch.setattr(module, "usage_record", lambda response: {"prompt": 1000, "completion": 1000, "cache_read": 0, "cache_write": 0})
+    chat = store.create_chat()
+
+    async def run():
+        await agent.start_turn(store, chat["id"], "build", entry["id"], {"permissions": "full", "budget_eur": 0.01})
+        await run_state._runs[chat["id"]].task
+
+    asyncio.run(run())
+    messages = store.messages(chat["id"])
+    assert len(calls) == 1, "the second step must not run after the budget was exceeded"
+    assert any(m.get("_usage", {}).get("cost_usd", 0) > 0.01 for m in messages)
+    assert messages[-1].get("_notice") and "Budget reached" in messages[-1]["content"]
