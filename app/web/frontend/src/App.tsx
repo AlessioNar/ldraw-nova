@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Models from "./pages/Models";
 import Parts from "./pages/Parts";
 import Settings from "./pages/Settings";
+import { usePersistentFlag } from "./hooks/usePersistentFlag";
 import { setProviderCatalogue } from "./modelChoices";
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
   const [defaultWorkerId, setDefaultWorkerId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<ViewerTarget | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = usePersistentFlag("ldraw-nova.sidebar", "collapsed", "expanded", false);
   const [, setProvidersLoaded] = useState(false);
   const location = useLocation();
 
@@ -58,6 +60,18 @@ export default function App() {
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+      else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setCollapsed(!collapsed);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [collapsed, setCollapsed]);
+
   const state = useMemo(
     () => ({ chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer: setViewer }),
     [chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms],
@@ -65,11 +79,11 @@ export default function App() {
 
   return (
     <AppContext.Provider value={state}>
-      <div className={`app ${menuOpen ? "menu-open" : ""}`}>
-        <Sidebar />
+      <div className={`app ${menuOpen ? "menu-open" : ""} ${collapsed ? "sidebar-collapsed" : ""}`}>
+        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} onClose={() => setMenuOpen(false)} />
         <div className="scrim" onClick={() => setMenuOpen(false)} />
         <main className="main">
-          <button className="menu-button" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+          <button className="menu-button" aria-label="Open menu" title="Menu" onClick={() => setMenuOpen(true)}>
             ☰
           </button>
           <Routes>
