@@ -95,7 +95,7 @@ def run_editor(args, library, parts):
 
     if args.action == "apply":
         edits = _read(args.edits)
-        inverses = inverse(plan, edits, parts)
+        inverses = list(reversed(inverse(plan, edits, parts)))      # undo runs them last-first: a later edit may need an earlier one's part
         candidate = apply(plan, edits, parts)
         rows = _rows(candidate, parts)
         flagged = []

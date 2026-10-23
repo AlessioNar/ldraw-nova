@@ -275,6 +275,24 @@ def test_editor_cli_open_apply_undo_roundtrip(parts, tmp_path):
     assert redone.returncode == 0 and report["ok"] and report["undo_depth"] == 1 and report["redo_depth"] == 0
 
 
+def test_editor_cli_undoes_and_redoes_a_batch_whose_edits_depend_on_each_other(parts, tmp_path):
+    from ldraw_tools.editor import _next_id
+    library, plan_path, state_path, mpd_path, report = editor_session(parts, tmp_path)
+    new_id = _next_id(report["plan"])
+    edits = tmp_path / "edits.json"
+    edits.write_text(json.dumps([{"op": "add", "section": "model.ldr", "part": "3003.dat", "colour": 1, "position": [0, -24, 0]},
+                                 {"op": "move", "id": new_id, "position": [40, -24, 0]}]))
+    args = ("--plan", plan_path, "--state", state_path, "--mpd", mpd_path)
+    applied = json.loads(run_editor_cli(library, "apply", *args, "--base-revision", "1", "--edits", edits).stdout)
+    assert applied["ok"] and applied["used"] == [["3001", 4, 1], ["3003", 1, 1]]
+    undid = run_editor_cli(library, "undo", *args)
+    report = json.loads(undid.stdout)
+    assert undid.returncode == 0 and report["ok"], report                  # was: Unknown entry id (inverses ran first-to-last)
+    assert report["used"] == [["3001", 4, 1]]
+    redone = json.loads(run_editor_cli(library, "redo", *args).stdout)
+    assert redone["ok"] and redone["used"] == [["3001", 4, 1], ["3003", 1, 1]]
+
+
 def test_editor_cli_only_mode_refuses_a_short_edit(parts, tmp_path):
     library, plan_path, state_path, mpd_path, report = editor_session(parts, tmp_path)
     assert report["ok"]
