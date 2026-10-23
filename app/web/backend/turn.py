@@ -8,7 +8,6 @@ import inference
 import llm_config
 import model_catalog
 import settings
-import usage
 from store import ChatStore
 from history import llm_history
 from run_state import Run
@@ -24,7 +23,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
     caps = llm_config.capabilities(entry)
     vision = caps["vision"] is True
     use_tools = caps["tools"] is not False and run.options.get("mode") != "chat"
-    ctx = ToolContext(chat_id=chat_id, store=store, emit=run.emit, options=run.options)
+    ctx = ToolContext(chat_id=chat_id, store=store, emit=run.emit, options=run.options, ledger=run.ledger)
 
     sink = ChatSink(store, chat_id, run)
 
@@ -35,7 +34,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
         budget = run.options.get("budget_eur")
         if not budget:
             return False
-        spent = usage.usage_totals(stored)["cost_eur"]
+        spent = run.ledger.planner_spent_eur(stored)          # stored cost plus worker cost not yet saved
         if spent < budget:
             return False
         save({"role": "assistant", "_ui_only": True, "_notice": True,

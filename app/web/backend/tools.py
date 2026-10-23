@@ -26,6 +26,7 @@ import toolkit
 import environment_config
 import gallery
 import parts_steering
+from budget import BudgetLedger
 from leocad_render import bom_path_for, list_models, snapshot_path_for
 from paths import safe_join
 from store import ChatStore
@@ -44,6 +45,7 @@ class ToolContext:
     emit: Callable[[str, dict], None]
     options: dict = field(default_factory=dict)           # the turn's validated options (parts steering, ...)
     write_root: Path | None = None                        # a worker's own folder: file tools write only here (planner: None)
+    ledger: BudgetLedger = field(default_factory=BudgetLedger)   # the run's shared budget (workers reserve from it)
 
     @property
     def work_dir(self) -> Path:
@@ -60,6 +62,7 @@ class ToolResult:
     models: list[dict] = field(default_factory=list)      # model references added to the chat
     images: list[Path] = field(default_factory=list)      # PNGs to show (and send to vision models)
     parts_check: dict | None = None                       # inventory check of a published model, stored with the tool message
+    record: dict = field(default_factory=dict)            # extra fields for the tool message (a worker's `_usage`, `_worker`)
 
 
 # --- helpers ---------------------------------------------------------------

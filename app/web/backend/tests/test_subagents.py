@@ -33,6 +33,12 @@ def names(options=None):
     return {t["function"]["name"] for t in tool_policy.available_tools({"permissions": "full", **(options or {})})}
 
 
+def save_result(ctx, result):
+    """What the step loop does with a delegate result: save it as a tool message carrying the worker's record."""
+    ctx.store.add_message(ctx.chat_id, {"role": "tool", "tool_call_id": "x", "name": "delegate", "content": result.content,
+                                        **result.record})
+
+
 def delegate(ctx, **args):
     ctx.options = {"permissions": "full", **(ctx.options or {})}
     return asyncio.run(subagents.delegate(ctx, **args))
@@ -71,10 +77,11 @@ def test_worker_runs_and_cost_lands_in_totals(monkeypatch, worker, ctx):
     assert "status ok" in result.content.splitlines()[0] and "Summary: Listed." in result.content
     assert "a.txt" in calls[0]["messages"][1]["content"]
     assert {t["function"]["name"] for t in calls[0]["tools"]} == set(subagents.ROLE_TOOLS["researcher"])
-    hidden = [m for m in ctx.store.messages(ctx.chat_id) if m.get("_subagent")]
-    assert len(hidden) == 2 and all(m["_usage"].get("cost_usd", 0) > 0 and m["_ui_only"] for m in hidden)
+    assert not [m for m in ctx.store.messages(ctx.chat_id) if m.get("_subagent")]       # nothing hidden any more
+    assert result.record["_worker"]["steps"] == 2 and result.record["_worker"]["status"] == "ok"
+    save_result(ctx, result)
     totals = usage.usage_totals(ctx.store.messages(ctx.chat_id))
-    assert totals["steps"] == 2 and totals["cost_eur"] > 0
+    assert totals["steps"] == 1 and totals["cost_eur"] > 0 and totals["worker_cost_eur"] == totals["cost_eur"]
     assert "about EUR" in result.content
 
 
@@ -176,7 +183,7 @@ def test_chat_budget_stops_worker_between_steps(monkeypatch, worker, ctx):
     monkeypatch.setattr(litellm, "acompletion", fake)
     result = delegate(ctx, role="builder", task="anything")
     assert len(calls) == 1 and "status over_budget" in result.content
-    assert usage.usage_totals(ctx.store.messages(ctx.chat_id))["cost_eur"] > 0.0001
+    assert ctx.ledger.live_eur > 0.0001 and result.record["_usage"]["cost_usd"] > 0
 
 
 def test_worker_max_eur_stops_worker(monkeypatch, worker, ctx):
@@ -243,9 +250,10 @@ def test_planner_delegates_and_prefix_stays_identical(monkeypatch, worker, store
     [side] = list((store.chat_dir(chat_id) / "workers").glob("*.jsonl"))
     assert len(side.read_text().splitlines()) == 1 + 2 + 2                        # task, 2 assistant, 2 tool results
     assert [m for m in messages if m["role"] == "tool"] == [result]
-    assert not [m for m in messages if m.get("_subagent") and m.get("content")]
-    hidden = [m for m in messages if m.get("_subagent")]
-    assert len(hidden) == 2 and usage.usage_totals(messages)["steps"] == 4
+    assert not [m for m in messages if m.get("_subagent")]
+    assert result["_worker"]["id"] and result["_worker"]["steps"] == 2 and result["_usage"]["cost_usd"] > 0
+    totals = usage.usage_totals(messages)
+    assert totals["steps"] == 3 and totals["worker_cost_eur"] > 0           # two planner steps plus one worker record
     # the planner's request prefix is byte-identical: only messages are appended
     first, second = (_strip_marks(c["messages"]) for c in planner_calls)
     assert json.dumps(first[0]) == json.dumps(second[0])          # system block with its marker, byte for byte

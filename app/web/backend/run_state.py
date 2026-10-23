@@ -6,6 +6,8 @@ import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator, Optional
 
+from budget import BudgetLedger
+
 
 @dataclass
 class Run:
@@ -19,6 +21,7 @@ class Run:
     started_at: float = field(default_factory=time.time)
     last_event_at: float = field(default_factory=time.time)
     phase: str = "Preparing the build workspace"
+    ledger: BudgetLedger = field(default_factory=BudgetLedger)
 
     def emit(self, event: str, data: dict) -> None:
         self.last_event_at = time.time()
