@@ -164,6 +164,7 @@
   .worker-card summary::after { display: none; }
   .worker-figures { margin-left: auto; }
   .step-head { flex-wrap: wrap; }
+}
 
 /* ===== composer: toolbar, attach menu, chat settings popover (task B) ===== */
 .composer-toolbar { flex-wrap: nowrap; }
