@@ -165,6 +165,60 @@
     "preset": true
   },
   {
+    "model": "anthropic/claude-sonnet-5-5",
+    "name": "Claude Sonnet 5.5",
+    "context_window": 1000000,
+    "max_output_tokens": 128000,
+    "efforts": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "default_effort": "medium",
+    "tools": true,
+    "vision": true,
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "currency": "USD",
+      "note": "Standard API rates per 1M tokens; cache reads 0.05x the input price."
+    },
+    "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "source_label": "Claude API live lookup + published pricing",
+    "verified_at": "2026-10-23",
+    "preset": true
+  },
+  {
+    "model": "anthropic/claude-haiku-5-5",
+    "name": "Claude Haiku 5.5",
+    "context_window": 1000000,
+    "max_output_tokens": 128000,
+    "efforts": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "default_effort": "low",
+    "tools": true,
+    "vision": true,
+    "reasoning": true,
+    "pricing": {
+      "input": 0.1,
+      "output": 0.5,
+      "currency": "USD",
+      "note": "Per 1M tokens for prompts up to 100,000 tokens; $0.50 / $2.50 above that."
+    },
+    "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "source_label": "Claude API live lookup + published pricing",
+    "verified_at": "2026-10-23",
+    "preset": true
+  },
+  {
     "model": "anthropic/claude-opus-5",
     "name": "Claude Opus 5",
     "context_window": 1000000,
@@ -189,7 +243,7 @@
     "source_url": "https://platform.claude.com/docs/en/models/opus-5/overview",
     "source_label": "Provider documentation",
     "verified_at": "2026-09-30",
-    "preset": true
+    "preset": false
   },
   {
     "model": "anthropic/claude-sonnet-5",
@@ -216,7 +270,7 @@
     "source_url": "https://platform.claude.com/docs/en/models/sonnet-5/overview",
     "source_label": "Provider documentation",
     "verified_at": "2026-09-30",
-    "preset": true
+    "preset": false
   },
   {
     "model": "anthropic/claude-fable-5",
@@ -243,7 +297,7 @@
     "source_url": "https://platform.claude.com/docs/en/models/fable-5/overview",
     "source_label": "Provider documentation",
     "verified_at": "2026-09-30",
-    "preset": true
+    "preset": false
   },
   {
     "model": "anthropic/claude-fable-5-1",

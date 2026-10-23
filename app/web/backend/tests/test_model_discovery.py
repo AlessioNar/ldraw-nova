@@ -15,11 +15,13 @@ import model_discovery
 
 def test_requested_presets_and_legacy_agents_remain_supported():
     for provider, names in {
-        "anthropic": ["Claude Opus 5.5", "Claude Opus 5", "Claude Sonnet 5", "Claude Fable 5", "Claude Fable 5.1"],
+        "anthropic": ["Claude Opus 5.5", "Claude Sonnet 5.5", "Claude Haiku 5.5", "Claude Fable 5.1"],
         "openai": ["GPT-6 Astra", "GPT-6 Sol", "GPT-5.6 Sol", "GPT-5.6 Terra", "GPT-5.5"],
     }.items():
         assert [m["name"] for m in model_catalog.CATALOG if m["model"].startswith(provider + "/")] == names
-    for name in ("openai/gpt-6-luna", "openrouter/openai/gpt-6-sol", "openrouter/anthropic/claude-opus-5.5"):
+    # Superseded models leave the preset list but stay supported for the agents that already use them.
+    for name in ("openai/gpt-6-luna", "openrouter/openai/gpt-6-sol", "openrouter/anthropic/claude-opus-5.5",
+                 "anthropic/claude-opus-5", "anthropic/claude-sonnet-5", "anthropic/claude-fable-5"):
         assert model_catalog.builder_supported(name)
 
 
