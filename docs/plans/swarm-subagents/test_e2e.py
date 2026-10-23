@@ -100,3 +100,18 @@ def test_redact_and_report():
     row = {"prompt": "small", "config": "sonnet+haiku", "status": "ok", "eur_total": 1.0, "eur_planner": 0.8, "eur_workers": 0.2,
            "steps": 10, "delegations": 0, "published": True}
     assert "| small | sonnet+haiku | ok | 1.000 | 0.800 | 0.200 | 10 |" in e2e.report_text([row])
+
+
+def test_a_turn_that_ended_on_a_provider_error_is_not_ok():
+    """Found on the first live attempt: an expired key gave AuthenticationError and the run was recorded as ok."""
+    messages = [{"role": "user", "content": "build"},
+                {"role": "assistant", "content": "AuthenticationError: Provider request failed.", "_ui_only": True, "_error": True}]
+    assert e2e.turn_outcome("ok", "", messages) == ("error", "AuthenticationError: Provider request failed.")
+    assert e2e.turn_outcome("ok", "", [{"role": "assistant", "content": "done"}]) == ("ok", "")
+    assert e2e.turn_outcome("timeout", "cap", messages) == ("timeout", "cap")      # an earlier verdict is kept
+
+
+def test_the_banner_says_live_when_it_is_live():
+    runs = e2e.plan_runs(["sonnet+haiku"], ["small"], 1)
+    assert e2e.dry_run_text(runs, 2.5, 3.0, 2400).startswith("DRY RUN")
+    assert e2e.dry_run_text(runs, 2.5, 3.0, 2400, live=True).startswith("LIVE RUN")

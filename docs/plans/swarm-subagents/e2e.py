@@ -74,8 +74,9 @@ def plan_runs(configs: list[str], prompts: list[str], repeat: int) -> list[dict]
     return runs
 
 
-def dry_run_text(runs: list[dict], budget_eur: float, total_cap_eur: float, timeout_s: int) -> str:
-    lines = ["DRY RUN: nothing is called. Add --live (inside the app image) to run.",
+def dry_run_text(runs: list[dict], budget_eur: float, total_cap_eur: float, timeout_s: int, live: bool = False) -> str:
+    lines = ["LIVE RUN: calling the provider within the caps below." if live else
+             "DRY RUN: nothing is called. Add --live (inside the app image) to run.",
              f"Per run: budget_eur {budget_eur:.2f}, wall-clock cap {timeout_s} s. Total cap {total_cap_eur:.2f} EUR.", "",
              "| run | planner | workers | worst case EUR | README estimate EUR (small) |", "|---|---|---|---|---|"]
     for run in runs:
@@ -231,6 +232,15 @@ def copy_artifacts(store, chat_id: str, models: list[dict], dest: Path) -> list[
     return copied
 
 
+def turn_outcome(status: str, note: str, messages: list[dict]) -> tuple[str, str]:
+    """A turn that ended on a provider error (auth, quota, network) is saved by the app as an `_error` message and
+    returns normally: that is a failed run, not an ok one."""
+    errors = [str(m.get("content")) for m in messages if m.get("_error")]
+    if status == "ok" and errors:
+        return "error", errors[-1]
+    return status, note
+
+
 async def live_run(run: dict, ctx: dict) -> dict:
     import agent
     import run_state
@@ -253,6 +263,8 @@ async def live_run(run: dict, ctx: dict) -> dict:
         await run_state.cancel(chat["id"])
     wall = time.time() - started
     messages, models = store.messages(chat["id"]), store.models(chat["id"])
+    status, note = turn_outcome(status, note, messages)
+    note = redact(note, ctx["secrets"])[:300]
     totals = usage.usage_totals(messages)
     files = copy_artifacts(store, chat["id"], models, out / run["run_id"])
     (out / run["run_id"] / "messages.jsonl").write_text(
@@ -332,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.repeat < 1 or args.budget_eur <= 0 or args.total_cap_eur <= 0:
         raise SystemExit("--repeat, --budget-eur and --total-cap-eur must be positive")
     runs = plan_runs([c for c in args.configs.split(",") if c], [p for p in args.prompts.split(",") if p], args.repeat)
-    print(dry_run_text(runs, args.budget_eur, args.total_cap_eur, args.timeout))
+    print(dry_run_text(runs, args.budget_eur, args.total_cap_eur, args.timeout, live=args.live))
     return cmd_live(args, runs) if args.live else 0
 
 
