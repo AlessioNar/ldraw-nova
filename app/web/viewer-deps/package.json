@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node --test test/viewer.browser.mjs"
+    "test": "node --test test/viewer.browser.mjs",
+    "test:core": "node --test test/editor-core.test.mjs"
   },
   "dependencies": {
     "three": "npm:super-three@0.181.0"

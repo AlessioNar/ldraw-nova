@@ -79,3 +79,8 @@
 .provider-models { margin-left: 9px; padding-left: 4px; border-left: 1px solid var(--border); }
 .picker-settings { display: block; flex: none; padding: 10px 8px 2px; margin-top: 6px; border-top: 1px solid var(--border); font-size: 12px; }
 .composer-notice { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; }
+
+.editor-page { display: flex; flex-direction: column; height: 100%; }
+.editor-frame { flex: 1; width: 100%; border: 0; }
+.chat-head:has(.chat-edit-link) { display: flex; align-items: center; gap: 12px; }
+.chat-head h2 { flex: 1; min-width: 0; }
