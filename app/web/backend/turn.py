@@ -11,13 +11,14 @@ import llm_config
 import model_catalog
 import settings
 import providers
+import usage
 from store import ChatStore
 from history import llm_history
 from run_state import Run
 from system_prompt import outbound_messages, system_message
 from tool_policy import available_tools
 from tools import ToolContext
-from usage import usage_record
+from usage import step_cost_usd, usage_record
 
 log = logging.getLogger("agent")
 
@@ -35,10 +36,20 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
 
     try:
         params = await inference.params_for(entry, run.options)
+        pricing = model_catalog.entry_profile(entry)["pricing"]
+        budget = run.options.get("budget_eur")
         max_steps = settings.max_steps()
         for _step in range(max_steps):
+            stored = store.messages(chat_id)
+            if budget:
+                spent = usage.usage_totals(stored)["cost_eur"]
+                if spent >= budget:
+                    save({"role": "assistant", "_ui_only": True, "_notice": True,
+                          "content": f"Budget reached: about €{spent:.2f} of €{budget:.2f} spent in this chat. "
+                                     "Raise the budget in the chat box and send a message to continue."})
+                    break
             messages = [system_message(store, chat_id, entry["litellm_params"]["model"], run.options),
-                        *llm_history(store.messages(chat_id), vision, lambda ref: store.resolve(chat_id, ref), entry["litellm_params"]["model"], mark_turns=True)]
+                        *llm_history(stored, vision, lambda ref: store.resolve(chat_id, ref), entry["litellm_params"]["model"], mark_turns=True)]
             budget = run.options.get("context_tokens") or model_catalog.profile(entry["litellm_params"]["model"])["context_window"]
             messages, removed = inference.bounded_history(messages, params["model"], budget)
             if removed:
@@ -70,6 +81,9 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
             message["_llm_model"] = entry["litellm_params"]["model"]
             step_usage = usage_record(full)
             if step_usage:
+                cost = step_cost_usd(step_usage, pricing, entry["litellm_params"]["model"], settings.CACHE_TTL)
+                if cost is not None:
+                    step_usage["cost_usd"] = round(cost, 6)
                 message["_usage"] = step_usage
                 run.emit("usage", step_usage)
             if tool_calls:

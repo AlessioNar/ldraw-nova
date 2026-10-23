@@ -59,9 +59,11 @@ def test_openrouter_claude_gets_breakpoints_on_system_and_last_message(store):
 def test_openrouter_usage_reports_cache_reads_but_not_cache_writes(store):
     """OpenRouter puts cache writes in prompt_tokens_details.cache_write_tokens."""
     chat_id, events, _ = run(store, MockChat, "openrouter/anthropic/claude-sonnet-5", STEPS)
-    assert [d for name, d in events if name == "usage"] == [
+    usage = [{k: v for k, v in d.items() if k != "cost_usd"} for name, d in events if name == "usage"]
+    assert usage == [
         {"prompt": 100, "completion": 5, "cache_read": 40, "cache_write": 5000},
         {"prompt": 20, "completion": 5, "cache_read": 5000, "cache_write": 0}]
+    assert all(d["cost_usd"] > 0 for name, d in events if name == "usage")          # a priced model: every step carries its cost
 
 
 def test_openrouter_flag_off_and_other_vendors(store, monkeypatch):

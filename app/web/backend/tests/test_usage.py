@@ -54,10 +54,14 @@ def test_totals_sum_only_real_records():
         {"role": "assistant", "_usage": "not a dict"},
         {"role": "assistant"},
     ]
-    assert usage.usage_totals(messages) == {"prompt": 250, "completion": 30, "cache_read": 18000,
-                                            "cache_write": 18000, "steps": 2}
+    totals = usage.usage_totals(messages)
+    assert {k: totals[k] for k in ("prompt", "completion", "cache_read", "cache_write", "steps")} == {
+        "prompt": 250, "completion": 30, "cache_read": 18000, "cache_write": 18000, "steps": 2}
+    assert totals["cost_usd"] == 0 and totals["unpriced_steps"] == 2
 
 
 def test_totals_of_an_untouched_chat():
-    assert usage.usage_totals([]) == {"prompt": 0, "completion": 0, "cache_read": 0,
-                                      "cache_write": 0, "steps": 0}
+    totals = usage.usage_totals([])
+    assert {k: totals[k] for k in ("prompt", "completion", "cache_read", "cache_write", "steps")} == {
+        "prompt": 0, "completion": 0, "cache_read": 0, "cache_write": 0, "steps": 0}
+    assert totals["cost_usd"] == 0 and totals["cost_eur"] == 0

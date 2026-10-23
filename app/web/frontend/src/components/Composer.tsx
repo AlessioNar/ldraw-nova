@@ -159,6 +159,11 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
           onChange={e => setOptions({ ...options, context_tokens: Number(e.target.value) })}>
           {profile.context_budgets.map(n => <option value={n} key={n}>{tokenLabel(n)}</option>)}
         </select>}
+        <select className="compact-control" aria-label="Budget" title="Stop when this chat has cost about this much (estimated from list prices)" disabled={disabled}
+          value={options.budget_eur ?? ""} onChange={e => setOptions({ ...options, budget_eur: e.target.value ? Number(e.target.value) : null })}>
+          <option value="">No budget</option>
+          {[1, 2, 5, 10, 20].map(n => <option value={n} key={n}>Budget €{n}</option>)}
+        </select>
       </div>
       {running ? <button type="button" className="danger send-button" onClick={onStop}>Stop</button> :
         <button type="submit" className="primary send-button" disabled={!text.trim() || busy || !model}>Send <span aria-hidden>↑</span></button>}

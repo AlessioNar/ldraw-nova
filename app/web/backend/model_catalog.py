@@ -64,7 +64,7 @@ def entry_profile(entry: dict) -> dict:
 
 
 def validate_options(entry: dict, options: dict | None) -> dict:
-    value = {"mode": "agent", "permissions": "ask", "effort": None, "context_tokens": None, **(options or {})}
+    value = {"mode": "agent", "permissions": "ask", "effort": None, "context_tokens": None, "budget_eur": None, **(options or {})}
     if value["mode"] not in ("plan", "agent"):
         raise ValueError("Unknown mode")
     if value["permissions"] not in ("ask", "full", "read_only"):
@@ -78,5 +78,12 @@ def validate_options(entry: dict, options: dict | None) -> dict:
         raise ValueError("This effort is not supported by the selected model")
     if value["context_tokens"] is not None and value["context_tokens"] not in spec["context_budgets"]:
         raise ValueError("This context budget is not supported by the selected model")
+    budget = value["budget_eur"]
+    if budget is not None:
+        if isinstance(budget, bool) or not isinstance(budget, (int, float)) or not 0 < budget <= 1000:
+            raise ValueError("The budget must be an amount in euros above 0 and up to 1000")
+        prices = spec.get("pricing") or {}
+        if prices.get("input") is None or prices.get("output") is None or prices.get("currency") != "USD":
+            raise ValueError("This model has no known prices, so a budget cannot be enforced")
     inventories.validate_parts_options(value)
     return value

@@ -112,6 +112,15 @@ TAIL_AFTER_HISTORY = _flag("LDRAW_NOVA_TAIL_AFTER_HISTORY", True)
 CACHE_TTL = os.environ.get("LDRAW_NOVA_CACHE_TTL", "1h").strip().lower()
 
 
+def eur_per_usd() -> float:
+    """Exchange rate for the cost shown and budgeted in euros. A fixed, editable estimate: prices come in dollars."""
+    try:
+        rate = float(os.environ.get("LDRAW_NOVA_EUR_PER_USD", ""))
+    except ValueError:
+        return 0.92
+    return rate if rate > 0 else 0.92
+
+
 def max_steps() -> int:
     """Model calls in one turn before it stops and asks the user to continue."""
     return _env_int("LDRAW_NOVA_MAX_STEPS", 80, 1)

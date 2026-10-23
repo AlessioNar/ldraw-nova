@@ -5,6 +5,14 @@ import { useApp } from "../context";
 import { isUnsupported, UNSUPPORTED_HINT, providerName, recentModels, rememberModel } from "../modelChoices";
 import type { LlmEntry } from "../api";
 
+/** List price per million tokens, as the provider quotes it (dollars); "price unknown" when the catalogue has none. */
+function priceLabel(model: LlmEntry): string {
+  const p = model.profile.pricing;
+  if (!p || p.input == null || p.output == null) return "price unknown";
+  const fmt = (n: number) => (n >= 1 ? String(+n.toFixed(2)) : n.toFixed(2));
+  return `$${fmt(p.input)} in · $${fmt(p.output)} out per 1M tokens`;
+}
+
 export default function ModelPicker({ value, onChange, disabled }: {
   value: string | null; onChange: (id: string) => void; disabled: boolean;
 }) {
@@ -67,7 +75,8 @@ export default function ModelPicker({ value, onChange, disabled }: {
   function option(model: LlmEntry) {
     const legacy = isUnsupported(model);
     return <button type="button" className="model-choice" key={model.id} disabled={legacy} title={legacy ? UNSUPPORTED_HINT : undefined} onClick={() => choose(model)} aria-pressed={model.id === value}>
-      <span><strong>{model.model_name}</strong><small>{providerName(model)} · {legacy ? "Needs an API key" : "API key"}</small></span>
+      <span><strong>{model.model_name}</strong><small>{providerName(model)} · {legacy ? "Needs an API key" : "API key"}</small>
+        <small className="price">{priceLabel(model)}</small></span>
       {model.id === value && <span aria-hidden>✓</span>}
     </button>;
   }

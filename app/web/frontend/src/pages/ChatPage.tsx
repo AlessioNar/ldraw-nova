@@ -96,7 +96,7 @@ export default function ChatPage() {
     <div className="chat-page">
       <header className="chat-head">
         <h2 className="ellipsis">{detail.chat.title}</h2>
-        {!!detail.usage?.steps && <UsageBadge usage={detail.usage} steps={detail.usage.steps} />}
+        {!!detail.usage?.steps && <UsageBadge usage={detail.usage} steps={detail.usage.steps} budget={detail.chat.options?.budget_eur} />}
       </header>
       <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} now={now} error={error}
         scrollerRef={scrollerRef} bottomRef={bottomRef} onScroll={onScroll} />

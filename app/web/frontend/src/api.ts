@@ -58,8 +58,8 @@ export type Message = {
   parts_check?: PartsCheck; // set by the backend once a model is published under a parts steering mode
 };
 
-export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number };
-export type UsageTotals = Usage & { steps: number };
+export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number; cost_usd?: number };
+export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number };
 export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals };
 
 type Capability = boolean | "auto";
@@ -67,7 +67,7 @@ export type EnvironmentVariable = { id: string; name: string; value: null; has_v
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
 export type ConnectionStatus = "not_tested" | "connected" | "not_connected";
-export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; effort?: string | null; context_tokens?: number | null; parts_mode?: PartsMode; inventory_ids?: string[] };
+export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; effort?: string | null; context_tokens?: number | null; budget_eur?: number | null; parts_mode?: PartsMode; inventory_ids?: string[] };
 export type ModelProfile = {
   model: string; name: string; context_window: number | null; efforts: string[]; default_effort: string | null; context_budgets: number[];
   max_output_tokens?: number | null; tools?: boolean | null; vision?: boolean | null; reasoning?: boolean | null;

@@ -96,8 +96,10 @@ def test_usage_cache_counters_flow_into_events_and_the_saved_messages(store):
     # LiteLLM folds Anthropic's cache reads/writes into prompt_tokens
     expected = [{"prompt": 5100, "completion": 5, "cache_read": 0, "cache_write": 5000},
                 {"prompt": 5050, "completion": 5, "cache_read": 5000, "cache_write": 30}]
-    assert [d for name, d in events if name == "usage"] == expected
-    assert [m["_usage"] for m in store.messages(chat_id) if m["role"] == "assistant"] == expected
+    def plain(records):                                   # the cost is checked in test_cost_and_budget.py
+        return [{k: v for k, v in r.items() if k != "cost_usd"} for r in records]
+    assert plain(d for name, d in events if name == "usage") == expected
+    assert plain(m["_usage"] for m in store.messages(chat_id) if m["role"] == "assistant") == expected
 
 
 def test_flag_off_removes_only_the_rolling_marker(store, monkeypatch):

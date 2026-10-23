@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from typing import Optional
 
+import providers
+import settings
+
 
 def usage_record(response) -> Optional[dict]:
     """Token usage for one step, including the prompt-cache counters.
@@ -34,11 +37,31 @@ def usage_record(response) -> Optional[dict]:
     return record if any(record.values()) else None
 
 
+def step_cost_usd(record: dict, pricing: Optional[dict], model: str, cache_ttl: str = "5m") -> Optional[float]:
+    """Dollar cost of one step from the provider's per-million-token prices, or None when they are unknown.
+
+    `prompt` includes the cached tokens (LiteLLM's convention). Anthropic bills a cache read at 0.1x and a
+    write at 1.25x (2x for the 1 h cache); for every other provider the cache discount is not known, so a
+    cached token is priced in full. That can overstate the cost but never understate it, which is the safe
+    side for a budget.
+    """
+    if not pricing or pricing.get("currency") != "USD" or pricing.get("input") is None or pricing.get("output") is None:
+        return None
+    anthropic = providers.of(model).prefix == "anthropic/"
+    read_x = 0.1 if anthropic else 1.0
+    write_x = (2.0 if cache_ttl == "1h" else 1.25) if anthropic else 1.0
+    fresh = max(record["prompt"] - record["cache_read"] - record["cache_write"], 0)
+    weighted = fresh + record["cache_read"] * read_x + record["cache_write"] * write_x
+    return (weighted * pricing["input"] + record["completion"] * pricing["output"]) / 1_000_000
+
+
 def usage_totals(messages: list[dict]) -> dict:
     """Running totals for a chat, so a long build's cost is visible."""
     fields = ("prompt", "completion", "cache_read", "cache_write")
     totals = {field: 0 for field in fields}
     totals["steps"] = 0
+    cost = 0.0
+    unpriced = 0
     for message in messages:
         record = message.get("_usage")
         if not isinstance(record, dict):
@@ -48,4 +71,11 @@ def usage_totals(messages: list[dict]) -> dict:
             value = record.get(field)
             if isinstance(value, (int, float)) and not isinstance(value, bool):
                 totals[field] += int(value)
+        step = record.get("cost_usd")
+        if isinstance(step, (int, float)) and not isinstance(step, bool):
+            cost += step
+        else:
+            unpriced += 1
+    rate = settings.eur_per_usd()
+    totals.update(cost_usd=round(cost, 6), cost_eur=round(cost * rate, 4), eur_per_usd=rate, unpriced_steps=unpriced)
     return totals
