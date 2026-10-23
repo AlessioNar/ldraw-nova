@@ -8,8 +8,10 @@ Amounts are USD inside and converted with settings.eur_per_usd(). A lock makes i
 """
 from __future__ import annotations
 
+import asyncio
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 import settings
 import usage
@@ -100,3 +102,19 @@ class BudgetLedger:
         with self._lock:
             left = self._remaining(stored, skip=worker_id)
             return left is not None and left <= 0
+
+
+@dataclass
+class WorkerLimits:
+    """Per-turn delegation state shared by every ToolContext copy of a turn: the concurrency semaphore (made on
+    first use, inside the running loop), the number of delegations started and the shared stray-write guard."""
+    delegations: int = 0
+    guard: Any = None
+    _sem: asyncio.Semaphore | None = field(default=None, repr=False)
+    _loop: Any = field(default=None, repr=False)
+
+    def semaphore(self) -> asyncio.Semaphore:
+        loop = asyncio.get_running_loop()
+        if self._sem is None or self._loop is not loop:
+            self._sem, self._loop = asyncio.Semaphore(settings.max_workers()), loop
+        return self._sem

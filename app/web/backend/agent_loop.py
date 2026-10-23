@@ -6,6 +6,7 @@ how the request is assembled and what runs before each step and after each model
 """
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -61,11 +62,13 @@ async def run_steps(*, entry: dict, params: dict, sink, tools: list[dict] | None
                     ref: Callable[[Path], str],
                     before_step: Callable[[list[dict]], bool] | None = None,
                     after_message: Callable[[dict], None] | None = None,
+                    parallel_tools: frozenset[str] = frozenset(),
                     run=None) -> str:
     """Run up to `max_steps` model calls. Returns why it ended: "done" (the model answered without tool calls,
     or produced nothing), "stopped" (before_step asked to stop) or "cap" (the step cap was reached).
 
-    `tools` None sends no tool list. `run` (the planner's Run) receives live events, the streaming draft and
+    `tools` None sends no tool list. Consecutive calls to a tool named in `parallel_tools` run concurrently, every
+    other call runs alone and in order, and results are saved in call order. `run` (the planner's Run) receives live events, the streaming draft and
     running-tool state; workers pass None and stay silent.
     """
     model = entry["litellm_params"]["model"]
@@ -139,21 +142,47 @@ async def run_steps(*, entry: dict, params: dict, sink, tools: list[dict] | None
             return "done"
 
         images: list[str] = []                             # relative to the chat folder
-        for call in tool_calls:
-            name = call["function"]["name"]
+
+        async def one(call: dict):
             if run is not None:
-                run.tools_running[call["id"]] = {"id": call["id"], "name": name,
+                run.tools_running[call["id"]] = {"id": call["id"], "name": call["function"]["name"],
                                                  "arguments": call["function"]["arguments"]}
                 emit("tool_start", run.tools_running[call["id"]])
-            result = await run_tool(call)
-            if run is not None:
-                run.tools_running.pop(call["id"], None)
+            try:
+                return await run_tool(call)
+            finally:
+                if run is not None:
+                    run.tools_running.pop(call["id"], None)
+
+        def save(call: dict, result) -> list[str]:
             refs = [ref(png) for png in result.images]
-            sink.add({"role": "tool", "tool_call_id": call["id"], "name": name, "content": result.content,
-                      "_models": [m["id"] for m in result.models], "_images": refs,
+            sink.add({"role": "tool", "tool_call_id": call["id"], "name": call["function"]["name"],
+                      "content": result.content, "_models": [m["id"] for m in result.models], "_images": refs,
                       **({"_parts_check": result.parts_check} if result.parts_check else {}), **result.record})
-            emit("tool_end", {"id": call["id"], "name": name})
-            images += refs
+            emit("tool_end", {"id": call["id"], "name": call["function"]["name"]})
+            return refs
+
+        i = 0
+        while i < len(tool_calls):
+            j = i + 1
+            if tool_calls[i]["function"]["name"] in parallel_tools:
+                while j < len(tool_calls) and tool_calls[j]["function"]["name"] in parallel_tools:
+                    j += 1
+            batch = tool_calls[i:j]
+            if len(batch) == 1:
+                results = [await one(batch[0])]
+            else:
+                tasks = [asyncio.ensure_future(one(call)) for call in batch]
+                try:
+                    results = await asyncio.gather(*tasks)
+                except BaseException:                   # Stop (or a crash): cancel every sibling, let each finish its cleanup
+                    for task in tasks:
+                        task.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
+                    raise
+            for call, result in zip(batch, results):    # saved in call order, whatever order they finished in
+                images += save(call, result)
+            i = j
         if images and vision:
             sink.add({"role": "user", "content": "Renders produced by the tool calls above:",
                       "_images_for_llm": images, "_hidden": True})

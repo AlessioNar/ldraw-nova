@@ -9,7 +9,8 @@ mitigation, not a prevention: it hashes output/ before and after the worker (lea
 workers legitimately write) and undoes what changed, so the planner's files cannot silently change. Limits: it
 detects after the fact; files over MAX_KEEP bytes are hashed but cannot be restored when modified or deleted
 (they are reported as such); writes outside output/ and network access are out of scope; while workers run
-concurrently, one worker's stray write may be reported on another worker's result.
+concurrently the guard is shared (see Guard): one baseline for the batch, so a stray write is undone once and never
+restored by another worker, but it is reported on whichever worker ends next, not necessarily its author.
 """
 from __future__ import annotations
 
@@ -76,3 +77,30 @@ def stray_line(report: list[str], worker_dir: str) -> str | None:
     return (f"Stray writes outside {worker_dir}/ were detected and undone: " + "; ".join(report[:20])
             + (f"; and {len(report) - 20} more" if len(report) > 20 else "")
             + ". Workers may write only inside their own folder.")
+
+
+class Guard:
+    """One baseline for all workers running at the same time.
+
+    The first worker to start takes the snapshot; later ones join it. The planner is blocked while its delegate
+    calls run, and workers write only under output/workers/, so any other change during the batch is a stray write
+    by some worker. `check()` undoes and reports it (once: the baseline is restored, not advanced); the last worker
+    to leave drops the baseline. Per-worker snapshots would let a later worker "restore" an earlier worker's stray
+    write back into place.
+    """
+
+    def __init__(self) -> None:
+        self._active, self._snap = 0, None
+
+    def enter(self, output_dir: Path) -> None:
+        if self._active == 0:
+            self._snap = snapshot(output_dir)
+        self._active += 1
+
+    def check(self) -> list[str]:
+        return restore(self._snap) if self._snap is not None else []
+
+    def leave(self) -> None:
+        self._active -= 1
+        if self._active <= 0:
+            self._active, self._snap = 0, None

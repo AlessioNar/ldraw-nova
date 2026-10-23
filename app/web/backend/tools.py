@@ -26,7 +26,7 @@ import toolkit
 import environment_config
 import gallery
 import parts_steering
-from budget import BudgetLedger
+from budget import BudgetLedger, WorkerLimits
 from leocad_render import bom_path_for, list_models, snapshot_path_for
 from paths import safe_join
 from store import ChatStore
@@ -46,6 +46,7 @@ class ToolContext:
     options: dict = field(default_factory=dict)           # the turn's validated options (parts steering, ...)
     write_root: Path | None = None                        # a worker's own folder: file tools write only here (planner: None)
     ledger: BudgetLedger = field(default_factory=BudgetLedger)   # the run's shared budget (workers reserve from it)
+    limits: WorkerLimits = field(default_factory=WorkerLimits)   # the turn's worker semaphore, delegation count, stray guard
 
     @property
     def work_dir(self) -> Path:

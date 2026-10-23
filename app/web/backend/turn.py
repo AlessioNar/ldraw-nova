@@ -61,7 +61,8 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
         ended = await run_steps(
             entry=entry, params=params, sink=sink, tools=available_tools(run.options, chat_id) if use_tools else None,
             max_steps=max_steps, build_messages=build_messages, run_tool=run_tool,
-            ref=lambda png: store.ref(chat_id, png), before_step=before_step, run=run)
+            ref=lambda png: store.ref(chat_id, png), before_step=before_step,
+            parallel_tools=frozenset({"delegate"}), run=run)
         if ended == "cap":
             save({"role": "assistant", "_ui_only": True, "_notice": True,
                   "content": f"Stopped after {max_steps} steps. Send a message to continue."})

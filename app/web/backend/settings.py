@@ -126,6 +126,16 @@ def max_steps() -> int:
     return _env_int("LDRAW_NOVA_MAX_STEPS", 80, 1)
 
 
+def max_workers() -> int:
+    """Workers running at once in one turn (the rest queue). Default 3, ceiling 6."""
+    return min(_env_int("LDRAW_NOVA_MAX_WORKERS", 3, 1), 6)
+
+
+def max_delegations() -> int:
+    """Delegations the planner may start in one turn."""
+    return _env_int("LDRAW_NOVA_MAX_DELEGATIONS", 8, 1)
+
+
 def subagents_enabled() -> bool:
     """Prototype: offer the planner a delegate_task tool that runs jobs on a cheap worker model. Off by default."""
     return _flag("LDRAW_NOVA_SUBAGENTS", False)
