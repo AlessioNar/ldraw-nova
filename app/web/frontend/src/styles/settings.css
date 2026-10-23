@@ -65,3 +65,4 @@
 .environment-warning { position: relative; color: var(--warn); display: inline-flex; flex-shrink: 0; cursor: help; }
 .environment-tooltip { display: none; position: absolute; right: 0; bottom: calc(100% + 8px); width: 240px; max-width: 65vw; padding: 8px 10px; font-size: 12px; font-weight: normal; color: var(--fg); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 6px; z-index: 3; }
 .environment-warning:hover .environment-tooltip, .environment-warning:focus .environment-tooltip { display: block; }
+.settings-workers { margin-bottom: 28px; }

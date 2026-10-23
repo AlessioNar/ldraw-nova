@@ -26,7 +26,7 @@ export default function Settings() {
   return <div className="page settings">
     <header className="page-head"><div><h1>Settings</h1><p className="muted">Add API keys and choose the agents you build with.</p></div></header>
     <EnvironmentSettings />
-    <section aria-labelledby="workers-heading">
+    <section aria-labelledby="workers-heading" className="settings-workers">
       <header className="page-head settings-models-head"><div><h2 id="workers-heading">Worker model</h2>
         <p className="muted small">The cheap model the main agent hands bounded jobs to (needs Full access). Each chat can override it in the chat box; "No workers" turns delegation off.</p>
       </div></header>
