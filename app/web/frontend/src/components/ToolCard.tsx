@@ -1,9 +1,11 @@
+import { useEffect, useRef } from "react";
 import { type ChatModel, type LiveWorker, type Message, type ToolCall } from "../api";
+import Markdown from "./Markdown";
 import WorkerCard from "./WorkerCard";
 
-type Status = "running" | "queued" | "done" | "interrupted";
+export type Status = "running" | "queued" | "done" | "interrupted";
 
-const LABELS: Record<string, string> = {
+export const LABELS: Record<string, string> = {
   find_parts: "Searched parts",
   save_model: "Saved model",
   write_file: "Wrote file",
@@ -18,7 +20,7 @@ const LABELS: Record<string, string> = {
   report_progress: "Progress",
 };
 
-function parseArgs(raw: string): Record<string, unknown> {
+export function parseArgs(raw: string): Record<string, unknown> {
   try {
     return JSON.parse(raw || "{}");
   } catch {
@@ -26,7 +28,7 @@ function parseArgs(raw: string): Record<string, unknown> {
   }
 }
 
-function summary(name: string, args: Record<string, unknown>): string {
+export function summary(name: string, args: Record<string, unknown>): string {
   const pick = (k: string) => (typeof args[k] === "string" ? (args[k] as string) : "");
   switch (name) {
     case "run_toolkit":
@@ -60,41 +62,53 @@ function prettyArgs(args: Record<string, unknown>): string {
     .join("\n");
 }
 
+export const isFailed = (output: string) => output.startsWith("Error:") || /^\[(?:timed out|exit code [1-9])/.test(output);
+export const resultText = (result?: Message) => typeof result?.content === "string" ? result.content : "";
+
 export default function ToolCard({
   call,
   result,
   status,
-  models,
   live,
   worker,
   chatId = "",
   eurPerUsd,
   now = Date.now(),
+  attempts = 1,
+  earlier = [],
 }: {
   call: ToolCall;
   result?: Message;
   status: Status;
-  models: ChatModel[];
+  models?: ChatModel[];
   live?: { output?: string; started_at?: number };
   worker?: LiveWorker;
   chatId?: string;
   eurPerUsd?: number;
   now?: number;
+  attempts?: number;
+  earlier?: Message[];
 }) {
+  const live_ = status === "running" ? live?.output?.slice(-4000) : undefined;
+  const liveRef = useRef<HTMLPreElement>(null);
+  useEffect(() => { const el = liveRef.current; if (el) el.scrollTop = el.scrollHeight; }, [live_]);
   const name = call.function.name;
   const args = parseArgs(call.function.arguments);
   if (name === "delegate") return <WorkerCard chatId={chatId} args={args} result={result} status={status} live={worker} eurPerUsd={eurPerUsd} />;
-  const output = typeof result?.content === "string" ? result.content : "";
-  const failed = output.startsWith("Error:") || /^\[(?:timed out|exit code [1-9])/.test(output);
-  const modelImages = new Set(models.map((m) => m.image_url));
-  const extraImages = (result?._image_urls ?? []).filter((url) => !modelImages.has(url));
+  const output = resultText(result);
+  const failed = isFailed(output);
+  if (name === "report_progress") {
+    const text = summary(name, args);
+    return text ? <div className="progress-callout"><Markdown>{text}</Markdown></div> : null;
+  }
 
   return (
-    <div className="tool">
+    <div className={`tool${live_ ? " has-live" : ""}`}>
       <details>
         <summary>
           <span className={`tool-status ${failed ? "failed" : status}`} aria-hidden />
           <span className="tool-name">{LABELS[name] ?? name}</span>
+          {attempts > 1 && <span className="tool-retries" title={`${attempts} attempts`}>×{attempts}{status === "done" ? (failed ? ", last failed" : ", last ok") : ""}</span>}
           <span className="tool-summary ellipsis">{summary(name, args)}</span>
           {status === "running" && <span className="muted small">{live?.started_at ? `${Math.max(0, Math.floor(now / 1000 - live.started_at))}s` : "running…"}</span>}
           {status === "interrupted" && <span className="muted small">interrupted</span>}
@@ -108,15 +122,15 @@ export default function ToolCard({
               <pre className={failed ? "failed" : ""}>{output}</pre>
             </>
           )}
+          {earlier.length > 0 && (
+            <>
+              <div className="tool-section">Earlier attempts</div>
+              {earlier.map((m, i) => <pre key={i} className={isFailed(resultText(m)) ? "failed" : ""}>{resultText(m).slice(0, 1200)}</pre>)}
+            </>
+          )}
         </div>
       </details>
-      {name === "report_progress" && <p className="progress-summary">{summary(name, args)}</p>}
-      {status === "running" && live?.output && <pre className="live-tool-output">{live.output.slice(-4000)}</pre>}
-      {extraImages.map((url) => (
-        <a key={url} className="tool-image" href={url} target="_blank" rel="noreferrer">
-          <img src={url} alt="render" loading="lazy" />
-        </a>
-      ))}
+      {live_ && <pre className="live-tool-output" ref={liveRef}>{live_}</pre>}
     </div>
   );
 }

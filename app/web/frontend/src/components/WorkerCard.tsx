@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type LiveWorker, type Message, type ToolCall, type WorkerTranscript } from "../api";
 
 /** Every worker status in docs/plans/swarm-subagents/README.md section 2, plus the two the UI adds itself. */
-const STATUS: Record<string, { label: string; tone: "ok" | "warn" | "bad" | "run" }> = {
+export const STATUS: Record<string, { label: string; tone: "ok" | "warn" | "bad" | "run" }> = {
   running: { label: "running", tone: "run" },
   queued: { label: "waiting to start", tone: "run" },
   ok: { label: "done", tone: "ok" },
@@ -55,29 +55,32 @@ function Transcript({ data }: { data: WorkerTranscript }) {
   );
 }
 
-/** One card per delegated worker: role, task, model, live status, steps and euros against the caps. */
-export default function WorkerCard({ chatId, args, result, status, live, eurPerUsd }: {
-  chatId: string; args: Record<string, unknown>; result?: Message; status: string;
-  live?: LiveWorker; eurPerUsd?: number;
-}) {
-  const [transcript, setTranscript] = useState<WorkerTranscript | null>(null);
-  const [loadError, setLoadError] = useState("");
+type WorkerArgs = { args: Record<string, unknown>; result?: Message; status: string; live?: LiveWorker; eurPerUsd?: number };
+
+/** Everything one worker row shows, from the saved result and/or the live stream. */
+export function workerView({ args, result, status, live, eurPerUsd }: WorkerArgs) {
   const saved = result?._worker;
   const output = typeof result?.content === "string" ? result.content : "";
-  const workerId = saved?.id ?? live?.id;
   // Final figures come from the saved record (what the chat total sums); live ones from the stream.
   const final = saved ? (saved.status || "ok") : null;
   const state = final ?? live?.status ?? (output.startsWith("Error:") ? "failed" : status);
   const info = STATUS[state] ?? { label: state, tone: "warn" as const };
   const role = live?.role ?? (output.match(/role (\w+)/)?.[1]) ?? String(args.role ?? "worker");
   const task = live?.task ?? String(args.task ?? "");
-  const model = live?.model ?? saved?.model ?? "";
   const steps = saved?.steps ?? live?.steps;
   const maxSteps = live?.max_steps ?? Number(output.match(/max (\d+) steps/)?.[1] ?? args.max_steps ?? 0);
   const maxEur = live?.max_eur ?? Number(output.match(/max EUR ([\d.]+)/)?.[1] ?? args.max_eur ?? 0);
   const cost = result?._usage?.cost_usd != null && eurPerUsd ? result._usage.cost_usd * eurPerUsd : live?.eur;
-  const notes = result ? notices(output, state) : [];
-  const pct = Math.min(100, maxSteps && steps ? (steps / maxSteps) * 100 : 0);
+  return { saved, output, state, info, role, task, model: live?.model ?? saved?.model ?? "", steps, maxSteps, maxEur, cost,
+    notes: result ? notices(output, state) : [], workerId: saved?.id ?? live?.id,
+    pct: Math.min(100, maxSteps && steps ? (steps / maxSteps) * 100 : 0) };
+}
+
+/** One compact row per delegated worker: role, task, steps, euros, bar and status on one line; notices underneath. */
+export default function WorkerCard({ chatId, args, result, status, live, eurPerUsd }: { chatId: string } & WorkerArgs) {
+  const [transcript, setTranscript] = useState<WorkerTranscript | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const { output, state, info, role, task, model, steps, maxSteps, maxEur, cost, notes, workerId, pct } = workerView({ args, result, status, live, eurPerUsd });
 
   const load = (open: boolean) => {
     if (!open || !workerId || transcript) return;
@@ -89,10 +92,17 @@ export default function WorkerCard({ chatId, args, result, status, live, eurPerU
       <details onToggle={e => load((e.target as HTMLDetailsElement).open)}>
         <summary>
           <span className={`tool-status ${info.tone === "bad" ? "failed" : info.tone === "ok" ? "done" : info.tone === "warn" ? "warn" : "running"}`} aria-hidden />
-          <span className="tool-name">{ROLE_TITLE[role] ?? role} worker</span>
-          <span className="tool-summary ellipsis">{oneLine(task)}</span>
+          <span className="tool-name">{ROLE_TITLE[role] ?? role}</span>
+          <span className="worker-task" title={oneLine(task)}>{oneLine(task)}</span>
+          <span className="worker-figures">
+            <span className="small" title={`Model calls so far against the step cap${model ? ` (${model})` : ""}`}>{steps ?? 0}{maxSteps ? `/${maxSteps}` : ""} steps</span>
+            {cost != null && <span className="small" title="Worker spending against its own budget">€{cost.toFixed(2)}{maxEur ? `/${maxEur.toFixed(2)}` : ""}</span>}
+            {maxSteps > 0 && <span className="worker-bar" aria-hidden><i style={{ width: `${pct}%` }} /></span>}
+            <span className={`worker-chip ${info.tone}`}>{info.label}</span>
+          </span>
         </summary>
         <div className="tool-body">
+          {model && <p className="muted small">Model: {model}</p>}
           <div className="tool-section">Task</div>
           <pre>{task}</pre>
           {output && <><div className="tool-section">Result</div><pre className={info.tone === "bad" ? "failed" : ""}>{output}</pre></>}
@@ -102,13 +112,6 @@ export default function WorkerCard({ chatId, args, result, status, live, eurPerU
           {!workerId && <p className="muted small">The transcript is available once the worker has started.</p>}
         </div>
       </details>
-      <div className="worker-meter" aria-label="Worker progress">
-        <span className={`worker-chip ${info.tone}`}>{info.label}</span>
-        {model && <span className="muted small ellipsis" title="Worker model">{model}</span>}
-        <span className="small" title="Model calls so far against the step cap">{steps ?? 0}{maxSteps ? ` / ${maxSteps}` : ""} steps</span>
-        {cost != null && <span className="small" title="Worker spending against its own budget">€{cost.toFixed(2)}{maxEur ? ` of €${maxEur.toFixed(2)}` : ""}</span>}
-        {state === "running" && maxSteps > 0 && <span className="worker-bar" aria-hidden><i style={{ width: `${pct}%` }} /></span>}
-      </div>
       {notes.map((n, i) => <p key={i} className={`worker-notice ${n.startsWith("Stray") || info.tone === "ok" ? "warn" : info.tone}`} role="status">{n}</p>)}
     </div>
   );

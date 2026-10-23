@@ -28,6 +28,7 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
   const bomBusy = model.bom_status === "queued" || model.bom_status === "rendering";
   const [glb, setGlb] = useState<{ busy: boolean; error?: string }>({ busy: false });
   const [info, setInfo] = useState(false);
+  const [showWarnings, setShowWarnings] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   async function remove() {
@@ -85,11 +86,12 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
             ) : null}
           </span>
           {warnings.length > 0 && (
-            <span className="badge warn" title={warnings.join("\n")}>
+            <button type="button" className="badge warn warning-toggle" aria-expanded={showWarnings} onClick={() => setShowWarnings(v => !v)}>
               {warnings.length} warning{warnings.length > 1 ? "s" : ""}
-            </span>
+            </button>
           )}
         </div>
+        {showWarnings && warnings.length > 0 && <ul className="model-warnings small">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
         {model.info_heading && <p className="model-info-heading"><strong>{model.info_heading}</strong></p>}
         {model.description && <p className="model-description">{model.description}</p>}
         <div className="muted small ellipsis">
