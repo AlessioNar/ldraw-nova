@@ -114,7 +114,7 @@ def test_private_persistence_is_loaded_before_backend_configuration(tmp_path, mo
         "print(os.environ['LDRAW_TEST_RESTART']); print(settings.DATA_DIR)"],
         env={**os.environ, "LDRAW_NOVA_WEB_CONFIG_DIR": str(path.parent),
              "PYTHONPATH": str(Path(main.__file__).parent) + os.pathsep + str(Path(main.__file__).parents[2])},
-        capture_output=True, text=True, check=True, timeout=30)
+        capture_output=True, text=True, check=True, timeout=120)        # importing the backend (LiteLLM) takes over 30 s on a busy machine
     assert result.stdout.splitlines() == ["persisted-override", str(tmp_path / "startup-data")]
     saved = json.loads(path.read_text())["variables"]
     assert saved[0]["id"] == rows[0]["id"]
