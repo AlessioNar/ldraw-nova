@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Approval } from "../api";
+import type { Approval, LiveWorker } from "../api";
 
 export type RunningTool = { id: string; name: string; arguments: string; output?: string; started_at?: number };
 export type Activity = { started_at: number; last_event_at: number; phase: string };
@@ -13,6 +13,7 @@ export function useChatStream(id: string, reload: () => Promise<unknown>, refres
   const [tools, setTools] = useState<RunningTool[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [workers, setWorkers] = useState<LiveWorker[]>([]);
   const [contextNotice, setContextNotice] = useState("");
   const [activity, setActivity] = useState<Activity | null>(null);
   const [connected, setConnected] = useState(true);
@@ -46,6 +47,7 @@ export function useChatStream(id: string, reload: () => Promise<unknown>, refres
       updateDraft(d.draft);
       setTools(d.tools);
       setApprovals(d.approvals ?? []);
+      setWorkers(d.workers ?? []);
       setActivity(d.activity ?? null);
     });
     es.addEventListener("activity", e => setActivity(data(e)));
@@ -57,6 +59,9 @@ export function useChatStream(id: string, reload: () => Promise<unknown>, refres
       const d = data(e);
       setTools(all => all.map(t => t.id === d.id ? { ...t, output: ((t.output ?? "") + d.delta).slice(-12000) } : t));
     });
+    es.addEventListener("worker_start", e => setWorkers(all => [...all.filter(w => w.id !== data(e).id), { status: "running", steps: 0, eur: 0, ...data(e) }]));
+    es.addEventListener("worker_step", e => setWorkers(all => all.map(w => w.id === data(e).id ? { ...w, steps: data(e).steps, eur: data(e).eur } : w)));
+    es.addEventListener("worker_end", e => setWorkers(all => all.map(w => w.id === data(e).id ? { ...w, status: data(e).status, steps: data(e).steps ?? w.steps, eur: data(e).eur } : w)));
     es.addEventListener("text", (e) => updateDraft(draftRef.current + data(e).delta));
     es.addEventListener("tool_start", (e) => {
       const t = data(e) as RunningTool;
@@ -79,6 +84,7 @@ export function useChatStream(id: string, reload: () => Promise<unknown>, refres
       setRunning(false);
       setTools([]);
       setApprovals([]);
+      setWorkers([]);
       updateDraft("");
       reload();
       refreshChats();
@@ -90,6 +96,7 @@ export function useChatStream(id: string, reload: () => Promise<unknown>, refres
     setError(null);
     setTools([]);
     setApprovals([]);
+    setWorkers([]);
     setContextNotice("");
     setActivity(null);
     setConnected(true);
@@ -106,5 +113,5 @@ export function useChatStream(id: string, reload: () => Promise<unknown>, refres
     return () => clearInterval(timer);
   }, [running]);
 
-  return { running, setRunning, draft, persisting, tools, error, setError, approvals, contextNotice, activity, connected, now, subscribe, reset };
+  return { running, setRunning, draft, persisting, tools, error, setError, approvals, workers, contextNotice, activity, connected, now, subscribe, reset };
 }

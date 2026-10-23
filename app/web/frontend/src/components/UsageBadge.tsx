@@ -10,12 +10,14 @@ export default function UsageBadge({ usage, steps, budget }: { usage: Usage | Us
   if (usage.cache_read) parts.push(`${tokenLabel(usage.cache_read)} cached`);
   if (usage.cache_write) parts.push(`${tokenLabel(usage.cache_write)} cache write`);
   if (steps) parts.push(`${steps} step${steps === 1 ? "" : "s"}`);
+  const workerEur = totals?.worker_cost_eur ?? 0;
+  const split = workerEur > 0 && totals ? ` Planner €${(totals.cost_eur - workerEur).toFixed(2)}, workers €${workerEur.toFixed(2)}.` : "";
   const priced = totals && (totals.cost_eur > 0 || !totals.unpriced_steps);
   const near = !!budget && !!totals && totals.cost_eur >= budget * 0.8;
   return (
     <div className="usage" title="Tokens reported by the provider. 'cached' is a prompt-cache read.">
       {priced && totals && <strong className={near ? "usage-cost near-budget" : "usage-cost"}
-        title={`Estimated from the model's list prices at ${totals.eur_per_usd} EUR per USD${totals.unpriced_steps ? `; ${totals.unpriced_steps} step(s) have no price and are not counted` : ""}.`}>
+        title={`Estimated from the model's list prices at ${totals.eur_per_usd} EUR per USD${totals.unpriced_steps ? `; ${totals.unpriced_steps} step(s) have no price and are not counted` : ""}.${split}`}>
         ≈ €{totals.cost_eur.toFixed(2)}{budget ? ` of €${budget.toFixed(2)}` : ""}</strong>}
       {priced && " · "}{parts.join(" · ")}
     </div>

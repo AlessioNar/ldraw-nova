@@ -20,6 +20,7 @@ import llm_config
 import model_catalog
 import settings
 import usage
+import worker_events
 import worker_isolation
 from agent_loop import FileSink, run_steps
 from history import llm_history
@@ -276,6 +277,7 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
     before = worker_isolation.snapshot(ctx.work_dir)
     cap_eur = ledger.reserve(contract.id, contract.max_eur, ctx.store.messages(ctx.chat_id))   # clamped to what is left
     sink = FileSink(ctx.chat_dir / "workers" / f"{contract.id}.jsonl")
+    worker_events.start(ctx, contract, model, cap_eur)
     sink.add({"role": "user", "content": _task_message(contract)})
     system = worker_prompt(contract)
     schemas = [TOOLS[name][0] for name in contract.tools if name in TOOLS]
@@ -299,6 +301,7 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
     def record_usage(message: dict) -> None:
         if message.get("_usage"):
             ledger.add(contract.id, message["_usage"].get("cost_usd"))
+        worker_events.step(ctx, contract.id)
 
     async def run_tool(call: dict) -> ToolResult:
         name = call["function"]["name"]
@@ -325,6 +328,7 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
     finally:
         ledger.release(contract.id)
         if not finished:                                      # Stop or another abort: the worker's cost still counts
+            worker_events.end(ctx, contract.id, "cancelled")
             ctx.store.add_message(ctx.chat_id, {"role": "assistant", "content": "", "_ui_only": True, "_hidden": True,
                                                 **_aggregate(contract.id, model, sink, "cancelled")})
     final = next((m["content"] for m in reversed(sink.messages())
@@ -343,6 +347,7 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
         status = "partial" if files else "failed"
     else:
         status = "ok"
+    worker_events.end(ctx, contract.id, status)
     totals = usage.usage_totals(sink.messages())
     lines = [f"Worker {contract.id}: status {status}",
              f"Contract: role {contract.role}, model {model}, max {contract.max_steps} steps, max EUR {contract.max_eur:.2f}, "
