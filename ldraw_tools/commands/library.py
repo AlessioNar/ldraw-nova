@@ -90,24 +90,51 @@ def run_search(args, library, parts):
 
 
 def add_part(commands):
-    c = commands.add_parser("part", help="Inspect one real part's metadata, local bounds and connectors")
-    c.add_argument("code")
+    c = commands.add_parser("part", help="Inspect real parts' metadata, local bounds and connectors")
+    c.add_argument("code", nargs="+", help="One part code, or several: the library loads once for all of them "
+                                           "(a process start costs seconds, so look many parts up in one call)")
     c.add_argument("--limit", type=positive, default=30, help="Connector output limit (total is always reported)")
+    c.add_argument("--brief", action="store_true", help="Only code, description, bounds, size, stud and connector counts "
+                                                         "(the default when several codes are given)")
+    c.add_argument("--full", action="store_true", help="Full detail for every code of a multi-part call")
 
 
-def run_part(args, library, parts):
+def part_report(code, parts, limit):
     from ..catalog import resolve_part
-    code = (resolve_part(args.code,parts) if args.code.startswith('@') else args.code).casefold().removesuffix(".dat")
+    code = (resolve_part(code, parts) if code.startswith('@') else code).casefold().removesuffix(".dat")
     part = parts.part(code=code)
     g = parts.geometry(code)
     return dict(code=code + ".dat", path=str(part.path.resolve()), metadata=jsonable(part.metadata),
                 complete=g.complete, bounds=jsonable(g.bounds), size=jsonable(g.bounds.size) if g.bounds else None,
                 stud_positions=[jsonable(s.position) for s in g.top_studs],
-                connector_count=len(g.connections), connectors=jsonable(g.connections[:args.limit]),
-                connectors_truncated=len(g.connections) > args.limit, diagnostics=jsonable(g.diagnostics),
+                connector_count=len(g.connections), connectors=jsonable(g.connections[:limit]),
+                connectors_truncated=len(g.connections) > limit, diagnostics=jsonable(g.diagnostics),
                 connection_metadata=metadata_summary(g.connection_metadata),
                 rectangular_profile=profiles().get(code),
-                note="All coordinates are local LDU. Connector inference is evidence; inspect uncertain fits."), 0 if g.complete else 1
+                note="All coordinates are local LDU. Connector inference is evidence; inspect uncertain fits.")
+
+
+def brief_part(report):
+    metadata = report["metadata"] if isinstance(report["metadata"], dict) else {}
+    return dict(code=report["code"], description=metadata.get("description"), complete=report["complete"],
+                bounds=report["bounds"], size=report["size"], stud_count=len(report["stud_positions"]),
+                connector_count=report["connector_count"])
+
+
+def run_part(args, library, parts):
+    if len(args.code) == 1 and not args.brief:
+        report = part_report(args.code[0], parts, args.limit)           # one code, full detail: the original output
+        return report, 0 if report["complete"] else 1
+    reports, errors = [], {}
+    for code in args.code:
+        try:
+            report = part_report(code, parts, args.limit)
+        except Exception as exc:  # noqa: BLE001 - one unknown part must not hide the answers for the others
+            errors[code] = str(exc)
+            continue
+        reports.append(report if args.full and not args.brief else brief_part(report))
+    incomplete = [r["code"] for r in reports if not r["complete"]]      # reported, not a failure of the lookup itself
+    return dict(count=len(reports), parts=reports, errors=errors, incomplete=incomplete), 0 if reports and not errors else 1
 
 
 def add_colours(commands):

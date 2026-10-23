@@ -90,6 +90,7 @@ limitations are in the [vehicle guide](vehicles.md).
 ./ldraw-agent search parts 'brick 2 x 4' --limit 8
 ./ldraw-agent search parts '3001' --limit 1
 ./ldraw-agent part 3001 --limit 30
+./ldraw-agent part 3001 3020 3022 3795     # many parts in one call: brief bounds/stud/connector summary each (--full for everything)
 ./ldraw-agent colours 'blue'
 ./ldraw-agent colours '148'
 ./ldraw-agent profiles

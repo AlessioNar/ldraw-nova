@@ -80,6 +80,7 @@ Use exact part/category searches to refine the shortlist and inspect real geomet
 ./ldraw-agent design details
 ./ldraw-agent search parts 'brick 2 x 4' --limit 8
 ./ldraw-agent part 3001 --limit 20
+./ldraw-agent part 3001 3020 3022 3795     # several parts in one call (brief output); starting a process costs seconds, so never loop over parts one by one
 ./ldraw-agent colours 'blue'
 ./ldraw-agent profiles
 ```
