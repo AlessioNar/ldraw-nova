@@ -26,7 +26,7 @@ export default function ChatPage() {
     return d;
   }, [id]);
 
-  const { running, setRunning, draft, persisting, tools, error, setError, approvals, contextNotice, activity, connected, now, subscribe, reset } =
+  const { running, setRunning, draft, persisting, tools, error, setError, approvals, workers, contextNotice, activity, connected, now, subscribe, reset } =
     useChatStream(id, reload, refreshChats);
 
   useEffect(() => {
@@ -99,10 +99,10 @@ export default function ChatPage() {
         <Link className="chat-edit-link" to={`/chat/${id}/edit`} title="Place and move parts in 3D (desktop)">Edit in 3D</Link>
         {!!detail.usage?.steps && <UsageBadge usage={detail.usage} steps={detail.usage.steps} budget={detail.chat.options?.budget_eur} />}
       </header>
-      <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} now={now} error={error}
+      <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} workers={workers} now={now} error={error}
         scrollerRef={scrollerRef} bottomRef={bottomRef} onScroll={onScroll} />
       <div className="composer-wrap">
-        <TurnStatus chatId={id} running={running} connected={connected} approvals={approvals} activity={activity} now={now}
+        <TurnStatus chatId={id} running={running} connected={connected} approvals={approvals} workers={workers} activity={activity} now={now}
           contextNotice={contextNotice} onError={setError} />
         <Composer
           key={id}

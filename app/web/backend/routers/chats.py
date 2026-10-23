@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import quote
@@ -140,6 +141,34 @@ async def chats_stream(chat_id: str):
 
     return StreamingResponse(events(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+_STRIPPED = ("_reasoning", "_reasoning_details", "thinking_blocks", "provider_specific_fields", "_images")
+
+
+@router.get("/api/chats/{chat_id}/workers/{worker_id}")
+def chat_worker(chat_id: str, worker_id: str):
+    """A delegated worker's transcript (its side file, read only) and the files it wrote."""
+    store = get_store()
+    store.get_chat(chat_id) or not_found("no such chat")
+    if not re.fullmatch(r"[0-9a-f]{8}", worker_id):
+        not_found("no such worker")
+    side = store.chat_dir(chat_id) / "workers" / f"{worker_id}.jsonl"
+    if not side.is_file():
+        not_found("no such worker")
+    messages = []
+    for line in side.read_text(encoding="utf-8").splitlines():
+        try:
+            message = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(message, dict):
+            messages.append({k: v for k, v in message.items() if k not in _STRIPPED})
+    root = store.work_dir(chat_id) / "workers" / worker_id
+    files = [{"name": p.relative_to(root).as_posix(), "size": p.stat().st_size,
+              "url": f"/api/chats/{chat_id}/artifacts/" + quote(f"workers/{worker_id}/{p.relative_to(root).as_posix()}")}
+             for p in sorted(root.rglob("*")) if p.is_file()] if root.is_dir() else []
+    return {"id": worker_id, "messages": messages, "files": files}
 
 
 @router.get("/api/chats/{chat_id}/artifacts/{path:path}")

@@ -1,4 +1,5 @@
-import { type ChatModel, type Message, type ToolCall } from "../api";
+import { type ChatModel, type LiveWorker, type Message, type ToolCall } from "../api";
+import WorkerCard from "./WorkerCard";
 
 type Status = "running" | "queued" | "done" | "interrupted";
 
@@ -65,6 +66,9 @@ export default function ToolCard({
   status,
   models,
   live,
+  worker,
+  chatId = "",
+  eurPerUsd,
   now = Date.now(),
 }: {
   call: ToolCall;
@@ -72,10 +76,14 @@ export default function ToolCard({
   status: Status;
   models: ChatModel[];
   live?: { output?: string; started_at?: number };
+  worker?: LiveWorker;
+  chatId?: string;
+  eurPerUsd?: number;
   now?: number;
 }) {
   const name = call.function.name;
   const args = parseArgs(call.function.arguments);
+  if (name === "delegate") return <WorkerCard chatId={chatId} args={args} result={result} status={status} live={worker} eurPerUsd={eurPerUsd} />;
   const output = typeof result?.content === "string" ? result.content : "";
   const failed = output.startsWith("Error:") || /^\[(?:timed out|exit code [1-9])/.test(output);
   const modelImages = new Set(models.map((m) => m.image_url));

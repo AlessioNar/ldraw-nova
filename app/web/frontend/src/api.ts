@@ -48,6 +48,7 @@ export type Message = {
   name?: string;
   _models?: string[];
   _usage?: Usage;
+  _worker?: { id: string; model: string; steps: number; status: string }; // on a delegate result: the worker's aggregate
   _image_urls?: string[];
   _documents?: { name: string; size: number; url: string | null }[];
   _hidden?: boolean;
@@ -59,7 +60,7 @@ export type Message = {
 };
 
 export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number; cost_usd?: number };
-export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number };
+export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number; worker_cost_eur?: number };
 export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals };
 
 type Capability = boolean | "auto";
@@ -75,7 +76,14 @@ export type ModelProfile = {
   source_url?: string | null; source_label?: string | null; verified_at?: string | null;
   lookup_status?: "live" | "published" | "unavailable"; recommendation?: string | null;
 };
-export type Approval = { id: string; call_id: string; name: string; arguments: string };
+export type WorkerContract = { error?: string; role?: string; task?: string; tools?: string[]; inputs?: string[]; outputs?: string[];
+  max_steps?: number; max_eur?: number; model?: string; write_folder?: string };
+export type Approval = { id: string; call_id: string; name: string; arguments: string; contract?: WorkerContract };
+/** A delegated worker as the live stream reports it (worker_start / worker_step / worker_end events). */
+export type LiveWorker = { id: string; role: string; task: string; model: string; max_steps: number; max_eur: number;
+  status: string; steps: number; eur: number };
+export type WorkerTranscript = { id: string; messages: { role: string; content: unknown; tool_calls?: ToolCall[]; name?: string }[];
+  files: { name: string; size: number; url: string }[] };
 export type LlmEntry = {
   connection_status: ConnectionStatus;
   id: string;
@@ -127,6 +135,7 @@ export const api = {
     request(`/api/chats/${id}/messages`, { method: "POST", body: json({ text, llm_model_id, options, images, documents }) }),
   approve: (id: string, approval: string, approved: boolean) => request(`/api/chats/${id}/approvals/${approval}`, { method: "POST", body: json({ approved }) }),
   catalog: () => request<{ models: ModelProfile[] }>("/api/model-catalog"),
+  worker: (id: string, worker: string) => request<WorkerTranscript>(`/api/chats/${id}/workers/${worker}`),
   cancel: (id: string) => request(`/api/chats/${id}/cancel`, { method: "POST" }),
   models: () => request<{ models: ModelFile[]; pending: number }>("/api/models"),
   deleteModel: (filename: string) => request<{ deleted: string[] }>(`/api/models/${encodeURIComponent(filename)}`, { method: "DELETE" }),
