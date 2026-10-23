@@ -12,6 +12,7 @@
 .markdown pre code { background: none; padding: 0; }
 .markdown table { border-collapse: collapse; }
 .markdown th, .markdown td { border: 1px solid var(--border); padding: 4px 8px; }
+.markdown img { max-width: 100%; height: auto; }   /* renders the agent embeds in its messages are 1000 px wide */
 .thinking { display: inline-flex; gap: 4px; padding: 6px 0; }
 .thinking i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
 .thinking i:nth-child(2) { animation-delay: 0.2s; }

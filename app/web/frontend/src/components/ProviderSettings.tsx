@@ -121,7 +121,7 @@ export default function ProviderSettings({ catalog, onError }: { catalog: ModelP
                 {extra.map(m => <ModelRow key={m.id} name={m.model_name} profile={m.profile} entry={m} env={p.env} busy={busy}
                   onAdd={() => {}} onRemove={() => remove(m)} onUseProviderKey={() => useKey(m)} />)}
               </ul>}
-            {!keys[p.id] && mine.length > 0 && <p className="muted small">No {providerLabel(p.id)} key is set, so these models cannot run yet.</p>}
+            {!keys[p.id] && mine.some(m => !hasOwnKey(m)) && <p className="muted small">No {providerLabel(p.id)} key is set, so the models that use it cannot run yet.</p>}
           </div>
         </section>;
       })}
