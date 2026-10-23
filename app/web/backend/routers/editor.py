@@ -166,18 +166,47 @@ def editor_get(chat_id: str):
 async def editor_open(chat_id: str, body: EditorOpen):
     """Start the chat's editor session: from a plan file in its work folder, or a one-brick skeleton."""
     store = get_store()
+    return await open_session(store, chat_id, body.source, body.name)
+
+
+async def apply_edits(store, chat_id: str, edits: list, base_revision: int) -> dict:
+    """Apply a batch under the chat's lock (shared by the route and the agent's editor_edit tool)."""
+    if _session(store, chat_id) is None:
+        not_found("no editor plan for this chat")
+    async with _lock(chat_id):
+        folder, _, _, _ = _paths(store, chat_id)
+        folder.mkdir(parents=True, exist_ok=True)
+        sandbox.give_to_agent(folder)
+        request_path = folder / "request.json"
+        request_path.write_text(json.dumps(edits), encoding="utf-8")
+        sandbox.give_to_agent(request_path)
+        arguments = _arguments(store, chat_id, "apply", base_revision) + ["--edits", str(request_path)]
+        mode, inventories = parts_steering.selection(_chat(store, chat_id).get("options") or {})
+        if mode in ("prefer", "only") and inventories:
+            owned_path = folder / "owned.json"
+            owned_path.write_text(json.dumps([list(row) for inventory in inventories for row in inventory.rows]),
+                                  encoding="utf-8")
+            sandbox.give_to_agent(owned_path)
+            arguments += ["--owned", str(owned_path), "--mode", mode]
+        report = await _run(store, chat_id, arguments)
+        _outcome(report, 0)
+        return _view(store, chat_id)
+
+
+async def open_session(store, chat_id: str, source: Optional[str] = None, name: Optional[str] = None) -> dict:
+    """Start the chat's editor session (shared by the route and the agent's editor_open tool)."""
     _chat(store, chat_id)
     _, plan_path, state_path, _ = _paths(store, chat_id)
     if plan_path.exists() or state_path.exists():
         raise HTTPException(409, "This chat already has an editor plan")
     arguments = _arguments(store, chat_id, "open")
-    if body.source is not None:
-        source = safe_join(store.work_dir(chat_id), body.source.strip())
-        if source is None or not source.is_file() or source.suffix.lower() != ".json":
+    if source is not None:
+        found = safe_join(store.work_dir(chat_id), source.strip())
+        if found is None or not found.is_file() or found.suffix.lower() != ".json":
             not_found("source plan not found in the chat's work folder")
-        arguments += ["--from", str(source)]
-    if body.name is not None:
-        arguments += ["--name", body.name.strip()[:MAX_NAME]]
+        arguments += ["--from", str(found)]
+    if name is not None:
+        arguments += ["--name", name.strip()[:MAX_NAME]]
     async with _lock(chat_id):
         report = await _run(store, chat_id, arguments)
     _outcome(report, 0)
@@ -189,26 +218,7 @@ async def editor_edits(chat_id: str, body: EditorEdits):
     """Apply a batch of edit operations; the whole batch is rejected together."""
     store = get_store()
     _chat(store, chat_id)
-    if _session(store, chat_id) is None:
-        not_found("no editor plan for this chat")
-    async with _lock(chat_id):
-        folder, _, _, _ = _paths(store, chat_id)
-        folder.mkdir(parents=True, exist_ok=True)
-        sandbox.give_to_agent(folder)
-        request_path = folder / "request.json"
-        request_path.write_text(json.dumps(body.edits), encoding="utf-8")
-        sandbox.give_to_agent(request_path)
-        arguments = _arguments(store, chat_id, "apply", body.base_revision) + ["--edits", str(request_path)]
-        mode, inventories = parts_steering.selection(_chat(store, chat_id).get("options") or {})
-        if mode in ("prefer", "only") and inventories:
-            owned_path = folder / "owned.json"
-            owned_path.write_text(json.dumps([list(row) for inventory in inventories for row in inventory.rows]),
-                                  encoding="utf-8")
-            sandbox.give_to_agent(owned_path)
-            arguments += ["--owned", str(owned_path), "--mode", mode]
-        report = await _run(store, chat_id, arguments)
-        _outcome(report, 0)
-        return _view(store, chat_id)
+    return await apply_edits(store, chat_id, body.edits, body.base_revision)
 
 
 @router.post("/api/chats/{chat_id}/editor/undo")

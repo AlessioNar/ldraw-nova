@@ -76,7 +76,7 @@ async def _run_turn(store: ChatStore, run: Run, entry: dict) -> None:
 
 
 async def execute_tool(run: Run, ctx: ToolContext, call_id: str, name: str, arguments: str) -> ToolResult:
-    allowed = {t["function"]["name"] for t in available_tools(run.options)}
+    allowed = {t["function"]["name"] for t in available_tools(run.options, run.chat_id)}
     if name not in allowed:
         return ToolResult("Tool denied by the current mode or permissions.")
     if name not in READ_TOOLS and run.options.get("permissions", "ask") == "ask":

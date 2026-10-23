@@ -55,7 +55,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
             if removed:
                 run.emit("context", {"removed": removed})
             messages = outbound_messages(store, chat_id, messages, entry["litellm_params"]["model"], run.options)
-            kwargs = {"tools": available_tools(run.options)} if use_tools else {}
+            kwargs = {"tools": available_tools(run.options, chat_id)} if use_tools else {}
             run.emit("progress", {"summary": "Agent is reviewing the request and choosing the next step."})
             stream = await litellm.acompletion(**params, messages=messages, stream=True, num_retries=2, **kwargs)
             inference.preserve_openrouter_reasoning_chunks(stream, params["model"])

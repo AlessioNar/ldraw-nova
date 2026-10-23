@@ -459,6 +459,8 @@ TOOLS["delegate_task"] = (_fn("delegate_task",
      "max_steps": {"type": "integer", "description": "Default 12, maximum 25"}},
     ["task"]), t_delegate_task)
 
+import editor_tools  # noqa: E402 - needs ToolResult above; adds editor_open / editor_state / editor_edit
+TOOLS.update({name: (editor_tools.SCHEMAS[name], fn) for name, fn in editor_tools.FUNCTIONS.items()})
 TOOL_SCHEMAS = [schema for schema, _fn_ in TOOLS.values()]
 
 
