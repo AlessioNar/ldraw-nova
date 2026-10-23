@@ -17,6 +17,7 @@ export default function App() {
   const [chatsLoaded, setChatsLoaded] = useState(false);
   const [llms, setLlms] = useState<LlmEntry[]>([]);
   const [defaultLlmId, setDefaultLlmId] = useState<string | null>(null);
+  const [defaultWorkerId, setDefaultWorkerId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<ViewerTarget | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [, setProvidersLoaded] = useState(false);
@@ -37,6 +38,7 @@ export default function App() {
       .then((r) => {
         setLlms(r.models);
         setDefaultLlmId(r.default_id);
+        setDefaultWorkerId(r.worker_id ?? null);
       })
       .catch(() => {});
   }, []);
@@ -57,8 +59,8 @@ export default function App() {
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
   const state = useMemo(
-    () => ({ chats, chatsLoaded, refreshChats, llms, defaultLlmId, refreshLlms, openViewer: setViewer }),
-    [chats, chatsLoaded, refreshChats, llms, defaultLlmId, refreshLlms],
+    () => ({ chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer: setViewer }),
+    [chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms],
   );
 
   return (

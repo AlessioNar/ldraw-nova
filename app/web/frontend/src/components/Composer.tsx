@@ -4,6 +4,7 @@ import { useApp } from "../context";
 import { inventoryApi, type TurnOptions, type DocumentUpload, type Inventory } from "../api";
 import PartsControl, { loadSteering, saveSteering, type PartsSteering } from "./parts/PartsControl";
 import ModelPicker from "./ModelPicker";
+import WorkerModelPicker from "./WorkerModelPicker";
 import { rememberModel, tokenLabel } from "../modelChoices";
 import DocumentIcon from "./DocumentIcon";
 
@@ -19,7 +20,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   initialText?: string;
   initialOptions?: TurnOptions;
 }) {
-  const { llms } = useApp();
+  const { llms, defaultWorkerId } = useApp();
   const [text, setText] = useState(initialText);
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -42,6 +43,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   const saved = selection.options;
   const options: TurnOptions = { ...saved,
     effort: sameModel && saved.effort && profile?.efforts.includes(saved.effort) ? saved.effort : profile?.default_effort ?? null,
+    worker_model_id: saved.worker_model_id !== undefined ? saved.worker_model_id : defaultWorkerId,
     context_tokens: sameModel && saved.context_tokens && profile?.context_budgets.includes(saved.context_tokens) ? saved.context_tokens : profile?.context_window ?? null,
   };
   const setOptions = (next: TurnOptions) => setSelection({ modelId: llmId, options: next });
@@ -159,6 +161,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
           onChange={e => setOptions({ ...options, context_tokens: Number(e.target.value) })}>
           {profile.context_budgets.map(n => <option value={n} key={n}>{tokenLabel(n)}</option>)}
         </select>}
+        <WorkerModelPicker value={options.worker_model_id ?? null} disabled={disabled} onChange={id => setOptions({ ...options, worker_model_id: id })} />
         <select className="compact-control" aria-label="Budget" title="Stop when this chat has cost about this much (estimated from list prices)" disabled={disabled}
           value={options.budget_eur ?? ""} onChange={e => setOptions({ ...options, budget_eur: e.target.value ? Number(e.target.value) : null })}>
           <option value="">No budget</option>

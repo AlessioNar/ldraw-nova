@@ -133,7 +133,7 @@ def subagents_enabled() -> bool:
 
 def worker_llm_id() -> str:
     """Id of the configured LLM entry the delegated worker steps run on."""
-    return os.environ.get("LDRAW_NOVA_WORKER_LLM_ID", "").strip()
+    return (os.environ.get("LDRAW_NOVA_WORKER_LLM_ID") or os.environ.get("LDRAW_NOVA_WORKER_MODEL_ID") or "").strip()
 
 
 LEAN_CONTEXT_TOKENS = 200_000        # models with a smaller context get the lean prompt

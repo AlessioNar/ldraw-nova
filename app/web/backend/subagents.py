@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import inference
 import llm_config
-import settings
+import model_catalog
 import usage
 from agent_loop import FileSink, run_steps
 from history import llm_history
@@ -47,8 +47,37 @@ ROLE_PROMPTS = {
 }
 
 
-def enabled() -> bool:
-    return settings.subagents_enabled() and llm_config.get(settings.worker_llm_id()) is not None
+def worker_entry(options: dict | None) -> dict | None:
+    """The worker model entry for a chat: its own worker_model_id option, else the Settings / env default."""
+    options = options or {}
+    wid = (options.get("worker_model_id") or "") if "worker_model_id" in options else llm_config.default_worker_id()
+    return llm_config.get(wid) if wid else None
+
+
+def enabled(options: dict | None = None) -> bool:
+    return worker_entry(options) is not None
+
+
+def worker_effort(entry: dict) -> str | None:
+    """The lowest reasoning effort the worker model offers (hidden reasoning is most of a worker's output)."""
+    efforts = model_catalog.entry_profile(entry)["efforts"]
+    order = ["none", *model_catalog.EFFORTS]
+    return min(efforts, key=lambda e: order.index(e) if e in order else len(order)) if efforts else None
+
+
+def check_worker(options: dict) -> None:
+    """Refuse a worker the chat cannot use: missing, no tool calling, or unpriced while a budget is set."""
+    wid = options.get("worker_model_id")
+    if not wid:
+        return
+    entry = llm_config.get(wid)
+    if entry is None:
+        raise ValueError("The worker model no longer exists. Choose another one or No workers")
+    if llm_config.unsupported(entry) or llm_config.capabilities(entry)["tools"] is False:
+        raise ValueError("The worker model must support tool calling. Choose another one or No workers")
+    prices = model_catalog.entry_profile(entry).get("pricing") or {}
+    if options.get("budget_eur") and (prices.get("input") is None or prices.get("output") is None or prices.get("currency") != "USD"):
+        raise ValueError("The worker model has no known prices, so a budget cannot cover it. Choose a priced worker or No workers")
 
 
 @dataclass
@@ -185,7 +214,7 @@ def _files(ctx: ToolContext, contract: Contract) -> list[tuple[str, int]]:
 async def delegate(ctx: ToolContext, role: str | None = None, task: str | None = None, inputs: list[str] | None = None,
                    tools: list[str] | None = None, outputs: list[str] | None = None, max_steps: int | None = None,
                    max_eur: float | None = None, summary_chars: int | None = None) -> ToolResult:
-    entry = llm_config.get(settings.worker_llm_id()) if settings.subagents_enabled() else None
+    entry = worker_entry(ctx.options)
     if entry is None:
         raise ToolError("delegate is not configured")
     if ctx.options.get("permissions") != "full":
@@ -232,7 +261,7 @@ async def delegate(ctx: ToolContext, role: str | None = None, task: str | None =
 
     ended, error = "", ""
     try:
-        params = await inference.params_for(entry, {})
+        params = await inference.params_for(entry, {"effort": worker_effort(entry)})
         ended = await run_steps(entry=entry, params=params, sink=sink, tools=schemas, max_steps=contract.max_steps,
                                 build_messages=build_messages, run_tool=run_tool,
                                 ref=lambda png: ctx.store.ref(ctx.chat_id, png), before_step=before_step,
