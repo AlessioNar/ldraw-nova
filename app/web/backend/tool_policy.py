@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import inventories
+import subagents
 from tools import TOOL_SCHEMAS
 
 READ_TOOLS = {"list_files", "read_file", "view_image", "report_progress", "my_parts", "buildable_models"}
@@ -14,6 +15,8 @@ def available_tools(options: dict) -> list[dict]:
         return []
     tools = TOOL_SCHEMAS if inventories.parts_options(options)[0] != "off" else \
         [t for t in TOOL_SCHEMAS if t["function"]["name"] not in PARTS_TOOLS]
+    if not subagents.enabled():
+        tools = [t for t in tools if t["function"]["name"] != "delegate_task"]
     if options.get("mode") == "plan" or options.get("permissions") == "read_only":
         return [t for t in tools if t["function"]["name"] in READ_TOOLS]
     return tools
