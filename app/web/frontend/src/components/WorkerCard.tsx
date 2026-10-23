@@ -22,9 +22,11 @@ const oneLine = (task: string) => task.replace(/\s+/g, " ").trim();
 function notices(output: string, status: string): string[] {
   const lines = output.split("\n");
   const pick = (prefix: string) => lines.filter(l => l.startsWith(prefix));
-  const found = [...pick("Error:"), ...pick("Stopped because"), ...pick("Missing outputs:"), ...pick("Stray writes")];
+  // Prefixes as the worker runner writes them (subagents.delegate's result lines).
+  const found = [...pick("Error:"), ...pick("Stopped because"), ...pick("Stopped as stuck"), ...pick("Missing outputs:"),
+    ...pick("Validation: NOT OK"), ...pick("Stray writes")];
   if (!found.length && ["failed", "stuck", "partial"].includes(status)) {
-    const why = lines.find(l => /^(Stuck|Validation|Repair)/.test(l));
+    const why = lines.find(l => l.startsWith("Validation:"));
     if (why) found.push(why);
   }
   return found;
