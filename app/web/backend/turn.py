@@ -4,13 +4,10 @@ from __future__ import annotations
 import asyncio
 import logging
 
-import litellm
-
 import inference
 import llm_config
 import model_catalog
 import settings
-import providers
 import usage
 from store import ChatStore
 from history import llm_history
@@ -18,7 +15,7 @@ from run_state import Run
 from system_prompt import outbound_messages, system_message
 from tool_policy import available_tools
 from tools import ToolContext
-from usage import step_cost_usd, usage_record
+from agent_loop import ChatSink, run_steps
 
 log = logging.getLogger("agent")
 
@@ -29,106 +26,44 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
     use_tools = caps["tools"] is not False and run.options.get("mode") != "chat"
     ctx = ToolContext(chat_id=chat_id, store=store, emit=run.emit, options=run.options)
 
+    sink = ChatSink(store, chat_id, run)
+
     def save(message: dict) -> int:
-        msg_id = store.add_message(chat_id, message)
-        run.emit("saved", {"message_id": msg_id})
-        return msg_id
+        return sink.add(message)
+
+    def before_step(stored: list[dict]) -> bool:
+        budget = run.options.get("budget_eur")
+        if not budget:
+            return False
+        spent = usage.usage_totals(stored)["cost_eur"]
+        if spent < budget:
+            return False
+        save({"role": "assistant", "_ui_only": True, "_notice": True,
+              "content": f"Budget reached: about €{spent:.2f} of €{budget:.2f} spent in this chat. "
+                         "Raise the budget in the chat box and send a message to continue."})
+        return True
+
+    def build_messages(stored: list[dict]) -> list[dict]:
+        model = entry["litellm_params"]["model"]
+        messages = [system_message(store, chat_id, model, run.options),
+                    *llm_history(stored, vision, lambda ref: store.resolve(chat_id, ref), model, mark_turns=True)]
+        context = run.options.get("context_tokens") or model_catalog.profile(model)["context_window"]
+        messages, removed = inference.bounded_history(messages, params["model"], context)
+        if removed:
+            run.emit("context", {"removed": removed})
+        return outbound_messages(store, chat_id, messages, model, run.options)
+
+    async def run_tool(call: dict):
+        return await execute_tool(run, ctx, call["id"], call["function"]["name"], call["function"]["arguments"])
 
     try:
         params = await inference.params_for(entry, run.options)
-        pricing = model_catalog.entry_profile(entry)["pricing"]
-        budget = run.options.get("budget_eur")
         max_steps = settings.max_steps()
-        for _step in range(max_steps):
-            stored = store.messages(chat_id)
-            if budget:
-                spent = usage.usage_totals(stored)["cost_eur"]
-                if spent >= budget:
-                    save({"role": "assistant", "_ui_only": True, "_notice": True,
-                          "content": f"Budget reached: about €{spent:.2f} of €{budget:.2f} spent in this chat. "
-                                     "Raise the budget in the chat box and send a message to continue."})
-                    break
-            messages = [system_message(store, chat_id, entry["litellm_params"]["model"], run.options),
-                        *llm_history(stored, vision, lambda ref: store.resolve(chat_id, ref), entry["litellm_params"]["model"], mark_turns=True)]
-            budget = run.options.get("context_tokens") or model_catalog.profile(entry["litellm_params"]["model"])["context_window"]
-            messages, removed = inference.bounded_history(messages, params["model"], budget)
-            if removed:
-                run.emit("context", {"removed": removed})
-            messages = outbound_messages(store, chat_id, messages, entry["litellm_params"]["model"], run.options)
-            kwargs = {"tools": available_tools(run.options, chat_id)} if use_tools else {}
-            run.emit("progress", {"summary": "Agent is reviewing the request and choosing the next step."})
-            stream = await litellm.acompletion(**params, messages=messages, stream=True, num_retries=2, **kwargs)
-            inference.preserve_openrouter_reasoning_chunks(stream, params["model"])
-
-            run.draft = ""
-            chunks = []
-            async for chunk in stream:
-                chunks.append(chunk)
-                delta = chunk.choices[0].delta if chunk.choices else None
-                if delta is not None and getattr(delta, "content", None):
-                    run.draft += delta.content
-                    run.emit("text", {"delta": delta.content})
-
-            full = litellm.stream_chunk_builder(chunks, messages=messages)
-            reply = full.choices[0].message
-            tool_calls = [
-                {"id": tc.id, "type": "function",
-                 "function": {"name": tc.function.name, "arguments": tc.function.arguments or "{}"}}
-                for tc in (reply.tool_calls or [])
-            ]
-            # null (not "") content next to tool calls: some providers reject empty text blocks.
-            message: dict = {"role": "assistant", "content": reply.content or (None if tool_calls else "")}
-            message["_llm_model"] = entry["litellm_params"]["model"]
-            step_usage = usage_record(full)
-            if step_usage:
-                cost = step_cost_usd(step_usage, pricing, entry["litellm_params"]["model"], settings.CACHE_TTL)
-                if cost is not None:
-                    step_usage["cost_usd"] = round(cost, 6)
-                message["_usage"] = step_usage
-                run.emit("usage", step_usage)
-            if tool_calls:
-                message["tool_calls"] = tool_calls
-            if getattr(reply, "thinking_blocks", None):          # must round-trip for Anthropic thinking
-                message["thinking_blocks"] = reply.thinking_blocks
-            if getattr(reply, "provider_specific_fields", None):
-                message["provider_specific_fields"] = reply.provider_specific_fields
-            if getattr(reply, "reasoning_content", None):
-                message["_reasoning"] = reply.reasoning_content
-            if providers.of(message["_llm_model"]).reasoning_details:
-                # LiteLLM 1.102.1 retains delta.reasoning_details but loses them
-                # in stream_chunk_builder. OpenRouter specifies concatenation in
-                # received order; never reorder or merge across id/index (coalescing is opt-in).
-                details = [detail for chunk in chunks if chunk.choices
-                           for detail in (getattr(chunk.choices[0].delta, "reasoning_details", None) or [])]
-                if settings.COALESCE_REASONING:
-                    details = inference.coalesce_reasoning_details(details)
-                if details:
-                    message["_reasoning_details"] = details
-            if not message["content"] and not tool_calls:
-                break                                              # nothing to save or do
-            save(message)
-            run.draft = ""
-            if not tool_calls:
-                break
-
-            images: list[str] = []                             # relative to the chat folder
-            for call in tool_calls:
-                name = call["function"]["name"]
-                run.tools_running[call["id"]] = {"id": call["id"], "name": name,
-                                                 "arguments": call["function"]["arguments"]}
-                run.emit("tool_start", run.tools_running[call["id"]])
-                result = await execute_tool(run, ctx, call["id"], name, call["function"]["arguments"])
-                run.tools_running.pop(call["id"], None)
-                refs = [store.ref(chat_id, png) for png in result.images]
-                save({"role": "tool", "tool_call_id": call["id"], "name": name, "content": result.content,
-                      "_models": [m["id"] for m in result.models], "_images": refs,
-                      **({"_parts_check": result.parts_check} if result.parts_check else {})})
-                run.emit("tool_end", {"id": call["id"], "name": name})
-                images += refs
-            if images and vision:
-                save({"role": "user", "content": "Renders produced by the tool calls above:",
-                      "_images_for_llm": images, "_hidden": True})
-        else:
+        ended = await run_steps(
+            entry=entry, params=params, sink=sink, tools=available_tools(run.options, chat_id) if use_tools else None,
+            max_steps=max_steps, build_messages=build_messages, run_tool=run_tool,
+            ref=lambda png: store.ref(chat_id, png), before_step=before_step, run=run)
+        if ended == "cap":
             save({"role": "assistant", "_ui_only": True, "_notice": True,
                   "content": f"Stopped after {max_steps} steps. Send a message to continue."})
     except asyncio.CancelledError:
