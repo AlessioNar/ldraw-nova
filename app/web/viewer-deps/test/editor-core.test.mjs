@@ -126,3 +126,11 @@ test("describeParts", () => {
   assert.equal(C.describeParts({ rows: [{ used: 1 }], short: [{}] }), "1 part used, 1 beyond what you own");
   assert.equal(C.describeParts(null), "");
 });
+
+test("fitDistance frames a sphere to the requested fraction and snapStep reports the grid", () => {
+  const d = C.fitDistance(100, 45, 2, 0.33);
+  assert.ok(Math.abs(100 / Math.sin(Math.PI / 8) / 0.33 - d) < 1e-9);
+  assert.ok(C.fitDistance(100, 45, 0.5, 0.33) > d, "narrow viewports sit further back");
+  assert.equal(C.snapStep("x"), 20);
+  assert.equal(C.snapStep("y"), 8);
+});

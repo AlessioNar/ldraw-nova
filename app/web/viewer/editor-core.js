@@ -151,6 +151,13 @@ var EditorCore = (function () {
   const MOVE_STEP = { x: 20, y: 8, z: 20 };
   const ROTATE_STEP = 15;
 
+  // Camera distance that makes a bounding sphere of `radius` fill about `fill` of the smaller viewport side.
+  function fitDistance(radius, fovDegrees, aspect, fill = 0.33) {
+    const halfV = fovDegrees * Math.PI / 360;
+    const half = Math.min(halfV, Math.atan(Math.tan(halfV) * aspect));
+    return radius / Math.sin(half) / fill;
+  }
+  const snapStep = axis => MOVE_STEP[axis];
   const snapMove = (axis, distance, snap = true) => clean(snap ? snapTo(distance, MOVE_STEP[axis]) : distance);
   const snapRotate = (degrees, snap = true) => clean(snap ? snapTo(degrees, ROTATE_STEP) : degrees);
 
@@ -205,7 +212,7 @@ var EditorCore = (function () {
   }
 
   return { AXES, invert, mulVec, rotationMatrix, sceneToLdraw, ldrawToScene, directionToLdraw, parsePlacements, entryIds,
-           rayBox, pick, nextSelection, axisParameter, planeAngle, snapMove, snapRotate, moveEdits, rotateEdits,
+           rayBox, pick, nextSelection, axisParameter, planeAngle, snapMove, snapRotate, fitDistance, snapStep, moveEdits, rotateEdits,
            deleteEdits, centroid, editsBody, describeParts };
 })();
 

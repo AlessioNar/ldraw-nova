@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test test/viewer.browser.mjs",
+    "test:editor": "node --test --test-concurrency=1 test/editor.browser.mjs",
     "test:core": "node --test test/editor-core.test.mjs"
   },
   "dependencies": {
