@@ -107,9 +107,38 @@ By step count research is 24%, 26% and 37% in the three Claude/GPT chats and 32%
 
 One reconciliation: README section 8 says a measured red-car chat cost $4.2 (0.5M cache writes, 62k output). The recorded car chat here has 1.51M writes, 1.50M reads and 73,719 output tokens and prices to $13.82 (1h) or $9.30 (5m); the README figure is not reproducible from this file (probably an earlier snapshot of the chat or a different run).
 
-## 3. Worker capability (live; NOT run)
+## 3. Worker capability (live, run 2026-10-23)
 
-`measure.py capability` is the harness. Without `--live` it is a dry run (prints the 5 tasks, the system prompt, caps, worst-case and expected cost; sends nothing, needs no key). With `--live` it needs `ANTHROPIC_API_KEY` in the environment only.
+**Result: Haiku 5.5 ran all five sub-assembly tasks through the app's tool loop for EUR 0.072 in total (two runs). The model is available on the owner's account, litellm accepts `anthropic/claude-haiku-5-5` with the app's cache markers, and the prefix cached from step 2 on every task.**
+
+How it was run: the harness below, in a throwaway container of the app image, with the owner's stored Anthropic key loaded in-process (never printed or written), hard cap EUR 3.00 (owner-approved), model `anthropic/claude-haiku-5-5`. Source files: `capability-results.json` (first run, all five tasks) and `capability-results-rerun.json` (chassis and roof only, after the fix below).
+
+**First run, and a harness fault found by it.** The first run used a 4,096-token output limit per call. Chassis and roof ended after 3 and 2 steps with no file and an empty reply: the model's reply was cut off at the limit and the harness recorded "finished". That was the harness, not the model, so those two were re-run. The harness now records each step's `finish_reason`, marks a reply cut off by the limit as `truncated`, takes `--only`, and uses a 16,000-token limit. The two re-runs finished normally (`finish_reason` `stop`).
+
+| task | valid first try (toolkit `validate`) | repair rounds | steps | prompt tokens | output tokens | cache read tokens | cost |
+|---|---|---|---|---|---|---|---|
+| chassis | True | 0 | 9 | 126,328 | 33,424 | 103,537 | $0.0223 (EUR 0.0205) |
+| roof | True | 0 | 13 | 172,733 | 36,303 | 152,399 | $0.0237 (EUR 0.0218) |
+| seats | True | 0 | 5 | 42,918 | 7,453 | 31,707 | $0.0063 (EUR 0.0058) |
+| window | True | 0 | 6 | 73,303 | 7,767 | 56,513 | $0.0078 (EUR 0.0072) |
+| door | True | 0 | 8 | 118,358 | 12,026 | 97,085 | $0.0112 (EUR 0.0103) |
+
+Totals over the five final runs: $0.0714 (EUR 0.0657), mean $0.0143 per task (the README assumed $0.029 to $0.036), 533,640 prompt tokens of which 82.7% were cache reads, 96,973 output tokens. Output (largely hidden reasoning at the default effort) is most of each worker's cost; the harness sends no effort setting. The wasted first-run truncated calls cost EUR 0.0068.
+
+**Quality, from the workers' own final replies (they reported these defects honestly) and the toolkit's verdict:**
+- All five files pass `validate` on the first try with zero repair rounds. But `validate` passing is weaker than the brief: the toolkit reports disconnected parts as information, not as a failure.
+- seats: one plate and two seats, connected, orientation not visually confirmed.
+- window: frame and glass, 2 disconnected groups ("one connected structure" not met).
+- door: frame and leaf, 2 disconnected groups (not met).
+- chassis: wheels, holders and plates, 6 disconnected groups (not met).
+- roof: a single 2x4 double slope brick (3041). It meets the footprint and the ridge direction but is the minimal answer to "use roof slope bricks".
+So by the toolkit's check the builder worked on every task; by the brief's own acceptance (one connected structure) it met it on 2 of 5 (seats, roof). Connectivity is exactly the check the app-run validation gate of brief 06 must add, with one repair round.
+
+Not tested by this run: researcher and reviewer quality, vision (`view_image`), more than one worker at once, and anything about how a planner integrates the pieces.
+
+### The harness (`measure.py capability`)
+
+Without `--live` it is a dry run (prints the tasks, the system prompt, caps, worst-case and expected cost; sends nothing, needs no key). With `--live` it needs `ANTHROPIC_API_KEY` in the environment only.
 
 What it does, per task (chassis with given axle positions, 2x4 sloped roof, seat pair, window frame, door; interface values are in the task text):
 - litellm `acompletion` loop with a lean system prompt (about 2k tokens) and the repo's own tools `list_files`, `read_file`, `write_file`, `run_python`, `run_toolkit` (`tools.dispatch`), 20-step cap, 4,096 output tokens per call, tool results cut to 6,000 characters. System prompt and the last message carry the app's cache marker (1h for Anthropic).
@@ -120,7 +149,7 @@ What it does, per task (chassis with given axle positions, 2x4 sloped roof, seat
 Checks actually done (none of them touch the network):
 - `python -m pytest docs/plans/swarm-subagents/test_measure.py`: 9 passed, 1 skipped on the host. The skipped test compares the script's local cost function with the app's `usage.step_cost_usd`; I ran the same comparison inside the app image by hand: identical on 18 cases (3 models, 3 token mixes, 5m and 1h). The tests cover: dry run output (5 tasks, caps, "DRY RUN"), `--live` without a key refuses, the cap stops a run before the call that could pass it and spent never exceeds the cap with a fake completion function, step cap and finish and cache flag, an unpriceable step stops the run, the classifier, and the validate parser.
 - In a throwaway container of the app image (no network, no key): `tools.dispatch` `write_file` then `run_toolkit validate` on an MPD returned `checks_passed: true`, and on a file naming a missing part returned `checks_passed: false`; `parse_validate` read both correctly. This is the harness's validation path. It also showed the validator requires an MPD with a `0 FILE` block first, which the worker prompt now says.
-- NOT tested: any real model call, whether `litellm` accepts `anthropic/claude-haiku-5-5` with these cache markers and params, whether Haiku 5.5 is on the account, the quality of the worker's LDraw, and the hidden-reasoning behaviour of Haiku 5.5 at its default effort (the harness sends no effort setting; if the model thinks by default, output tokens may be higher than assumed, the cap still holds).
+- These offline checks did not touch any real model. The live run (top of this section) has since tested the model call, the cache markers, availability and the worker's LDraw quality; the hidden-reasoning cost at the default effort showed up as most of each worker's output tokens.
 
 ## 4. Corrected README section 8 rows (recomputed)
 
@@ -157,6 +186,17 @@ What changed against the README rows (Sonnet+A 0.94 EUR, Opus+A 1.65 EUR, Sonnet
 
 If the baseline had a healthy cache ($4.64 = EUR 4.27) the swarm saves less: Opus planner + A is 0.47x, Sonnet planner + A is 0.27x, and single Sonnet is 0.5x of $4.64 = $2.32 (EUR 2.13), already near the target on its own. So the swarm's advantage over simply switching to Sonnet is about 2x (Sonnet+A $1.23 against $2.32 here; against $5.17 with the cache as recorded it is 4.2x). That comparison is the honest one to carry into the go/no-go.
 
+### Revised with the measured worker cost (2026-10-23)
+
+The live run replaces one assumption: a worker costs $0.0143 on average (section 3), not $0.036. Six workers with the same +30% for repairs: 6 x 1.3 x $0.0143 = $0.1113 (was $0.2808). The planner lines are unchanged and are now 94% (Opus) of the swarm cost, so the planner assumption (15 steps at 45k context) decides the result.
+
+| scenario | USD | EUR (x0.92) |
+|---|---|---|
+| Sonnet 5.5 planner + measured Haiku 5.5 workers | 1.06 | 0.98 |
+| Opus 5.5 planner + measured Haiku 5.5 workers | 2.02 | 1.86 |
+
+Both are under the owner's 2 EUR target, the Opus one with a margin of about EUR 0.14. This holds only while the planner stays near 15 steps and the hidden cache problem stays fixed (the measured recordings are from before the cache fixes). Brief 09 measures it end to end.
+
 ## 5. What the owner must do to run the live part
 
 Needs: Docker, the `ldraw-nova-app` image (already built), an Anthropic API key with access to Haiku 5.5. It runs in a throwaway container (`docker run --rm`), not in the running `ldraw-nova-app` container, and does not touch port 8765 or `docker compose`. The key goes in only as an environment variable of that one container and is never read from the app's settings.
@@ -174,6 +214,13 @@ Needs: Docker, the `ldraw-nova-app` image (already built), an Anthropic API key 
 
 ## 6. Go or no-go per role
 
+**Verdict after the live run (2026-10-23):**
+- **Builder: conditional GO** for small, fully specified sub-assemblies. 5 of 5 tasks passed `validate` first time at about $0.014 each, far under the $0.06 threshold, the cache worked on every task, and no task hit a step cap or the euro cap. The condition: the workers' output did not meet "one connected structure" on 3 of 5 tasks, so the app must run its own validation including connectivity and give one repair round (brief 06) before accepting a worker's file, and the planner must treat worker files as drafts to integrate.
+- **Researcher: provisional GO.** The tool loop works on Haiku 5.5 and research is the largest, safest share of cost. Its quality is untested; brief 09 checks it.
+- **Reviewer: defer**, unchanged.
+
+Thresholds and the evidence they were set from (kept for reference):
+
 The live run only exercises builders. The other two roles are decided on the baseline and price evidence plus what the run shows about tool use. Thresholds restate README section 9.
 
 | role | evidence available now | GO when the live run shows | NO-GO when |
@@ -186,8 +233,12 @@ Rules for the decision: if Haiku 5.5 is unavailable, redo section 4 with case B 
 
 ## Unverified, in one list
 
-- Haiku 5.5 availability on the owner's account, and every worker figure (steps, tokens, repair rounds, cache behaviour, validity rate): need the live run.
-- That the worker prompt (about 2k tokens plus tool schemas) is above Haiku's minimum cacheable length: the harness records it, nothing says so yet.
-- That the planner needs 15 steps at 45k context: recorded chats have 38 steps.
+Resolved by the live run on 2026-10-23: Haiku 5.5 availability on the owner's account, litellm and cache-marker compatibility, worker cost, steps, cache behaviour (82.7% of prompt tokens were cache reads), and that workers pass `validate` first time.
+
+Still open:
+- Whether a worker's output meets the brief's connectivity requirement: it did on 2 of 5 tasks. Needs the app-run validation gate and a repair round (brief 06).
+- Researcher and reviewer quality, vision, and several workers at once.
+- That the planner needs about 15 steps at 45k context: recorded chats had 38 steps, from before the cache fixes. The planner is now about 94% of the swarm's cost, so this is the number that decides whether the 2 EUR target holds.
 - The healthy-cache counterfactual: assumes the current loop caches the way FIX-cache intends.
-- Classification judgement calls above; sample is two chats of one task family (a vehicle and a house).
+- Classification judgement calls in section 2; the sample is two chats of one task family (a vehicle and a house).
+- Lowering a worker's hidden-reasoning output (most of its cost) with an effort setting: the harness sends none.
