@@ -97,7 +97,11 @@ class Pipeline:
             raise ValueError("Give exactly one of plan, vehicle or generator")
         t = time.monotonic()
         generated = None
-        if generator is not None:
+        if generator is not None and generator.startswith("template:"):
+            from . import templates                  # a model turned into a template (docs/plans/build-templates)
+            generated = templates.generate(generator.removeprefix("template:"), params)
+            plan = generated["plan"]
+        elif generator is not None:
             from .generators import generate
             generated = generate(generator, params)
             plan = generated["plan"]

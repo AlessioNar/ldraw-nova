@@ -1,5 +1,8 @@
 """The generator registry as data, for the backend process.
 
+Templates (models turned into parametric starting points, ldraw_tools/templates) are listed next to the generators
+with ids "template:<id>"; the build worker dispatches on that prefix, so the decision engine treats both the same.
+
 The generators live in the toolkit interpreter (they need the ldraw library), which the backend does not import.
 One short subprocess dumps the registry metadata (ids, kinds, parameter schemas, colour names, digest); the result is
 kept in memory and in CONFIG_DIR/generators.json, keyed on the generator files' mtimes, so a restart costs nothing and
@@ -20,17 +23,22 @@ log = logging.getLogger("ldraw-nova.generator-bridge")
 _DUMP = (
     "import json\n"
     "from ldraw_tools import generators as g\n"
+    "from ldraw_tools import templates as t\n"
     "from ldraw_tools.generators.colours import NAMES\n"
-    "print(json.dumps({'digest': g.digest(), 'entries': [x.entry() for x in g.REGISTRY.values()], 'colours': sorted(NAMES)}))\n"
+    "entries = [x.entry() for x in g.REGISTRY.values()]\n"
+    "entries += [dict(x.entry(), id='template:' + x.id) for x in t.REGISTRY.values()]\n"
+    "digest = g.digest() + ('\\n' + t.digest() if t.REGISTRY else '')\n"
+    "print(json.dumps({'digest': digest, 'entries': entries, 'colours': sorted(NAMES)}))\n"
 )
 _memory: Optional[dict] = None
 _lock: Optional[asyncio.Lock] = None
 
 
 def _signature() -> str:
-    folder = settings.TOOLKIT_DIR / "ldraw_tools" / "generators"
+    root = settings.TOOLKIT_DIR / "ldraw_tools"
     try:
-        return ",".join(f"{p.name}:{p.stat().st_mtime_ns}" for p in sorted(folder.glob("*.py")))
+        files = sorted((root / "generators").glob("*.py")) + sorted((root / "data" / "templates").glob("*.json"))
+        return ",".join(f"{p.name}:{p.stat().st_mtime_ns}" for p in files)
     except OSError:
         return ""
 

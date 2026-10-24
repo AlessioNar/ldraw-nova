@@ -48,27 +48,52 @@ _FAMILY = re.compile(r'(\d+) x (\d+)')
 
 def family_key(description):
     """'Brick  2 x  4' -> 'Brick N x M' (None for 3-dimension parts and parts without a stud footprint)."""
-    text = ' '.join(description.split()).removesuffix(' with Groove')    # every modern tile has a groove
+    text = ' '.join(description.split())
+    if text.startswith('Tile '):
+        text = text.removesuffix(' with Groove')          # every modern tile has a groove; a grooved brick is a different part
     if re.search(r'\d+ x \d+ x \d+', text) or text[:1] in '~_=|':
         return None
     found = _FAMILY.search(text)
     return text[:found.start()] + 'N x M' + text[found.end():] if found else None
 
 
+_FAMILY3 = re.compile(r'(\d+) x (\d+) x ')
+_ASSEMBLY = re.compile(r'window|door|glass|pane|windscreen|frame|shutter', re.IGNORECASE)
+
+
+def stretch_key(description):
+    """family_key, plus families of 3-dimension parts of one height ('Brick 2 x 4 x 1.333 with Curved Top' ->
+    'Brick N x M x 1.333 with Curved Top'); never for windows, doors and glass, which come in matched assemblies."""
+    key = family_key(description)
+    if key:
+        return key
+    text = ' '.join(description.split())
+    found = _FAMILY3.search(text)
+    if not found or text[:1] in '~_=|' or _ASSEMBLY.search(text):
+        return None
+    return text[:found.start()] + 'N x M x ' + text[found.end():]
+
+
 class Families:
     """Library parts grouped by description family, with their local boxes (built lazily, once per library)."""
 
     def __init__(self, parts, facts):
-        self.parts, self.facts, self._by_key = parts, facts, None
+        self.parts, self.facts, self._by_key, self._found = parts, facts, None, {}
+
+    def cached(self, code, j, delta, compute):
+        key = (code, j, delta)
+        if key not in self._found:
+            self._found[key] = compute()
+        return self._found[key]
 
     def members(self, description):
         if self._by_key is None:
             self._by_key = collections.defaultdict(list)
             for code, desc in self.parts.by_code.items():
-                key = family_key(desc or '')
+                key = stretch_key(desc or '')
                 if key:
                     self._by_key[key].append(code.casefold())
-        return self._by_key.get(family_key(description) or '', [])
+        return self._by_key.get(stretch_key(description) or '', [])
 
 
 def _box(facts, code):
@@ -166,79 +191,230 @@ def _floats(leaf, axis):
     Whether that keeps it attached is not assumed here; every offered stretch is built and checked afterwards.
     """
     lo, hi = leaf['box'][0][axis], leaf['box'][1][axis]
+    if hi - lo <= STUD + 0.5 and leaf['role'] not in ('wall', 'body', 'chassis', 'base'):
+        return True                                      # a 1 x 1 clip, cone or round plate on a roof or a wing
     return (leaf['role'] in FLOAT_ROLES or leaf['kind'] in ('detail', 'light')) and hi - lo <= 2 * STUD + 0.5
 
 
-def _classify_cut(leaves, axis, cut, fam, facts, skip=()):
-    """For a cut plane: (extend {id: {delta: (code, dpos)}}, shift ids, allowed deltas) or None when it cannot be cut."""
-    extend, shift, allowed, left = {}, [], None, 0
-    lo_d, hi_d = DELTA_RANGE
-    for leaf in leaves:
-        lo, hi = leaf['box'][0][axis], leaf['box'][1][axis]
-        if leaf['kind'] == 'baseplate':
-            continue
-        if hi <= cut:
-            left += 1
-            continue
-        if lo >= cut:
-            shift.append(leaf['id'])
-            continue
-        if leaf['id'] in skip:
-            return None
-        j = _local_axis(leaf, axis)
-        code = leaf['ref'].casefold().removesuffix('.dat')
-        if j is None or not family_key(facts.get(leaf['ref'])['desc']):
-            if not _floats(leaf, axis):
-                return None
-            if (lo + hi) / 2 >= cut:
-                shift.append(leaf['id'])
-            else:
-                left += 1
-            continue
-        sign = 1 if leaf['matrix'][axis][j] > 0 else -1
-        options = {}
-        base = _box(facts, code)
-        for d in range(lo_d, hi_d + 1):
-            if d == 0:
-                continue
-            found = candidate_for(fam, facts, code, j, d)
-            if found is None:
-                continue
+def _extensions(leaf, axis, j, fam, facts, deltas):
+    """{delta studs: entry} to make a part `delta` studs longer along world `axis`, its min edge fixed in world space
+    whatever the part's local origin is. An entry is (code, origin move, turned) for the same part in another length
+    (turned = 1: placed with a quarter turn), or, when the library has no such length (a 1 x 3 brick has no 1 x 5),
+    (code, 0, 0, filler code, filler origin offset, filler turned): the part stays and a filler of the same family
+    and cross-section closes the gap after it (1 x 3 + 1 x 2). Fillers are only used to lengthen."""
+    code = leaf['ref'].casefold().removesuffix('.dat')
+    sign = 1 if leaf['matrix'][axis][j] > 0 else -1
+    base = _box(facts, code)
+    length = round((base[1][j] - base[0][j]) / STUD)
+    options = {}
+    for d in deltas:
+        found = fam.cached(code, j, d, lambda c=code, jj=j, dd=d: candidate_for(fam, facts, c, jj, dd))
+        if found is not None:
             new_code, box, turned = found
-            # keep the min edge of the part fixed in world space, whatever the part's local origin is
             dpos = (base[0][j] - box[0][j]) if sign > 0 else (box[1][j] - base[1][j])
-            options[d] = (new_code, round(float(dpos), 4), 1) if turned else (new_code, round(float(dpos), 4))
-        if not set(options) & (allowed or set(options)) and _floats(leaf, axis):
-            if (lo + hi) / 2 >= cut:
-                shift.append(leaf['id'])
+            options[d] = (new_code, round(float(dpos), 4), int(turned))
+            continue
+        if d <= 0:
+            continue
+        filler = fam.cached(code, j, d - length, lambda c=code, jj=j, dd=d - length: candidate_for(fam, facts, c, jj, dd))
+        if filler is None:
+            continue
+        f_code, f_box, f_turned = filler
+        # the filler's min edge (world) goes where the part's max edge is
+        edge = base[1][j] if sign > 0 else -base[0][j]
+        offset = edge - (f_box[0][j] if sign > 0 else -f_box[1][j])
+        options[d] = (code, 0.0, 0, f_code, round(float(offset), 4), int(f_turned))
+    return options
+
+
+SEAM_WINDOW = 3 * STUD
+SEAM_TARGETS = (0.5, 0.4, 0.6, 0.3, 0.7)
+
+
+class _Seams:
+    """Cuts through a model along one world axis, for stretching.
+
+    The model is split into height bands (between consecutive part bottoms and tops). A cut gives every band a position;
+    a plane cut uses the same one everywhere, a seam may step around parts that cannot be lengthened, the way a real
+    bonded wall would be cut. A cut is accepted only if, after stretching:
+
+      * every part is wholly left (stays), wholly right (moves) or crosses the cut in every band it occupies and is
+        lengthened (a longer sibling, or itself plus a filler of its family);
+      * no hole opens: in a band where material ran continuously across the cut, some part there is lengthened. When
+        none crosses, a part that ends (or starts) exactly at the cut is lengthened instead;
+      * small loose details crossing the cut go with the side their centre is on.
+    """
+
+    def __init__(self, leaves, axis, fam, facts, skip=()):
+        self.axis, self.fam, self.facts, self.skip = axis, fam, facts, set(skip)
+        self.solid = [l for l in leaves if l['kind'] != 'baseplate']
+        levels = sorted({round(l['ub'], 1) for l in self.solid} | {round(l['ut'], 1) for l in self.solid})
+        self.bands = list(zip(levels, levels[1:]))
+        self.members = [[] for _ in self.bands]
+        self.span = {}
+        for l in self.solid:
+            idx = [i for i, (lo, hi) in enumerate(self.bands) if lo >= l['ub'] - 0.05 and hi <= l['ut'] + 0.05]
+            self.span[l['id']] = idx
+            for i in idx:
+                self.members[i].append(l)
+        self._options = {}
+        self.deltas = [d for d in range(DELTA_RANGE[0], DELTA_RANGE[1] + 1) if d]
+
+    def extendable(self, l):
+        if l['id'] not in self._options:
+            j = _local_axis(l, self.axis)
+            ok = j is not None and l['id'] not in self.skip and stretch_key(self.facts.get(l['ref'])['desc'])
+            self._options[l['id']] = _extensions(l, self.axis, j, self.fam, self.facts, self.deltas) if ok else {}
+        return self._options[l['id']]
+
+    def ends(self, l):
+        return l['box'][0][self.axis], l['box'][1][self.axis]
+
+    def side(self, l, c):
+        lo, hi = self.ends(l)
+        if hi <= c + 0.5:
+            return 'L'
+        if lo >= c - 0.5:
+            return 'R'
+        if _floats(l, self.axis) and not self.extendable(l):
+            return 'L' if (lo + hi) / 2 < c else 'R'
+        return 'E'
+
+    def across(self, l):
+        """The part's extent on the other horizontal axis (a car's two side walls are in the same band)."""
+        other = 2 if self.axis == 0 else 0
+        return l['box'][0][other], l['box'][1][other]
+
+    def holes(self, i, c, lengthened=()):
+        """Places in band i where material ran continuously across cut c and nothing there is lengthened: pairs of
+        (part ending at c, part starting at c) that face each other, with the extent they share across."""
+        out = []
+        ends_here = [l for l in self.members[i] if abs(self.ends(l)[1] - c) <= 0.5]
+        starts_here = [l for l in self.members[i] if abs(self.ends(l)[0] - c) <= 0.5]
+        covered = [self.across(l) for l in self.members[i]
+                   if l['id'] in lengthened or (self.ends(l)[0] < c - 0.5 < c + 0.5 < self.ends(l)[1] and self.extendable(l))]
+        for a in ends_here:
+            for b in starts_here:
+                lo = max(self.across(a)[0], self.across(b)[0])
+                hi = min(self.across(a)[1], self.across(b)[1])
+                if hi - lo > 1 and not any(min(hi, y) - max(lo, x) > 1 for x, y in covered):
+                    out.append((a, b, lo, hi))
+        return out
+
+    def band_ok(self, i, c):
+        """(valid, has holes to close) for cut position c in band i."""
+        for l in self.members[i]:
+            lo, hi = self.ends(l)
+            if lo < c - 0.5 and hi > c + 0.5 and not self.extendable(l) and not _floats(l, self.axis):
+                return False, False
+        holes = self.holes(i, c)
+        return all(self.extendable(a) or self.extendable(b) for a, b, _, _ in holes), bool(holes)
+
+    def solve(self, target, window):
+        """(extend {id: options}, shift ids, allowed deltas) of the best cut near `target`, or None."""
+        choices = []
+        for i, band in enumerate(self.members):
+            if not band:
+                choices.append([None])
+                continue
+            edges = {target}
+            if window:
+                edges |= {round(v * 2) / 2 for l in band for v in self.ends(l) if abs(v - target) <= window}
+            valid = [c for c in sorted(edges) if self.band_ok(i, c)[0]]
+            if not valid:
+                return None
+            choices.append(valid)
+        best = {c: (abs(c - target) if c is not None else 0.0, [c]) for c in choices[0]}
+        for i in range(1, len(self.bands)):
+            shared = [l for l in self.members[i] if i - 1 in self.span[l['id']]]
+            nxt = {}
+            for c in choices[i]:
+                for p, (cost, path) in best.items():
+                    here = c if c is not None else p
+                    if here is not None and p is not None and c is not None and \
+                            any(self.side(l, p) != self.side(l, c) for l in shared):
+                        continue
+                    # straight is best: every step of the seam costs as much as being two studs off the target
+                    total = cost + (abs(here - target) if here is not None else 0.0) + \
+                        (2 * STUD if here is not None and p is not None and abs(here - p) > 0.5 else 0.0)
+                    if here not in nxt or total < nxt[here][0]:
+                        nxt[here] = (total, path + [c])
+            best = nxt
+            if not best:
+                return None
+        path = min(best.values(), key=lambda v: v[0])[1]
+        cut_of = {}
+        for l in self.solid:
+            cuts = [path[i] for i in self.span[l['id']] if path[i] is not None]
+            cut_of[l['id']] = cuts[0] if cuts else target
+        lengthen = {l['id'] for l in self.solid if self.side(l, cut_of[l['id']]) == 'E'}
+        # close the holes: where material ran across the cut and nothing there is lengthened, lengthen a part that
+        # ends (preferred) or starts exactly at the cut, if it does so at the cut of every band it reaches through
+        for i, c in enumerate(path):
+            if c is None:
+                continue
+            for a, b, _, _ in self.holes(i, c, lengthen):
+                if self.holes(i, c, lengthen) and not any(h[0] is a and h[1] is b for h in self.holes(i, c, lengthen)):
+                    continue                                 # closed by a part lengthened for an earlier hole
+                for l in (a, b):
+                    lo, hi = self.ends(l)
+                    if self.extendable(l) and all(path[k] is not None and (abs(hi - path[k]) <= 0.5 or abs(lo - path[k]) <= 0.5)
+                                                  for k in self.span[l['id']]):
+                        lengthen.add(l['id'])
+                        break
+                else:
+                    return None
+        extend, shift, allowed, left = {}, [], None, 0
+        for l in self.solid:
+            if l['id'] in lengthen:
+                found = self.extendable(l)
+                allowed = set(found) if allowed is None else allowed & set(found)
+                extend[l['id']] = found
+            elif self.side(l, cut_of[l['id']]) == 'R':
+                shift.append(l['id'])
             else:
                 left += 1
-            continue
-        allowed = set(options) if allowed is None else allowed & set(options)
-        if not allowed:
-            return None
-        extend[leaf['id']] = options
-    total = left + len(shift) + len(extend)
-    if len(extend) < 2 or min(left, len(shift)) < max(2, 0.15 * total) or not allowed:
-        return None          # a cut at the model's edge would only lengthen a few loose parts
-    extend = {k: {str(d): list(v[d]) for d in sorted(allowed)} for k, v in extend.items()}
-    return extend, shift, sorted(allowed)
+        if not allowed or len(extend) < 2 or min(left, len(shift)) < max(2, 0.15 * len(self.solid)):
+            return None          # a cut at the model's edge would only lengthen a few loose parts
+        return {k: {str(d): list(v[d]) for d in sorted(allowed)} for k, v in extend.items()}, shift, sorted(allowed)
 
 
 def stretch_candidates(leaves, axis, fam, facts, skip=()):
-    """Cut positions along a world axis ranked by centrality and by how many stretch options they offer."""
-    bounds = sorted({round(l['box'][i][axis] * 2) / 2 for l in leaves if l['kind'] != 'baseplate' for i in (0, 1)})
+    """Plane cuts along a world axis, ranked by how many sizes they offer, then by how central they are."""
+    seams = _Seams(leaves, axis, fam, facts, skip)
+    if len(seams.solid) < 12:
+        return []
+    bounds = sorted({round(l['box'][i][axis] * 2) / 2 for l in seams.solid for i in (0, 1)})
     mid = (bounds[0] + bounds[-1]) / 2
     rows = []
     for a, b in zip(bounds, bounds[1:]):
         if b - a <= 2.5:
             continue
         cut = (a + b) / 2
-        found = _classify_cut(leaves, axis, cut, fam, facts, skip)
+        found = seams.solve(cut, 0)
         if found:
             rows.append((-(min(len(found[2]), 6)), abs(cut - mid), cut, found))
     rows.sort(key=lambda r: r[:3])
     return [(cut, *found) for _, _, cut, found in rows[:MAX_CANDIDATES]]
+
+
+def seam_candidates(leaves, axis, fam, facts, skip=()):
+    """Seams (cuts that step around parts which cannot be lengthened) near a few targets along the axis."""
+    seams = _Seams(leaves, axis, fam, facts, skip)
+    if len(seams.solid) < 12:
+        return []
+    low = min(l['box'][0][axis] for l in seams.solid)
+    high = max(l['box'][1][axis] for l in seams.solid)
+    out, seen = [], set()
+    for share in SEAM_TARGETS:
+        target = round(low + share * (high - low), 2)
+        found = seams.solve(target, SEAM_WINDOW)
+        if found:
+            key = (frozenset(found[0]), frozenset(found[1]))
+            if key not in seen:
+                seen.add(key)
+                out.append((target, *found))
+    return out
 
 
 def _spec(cuts):
@@ -254,6 +430,80 @@ def _spec(cuts):
         best = nxt
     return dict(cuts=[dict(cut=c['cut'], extend=c['extend'], shift=c['shift']) for c in cuts],
                 plans={str(t): list(combo) for t, combo in sorted(best.items())})
+
+
+# ------------------------------------------------------------------------------------------- repeating slices
+
+REPEAT_COUNTS = (-1, 1, 2, 3)          # remove the slice, or add one to three more copies of it
+MAX_SLICE = 8 * STUD
+BAY_ROLES = {'wall', 'window', 'door', 'body', 'glass', 'roof', 'chassis', 'structure', 'trim', 'wing'}
+
+
+def repeat_candidates(leaves, axis, fam, facts):
+    """Slices [c1, c2] along a world axis that can be repeated or removed: every part lies wholly left of c1, wholly
+    right of c2, wholly inside (copied), or spans the whole slice (lengthened by the slice width per copy). A wall bay
+    with its window, a train car's panel section, a run of fence. Ranked by how many counts they allow, then by how
+    central they are. Returns [dict(c1, c2, width, inside, right, spans, counts)]."""
+    solid = [l for l in leaves if l['kind'] != 'baseplate']
+    if len(solid) < 12:
+        return []
+    eps = 0.5
+    edges = sorted({round(l['box'][i][axis] * 2) / 2 for l in solid for i in (0, 1)})
+    mid = (edges[0] + edges[-1]) / 2
+    spans_of = [(l, l['box'][0][axis], l['box'][1][axis]) for l in solid]
+    rows = []
+    for c1 in edges:
+        for c2 in edges:
+            width = c2 - c1
+            if width < STUD - eps or width > MAX_SLICE + eps or abs(width / STUD - round(width / STUD)) > 0.03:
+                continue
+            studs = round(width / STUD)
+            left, inside, right, spans, ok = 0, [], [], {}, True
+            for leaf, lo, hi in spans_of:
+                if hi <= c1 + eps:
+                    left += 1
+                elif lo >= c2 - eps:
+                    right.append(leaf['id'])
+                elif lo >= c1 - eps and hi <= c2 + eps:
+                    inside.append(leaf)
+                elif lo < c1 - eps and hi > c2 + eps:
+                    spans[leaf['id']] = leaf
+                elif _floats(leaf, axis):              # a small detail crossing one cut goes with its centre
+                    centre = (lo + hi) / 2
+                    if centre < c1:
+                        left += 1
+                    elif centre > c2:
+                        right.append(leaf['id'])
+                    else:
+                        inside.append(leaf)
+                else:
+                    ok = False
+                    break
+            total = len(solid)
+            if not ok or len(inside) < 3 or min(left, len(right)) < max(2, 0.15 * total):
+                continue
+            if not any(l['role'] in BAY_ROLES and not _floats(l, axis) for l in inside):
+                continue
+            counts = set(REPEAT_COUNTS)
+            options = {}
+            for lid, leaf in spans.items():
+                j = _local_axis(leaf, axis)
+                if j is None or not stretch_key(facts.get(leaf['ref'])['desc']):
+                    counts = set()
+                    break
+                found = _extensions(leaf, axis, j, fam, facts, [k * studs for k in sorted(counts)])
+                counts &= {k for k in counts if k * studs in found}
+                options[lid] = found
+                if not counts:
+                    break
+            if not any(k > 0 for k in counts):
+                continue
+            spans_out = {lid: {str(k): list(options[lid][k * studs]) for k in sorted(counts)} for lid in spans}
+            rows.append((-len(counts), abs((c1 + c2) / 2 - mid), -len(inside), c1,
+                         dict(c1=c1, c2=c2, width=studs * STUD, inside=[l['id'] for l in inside], right=right,
+                              spans=spans_out, counts=sorted(counts))))
+    rows.sort(key=lambda r: r[:4])
+    return [r[-1] for r in rows[:MAX_CANDIDATES]]
 
 
 FOOTPRINT_ROLES = {'wall', 'window', 'door', 'roof', 'body', 'glass', 'structure'}
@@ -405,7 +655,7 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
     fam = Families(parts, facts)
     report = dict(leaves=len(leaves), domain=tag_report['domain'], verified={}, rejected={})
     data = dict(version=1, id=id, title=title, families=list(families), kinds=list(kinds), description=description,
-                source=source or {}, leaves=leaves, stretch={}, courses=None, swaps={}, groups={})
+                source=source or {}, leaves=leaves, stretch={}, repeat={}, courses=None, swaps={}, groups={})
     colour_counts = collections.defaultdict(collections.Counter)
     for l in leaves:
         colour_counts[l['role']][l['colour']] += 1
@@ -421,7 +671,8 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
     straddled = set()      # parts already extended along another axis: a second axis leaves them alone
     for axis, index in axes.items():
         accepted, tried = [], []
-        for cut, extend, shift, allowed in stretch_candidates(leaves, index, fam, facts, straddled):
+        found = stretch_candidates(leaves, index, fam, facts, straddled) + seam_candidates(leaves, index, fam, facts, straddled)
+        for cut, extend, shift, allowed in found:
             if set(extend) & {i for c in accepted for i in c['extend']}:
                 continue                                     # cuts must not share a part: each part changes at one cut only
             cand = dict(cut=cut, extend=extend, shift=shift, delta=allowed)
@@ -457,6 +708,25 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
             accepted.pop()                                   # the combination failed: fall back to fewer cuts
         report['rejected'][axis] = [t for t in tried if not t['ok']]
         log('stretch', axis, report['verified'].get(axis))
+        if axis in data['stretch']:
+            continue                      # one length knob per axis: a slice and a cut on the same axis would interfere
+        for cand in repeat_candidates(leaves, index, fam, facts):
+            verdicts = {}
+            passed = cand['counts']
+            if verify:
+                passed = _progressive(lambda k, a=axis, c=cand: _ok(dict(data, repeat={a: c}), {f'{a}_repeat': k}, parts,
+                                                                    baseline), cand['counts'], verdicts)
+            if any(k > 0 for k in passed):
+                cand = dict(cand, counts=passed, spans={i: {k: v for k, v in o.items() if int(k) in passed}
+                                                          for i, o in cand['spans'].items()})
+                data.setdefault('repeat', {})[axis] = cand
+                report['verified'][f'{axis}_repeat'] = dict(c1=cand['c1'], c2=cand['c2'], width=cand['width'],
+                                                            inside=len(cand['inside']), counts=passed,
+                                                            checks={str(k): v for k, v in verdicts.items()})
+                break
+            report['rejected'].setdefault(f'{axis}_repeat', []).append(
+                dict(c1=cand['c1'], c2=cand['c2'], checks={str(k): v for k, v in verdicts.items()}))
+        log('repeat', axis, report['verified'].get(f'{axis}_repeat'))
     for _count, cut, ids, moving in course_candidates(leaves):
         spec = dict(cut=cut, height=COURSE, slice=ids, above=moving, delta=list(range(COURSE_RANGE[0], COURSE_RANGE[1] + 1)))
         verdicts = {}
@@ -485,6 +755,14 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
         data['swaps'][name] = swap
         report['verified'][f'swap_{name}'] = dict(codes=swap['codes'])
     data['params'] = _params(data, leaves)
+    if verify:      # every knob above was checked on its own; record how the extreme combinations fare too
+        report['corners'] = {}
+        for corner in ('min', 'max'):
+            pick = {k: (min if corner == 'min' else max)(v['enum']) for k, v in data['params'].items()
+                    if k.endswith(('_delta', '_repeat'))}
+            if pick:
+                ok, info = _ok(data, pick, parts, baseline)
+                report['corners'][corner] = dict(params=pick, ok=ok, **info)
     report['size'] = {a: s['plans'] and max(int(t) for t in s['plans']) for a, s in data['stretch'].items()}
     data['coverage'] = _coverage(data)
     data['quality'] = (f"Derived from {source.get('name', 'a model') if source else 'a model'}: {len(leaves)} parts, roles by classifier "
@@ -504,6 +782,13 @@ def _params(data, leaves):
     for role in data['roles']:
         params[f'colour_{role}'] = {'type': ['string', 'integer'], 'x-colour': True, 'default': data['colours'][role],
                                     'description': f'Colour of the {role} parts (colour name or LDraw code)'}
+    for axis, spec in data.get('repeat', {}).items():
+        names = collections.Counter(l['role'] for l in leaves if l['id'] in set(spec['inside']))
+        params[f'{axis}_repeat'] = {'enum': sorted({0, *spec['counts']}), 'default': 0, 'x-axis': axis,
+                                    'x-slice-studs': round(spec['width'] / STUD),
+                                    'description': f"Copies of a {round(spec['width'] / STUD)}-stud section along "
+                                                   f"{axis.upper()} added (+) or removed (-); it holds "
+                                                   + ', '.join(f'{n} {r}' for r, n in names.most_common(3))}
     for axis, spec in data['stretch'].items():
         index = 0 if axis == 'x' else 2
         size = max(l['box'][1][index] for l in leaves if l['kind'] != 'baseplate') - min(l['box'][0][index] for l in leaves if l['kind'] != 'baseplate')
@@ -524,6 +809,7 @@ def _params(data, leaves):
 def _coverage(data):
     out = ['colours by role']
     out += [f'length along {a.upper()}' for a in data['stretch']]
+    out += [f'repeat a section along {a.upper()}' for a in data.get('repeat', {})]
     if data['courses']:
         out.append('wall courses')
     out += [f'swap {n}' for n in data['swaps']]

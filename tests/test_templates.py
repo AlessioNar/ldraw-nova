@@ -1,5 +1,7 @@
 """Templates from builds: derived params, pure generate(), validity of every offered variant (docs/plans/build-templates)."""
 
+import json
+
 import jsonschema
 import pytest
 
@@ -8,7 +10,7 @@ from ldraw_tools.builder import build_plan, check_schema
 from ldraw_tools.geometry import analyze_geometry
 from ldraw_tools.templates import derive
 
-IDS = ['small-house', 'flatbed-truck', 'willowbank-cottage']
+IDS = ['small-house', 'flatbed-truck', 'willowbank-cottage', 'passenger-car']
 
 
 def parts_of(plan):
@@ -89,7 +91,12 @@ def test_every_knob_changes_the_plan_in_the_way_it_says():
                 assert len(shorter) < len(base)
             elif name.endswith('_delta'):
                 longer = t.generate({name: max(spec['enum'])})['plan']
-                assert parts_of(longer) != base and len(parts_of(longer)) == len(base)   # same parts, longer ones and moved ones
+                # the same parts, longer ones and moved ones; a part with no longer sibling gets a filler after it
+                assert parts_of(longer) != base and len(base) <= len(parts_of(longer)) <= 1.3 * len(base)
+            elif name.endswith('_repeat'):
+                assert len(parts_of(t.generate({name: max(spec['enum'])})['plan'])) > len(base)
+                if min(spec['enum']) < 0:
+                    assert len(parts_of(t.generate({name: min(spec['enum'])})['plan'])) < len(base)
             elif name.startswith('swap_'):
                 chosen = next(c for c in spec['enum'] if c != 'keep')
                 swapped = parts_of(t.generate({name: chosen})['plan'])
@@ -151,3 +158,42 @@ def test_candidates_route_between_generators_and_templates():
     top = templates.candidates('truck', 'flatbed truck')[0]
     assert (top['source'], top['id']) == ('template', 'flatbed-truck')                      # the exact kind only a template has
     assert templates.candidates('garden', 'zzz')[0]['source'] == 'generator'               # family-only match still routes
+
+
+def test_the_build_worker_and_the_registry_dump_know_templates(official, tmp_path):
+    """The fast path sees templates as registry entries 'template:<id>' and the worker builds them by that id."""
+    import ast
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from ldraw_tools import pipeline
+    root = Path(__file__).resolve().parents[1]
+    source = (root / 'app' / 'web' / 'backend' / 'generator_bridge.py').read_text(encoding='utf-8')
+    dump = next(ast.literal_eval(node.value) for node in ast.walk(ast.parse(source))
+                if isinstance(node, ast.Assign) and getattr(node.targets[0], 'id', '') == '_DUMP')
+    out = subprocess.run([sys.executable, '-c', dump], cwd=root, capture_output=True, text=True, timeout=120, check=True)
+    registry = json.loads(out.stdout)
+    ids = {e['id'] for e in registry['entries']}
+    assert {'house', 'template:flatbed-truck', 'template:willowbank-cottage'} <= ids and 'template' in registry['digest']
+    result = pipeline.Pipeline().run(tmp_path, generator='template:flatbed-truck', params={'z_delta': 2}, name='truck',
+                                     geometry=False, glb=False)
+    assert result['ok'] and result['generator']['generator'] == 'flatbed-truck' and result['generator']['params']['z_delta'] == 2
+
+
+def test_a_part_with_no_longer_sibling_gets_a_filler_of_its_family(official):
+    """A 1 x 3 brick has no 1 x 5: lengthening it by 2 keeps it and closes the gap with a 1 x 2 after it."""
+    from ldraw_tools.templates import core
+    facts = roles.PartFacts(official)
+    fam = derive.Families(official, facts)
+    for sign in (1, -1):                      # the part's local x runs with or against world x
+        matrix = [[sign, 0, 0], [0, 1, 0], [0, 0, sign]]
+        leaf = dict(id='l0001', ref='3622.dat', colour=4, role='wall', at=[100.0, 0.0, 0.0], matrix=matrix)
+        options = derive._extensions(leaf, 0, 0, fam, facts, [2])
+        code, move, turned, filler, offset, filler_turned = options[2]
+        assert (code, move, filler) == ('3622', 0.0, '3004')
+        twin = core._filler(dict(leaf), (filler, offset, filler_turned), 0)
+        brick, gap = facts.get('3622.dat')['bounds'], facts.get('3004.dat')['bounds']
+        ends = sorted([100 + sign * brick[0][0], 100 + sign * brick[1][0]])
+        twin_ends = sorted([twin['at'][0] + sign * gap[0][0], twin['at'][0] + sign * gap[1][0]])
+        assert abs(twin_ends[0] - ends[1]) < 1e-6 and abs(twin_ends[1] - ends[1] - 40) < 1e-6

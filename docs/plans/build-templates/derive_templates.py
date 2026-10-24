@@ -5,7 +5,9 @@
 OUTDIR gets <id>.json (what ldraw_tools/templates loads); DIR (default OUTDIR) gets <id>.report.json: what was
 verified, what was rejected and why, and how long it took.
 
-SPEC.json: a list of {"id", "src" (reference model name or path), "title", "family", "kind", "description"}.
+SPEC.json: a list of {"id", "src" (reference model name or path), "title", "families", "kinds", "description"}
+("family"/"kind" also accepted for one of each). Kinds are the words the fast path matches: a kind a generator
+also has is a tie, and ties go to the generator.
 """
 import argparse
 import json
@@ -33,12 +35,13 @@ def main(argv=None):
         tid, src, title = spec['id'], spec['src'], spec['title']
         if args.only and tid not in args.only:
             continue
-        family, kind = spec['family'], spec['kind']
+        families = spec.get('families') or [spec['family']]
+        kinds = spec.get('kinds') or [spec['kind']]
         path = Path(src) if Path(src).exists() else models_path() / src
         text = path.read_text(encoding='utf-8', errors='ignore')
         t0 = time.time()
         data, report = derive.derive_from_mpd(
-            text, parts, name=path.name, id=tid, title=title, families=[family], kinds=[kind],
+            text, parts, name=path.name, id=tid, title=title, families=families, kinds=kinds,
             description=spec.get('description', title), verify=not args.no_verify, log=lambda *a: print('  ', *a, flush=True))
         report['seconds'] = round(time.time() - t0, 1)
         (out / f'{tid}.json').write_text(json.dumps(derive.compact(data), separators=(',', ':')), encoding='utf-8')

@@ -142,10 +142,14 @@ def choose(spec: dict) -> tuple[Optional[dict], str]:
         if (entry["quality"].startswith("Small accent piece") and not by_kind) or not (by_kind or by_family):
             continue
         exact = kind.casefold() in entry["kinds"]
-        rows.append((-(by_kind * 4 + by_family * 2 + (entry["families"][0] == family) + exact), len(entry["families"]), position, entry))
+        template = entry.get("kind") == "template"         # a model turned into a template (docs/plans/build-templates)
+        rows.append((-(by_kind * 4 + by_family * 2 + (entry["families"][0] == family) + exact), template, len(entry["families"]),
+                     position, entry))
     if not rows:
         return None, f"no generator builds a {kind or family}"
-    best = min(rows, key=lambda r: r[:3])[3]      # best score, then the more specific generator, then registry order
+    # best score, then a generator before a template (it is parametric from scratch and tested at its corners; a template
+    # wins only a kind no generator matches as well, "flatbed truck"), then the more specific entry, then registry order
+    best = min(rows, key=lambda r: r[:4])[4]
     generic = not kind or kind.casefold() in GENERIC_KINDS or kind.casefold() == family
     if not generic and not _kind_hit(best, kind):
         return None, f"no generator builds a {kind}"
@@ -204,7 +208,7 @@ def _size_params(entry: dict, spec: dict, notes: list[str]) -> dict:
 def _colour_param(entry: dict, role: str) -> Optional[str]:
     schema = entry["params"]["properties"]
     for alias in ROLE_PARAMS.get(role, [role]):
-        for name in (alias, f"{alias}_colour"):
+        for name in (alias, f"{alias}_colour", f"colour_{alias}"):      # colour_<role>: templates
             if schema.get(name, {}).get("x-colour"):
                 return name
         if alias in ("body", "wall", "hull") and "colour" in schema:

@@ -5,8 +5,11 @@ codes at each stretch), so it is pure, fast and needs no part library. The knobs
 (see derive.py):
 
   colour_<role>   recolour every part of a role (transparent colours stay transparent for windows and glass)
-  x_delta/z_delta studs added (+) or removed (-) along an axis: parts crossing a cut plane become the next
-                  longer/shorter equivalent part, parts beyond it move; only steps proven valid are offered
+  x_delta/z_delta studs added (+) or removed (-) along an axis: parts crossing a cut (a plane, or a seam that
+                  steps around parts that cannot be lengthened) become the longer/shorter equivalent part, or get a
+                  filler of their own family after them; parts beyond it move; only steps proven valid are offered
+  x_repeat/z_repeat  copies of a section (a wall bay with its window, a train car's panel run) added (+) or the
+                  section removed (-): parts wholly inside are copied, parts spanning it become longer equivalents
   courses_delta   repeat or drop one wall slice (a course of bricks) in the model
   swap_<set>      swap every part of an equivalent set (same footprint and height) for another member
   include_<name>  keep or drop an optional sub-assembly (nothing rests on it)
@@ -99,6 +102,27 @@ def _turn(matrix):
     return [[-row[2], row[1], row[0]] for row in m]
 
 
+def _lengthen(leaf, entry):
+    """Apply one lengthening entry (see derive._extensions) to a leaf: returns (origin move, filler or None)."""
+    code, move, *rest = entry
+    leaf['ref'] = code + '.dat'
+    if rest and rest[0]:                                   # the library models it with its long side across
+        leaf['matrix'] = _turn(leaf['matrix'])
+    return move, (rest[1:4] if len(rest) >= 4 else None)
+
+
+def _filler(leaf, filler, index):
+    """A new leaf closing the gap after a part that has no longer sibling: same pose, family and colour."""
+    code, offset, turned = filler
+    twin = copy.deepcopy(leaf)
+    twin['id'] = f"{leaf['id']}-f"
+    twin['ref'] = code + '.dat'
+    twin['at'][index] += offset
+    if turned:
+        twin['matrix'] = _turn(twin['matrix'])
+    return twin
+
+
 def build(data, params):
     """(plan, notes) of the template at these parameters; pure function of (data, params)."""
     leaves = {l['id']: copy.deepcopy(l) for l in data['leaves']}
@@ -124,22 +148,56 @@ def build(data, params):
         for cut, step in zip(spec['cuts'], spec['plans'][str(delta)]):
             if not step:
                 continue
-            shift, extend = set(cut['shift']), cut['extend']
+            shift, extend, fillers = set(cut['shift']), cut['extend'], []
             for lid, leaf in leaves.items():
                 move = step * STUD if lid in shift else 0.0
                 if lid in extend:
-                    code, move, *turned = extend[lid][str(step)]   # the longer/shorter part, and where its origin goes
-                    leaf['ref'] = code + '.dat'
-                    if turned and turned[0]:                       # the library models it with its long side across
-                        leaf['matrix'] = _turn(leaf['matrix'])
+                    move, filler = _lengthen(leaf, extend[lid][str(step)])
+                    if filler:
+                        fillers.append(_filler(leaf, filler, index))
                 leaf['at'][index] += move - step * STUD / 2      # re-centre: the model grows evenly both ways
-    # 4. courses: repeat (or drop) the slice between two bricks courses
+            for filler in fillers:
+                filler['at'][index] -= step * STUD / 2
+                leaves[filler['id']] = filler
+    # 4. sections: repeat (or remove) a slice along x or z; parts spanning it become longer, parts beyond it move
+    for axis, index in (('x', 0), ('z', 2)):
+        count = int(params.get(f'{axis}_repeat', 0))
+        spec = data.get('repeat', {}).get(axis)
+        if not count or not spec:
+            continue
+        width, right, fillers = spec['width'], set(spec['right']), []
+        inside = [i for i in spec['inside'] if i in leaves]
+        for lid, leaf in leaves.items():
+            if lid in right:
+                leaf['at'][index] += count * width
+            elif lid in spec['spans']:
+                move, filler = _lengthen(leaf, spec['spans'][lid][str(count)])
+                if filler:
+                    fillers.append(_filler(leaf, filler, index))
+                leaf['at'][index] += move
+        for filler in fillers:
+            leaves[filler['id']] = filler
+        if count < 0:
+            for lid in inside:
+                del leaves[lid]
+        for k in range(1, max(count, 0) + 1):
+            for lid in inside:
+                twin = copy.deepcopy(leaves[lid])
+                twin['id'] = f'{lid}-r{k}'
+                twin['at'][index] += k * width
+                leaves[twin['id']] = twin
+        for leaf in leaves.values():
+            leaf['at'][index] -= count * width / 2          # re-centre: the model grows evenly both ways
+    # 5. courses: repeat (or drop) the slice between two bricks courses
     delta = int(params.get('courses_delta', 0))
     spec = data.get('courses')
     if delta and spec:
-        cut, height, slice_ids = spec['cut'], spec['height'], [i for i in spec['slice'] if i in leaves]
+        cut, height = spec['cut'], spec['height']
+        members = set(spec['slice'])
+        slice_ids = [i for i in leaves if i.split('-')[0] in members]      # copies of a repeated section count too
         if 'above' in spec:                       # only the model's main mass moves; scenery around it stays
-            above = [i for i in spec['above'] if i in leaves]
+            moving = set(spec['above'])
+            above = [i for i in leaves if i.split('-')[0] in moving]
         else:
             above = [i for i, l in leaves.items() if i not in set(slice_ids) and l['ub'] >= cut - 0.5]
         for lid in above:
@@ -153,7 +211,7 @@ def build(data, params):
                 copy_['id'] = f'{lid}-c{k}'
                 copy_['at'][1] -= height * k
                 leaves[copy_['id']] = copy_
-    # 5. colours by role
+    # 6. colours by role
     for role, default in data.get('colours', {}).items():
         value = params.get(f'colour_{role}', default)
         if value == default:
