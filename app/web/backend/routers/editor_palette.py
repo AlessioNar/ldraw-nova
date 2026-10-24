@@ -19,6 +19,7 @@ import parts_steering
 import sandbox
 import settings
 import toolkit
+import workspace
 from store import get_store
 from .editor import MAX_ROWS, _chat, _key, _session
 
@@ -112,6 +113,17 @@ def palette_items(parts: list[dict], owned: dict, used: dict, mode: str) -> list
     return items
 
 
+def _selection(store, key: str, chat: dict) -> tuple[str, dict, str]:
+    """(mode, owned map, inventory id list). A chat uses the inventories it selected; a build (the workspace)
+    uses the person's whole collection, exact rows only, as "prefer": owned and used are shown, nothing is refused."""
+    if store.is_build(key):
+        owned, signature = workspace.owned_parts()
+        ids = ",".join(part.split(":")[0] for part in signature.split("|") if part)
+        return ("prefer" if ids else "off"), owned, ids
+    mode, inventories = parts_steering.selection(chat.get("options") or {})
+    return (mode if inventories else "off"), owned_map(inventories), parts_steering.id_list(inventories)
+
+
 async def _cli(store, chat_id: str, arguments: list[str]) -> dict:
     result = await sandbox.run(["./ldraw-agent", *arguments], cwd=toolkit.workspace(store, chat_id),
                                timeout=TIMEOUT, env_extra=toolkit.environment())
@@ -148,17 +160,16 @@ async def editor_palette(space: str, chat_id: str, query: str = "", colour: Opti
     chat = _chat(store, chat_id)
     limit = max(1, min(limit, MAX_RESULTS))
     query = query.strip()[:200]
-    mode, inventories = parts_steering.selection(chat.get("options") or {})
+    mode, owned, ids = _selection(store, chat_id, chat)
     session = _session(store, chat_id)
     used = used_map(session[1].get("used") if session else None)
-    owned = owned_map(inventories)
-    if inventory_only and (mode == "off" or not inventories):
+    if inventory_only and (mode == "off" or not ids):
         raise HTTPException(400, "Choose parts inventories for this chat to search them")
     if colour is not None:
         _known_colour(colour)
     hits: list[dict] = []
     if inventory_only:
-        report = await _cli(store, chat_id, ["inventory", "search", parts_steering.id_list(inventories), "--limit", "500",
+        report = await _cli(store, chat_id, ["inventory", "search", ids, "--limit", "500",
                                              "--json", "--store", str(settings.INVENTORIES_DIR),
                                              *(["--colour", str(colour)] if colour is not None else []),
                                              *(["--", query] if query else [])])
@@ -191,7 +202,7 @@ def editor_palette_check(space: str, chat_id: str, body: PaletteCheck):
     _known_colour(body.colour)
     if not PART_RE.fullmatch(body.part.strip()) or not 1 <= body.quantity <= 1000:
         raise HTTPException(400, "Not a valid part number or quantity")
-    mode, inventories = parts_steering.selection(chat.get("options") or {})
+    mode, owned, _ = _selection(store, chat_id, chat)
     session = _session(store, chat_id)
-    return check_add(mode, owned_map(inventories), used_map(session[1].get("used") if session else None),
+    return check_add(mode, owned, used_map(session[1].get("used") if session else None),
                      body.part, body.colour, body.quantity)

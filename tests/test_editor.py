@@ -287,6 +287,32 @@ def test_editor_cli_open_apply_undo_roundtrip(parts, tmp_path):
     assert redone.returncode == 0 and report["ok"] and report["undo_depth"] == 1 and report["redo_depth"] == 0
 
 
+def test_editor_cli_replace_is_one_undoable_step(parts, tmp_path):
+    library, plan_path, state_path, mpd_path, _ = editor_session(parts, tmp_path)
+    args = ["--plan", plan_path, "--state", state_path, "--mpd", mpd_path]
+    edits = tmp_path / "edits.json"
+    edits.write_text(json.dumps([{"op": "move", "id": "base", "position": [40, 0, 0]}]))
+    run_editor_cli(library, "apply", *args, "--base-revision", "1", "--edits", edits)
+    before = json.loads(plan_path.read_text())
+    other = small_plan()
+    other["sections"][0]["steps"] = [[{"id": "a", "ref": "3003.dat", "colour": 1, "at": [0, 0, 0]},
+                                       {"id": "b", "ref": "3003.dat", "colour": 4, "at": [0, -24, 0]}]]
+    source = tmp_path / "other.json"
+    source.write_text(json.dumps(other))
+    ran = run_editor_cli(library, "replace", *args, "--from", source)
+    replaced = json.loads(ran.stdout)
+    assert "ok" in replaced, ran.stdout + ran.stderr
+    assert replaced["ok"] and replaced["revision"] == 3 and replaced["undo_depth"] == 2
+    assert [e["id"] for e in json.loads(plan_path.read_text())["sections"][0]["steps"][0]] == ["a", "b"]
+    undone = json.loads(run_editor_cli(library, "undo", *args).stdout)
+    assert undone["ok"] and undone["undo_depth"] == 1 and same(json.loads(plan_path.read_text()), before)
+    redone = json.loads(run_editor_cli(library, "redo", *args).stdout)
+    assert redone["ok"] and [e["id"] for e in json.loads(plan_path.read_text())["sections"][0]["steps"][0]] == ["a", "b"]
+    mpd = tmp_path / "m.mpd"                                    # a model file works too
+    mpd.write_text("0 FILE m.ldr\n0 M\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 NOFILE\n")
+    assert json.loads(run_editor_cli(library, "replace", *args, "--from-mpd", mpd).stdout)["ok"]
+
+
 def test_editor_cli_undoes_and_redoes_a_batch_whose_edits_depend_on_each_other(parts, tmp_path):
     from ldraw_tools.editor import _next_id
     library, plan_path, state_path, mpd_path, report = editor_session(parts, tmp_path)
