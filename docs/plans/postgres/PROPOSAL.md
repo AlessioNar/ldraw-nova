@@ -527,3 +527,10 @@ Three agent tasks, in order. Sizes assume one agent per task with tests.
 2. **Is a database dump plus the data volume acceptable as "the backup", or do you want one `pg_dump` to contain everything, including the MPD files?** Putting MPD blobs (a few hundred KB each) into the database is possible and makes one dump complete, but it costs the "files in `generated/` are My Builds, copy them out with `docker cp`" simplicity, the static serving path and the toolkit's file access. Recommendation: keep files, back up both.
 3. **Backups: should the nightly `pg_dump` be on by default (a small volume inside Docker, 7 daily and 4 weekly), or opt-in, and where should copies go (a host folder, NAS, cloud)?** A backup that lives only on the same Docker host does not survive a lost disk.
 4. **Retention: how long should the request log (default 180 days) and cost history (default forever, it is tiny) be kept, and should deleting a chat also delete its cost events?** The proposal keeps the spend after a chat is deleted so monthly totals do not shrink; say if you would rather have them vanish with the chat.
+
+## Owner decisions (2026-10-24)
+
+1. API keys stay in `/config` files, never in the database (not even encrypted).
+2. "The backup" is a database dump plus the data volume (model files stay files).
+3. Scheduled backups are opt-in (off by default); the manual backup command is always available.
+4. Retention: request log 180 days; cost history kept forever and survives chat deletion.
