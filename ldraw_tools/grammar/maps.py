@@ -61,10 +61,6 @@ def ascii_side(canvas):
     return _elevation(canvas, 'side')
 
 
-def storey_levels(ctx_or_result):
-    return [st.y_floor for st in ctx_or_result]
-
-
 def svg_sheet(canvas, title='building'):
     cells = _grid(canvas)
     x0, x1, z0, z1 = canvas.bounds()

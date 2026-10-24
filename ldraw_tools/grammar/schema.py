@@ -220,8 +220,6 @@ def normalise(config):
     if op['door'] != 'none' and st['courses'] < 6:
         st['courses'] = 6
         notes.append('courses raised to 6: the door is six courses tall (door-height)')
-    if op['door'] != 'none' and st['top_courses'] == 0 and False:
-        pass
     towers = co['style'] == 'towers'
     if rf['style'] in ('gable', 'hip'):
         if fp['shape'] != 'rect':
@@ -247,7 +245,7 @@ def normalise(config):
         if dt['sign'] != 'none':
             dt['sign'] = 'none'
             notes.append('sign removed: it needs a door (sign-shop)')
-    if dt['balcony'] and (st['count'] < 2 or op['door_facade'] != 'front' and False):
+    if dt['balcony'] and st['count'] < 2:
         dt['balcony'] = False
         notes.append('balcony removed: it needs 2 or more storeys (balcony-storeys)')
     if dt['porch'] and op['door_facade'] != 'front':

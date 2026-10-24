@@ -35,7 +35,7 @@ Rendering worked in this environment: LeoCAD (`apt install leocad`) under `xvfb-
 
 ## What is verified
 
-- `tests/test_grammar.py` (157 tests, no library needed): footprints, walls and bond, tiling, openings, roofs, towers, details, base, schema rules, determinism, parameter sweeps (about 90 cases, each must be one connected piece with a valid plan), parts-aware mode, natural language, registry, maps.
+- `tests/test_grammar.py` (157 tests, no library needed): footprints, walls and bond, tiling, openings, roofs, towers, details, base, schema rules, determinism, parameter sweeps (about 60 cases, each must be one connected piece with a valid plan), parts-aware mode, natural language, registry, maps.
 - `tests/test_grammar_validation.py` (24 tests, needs the LDraw library): every preset and 13 sweeps through `build_plan` + `analyze_geometry` (no errors, one optimistic component), the parts-aware plan, the registry route, and every catalogue part's footprint and height against the library's real bounds.
 - A 356-case internal sweep (sizes 6-22 x 6-14, 1-3 storeys, three roofs, L/U/courtyard with thin and thick walls, square and round towers, every window and door kind, wall styles, every detail) found no collision and no loose part.
 - `tests/test_generators.py -k "not parameter_range_corners"` still passes with the new entry; the old house generator is untouched and still wins the words it owns (`house`, `cottage`, `shop`, `townhouse`). `building` takes the new ones (`castle`, `tower`, `keep`, `fort`...). Flipping the routing is a one-line change in `generators/building.py`'s kinds.

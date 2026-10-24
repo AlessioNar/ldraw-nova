@@ -68,7 +68,6 @@ def band(ctx, st):
     mass = st.walls.mass - st.blocked
     y = st.y_band
     main_top = st.kind == 'main' and st.index == s_cfg['count'] - 1
-    tower_top = st.kind == 'tower' or (main_top and False)
     trim = ctx.code(s_cfg['band_colour'])
     roof = ctx.code(cfg['roof']['colour'])
     tower = ctx.code(cfg['corners']['tower_colour'])

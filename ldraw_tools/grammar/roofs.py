@@ -6,8 +6,6 @@ closed by stepped wall bricks, and a ridge of plates and tiles caps the top. All
 from __future__ import annotations
 
 from . import catalog, tiling
-from .canvas import rotate
-from .footprint import distances
 
 
 class Frame:

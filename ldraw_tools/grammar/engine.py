@@ -1,9 +1,7 @@
 """config -> plan. Deterministic: the same config (and inventory) always gives the same plan."""
 from __future__ import annotations
 
-import copy
-
-from . import details, footprint, openings, schema, structure, walls
+from . import details, openings, schema, structure, walls
 from .context import Ctx
 
 
