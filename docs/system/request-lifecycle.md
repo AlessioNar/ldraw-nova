@@ -108,7 +108,7 @@ sequenceDiagram
 
 - Code: `routers/workspace_api.py:240` (`draft_describe`), `_regenerate`, and `fast_path._route_edit` (line 436).
 - Edits change only the **generator params**: colour, size and feature toggles (`fast_path.edit_params`).
-- **The AI tab in the workspace is a separate path.** A message typed there goes straight to the agent, with no fast path in front (REVIEW.md:20-22).
+- **Routing in the workspace chat.** There is one chat per build and the server decides who answers (`chat_routing.state`; `chat_mode` in `GET /workspace`). While the AI agent is engaged (its turn is the latest real one and it asked a question or has not delivered a proposal since the person wrote) every message goes to the agent and `draft/describe` returns `route: "agent"` without applying or saving anything; only the per-message "Quick change instead" (`quick: true`) reaches the fast path. In quick mode, replies and follow-ups (yes, go on, step N, questions) get a clarify about the build instead of a guess, and an understood edit is applied only if the whole message is one short edit command with a confident reading. Details in workspace-and-editor.md.
 
 ## How the person agrees to spend
 
