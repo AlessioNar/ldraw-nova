@@ -247,8 +247,11 @@ class _Seams:
 
     def __init__(self, leaves, axis, fam, facts, skip=()):
         self.axis, self.fam, self.facts, self.skip = axis, fam, facts, set(skip)
-        scenery = _scenery(leaves)               # a garden around a house stays where it is; the house grows
+        # The garden around a house neither blocks a cut nor needs closing: it moves with the side its centre is on, so
+        # a fence behind the house moves back as the house grows, and a tree in front stays.
+        scenery = _scenery(leaves)
         self.solid = [l for l in leaves if l['kind'] != 'baseplate' and l['id'] not in scenery]
+        self.free = [l for l in leaves if l['kind'] != 'baseplate' and l['id'] in scenery]
         levels = sorted({round(l['ub'], 1) for l in self.solid} | {round(l['ut'], 1) for l in self.solid})
         self.bands = list(zip(levels, levels[1:]))
         self.members = [[] for _ in self.bands]
@@ -267,7 +270,7 @@ class _Seams:
             for other in self.solid:
                 if other is l:
                     continue
-                touching = abs(other['ut'] - l['ub']) < 1.5 or abs(other['ub'] - l['ut']) < 1.5
+                touching = _stacked(other, l) or _stacked(l, other)
                 overlap = all(min(l['box'][1][k], other['box'][1][k]) - max(l['box'][0][k], other['box'][0][k]) > 1 for k in (0, 2))
                 if touching and overlap and not _floats(other, axis):
                     self.support[l['id']] = other
@@ -323,8 +326,9 @@ class _Seams:
         holes = self.holes(i, c)
         return all(self.extendable(a) or self.extendable(b) for a, b, _, _ in holes), bool(holes)
 
-    def solve(self, target, window):
-        """(extend {id: options}, shift ids, allowed deltas) of the best cut near `target`, or None."""
+    def solve(self, target, window, scenery_follows=True):
+        """(extend {id: options}, shift ids, allowed deltas) of the best cut near `target`, or None. With
+        `scenery_follows` the garden around a house moves with the side it is on, else it stays where it is."""
         choices = []
         for i, band in enumerate(self.members):
             if not band:
@@ -395,6 +399,10 @@ class _Seams:
                 left += 1
         if not allowed or len(extend) < 2 or min(left, len(shift)) < max(2, 0.15 * len(self.solid)):
             return None          # a cut at the model's edge would only lengthen a few loose parts
+        for l in (self.free if scenery_follows else ()):
+            here = next((path[i] for i, (lo, hi) in enumerate(self.bands) if lo <= l['ub'] < hi and path[i] is not None), target)
+            if sum(self.ends(l)) / 2 > here:
+                shift.append(l['id'])
         return {k: {str(d): list(v[d]) for d in sorted(allowed)} for k, v in extend.items()}, shift, sorted(allowed)
 
 
@@ -410,11 +418,12 @@ def stretch_candidates(leaves, axis, fam, facts, skip=()):
         if b - a <= 2.5:
             continue
         cut = (a + b) / 2
-        found = seams.solve(cut, 0)
-        if found:
-            rows.append((-(min(len(found[2]), 6)), abs(cut - mid), cut, found))
-    rows.sort(key=lambda r: r[:3])
-    return [(cut, *found) for _, _, cut, found in rows[:MAX_CANDIDATES]]
+        for follows in ((True, False) if seams.free else (True,)):
+            found = seams.solve(cut, 0, follows)
+            if found:
+                rows.append((-(min(len(found[2]), 6)), abs(cut - mid), cut, not follows, found))
+    rows.sort(key=lambda r: r[:4])
+    return [(cut, *found) for _, _, cut, _, found in rows[:MAX_CANDIDATES]]
 
 
 def seam_candidates(leaves, axis, fam, facts, skip=()):
@@ -427,12 +436,13 @@ def seam_candidates(leaves, axis, fam, facts, skip=()):
     out, seen = [], set()
     for share in SEAM_TARGETS:
         target = round(low + share * (high - low), 2)
-        found = seams.solve(target, SEAM_WINDOW)
-        if found:
-            key = (frozenset(found[0]), frozenset(found[1]))
-            if key not in seen:
-                seen.add(key)
-                out.append((target, *found))
+        for follows in ((True, False) if seams.free else (True,)):
+            found = seams.solve(target, SEAM_WINDOW, follows)
+            if found:
+                key = (frozenset(found[0]), frozenset(found[1]))
+                if key not in seen:
+                    seen.add(key)
+                    out.append((target, *found))
     return out
 
 
@@ -537,6 +547,11 @@ def _footprint(leaves):
             min(l['box'][0][2] for l in core), max(l['box'][1][2] for l in core))
 
 
+def _stacked(lower, upper):
+    """True when `upper` sits on `lower` in height: its underside at the top of `lower`, studs (4 LDU) allowed into it."""
+    return -0.5 <= lower['ut'] - upper['ub'] <= 4.5
+
+
 def _scenery(leaves):
     """Ids of the parts around a building (garden, paths, lamps): outside the rectangle under its roof and not touching
     the house through other parts. Empty for anything that is not a building with walls and a roof."""
@@ -569,7 +584,7 @@ def _scenery(leaves):
             if l['id'] in reached:
                 continue
             for f in stacked:
-                above_below = abs(l['ut'] - f['ub']) < 1.5 or abs(l['ub'] - f['ut']) < 1.5
+                above_below = _stacked(l, f) or _stacked(f, l)
                 if above_below and all(min(l['box'][1][k], f['box'][1][k]) - max(l['box'][0][k], f['box'][0][k]) > 1 for k in (0, 2)):
                     reached.add(l['id'])
                     nxt.append(l)
