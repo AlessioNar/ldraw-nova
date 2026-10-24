@@ -4,7 +4,16 @@
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 #   cd web/frontend && npm install && npm run dev    # UI with hot reload on http://localhost:5173
 #
+# Or keep using port 8765: `npm run build` in web/frontend (a few seconds) and
+# reload the page; web/frontend/dist is served directly.
+# To make plain `docker compose up -d` use this file on your machine, put these
+# two lines in app/.env:
+#   COMPOSE_PATH_SEPARATOR=,
+#   COMPOSE_FILE=docker-compose.yml,docker-compose.dev.yml
+#
 # (The image still needs to be built once; rebuild after changing requirements.txt.)
+# Toolkit (ldraw_tools) edits apply to new toolkit commands at once; the resident
+# build worker keeps the old code until `docker restart ldraw-nova-app`.
 # Only directories are mounted: Docker Desktop keeps serving a stale copy of a
 # single-file mount once an editor replaces that file.
 services:
@@ -39,10 +48,13 @@ services:
       - .:/app                          # leocad_render.py, example.py, web/backend
       - ./web/viewer:/opt/web/viewer    # viewer.html, player.html
       - ./scripts:/opt/scripts          # command-line helpers (on the PATH)
+      - ./web/frontend/dist:/opt/web/static   # the UI from `npm run build`
+      - ../ldraw_tools:/opt/ldraw-nova/ldraw_tools:ro
       # Iterating on the 3D player (ldraw.rs-nova, tools/player/build.sh): use
       # your local build instead of the release zip baked into the image.
       # - ../ldraw.rs-nova/tools/player/dist/ldraw-player-<version>:/opt/web/player-vendor
     environment:
       PYTHONDONTWRITEBYTECODE: "1"      # no __pycache__ written into your checkout
+      WATCHFILES_FORCE_POLLING: "true"  # Windows/macOS bind mounts don't deliver file events to --reload
     command: ["uvicorn", "main:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0", "--port", "8000",
               "--reload", "--reload-dir", "/app/web/backend"]
