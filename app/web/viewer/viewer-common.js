@@ -3,6 +3,7 @@
 /* global THREE */
 var ViewerCommon = (function () {
   const params = new URLSearchParams(location.search);
+  if (params.get('embed') === '1' || window.top !== window) document.documentElement.classList.add('framed');
   const modelUrl = params.get('model');
   const knownParts = params.has('parts') ? parseInt(params.get('parts'), 10) : NaN;
   const theme = params.get('theme');

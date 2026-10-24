@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { buildsApi, downloadGlb, downloadUrl, type GeneratorEntry } from "../../api";
 import { useApp } from "../../context";
-import { confirmDeleteBuild } from "../../pages/Home";
+import { confirmDeleteBuild } from "../../buildActions";
 import type { Workspace } from "../../workspace/useWorkspace";
 import Icon from "./Icon";
 
@@ -40,9 +40,10 @@ export default function TopBar({ ws }: { ws: Workspace }) {
 
   return (
     <header className="ws-top">
-      <Link className="ws-back" to="/" title="Back to all builds">← Builds</Link>
+      <Link className="ws-back" to="/builds" title="Back to My Builds">← Builds</Link>
       <span className="ws-sep" />
-      <Icon name="logo" size={20} />
+      <Link className="ws-logo" to="/" title="Open Brick Designer: home" aria-label="Open Brick Designer, home"><Icon name="logo" size={20} /><span className="ws-brand">Open Brick Designer</span></Link>
+      <span className="ws-sep" />
       {renaming == null
         ? <h1 className="ws-name ellipsis" title="Click to rename" tabIndex={0} onClick={() => setRenaming(build.title)}
             onKeyDown={(e) => { if (e.key === "Enter") setRenaming(build.title); }}>{build.title}</h1>
@@ -66,7 +67,7 @@ export default function TopBar({ ws }: { ws: Workspace }) {
         <summary className="ws-icon-btn" title="More" aria-label="More actions">⋯</summary>
         <div className="ws-menu-pop">
           <button className="danger-text" onClick={async () => {
-            if (await confirmDeleteBuild({ id: build.id, title: build.title, versions: build.versions })) { refreshBuilds(); navigate("/"); }
+            if (await confirmDeleteBuild({ id: build.id, title: build.title, versions: build.versions })) { refreshBuilds(); navigate("/builds"); }
           }}>Delete build…</button>
         </div>
       </details>

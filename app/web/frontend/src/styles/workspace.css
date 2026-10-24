@@ -17,6 +17,10 @@
 /* ---------- top bar ---------- */
 .ws-top { grid-area: top; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--border); min-width: 0; }
 .ws-back { font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; }
+.ws-logo { display: inline-flex; align-items: center; gap: 8px; color: var(--fg); flex: none; }
+.ws-logo:hover { text-decoration: none; }
+.ws-logo:hover .ws-brand { color: var(--accent); }
+.ws-brand { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
 .ws-sep { width: 1px; height: 22px; background: var(--border); flex: none; }
 .ws-name { font-size: var(--fs-lg); margin: 0; cursor: text; min-width: 0; flex: 0 1 auto; }
 .ws-name:hover { text-decoration: underline dashed var(--border-strong); text-underline-offset: 6px; }
@@ -195,6 +199,7 @@
 
 /* ---------- medium: narrower right panel, shorter labels ---------- */
 @media (max-width: 1100px) {
+  .ws-brand { display: none; }
   .ws { grid-template-columns: 52px minmax(0, 1fr) 10px var(--ws-panel-w, 344px); }
   .ws-lbl, .ws-discard { display: none; }
 }
@@ -204,7 +209,7 @@
   .ws { grid-template-columns: minmax(0, 1fr); grid-template-rows: 46px minmax(0, 1fr) auto auto; grid-template-areas: "top" "stage" "rail" "bottom"; padding-bottom: 46px; }
   .ws-split { display: none; }
   .ws-top { gap: 7px; padding: 0 10px; overflow: hidden; }
-  .ws-sep, .ws-top > svg, .ws-chip.kind, .ws-discard, .ws-group, .ws-menu { display: none; }
+  .ws-sep, .ws-brand, .ws-chip.kind, .ws-discard, .ws-group, .ws-menu { display: none; }
   .ws-name { font-size: var(--fs-md); }
   .ws-status { font-size: 11px; padding: 2px 8px; }
   .ws-status .ws-auto, .ws-status .ws-w { display: none; }
