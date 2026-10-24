@@ -10,21 +10,24 @@ const MODES: { mode: ViewerMode; label: string; title: string }[] = [
 
 /** The 3D stage beside the conversation (wide chat page): one embedded viewer page, switched between versions and modes.
  *  Loaded lazily by ChatPage, so the chat itself stays light. */
-export default function ViewerStage({ chatId, target }: { chatId: string; target: ViewerTarget | null }) {
+export default function ViewerStage({ editorPath, target, emptyText, onOpenEditor }: { editorPath: string; target: ViewerTarget | null; emptyText?: string; onOpenEditor?: () => void }) {
   const [mode, setMode] = useState<ViewerMode>(target?.mode ?? "viewer");
   useEffect(() => setMode(target?.mode ?? "viewer"), [target]);
 
+  const editor = onOpenEditor
+    ? <button className="stage-link" onClick={onOpenEditor} title="Place and move parts in 3D">Open editor</button>
+    : <Link className="button stage-link" to={editorPath} title="Place and move parts in 3D">Open editor</Link>;
   if (!target) {
     return (
       <section className="chat-stage" aria-label="3D stage">
         <header className="stage-head">
           <span className="label">3D stage</span>
-          <Link className="button stage-link" to={`/chat/${chatId}/edit`} title="Place and move parts in 3D">Open editor</Link>
+          {editor}
         </header>
         <div className="stage-empty">
           <div className="brick-row" aria-hidden="true"><i /><i /><i /><i /></div>
           <strong>Your model will appear here</strong>
-          <p className="muted">Once the agent has built something, it opens in 3D on this stage. Older versions open here too.</p>
+          <p className="muted">{emptyText ?? "Once the agent has built something, it opens in 3D on this stage. Older versions open here too."}</p>
         </div>
       </section>
     );
@@ -41,7 +44,7 @@ export default function ViewerStage({ chatId, target }: { chatId: string; target
             <button key={m.mode} aria-pressed={mode === m.mode} title={m.title} onClick={() => setMode(m.mode)}>{m.label}</button>
           ))}
         </span>
-        <Link className="button stage-link" to={`/chat/${chatId}/edit`} title="Place and move parts in 3D">Open editor</Link>
+        {editor}
         <a className="stage-link" href={url} target="_blank" rel="noreferrer">Open in new tab</a>
       </header>
       {/* key: a fresh page per model and mode, so the iframe's history doesn't pile up */}

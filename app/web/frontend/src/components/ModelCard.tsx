@@ -9,6 +9,7 @@ type Props = {
   showChats?: boolean;
   onDelete?: () => Promise<void>;
   onEdit?: () => Promise<void>;      // My Builds: open the model in the 3D editor
+  buildId?: string;                  // My Builds: the build this file is a version of; the card links to its page
 };
 
 function DownloadIcon() {
@@ -19,7 +20,7 @@ function DownloadIcon() {
   );
 }
 
-export default function ModelCard({ model, showChats = false, onDelete, onEdit }: Props) {
+export default function ModelCard({ model, showChats = false, onDelete, onEdit, buildId }: Props) {
   const { openViewer } = useApp();
   const open = (mode: ViewerMode = "viewer") =>
     model.model_url &&
@@ -88,7 +89,9 @@ export default function ModelCard({ model, showChats = false, onDelete, onEdit }
           <span className="model-file">
             {model.version != null && <span className="version-badge" title={model.latest ? "The latest version in this chat" : "An earlier version in this chat"}>v{model.version}{model.latest ? " · latest" : ""}</span>}
             {model.origin === "editor" && <span className="version-badge edited" title="You edited the plan in the 3D editor and published it">edited by you</span>}
-            <strong className="ellipsis" title={model.file}>{model.version != null ? model.title || model.file : model.file}</strong>
+            {buildId
+              ? <Link className="ellipsis build-card-link" to={`/build/${buildId}`} title="Open the build"><strong>{model.version != null ? model.title || model.file : model.file}</strong></Link>
+              : <strong className="ellipsis" title={model.file}>{model.version != null ? model.title || model.file : model.file}</strong>}
           </span>
           {warnings.length > 0 && (
             <button type="button" className="badge warn warning-toggle" aria-expanded={showWarnings} onClick={() => setShowWarnings(v => !v)}>
@@ -131,6 +134,7 @@ export default function ModelCard({ model, showChats = false, onDelete, onEdit }
               Info
             </button>
           )}
+          {buildId && <Link className="button primary-link" to={`/build/${buildId}`} title="Open this model's build: versions, settings, editor and chats">Open build</Link>}
           <span className="model-viewer-actions" role="group" aria-label="View model">
             <button onClick={() => open()} disabled={!model.model_url}>
               3D View

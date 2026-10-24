@@ -21,6 +21,7 @@ export type ModelFile = {
   bom_error: string | null;
   chats?: { id: string; title: string }[]; // chats that produced it (My Builds page)
   origin?: string | null; // "editor": saved from the 3D editor
+  build?: string; // the build this file is a version of (My Builds page)
 };
 
 /** A model a chat produced: a reference into data/generated. */
@@ -48,6 +49,7 @@ export type Chat = {
   duration_s?: number | null; // wall-clock length of the latest turn
   options?: TurnOptions;
   models?: ChatModel[];
+  build_id?: string; // set when the chat is attached to a build
 };
 
 export type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
@@ -78,7 +80,8 @@ export type Message = {
 
 export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number; cost_usd?: number };
 export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number; worker_cost_eur?: number; turn_steps?: number; request_cost_eur?: number; duration_s?: number | null };
-export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals };
+export type ChatBuildLink = { id: string; title: string; attached: boolean; latest: (ModelFile & { version: number }) | null };
+export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals; build?: ChatBuildLink | null };
 
 type Capability = boolean | "auto";
 export type EnvironmentVariable = { id: string; name: string; value: null; has_value: boolean; fixed: boolean };
@@ -338,3 +341,76 @@ export const paletteApi = {
   check: (chatId: string, part: string, colour: number, quantity = 1) =>
     request<PaletteCheck>(`${workspaceBase(chatId)}/editor/palette/check`, { method: "POST", body: json({ part, colour, quantity }) }),
 };
+
+// ---- Builds: a model project with versions; chats, the 3D editor and generators are ways to work on it ----------
+export type BuildOrigin = "generator" | "ai" | "editor" | "import";
+export type BuildSource = { kind: BuildOrigin | "empty"; generator?: string; params?: Record<string, unknown>; filename?: string };
+export type BuildVersion = ModelFile & {
+  version: number; origin: BuildOrigin; title: string; created_at: number;
+  chat: { id: string; title: string } | null;
+  changes: ModelChanges | null; // from the previous version's parts list
+};
+export type BuildSummary = {
+  id: string; key: string; title: string; created_at: number; updated_at: number; source: BuildSource;
+  versions: number; latest: (ModelFile & { version: number }) | null; chats: number; pending: boolean;
+};
+export type BuildDetail = {
+  build: BuildSummary; versions: BuildVersion[]; source: BuildSource; pending: boolean;
+  chats: { id: string; title: string; updated_at: number; running: boolean; attached: boolean }[];
+  settings_open: boolean; latest_from_generator: boolean;
+};
+export type OlderChat = { id: string; title: string; updated_at: number; running: boolean };
+
+/** One parameter of a generator, as JSON schema (ldraw_tools/generators/base.py). */
+export type ParamSpec = {
+  type?: string | string[]; enum?: (string | number)[]; minimum?: number; maximum?: number; default?: unknown;
+  description?: string; "x-colour"?: boolean; "x-even"?: boolean; uniqueItems?: boolean; items?: { enum?: string[] };
+};
+export type GeneratorEntry = {
+  id: string; title: string; families: string[]; kinds: string[]; description: string; roles: string[];
+  params: { properties: Record<string, ParamSpec> }; defaults: Record<string, unknown>;
+};
+export type GeneratorList = { generators: GeneratorEntry[]; colours: { name: string; code: number }[] };
+
+/** What /api/describe (the fast path's decision engine) answers; every field but `route` is optional so a newer
+ *  backend can add to it. A 404 means the engine is not installed: the Describe box then offers only the AI. */
+export type Describe = {
+  route: "generator" | "edit" | "needs_ai" | "clarify";
+  generator?: string; params?: Record<string, unknown>; question?: string; options?: string[];
+  estimate?: { low?: number; high?: number; min?: number; max?: number; eur?: [number, number] } | [number, number] | number;
+  reason?: string; message?: string; summary?: string;
+};
+
+const buildBase = (id: string) => `/api/builds/${encodeURIComponent(id)}`;
+export const buildsApi = {
+  list: () => request<{ builds: BuildSummary[]; older_chats: OlderChat[]; pending: number }>("/api/builds"),
+  create: (title: string, source?: BuildSource) => request<BuildDetail & { id: string }>("/api/builds", { method: "POST", body: json({ title, source }) }),
+  get: (id: string) => request<BuildDetail>(buildBase(id)),
+  rename: (id: string, title: string) => request<BuildDetail>(buildBase(id), { method: "PATCH", body: json({ title }) }),
+  generators: () => request<GeneratorList>("/api/generators"),
+  preview: (generator: string, params: Record<string, unknown>) =>
+    request<{ model_url: string }>("/api/generators/preview", { method: "POST", body: json({ generator, params }) }),
+  generate: (id: string, generator: string, params: Record<string, unknown>) =>
+    request<{ version: number; file: string; notes: string[] }>(`${buildBase(id)}/generate`, { method: "POST", body: json({ generator, params }) }),
+  importFile: (id: string, filename: string, content: string) =>
+    request<{ version: number; file: string }>(`${buildBase(id)}/import`, { method: "POST", body: json({ filename, content }) }),
+  edit: (id: string) => request<{ editor_url: string }>(`${buildBase(id)}/edit`, { method: "POST" }),
+  chat: (id: string, llm_model_id?: string | null, isNew = false) =>
+    request<Chat>(`${buildBase(id)}/chat`, { method: "POST", body: json({ llm_model_id, new: isNew }) }),
+  describe: (text: string, build_id?: string, current?: { generator: string; params: Record<string, unknown> }) =>
+    request<Describe>("/api/describe", { method: "POST", body: json({ text, build_id, current }) }),
+  estimate: (text: string) => request<Describe["estimate"] & object>(`/api/describe/estimate?text=${encodeURIComponent(text)}`),
+};
+
+/** "about €0.40–0.90" from whatever shape the estimate came in. */
+export function estimateLabel(e: Describe["estimate"] | undefined): string | null {
+  if (e == null) return null;
+  const range = Array.isArray(e) ? e : typeof e === "number" ? [e, e]
+    : e.eur ?? [e.low ?? e.min, e.high ?? e.max];
+  const [low, high] = range as [number | undefined, number | undefined];
+  const fmt = (n: number) => n.toFixed(n < 1 ? 2 : 1).replace(/\.?0+$/, "");
+  if (low == null && high == null) return null;
+  if (low == null || high == null || low === high) return `about €${fmt((low ?? high)!)}`;
+  return `about €${fmt(low)}–${fmt(high)}`;
+}
+export const ORIGIN_LABEL: Record<BuildOrigin, string> = { generator: "Generator", ai: "AI", editor: "Edited by you", import: "Imported" };

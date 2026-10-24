@@ -26,8 +26,8 @@
 
   if (!chatId) { setStatus('No chat given: add ?chat=<chat id>', true); return; }
   const chatLink = $('chat-link');
-  chatLink.href = buildId ? '/models' : `/chat/${encodeURIComponent(chatId)}`;
-  if (buildId) chatLink.textContent = 'Back to My Builds';
+  chatLink.href = buildId ? `/build/${encodeURIComponent(buildId)}` : `/chat/${encodeURIComponent(chatId)}`;
+  if (buildId) chatLink.textContent = 'Back to the build';
   if (buildId) $('open-other').hidden = true;
   chatLink.hidden = false;
   if (!WEBGL.isWebGLAvailable()) { setStatus('WebGL is not available in this browser.', true); return; }
@@ -631,7 +631,7 @@
       const checkText = check ? ` Parts check: ${check.complete ? 'all parts owned' : check.summary}` : '';
       if (buildId) {
         setStatus(`${result.message || `Saved as v${result.version || '?'} in My Builds`}, ${result.pieces || '?'} piece${result.pieces === 1 ? '' : 's'} (${result.file}). It is marked "edited by you".`, false);
-        chatLink.textContent = `View v${result.version || ''} in My Builds`;
+        chatLink.textContent = `View v${result.version || ''} in the build`;
         return;
       }
       setStatus(`Published as v${result.version || '?'}, ${result.pieces || '?'} piece${result.pieces === 1 ? '' : 's'}.${checkText} It is in the chat as "edited by you".`, false);

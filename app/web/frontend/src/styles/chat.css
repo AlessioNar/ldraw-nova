@@ -91,7 +91,7 @@
   .editor-frame { flex: 1 1 60%; min-height: 240px; }
   .editor-side { width: auto; max-height: 40%; border-left: 0; border-top: 1px solid var(--border); }
 }
-.chat-head:has(.chat-edit-link) { display: flex; align-items: center; gap: 12px; }
+.chat-head:has(.chat-edit-link), .chat-head:has(.chat-build-link) { display: flex; align-items: center; gap: 12px; }
 .chat-head h2 { flex: 1; min-width: 0; }
 
 .worker-card details { border-left: 2px solid var(--info); }
@@ -258,3 +258,4 @@
 .budget-stop p { flex: 1 1 220px; margin: 0; font-size: 13px; }
 .budget-stop p strong { display: block; color: var(--danger); }
 .budget-stop .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-build-link { font-size: var(--fs-sm); max-width: 45%; flex: none; }

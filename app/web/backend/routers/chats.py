@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 import agent
+import builds
 import gallery
 import parts_steering
 import run_state
@@ -57,6 +58,20 @@ def chats_create(body: NewChat):
     return get_store().create_chat(llm_model_id=body.llm_model_id)
 
 
+def build_link(store, chat: dict) -> Optional[dict]:
+    """The build a chat belongs to (attached, or the one its models are versions of) with its latest version."""
+    slug = builds.chat_build(store, chat)
+    record = slug and builds.get(store, slug)
+    if not record:
+        return None
+    files = builds.versions(slug)
+    latest = None
+    if files:
+        from .common import model_info
+        latest = {**model_info(files[-1]["path"]), "version": files[-1]["version"]}
+    return {"id": slug, "title": record["title"], "attached": chat.get("build_id") == slug, "latest": latest}
+
+
 @router.get("/api/chats/{chat_id}")
 async def chats_get(chat_id: str):
     store = get_store()
@@ -79,6 +94,7 @@ async def chats_get(chat_id: str):
     gallery.ensure_artifacts(store.resolve(chat_id, ref["model"]) for ref in store.models(chat_id)
                              if store.resolve(chat_id, ref["model"]).is_file())
     return {"chat": {**chat, "running": run_state.is_running(chat_id)}, "messages": messages, "models": models,
+            "build": build_link(store, chat),
             "usage": {**usage.usage_totals(messages), **usage.turn_stats(messages)}}
 
 
