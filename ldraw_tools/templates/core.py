@@ -93,6 +93,13 @@ def _identity(matrix):
     return all(abs(matrix[i][j] - (i == j)) < 1e-9 for i in range(3) for j in range(3))
 
 
+def _turned(matrix, turn):
+    """Matrix of a part turned a quarter about its own up axis (the library stores a 1x2 brick along x, the plan needs z)."""
+    t = 1 if turn > 0 else -1
+    local = [[0, 0, t], [0, 1, 0], [-t, 0, 0]]
+    return [[sum(matrix[i][k] * local[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+
+
 def build(data, params):
     """(plan, notes) of the template at these parameters; pure function of (data, params)."""
     leaves = {l['id']: copy.deepcopy(l) for l in data['leaves']}
@@ -122,8 +129,10 @@ def build(data, params):
             for lid, leaf in leaves.items():
                 move = step * STUD if lid in shift else 0.0
                 if lid in extend:
-                    code, move = extend[lid][str(step)]         # the longer/shorter part, and where its origin goes
+                    code, move, *turn = extend[lid][str(step)]  # the longer/shorter part, where its origin goes, quarter turn
                     leaf['ref'] = code + '.dat'
+                    if turn and turn[0]:
+                        leaf['matrix'] = _turned(leaf['matrix'], turn[0])
                 leaf['at'][index] += move - step * STUD / 2      # re-centre: the model grows evenly both ways
     # 4. courses: repeat (or drop) the slice between two bricks courses
     delta = int(params.get('courses_delta', 0))

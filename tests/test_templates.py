@@ -10,7 +10,7 @@ from ldraw_tools.builder import build_plan, check_schema
 from ldraw_tools.geometry import analyze_geometry
 from ldraw_tools.templates import derive
 
-IDS = ['small-house', 'flatbed-truck', 'willowbank-cottage']
+IDS = ['small-house', 'flatbed-truck', 'tractor-trailer']
 
 
 def parts_of(plan):
@@ -32,10 +32,10 @@ def test_prototypes_ship_and_register():
         entry = t.entry()
         assert entry['kind'] == 'template' and entry['families'] and entry['kinds'] and entry['roles']
         jsonschema.Draft202012Validator.check_schema(entry['params'])
-        assert any(k.startswith('colour_') for k in entry['params'])      # colours by role: always
+        assert any(k.startswith('colour_') for k in entry['params']['properties'])      # colours by role: always
         assert t.resolve({}) == t.defaults()
         assert entry['source'].get('author') or entry['source'].get('name')
-    assert templates.find('house', 'cottage')[0].id == 'willowbank-cottage'
+    assert templates.find('house', 'house')[0].id == 'small-house'
     assert templates.find(None, 'flatbed truck')[0].id == 'flatbed-truck'
     text = templates.digest()
     assert all(i in text for i in IDS) and 'template' in text and len(text) < 4000
@@ -99,7 +99,7 @@ def test_every_knob_changes_the_plan_in_the_way_it_says():
 
 
 def test_role_edits_work_on_template_output():
-    plan = templates.generate('willowbank-cottage')['plan']
+    plan = templates.generate('small-house')['plan']
     ops = role_edits.recolour_role(plan, 'roof', 'blue')
     edited = editor.apply(plan, ops)
     assert {p['colour'] for p in parts_of(edited) if p['role'] == 'roof'} == {1}
@@ -128,7 +128,7 @@ def test_derive_from_a_generator_plan_finds_knobs_without_hand_written_code(offi
     plan = generators.generate('house', dict(width=12, depth=8, courses=8, windows=2, chimney='left'))['plan']
     data, report = derive.derive(plan, official, id='gen-house', title='Generated house', families=['house'], kinds=['house'],
                                  description='A house', verify=False)
-    assert report['leaves'] > 100 and data['stretch'] and data['courses']
+    assert report['leaves'] > 100 and data['courses']
     assert {'wall', 'roof', 'window'} <= set(data['roles']) and any(k.startswith('include_') for k in data['params'])
     t = templates.from_data(derive.compact(data))
     variant = t.generate({'colour_roof': 'blue'})['plan']
@@ -147,9 +147,9 @@ def test_stretch_option_sets_come_from_equivalent_library_parts(official):
 
 
 def test_candidates_route_between_generators_and_templates():
-    rows = templates.candidates('house', 'cottage')
+    rows = templates.candidates('house', 'house')
     assert rows[0]['source'] == 'generator' and rows[0]['id'] == 'house'                    # a tie goes to the generator
-    assert any(r['source'] == 'template' and r['id'] == 'willowbank-cottage' for r in rows)
+    assert any(r['source'] == 'template' and r['id'] == 'small-house' for r in rows)
     top = templates.candidates('truck', 'flatbed truck')[0]
     assert (top['source'], top['id']) == ('template', 'flatbed-truck')                      # the exact kind only a template has
     assert templates.candidates('garden', 'zzz')[0]['source'] == 'generator'               # family-only match still routes

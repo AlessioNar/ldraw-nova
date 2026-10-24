@@ -123,14 +123,22 @@ class PartFacts:
     def __init__(self, parts):
         self.parts, self._cache = parts, {}
 
+    def _description(self, code):
+        try:
+            return (self.parts.description_for(code) or '').strip()
+        except Exception:  # noqa: BLE001 - an unreadable part just has no description
+            return ''
+
     def get(self, ref):
         code = ref.casefold().replace('\\', '/').removesuffix('.dat').split('/')[-1]
         hit = self._cache.get(code)
         if hit is None:
-            try:
-                desc = (self.parts.description_for(code) or '').strip()
-            except Exception:  # noqa: BLE001 - an unreadable part just has no description
-                desc = ''
+            desc = self._description(code)
+            for _ in range(3):        # '~Moved to 3023b': the description (and so the family) is the target's
+                moved = re.match(r'~Moved to (\S+)', desc)
+                if not moved:
+                    break
+                desc = self._description(moved.group(1).casefold().removesuffix('.dat')) or desc
             try:
                 box = self.parts.bounding_box(code)
                 bounds = np.array([[box.min.x, box.min.y, box.min.z], [box.max.x, box.max.y, box.max.z]], dtype=float)

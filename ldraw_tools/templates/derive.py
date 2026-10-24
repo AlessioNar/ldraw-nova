@@ -28,6 +28,8 @@ OPTIONAL_ROLES = ('detail', 'engine', 'porch', 'chimney')
 SLICE_ROLES = {'wall', 'body', 'structure'}
 CLEAN_CODE = re.compile(r'^\d+[a-z]?$')
 
+TURNABLE = {'Brick N x M', 'Plate N x M', 'Tile N x M', 'Tile N x M with Groove'}
+
 # Equivalent sets: same footprint and height, different surface. Each pair is verified against the library's boxes.
 SWAP_CANDIDATES = {
     'brick_1x2': ['3004', '2877', '98283', '3065'],     # plain, grille, embossed bricks, clear
@@ -74,24 +76,43 @@ def _same(a, b, tol=0.6):
     return abs(a - b) <= tol
 
 
+def _rotated(box, turn):
+    """Local box of a part turned a quarter about the up axis (turn = 0, +1 or -1)."""
+    (x0, y0, z0), (x1, y1, z1) = box
+    if turn == 0:
+        return np.array([[x0, y0, z0], [x1, y1, z1]], dtype=float)
+    if turn > 0:         # x' = z, z' = -x
+        return np.array([[z0, y0, -x1], [z1, y1, -x0]], dtype=float)
+    return np.array([[-z1, y0, x0], [-z0, y1, x1]], dtype=float)           # x' = -z, z' = x
+
+
 def candidate_for(fam, facts, leaf_code, axis_j, delta_studs):
-    """Library part equal to leaf_code but `delta_studs` longer along local axis j (0 = x, 2 = z): code and new box."""
+    """Library part equal to leaf_code but `delta_studs` longer along local axis j (0 = x, 2 = z): (code, box, turn).
+
+    `turn` is 0 when the part is used as it is; +1/-1 when it must be turned a quarter about the up axis (a 1x1 brick
+    that is stretched along z becomes a 1x2 brick lying along z, which the library stores along x). `box` is the
+    candidate's box in the frame it will have in the plan.
+    """
     desc = facts.get(leaf_code + '.dat')['desc']
     base = _box(facts, leaf_code)
     options = []
+    turnable = family_key(desc) in TURNABLE        # a slope or a window has a front: only plain flat parts may be turned
     for code in fam.members(desc):
         if not CLEAN_CODE.match(code) and code != leaf_code:
             continue
-        box = _box(facts, code)
+        raw = _box(facts, code)
         other = [i for i in range(3) if i != axis_j]
-        if not all(_same(box[0][i], base[0][i]) and _same(box[1][i], base[1][i]) for i in other):
-            continue
-        if _same((box[1][axis_j] - box[0][axis_j]) - (base[1][axis_j] - base[0][axis_j]), delta_studs * STUD):
-            options.append((code != leaf_code, len(code), code, box))
+        for turn in ((0, 1, -1) if turnable else (0,)):
+            box = _rotated(raw, turn)
+            if not all(_same(box[0][i], base[0][i]) and _same(box[1][i], base[1][i]) for i in other):
+                continue
+            if _same((box[1][axis_j] - box[0][axis_j]) - (base[1][axis_j] - base[0][axis_j]), delta_studs * STUD):
+                options.append((turn != 0, code != leaf_code, len(code), code, turn, box))
+                break
     if not options:
         return None
-    options.sort()
-    return options[0][2], options[0][3]
+    options.sort(key=lambda o: o[:4])
+    return options[0][3], options[0][5], options[0][4]
 
 
 # ------------------------------------------------------------------------------------------------ flattening
@@ -156,16 +177,16 @@ def _classify_cut(leaves, axis, cut, fam, facts, skip=()):
             found = candidate_for(fam, facts, code, j, d)
             if found is None:
                 continue
-            new_code, box = found
+            new_code, box, turn = found
             # keep the min edge of the part fixed in world space, whatever the part's local origin is
             dpos = (base[0][j] - box[0][j]) if sign > 0 else (box[1][j] - base[1][j])
-            options[d] = (new_code, round(float(dpos), 4))
+            options[d] = (new_code, round(float(dpos), 4), turn)
         allowed = set(options) if allowed is None else allowed & set(options)
         if not allowed:
             return None
         extend[leaf['id']] = options
     total = left + len(shift) + len(extend)
-    if len(extend) < 2 or min(left, len(shift)) < max(2, 0.15 * total) or not allowed:
+    if len(extend) < 1 or min(left, len(shift)) < max(2, 0.15 * total) or not allowed:
         return None          # a cut at the model's edge would only lengthen a few loose parts
     extend = {k: {str(d): list(v[d]) for d in sorted(allowed)} for k, v in extend.items()}
     return extend, shift, sorted(allowed)
@@ -322,12 +343,17 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
             cand = dict(cut=cut, extend=extend, shift=shift, delta=allowed)
             verdicts, ok_all = {}, True
             if verify:
-                for d in sorted({allowed[0], allowed[-1], *(x for x in allowed if x in (-2, 2))}):
-                    ok, info = _ok(dict(data, stretch={axis: _spec([cand])}), {param_name[axis]: d}, parts, baseline)
-                    verdicts[d] = info
-                    if not ok:
-                        ok_all = False
-                        break
+                kept = []
+                for side in ([d for d in allowed if d > 0], [d for d in allowed if d < 0]):
+                    for d in sorted(side, key=abs, reverse=True)[:4]:      # the longest size that still builds clean
+                        ok, info = _ok(dict(data, stretch={axis: _spec([dict(cand, delta=allowed)])}), {param_name[axis]: d}, parts, baseline)
+                        verdicts[d] = info
+                        if ok:
+                            kept += [x for x in side if abs(x) <= abs(d)]
+                            break
+                allowed = sorted(kept)
+                cand['delta'] = allowed
+                ok_all = bool(allowed)
             tried.append(dict(cut=cut, deltas=allowed, ok=ok_all, checks={str(k): v for k, v in verdicts.items()}))
             if ok_all:
                 accepted.append(cand)
@@ -355,12 +381,20 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
         spec = dict(cut=cut, height=COURSE, slice=ids, delta=list(range(COURSE_RANGE[0], COURSE_RANGE[1] + 1)))
         trial = dict(data, courses=spec)
         verdicts, ok_all = {}, True
-        for d in ((-1, 1, COURSE_RANGE[1]) if verify else ()):
+        for d in ((-1, 1) if verify else ()):
             ok, info = _ok(trial, {'courses_delta': d}, parts, baseline)
             verdicts[d] = info
             if not ok:
                 ok_all = False
                 break
+        if ok_all and verify:                                 # the tallest size that still builds clean
+            top = 1
+            for d in range(COURSE_RANGE[1], 1, -1):
+                ok, info = _ok(trial, {'courses_delta': d}, parts, baseline)
+                if ok:
+                    top, verdicts[d] = d, info
+                    break
+            spec['delta'] = [d for d in spec['delta'] if d <= top]
         if ok_all:
             data['courses'] = spec
             report['verified']['courses'] = dict(cut=cut, slice=len(ids), checks={str(k): v for k, v in verdicts.items()})

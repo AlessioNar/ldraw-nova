@@ -1,0 +1,8 @@
+[
+ {"id": "small-house", "src": "544-1_House.mpd", "title": "Small house on baseplate (set 544)", "family": "house", "kind": "house",
+  "description": "A simple red-brick house with white windows and a hinged roof on a green baseplate, derived from reference set 544."},
+ {"id": "flatbed-truck", "src": "4915-1_Flat-Bed.mpd", "title": "Flatbed truck (set 4915)", "family": "truck", "kind": "flatbed truck",
+  "description": "A small yellow construction truck with a cab and a flat bed, derived from reference set 4915."},
+ {"id": "tractor-trailer", "src": "4096-1_Tractor-and-Trailer.mpd", "title": "Tractor and trailer (set 4096)", "family": "tractor", "kind": "tractor",
+  "description": "A yellow tractor pulling a trailer, derived from reference set 4096."}
+]
