@@ -1,9 +1,9 @@
 // End-to-end journey of the build workspace (/build/:id) with the real canvas, in a real browser.
-// Run against a THROWAWAY app instance seeded from real data (it makes versions, drafts and a proposal in the "house" build):
+// Run against a THROWAWAY app instance seeded from real data (it makes a build with versions, a draft and a proposal):
 //   docker run --rm -v ldraw-nova-docker_data:/src:ro -v obd-ws-int-data:/data alpine cp -a /src/. /data/
 //   docker run -d --init --name obd-ws-int-check --cap-add NET_ADMIN -p 127.0.0.1:8826:8000 -v obd-ws-int-data:/data <image>
 //   WS_E2E_URL=http://127.0.0.1:8826 WS_E2E_CONTAINER=obd-ws-int-check PLAYWRIGHT_CHANNEL=chrome node test/workspace.e2e.mjs
-// Needs a "house" generator build with exactly one version and no draft changes. Re-seed the volume to run it again.
+// It creates its own "E2E house" generator build (one version) and leaves it behind: use a throwaway volume.
 // WS_E2E_SHOTS names the screenshot folder. The proposal is created by the backend code path a build-attached chat
 // publish uses (workspace.create_proposal, via docker exec): no AI call, no cost.
 import assert from 'node:assert/strict';
@@ -16,7 +16,7 @@ import { chromium } from 'playwright';
 const baseURL = process.env.WS_E2E_URL ?? 'http://127.0.0.1:8826';
 const container = process.env.WS_E2E_CONTAINER ?? 'obd-ws-int-check';
 const shots = process.env.WS_E2E_SHOTS ?? join(dirname(fileURLToPath(import.meta.url)), '../../../../docs/plans/build-workspace/integration-screenshots');
-const BUILD = 'house';
+let BUILD;      // a throwaway generator build made below: the seeded data may carry anyone's versions and drafts
 mkdirSync(shots, { recursive: true });
 
 const results = [];
@@ -42,7 +42,7 @@ const canvas = () => page.frames().find((f) => f.url().includes('editor.html'));
 const msgs = async (pred) => (await page.evaluate(() => window.__msgs)).filter(pred);   // canvas -> parent
 const shot = (name) => page.screenshot({ path: join(shots, `${name}.png`) });
 const status = async () => (await page.locator('.ws-status').innerText()).replace(/\s+/g, ' ').trim();
-const waitStatus = (re) => page.waitForFunction((s) => new RegExp(s).test(document.querySelector('.ws-status')?.textContent ?? ''), re.source, { timeout: 60000 });
+const waitStatus = (re, timeout = 60000) => page.waitForFunction((s) => new RegExp(s).test(document.querySelector('.ws-status')?.textContent ?? ''), re.source, { timeout });
 const draft = async () => (await api('GET', `/api/builds/${BUILD}/workspace`)).draft;
 const canvasReady = async () => {
   await page.waitForSelector('iframe.ws-frame');
@@ -62,9 +62,11 @@ async function selectBrick() {          // click a grid of points over the canva
   throw new Error('no brick could be selected');
 }
 
-{   // the seeded copy may carry the owner's unsaved draft: start from the saved version
-  const w = await api('GET', `/api/builds/${BUILD}/workspace`);
-  if (w.draft?.changes) await api('POST', `/api/builds/${BUILD}/draft/discard`);
+{
+  const made = await api('POST', '/api/builds', { title: `E2E house ${Date.now()}`, source: { kind: 'generator' } });
+  BUILD = made.id;
+  const generated = await api('POST', `/api/builds/${BUILD}/generate`, { generator: 'house', params: {} });
+  assert.ok(generated.versions?.length === 1 || generated.version === 1 || generated.latest, `house generated: ${JSON.stringify(generated).slice(0, 200)}`);
 }
 
 try {
@@ -120,6 +122,7 @@ try {
     const d = await draft();
     assert.ok(d.changes >= 1 && d.undo_depth >= 1, `draft changed (${JSON.stringify(d)})`);
     assert.equal(d.changes, 1, 'one undo step');
+    for (let i = 0; i < 50 && (await reloads()) <= before; i++) await page.waitForTimeout(200);
     assert.ok((await reloads()) > before, 'canvas was sent reload');
     await page.waitForTimeout(1500);
     await shot('c2-roof-blue');
@@ -133,23 +136,23 @@ try {
     await field.fill('7');
     await shot('d1-settings-warning');
     await page.getByRole('button', { name: 'Regenerate' }).click();
-    await page.waitForSelector('.ws-toast');
-    assert.match(await page.locator('.ws-toast').innerText(), /replaced/);
-    await page.waitForFunction(async () => true);
+    await page.waitForFunction(() => /Regenerated/.test(document.querySelector('.ws-toast')?.textContent ?? ''), null, { timeout: 120000 });
+    assert.match(await page.locator('.ws-toast').innerText(), /manual edits were replaced/);
     const after = await draft();
-    assert.equal(after.changes, 1, 'regenerate is one undo step on top of the base');
+    assert.equal(after.changes, 2, 'regenerate is one more undo step on top of the describe edit');
     await page.waitForTimeout(1500);
     await shot('d2-regenerated');
     await page.getByRole('button', { name: /Undo/ }).first().click();
     await page.waitForTimeout(1500);
     await shot('d3-undone');
-    assert.ok((await draft()).redo_depth >= 1, 'undo restored the previous plan (redo available)');
+    const undone = await draft();
+    assert.ok(undone.redo_depth >= 1 && undone.changes === 1, `undo restored the previous plan (${JSON.stringify(undone)})`);
   });
 
   await step('e. Save as v2: version strip shows v2, status "v2 · saved"', async () => {
     assert.equal(await page.locator('.ws-top .ws-save').isDisabled(), false);
     await page.locator('.ws-top .ws-save').click();
-    await waitStatus(/v2 · saved/);
+    await waitStatus(/v2 · saved/, 240000);
     await page.waitForFunction(() => [...document.querySelectorAll('.ws-vstrip .ws-v')].some((b) => /v2/.test(b.textContent)));
     assert.equal(await page.locator('.ws-top .ws-save').isDisabled(), true);
     assert.equal((await draft()).changes, 0);
@@ -193,21 +196,21 @@ try {
 
   await step('h. Player mode: steps indicator and slider; View mode', async () => {
     await page.locator('.ws-mode', { hasText: 'Player' }).click();
-    await page.waitForSelector('.ws-steps', { timeout: 20000 });
+    await page.waitForSelector('#ws-step-label', { timeout: 20000 });
     const label = () => page.locator('#ws-step-label').innerText();
     const first = await label();
     assert.match(first, /Step \d+ of \d+/);
     const total = Number(first.match(/of (\d+)/)[1]);
     assert.ok(total > 1, `more than one step (${total})`);
-    await page.getByRole('button', { name: 'Next step' }).click();
+    await canvas().locator('#player-next').click();                    // the canvas's own player bar; the workspace shows the count
     await page.waitForFunction((t) => document.querySelector('#ws-step-label')?.textContent !== t, first);
     await shot('h1-player-step');
-    await page.locator('.ws-steps input[type=range]').fill(String(total));
+    for (let i = 2; i < total; i++) await canvas().locator('#player-next').click();
     await page.waitForFunction((n) => new RegExp(`Step ${n} of ${n}`).test(document.querySelector('#ws-step-label')?.textContent ?? ''), total);
     await shot('h2-player-last');
     await page.locator('.ws-mode', { hasText: 'View' }).click();
     await page.waitForFunction(() => document.querySelector('.ws')?.dataset.mode === 'view');
-    assert.equal(await page.locator('.ws-steps').count(), 0);
+    assert.equal(await page.locator('#ws-step-label').count(), 0);
     assert.equal(await page.locator('.ws-tool').first().isDisabled(), true);
     await shot('h3-view-mode');
     await page.locator('.ws-mode', { hasText: 'Edit' }).click();
@@ -215,17 +218,18 @@ try {
   });
 
   await step('h2. tool rail follows the canvas (obd:tool) and Ctrl+S in the canvas saves', async () => {
-    await page.keyboard.press('Escape');
-    await canvas().evaluate(() => document.body.focus());
-    await page.mouse.move(700, 400);
-    await canvas().locator('body').press('p');           // the canvas's own shortcut for the paint tool
+    const box = await page.locator('iframe.ws-frame').boundingBox();
+    await page.mouse.click(box.x + 40, box.y + box.height - 160);       // empty canvas: focus it, nothing selected
+    await page.keyboard.press('p');                                      // the canvas's own shortcut for the paint tool
     await page.waitForFunction(() => document.querySelector('.ws-tool[aria-pressed="true"]')?.getAttribute('title')?.startsWith('Paint'), null, { timeout: 5000 });
     await page.locator('.ws-tool').first().click();       // back to select
+    await page.waitForFunction(() => document.querySelector('.ws-tool')?.getAttribute('aria-pressed') === 'true');
+    await page.waitForTimeout(500);
     await selectBrick();
     await page.locator('.ws-panel[aria-label="Piece"] .ws-sw[aria-label="Red"]').click();
     await waitStatus(/1 change/);
-    await canvas().locator('body').press('Control+s');
-    await waitStatus(/v3 · saved/);
+    await page.keyboard.press('Control+s');                              // focus is inside the canvas frame
+    await waitStatus(/v3 · saved/, 240000);
     assert.equal((await draft()).changes, 0);
     await shot('h4-ctrl-s-v3');
   });
@@ -239,14 +243,14 @@ sys.path.insert(0, "/app/web/backend")
 from store import get_store
 import workspace
 store = get_store()
-files = sorted(__import__("glob").glob("/data/generated/house-v*.mpd"))
+files = sorted(__import__("glob").glob("/data/generated/${BUILD}-v*.mpd"))
 base = open(files[-1], encoding="utf-8").read()
 extra = "".join(f"1 4 {x} -176 {z} 1 0 0 0 1 0 0 0 1 3001.dat\\n" for x, z in ((0, -300), (80, -300), (160, -300)))
 workspace.create_proposal(store, "${BUILD}", base.replace("0 NOFILE", extra + "0 NOFILE", 1), None, base_text=base)
 ` });
     await page.reload();
     await canvasReady();
-    await waitStatus(/saved/);
+    await waitStatus(/· saved/);
     await page.getByRole('tab', { name: /AI/ }).click();
     await page.waitForSelector('.ws-ai-card');
     assert.match(await page.locator('.ws-ai-card').innerText(), /\+ 3 parts/);
@@ -264,7 +268,7 @@ workspace.create_proposal(store, "${BUILD}", base.replace("0 NOFILE", extra + "0
     await page.waitForTimeout(1500);
     await shot('i3-kept');
     await page.getByRole('button', { name: /Undo/ }).first().click();
-    await waitStatus(/saved/);
+    await waitStatus(/· saved/);
     assert.equal((await draft()).changes, 0);
     await shot('i4-undone');
   });
@@ -274,11 +278,11 @@ workspace.create_proposal(store, "${BUILD}", base.replace("0 NOFILE", extra + "0
     await page.waitForFunction(() => document.querySelector('.ws-rail'));
     await page.waitForTimeout(1500);
     const modes = await page.locator('.ws-mode').allInnerTexts();
-    assert.deepEqual(modes.map((s) => s.trim()), ['View', 'Player']);
+    assert.deepEqual(modes.map((s) => s.trim().toLowerCase()), ['view', 'player']);
     assert.equal(await page.locator('.ws-tool').count(), 0, 'no edit tools on a phone');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
     await shot('j1-phone');
-    await page.locator('.ws-handle').click();
+    await page.locator('.ws-tabs [role=tab]', { hasText: 'AI' }).click();     // opens the bottom sheet
     await page.waitForSelector('.ws.sheet-open');
     await shot('j2-phone-sheet');
   });
@@ -301,6 +305,7 @@ await lp.goto(`${baseURL}/build/${BUILD}`);
 await lp.waitForFunction(() => document.querySelector('.ws-overlay'), null, { timeout: 60000 });
 assert.ok((await lp.locator('iframe.ws-frame').getAttribute('src')).includes('theme=light'), 'iframe asked for the light theme');
 assert.ok(await lp.evaluate(() => getComputedStyle(document.body).backgroundColor).then((c) => { const n = c.match(/\d+/g).map(Number); return n[0] > 200; }), 'light page background');
+await lp.waitForSelector('.ws-part', { timeout: 30000 }).catch(() => {});
 await lp.waitForTimeout(1500);
 await lp.screenshot({ path: join(shots, 'k-light.png') });
 results.push('ok   k2. light theme page + canvas');

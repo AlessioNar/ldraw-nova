@@ -82,18 +82,15 @@ export default function CanvasPane({ ws }: { ws: Workspace }) {
           <div className={`ws-overlay ws-tl${viewing ? " lower" : ""}`}>
             <button className="ws-icon-btn solid" title="Reset view (Home)" aria-label="Reset view" onClick={() => ws.send({ cmd: "focus" })}><Icon name="fit" /></button>
           </div>
-          {shownParts != null && <div className={`ws-overlay ws-tr${viewing ? " lower" : ""}`}><span className="ws-chip mono">{shownParts.toLocaleString()} parts</span></div>}
+          {shownParts != null && (
+            <div className={`ws-overlay ws-tr${viewing ? " lower" : ""}`}>
+              {ws.mode === "player" && ws.steps && ws.steps.total > 0 && <span className="ws-chip mono" id="ws-step-label" role="status">Step {ws.steps.current} of {ws.steps.total}</span>}
+              <span className="ws-chip mono">{shownParts.toLocaleString()} parts</span>
+            </div>
+          )}
         </>
       ) : null}
 
-      {ws.mode === "player" && ws.steps && ws.steps.total > 0 && (
-        <div className="ws-steps" role="group" aria-label="Build steps">
-          <button className="ws-icon-btn" aria-label="Previous step" disabled={ws.steps.current <= 1} onClick={() => ws.send({ cmd: "step", n: ws.steps!.current - 1 })}>&lsaquo;</button>
-          <input type="range" min={1} max={ws.steps.total} value={ws.steps.current} aria-label="Step" onChange={(e) => ws.send({ cmd: "step", n: Number(e.target.value) })} />
-          <button className="ws-icon-btn" aria-label="Next step" disabled={ws.steps.current >= ws.steps.total} onClick={() => ws.send({ cmd: "step", n: ws.steps!.current + 1 })}>&rsaquo;</button>
-          <span className="mono" id="ws-step-label">Step {ws.steps.current} of {ws.steps.total}</span>
-        </div>
-      )}
       {lead && !viewing && (
         <div className="ws-selchip" role="status">
           {ws.selection.length > 1
