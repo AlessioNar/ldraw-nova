@@ -398,9 +398,13 @@ def ai_estimate() -> dict:
 # ---------------------------------------------------------------- routing
 
 def _clarify(spec: dict) -> dict:
-    asked = next((a.get("question") for a in spec.get("ambiguities") or [] if a.get("question")), None)
-    return {"route": "clarify",
-            "question": asked or 'What would you like to build? For example "a small red car" or "a cottage 10 studs wide".'}
+    ambiguity = next((a for a in spec.get("ambiguities") or [] if a.get("question")), None) or {}
+    asked = ambiguity.get("question")
+    out = {"route": "clarify",
+           "question": asked or 'What would you like to build? For example "a small red car" or "a cottage 10 studs wide".'}
+    if ambiguity.get("options"):
+        out["choices"] = [str(o) for o in ambiguity["options"][:4]]
+    return out
 
 
 def _needs_ai(spec: dict, reason: str) -> dict:
