@@ -121,13 +121,14 @@ def _gable_wall(ctx, frame, u, v0, v1, y0, colour, tier):
         start += length
 
 
-def hip(ctx, rect, y_top, colour, role, tiers=0, label='hip roof'):
+def hip(ctx, rect, y_top, colour, role, tiers=0, label='hip roof', ring_only=False, finial=False):
     """Hip roof / pyramid on rect = (i0, j0, w, d): rings of slopes with double-convex corners."""
     i0, j0, w, d = rect
     T = max(1, (min(w, d) - 2) // 2)
     if tiers:
         T = min(T, tiers)
-    frame = Frame(i0, j0, w, d, True)
+    if ring_only:
+        T = 1              # a skirt: one ring of slopes round the edge, nothing over the middle
     for t in range(T):
         y0 = y_top + 3 * t
         a0, a1 = t, w - t                    # ring extents along x
@@ -154,14 +155,18 @@ def hip(ctx, rect, y_top, colour, role, tiers=0, label='hip roof'):
                     xc = col + (1.5 if yaw == 90 else .5)
                     ctx.canvas.put(catalog.SLOPE45[length], colour, role, i0 + xc, j0 + pos + length / 2, y0, yaw, label=label)
                     pos += length
+    if ring_only:
+        return dict(top=y_top + 3, inner=None)
     inner = (T, T, w - 2 * T, d - 2 * T)
-    frame = Frame(i0, j0, w, d, True)
     cells = [(i0 + i, j0 + j) for i in range(inner[0], inner[0] + inner[2]) for j in range(inner[1], inner[1] + inner[3])]
     y = y_top + 3 * T
     for (code, i, j, pw, pd) in tiling.rect_cover(cells, 'plate'):
         _put_cover(ctx, code, colour, role, i, j, pw, pd, y, 'ridge plate')
-    for (code, i, j, pw, pd) in tiling.rect_cover(cells, 'tile'):
+    spire = (i0 + inner[0] + inner[2] // 2 - (1 if inner[2] % 2 == 0 else 0), j0 + inner[1] + inner[3] // 2 - (1 if inner[3] % 2 == 0 else 0)) if finial else None
+    for (code, i, j, pw, pd) in tiling.rect_cover([c for c in cells if c != spire], 'tile'):
         _put_cover(ctx, code, colour, role, i, j, pw, pd, y + 1, 'ridge tile')
+    if spire:
+        ctx.canvas.put(catalog.ROUND_BRICK_1, colour, role, spire[0] + .5, spire[1] + .5, y + 1, 0, label='finial')
     return dict(top=y + 2, inner=inner)
 
 

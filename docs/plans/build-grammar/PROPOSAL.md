@@ -6,7 +6,7 @@ Status: prototype on branch `build-grammar`. Engine, ontology, six presets, part
 
 Today's generators are single hard-coded geometries with a few knobs. The grammar replaces that for buildings with one **ontology** ([ONTOLOGY.md](ONTOLOGY.md), [ontology.schema.json](ontology.schema.json)): Building → Footprint · Storeys · Walls · Openings · Corners · Roof · Details · Base. A configuration is a small JSON document; the engine (`ldraw_tools/grammar/`) turns it into a plan in the existing schema, deterministically, in 10-300 ms, with a `role` on every placement. The same config always gives the same plan, and it validates with the toolkit's own build and geometry analysis: no error diagnostics, one connected component.
 
-Six presets are six configurations of that one grammar, not six generators:
+Twenty presets are twenty configurations of that one grammar, not six generators:
 
 | preset | what changes | parts |
 |---|---|---|
@@ -16,6 +16,18 @@ Six presets are six configurations of that one grammar, not six generators:
 | two-storey townhouse | 12x12, hip roof, arched windows, cornice bands, balcony over the door | 369 |
 | tower | 8x8, 3 storeys, stone, arrow slits, barred gate, battlements | 198 |
 | castle keep | 20x20, double-thick stone walls, four 6x6 corner towers, battlements, gate | 1301 |
+
+**Fourteen more buildings, seven of them Asian-style**, are further presets of the same grammar (new knobs: `storeys.eaves` puts a small hip roof round every storey but the top, `roof.finial` caps a hip roof). All validate with one connected component.
+
+| Asian-style | general |
+|---|---|
+| pagoda (4 tiers), Japanese pagoda (3 tiers), temple hall, minka farmhouse, city gate tower, tea room, courtyard house (siheyuan) | barn, town hall, apartment block, courtyard fort, lighthouse, warehouse, manor house |
+
+![Asian-style presets](renders/gallery-asian.png)
+![General presets](renders/gallery-general.png)
+![Classic presets](renders/gallery-classic.png)
+
+Asian-style limits: roofs are straight hip slopes, not the upswept curved eaves of real pagodas and temples (no part gives that curve at this scale), there is no lattice, dougong bracketing or ridge ornament, and the courtyard house has a flat parapet roof rather than rows of pitched ones.
 
 Further knobs prove it is one grammar: an L-shaped hall, a courtyard building, round towers with cones (`variant-*` renders).
 
@@ -35,8 +47,8 @@ Rendering worked in this environment: LeoCAD (`apt install leocad`) under `xvfb-
 
 ## What is verified
 
-- `tests/test_grammar.py` (157 tests, no library needed): footprints, walls and bond, tiling, openings, roofs, towers, details, base, schema rules, determinism, parameter sweeps (about 60 cases, each must be one connected piece with a valid plan), parts-aware mode, natural language, registry, maps.
-- `tests/test_grammar_validation.py` (24 tests, needs the LDraw library): every preset and 13 sweeps through `build_plan` + `analyze_geometry` (no errors, one optimistic component), the parts-aware plan, the registry route, and every catalogue part's footprint and height against the library's real bounds.
+- `tests/test_grammar.py` (215 tests, no library needed): footprints, walls and bond, tiling, openings, roofs, towers, details, base, schema rules, determinism, parameter sweeps (about 60 cases, each must be one connected piece with a valid plan), parts-aware mode, natural language, registry, maps.
+- `tests/test_grammar_validation.py` (38 tests, needs the LDraw library): every one of the 20 presets and 13 sweeps through `build_plan` + `analyze_geometry` (no errors, one optimistic component), the parts-aware plan, the registry route, and every catalogue part's footprint and height against the library's real bounds.
 - A 356-case internal sweep (sizes 6-22 x 6-14, 1-3 storeys, three roofs, L/U/courtyard with thin and thick walls, square and round towers, every window and door kind, wall styles, every detail) found no collision and no loose part.
 - `tests/test_generators.py -k "not parameter_range_corners"` still passes with the new entry; the old house generator is untouched and still wins the words it owns (`house`, `cottage`, `shop`, `townhouse`). `building` takes the new ones (`castle`, `tower`, `keep`, `fort`...). Flipping the routing is a one-line change in `generators/building.py`'s kinds.
 

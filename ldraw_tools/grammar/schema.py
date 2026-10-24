@@ -63,6 +63,7 @@ SCHEMA = {
             setback=integer(0, 0, 3, 'Studs each upper storey steps in on every side (rect footprints)'),
             floors=flag(True, 'Fill the interior with floor plates (off = ring bands only)'),
             band_projection=integer(0, 0, 1, 'Studs the floor bands project as a cornice'),
+            eaves=flag(False, 'A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more'),
             band_colour=colour('white', 'Floor bands, floors and cornice')),
         'walls': group('Walls', 'Wall construction',
             style=choice('brick', ['brick', 'timber', 'stone'], 'brick; half-timber (posts and infill); stone (two-tone random bricks)'),
@@ -107,6 +108,7 @@ SCHEMA = {
             overhang=integer(1, 0, 1, 'Eave overhang in studs'),
             verge=integer(0, 0, 1, 'Gable-end overhang in studs'),
             tiers=integer(0, 0, 9, 'Slope courses; 0 = as steep as the depth allows'),
+            finial=flag(False, 'Hip roofs: a cone finial on the peak'),
             parapet=choice('none', ['none', 'plain', 'battlement'], 'Flat roofs: parapet or battlements'),
             merlon=integer(1, 1, 2, 'Battlement merlon width'),
             gap=integer(1, 1, 2, 'Battlement gap width'),
@@ -145,6 +147,9 @@ CONSTRAINTS = [
     ('porch-door', 'A porch needs a front door'),
     ('balcony-storeys', 'A balcony needs a door and at least 2 storeys'),
     ('parapet-flat', 'Parapets and battlements only exist on flat roofs and tower tops'),
+    ('eaves-setback', 'Eave roofs round storeys need each upper storey to step in by 1 or more'),
+    ('setback-fits', 'The top storey must stay at least 4 studs wide after all setbacks'),
+    ('eaves-rect', 'Eave roofs only go round rectangular storeys'),
     ('sign-shop', 'A fascia sign needs a door and a ground storey of 7 or more courses'),
 ]
 
@@ -217,6 +222,18 @@ def normalise(config):
     if fp['shape'] != 'rect' and st['setback']:
         st['setback'] = 0
         notes.append('setback ignored: only rectangular footprints step in (setback-rect)')
+    if st['eaves'] and fp['shape'] != 'rect':
+        st['eaves'] = False
+        notes.append('eaves removed: they only go round rectangular storeys (eaves-rect)')
+    if st['eaves'] and not st['band_projection']:
+        st['band_projection'] = 1
+        notes.append('cornice added under the eave roofs: the corner slopes clip onto the projecting band (eaves-setback)')
+    while st['setback'] and min(w, d) - 2 * st['setback'] * (st['count'] - 1) < 4 + 2 * t - 2:
+        st['setback'] -= 1
+        notes.append(f"setback reduced to {st['setback']}: the top storey would be narrower than 4 studs (setback-fits)")
+    if st['eaves'] and st['count'] > 1 and st['setback'] < 1:
+        st['setback'] = 1
+        notes.append('setback raised to 1: the eave roof of a storey needs room beside the storey above (eaves-setback)')
     if op['door'] != 'none' and st['courses'] < 6:
         st['courses'] = 6
         notes.append('courses raised to 6: the door is six courses tall (door-height)')

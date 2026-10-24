@@ -105,34 +105,59 @@ def cover_variants(cells):
                         yield out
 
 
+def _connected(lower, upper, support):
+    pieces = [(_footprint(e), 0) for e in lower] + [(_footprint(e), 1) for e in upper]
+    parent = list(range(len(pieces)))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    owner = {}
+    for k, (fp, layer) in enumerate(pieces):
+        for c in fp:
+            owner.setdefault((c, 1 - layer), []).append(k)
+    for k, (fp, layer) in enumerate(pieces):
+        for c in fp:
+            for other in owner.get((c, layer), ()):
+                parent[find(k)] = find(other)
+    if len({find(k) for k in range(len(pieces))}) != 1:
+        return False
+    return any(fp & support for fp, layer in pieces if layer == 0)
+
+
+def supported_cover(cells, support):
+    """One layer of plates over `cells` in which every plate touches a `support` cell (something is under it)."""
+    first = rect_cover(cells, 'plate')
+    if all(_footprint(e) & support for e in first):
+        return first
+    for variant in cover_variants(cells):
+        if all(_footprint(e) & support for e in variant):
+            return variant
+    return first
+
+
 def two_layers(cells, support, upper_cells=None):
-    """(lower, upper) plate covers of `cells` so that together they form one piece that touches `support` cells.
+    """(lower, upper) plate covers so that together they form one piece that touches `support` cells.
 
-    The lower layer is the plain cover; the upper layer is the first variant whose plates, with the lower ones
-    that they overlap, form a single connected group containing a plate on a support cell.
+    The lower layer is the plain cover (or, if no upper variant works, another variant of it); the upper layer is
+    the first variant whose plates, with the lower ones they overlap, form a single connected group.
     """
-    lower = rect_cover(cells, 'plate')
-    for upper in cover_variants(cells if upper_cells is None else upper_cells):
-        pieces = [(_footprint(e), 0) for e in lower] + [(_footprint(e), 1) for e in upper]
-        parent = list(range(len(pieces)))
-
-        def find(x):
-            while parent[x] != x:
-                parent[x] = parent[parent[x]]
-                x = parent[x]
-            return x
-        owner = {}
-        for k, (fp, layer) in enumerate(pieces):
-            for c in fp:
-                owner.setdefault((c, 1 - layer), []).append(k)
-        for k, (fp, layer) in enumerate(pieces):
-            for c in fp:
-                for other in owner.get((c, layer), ()):
-                    parent[find(k)] = find(other)
-        roots = {find(k) for k in range(len(pieces))}
-        if len(roots) == 1 and any(fp & support for fp, layer in pieces if layer == 0):
-            return lower, upper
-    return lower, rect_cover_t(cells if upper_cells is None else upper_cells)
+    upper_cells = cells if upper_cells is None else upper_cells
+    plain = rect_cover(cells, 'plate')
+    held = set(support) | set(upper_cells)
+    tried = 0
+    for lower in [plain] + list(cover_variants(cells)):
+        if any(not (_footprint(e) & held) for e in lower):
+            continue                       # a plate with nothing under it and nothing over it would float
+        tried += 1
+        if tried > 8:
+            break
+        for upper in cover_variants(upper_cells):
+            if _connected(lower, upper, support):
+                return lower, upper
+    return plain, rect_cover_t(upper_cells)
 
 
 def rect_cover_t(cells, kind='plate'):

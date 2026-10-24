@@ -237,6 +237,26 @@ def test_plain_parapet_closes_the_ring():
     assert {c for m in items(r, 'parapet') for c in m.cells} == footprint.Walls(footprint.rect(0, 0, 12, 8), 1).mass
 
 
+def test_eave_roofs_wrap_every_storey_but_the_top_and_need_room():
+    r = build({'footprint': {'width': 18, 'depth': 18}, 'storeys': {'count': 4, 'courses': 6, 'setback': 2, 'eaves': True},
+               'roof': {'style': 'hip', 'finial': True}})
+    skirts = {i.label for i in items(r, 'eave s')}
+    assert {'eave s0', 'eave s1', 'eave s2'} <= {l.replace(' corner', '') for l in skirts} and 'eave s3' not in skirts
+    assert items(r, 'finial') and r['stats']['components'] == 1
+    cfg, notes = schema.normalise({'storeys': {'count': 3, 'eaves': True}})
+    assert cfg['storeys']['setback'] >= 1 and cfg['storeys']['band_projection'] == 1 and notes
+    cfg, notes = schema.normalise({'footprint': {'width': 12, 'depth': 12}, 'storeys': {'count': 5, 'setback': 3}})
+    assert any('setback-fits' in n for n in notes) and cfg['storeys']['setback'] < 3
+
+
+def test_asian_presets_use_eaves_pillars_and_hip_roofs():
+    for name in ('pagoda', 'white-pagoda', 'gate-tower'):
+        assert PRESETS[name]['config']['storeys']['eaves'] and PRESETS[name]['config']['roof']['style'] == 'hip'
+    assert {p['group'] for p in PRESETS.values() if 'group' in p} == {'asian', 'general'}
+    assert len([n for n, p in PRESETS.items() if p.get('group') == 'asian']) >= 5
+    assert len(PRESETS) >= 20
+
+
 # ---------------------------------------------------------------- corners
 
 def test_corner_towers_one_per_selected_corner():

@@ -30,6 +30,8 @@ def build(config, inventory=None):
         openings.emit(ctx, st)
         structure.round_towers(ctx, st)
         structure.band(ctx, st)
+        if cfg['storeys']['eaves'] and st.kind == 'main' and st.index < cfg['storeys']['count'] - 1:
+            structure.eave_skirt(ctx, st)
         if st.index == 0:
             details.balcony(ctx)
     structure.main_top(ctx)

@@ -26,6 +26,7 @@ Storeys stacked on the footprint; each is wall courses plus a floor band.
 | `setback` | 0..3 | `0` | Studs each upper storey steps in on every side (rect footprints) |
 | `floors` | yes / no | `true` | Fill the interior with floor plates (off = ring bands only) |
 | `band_projection` | 0..1 | `0` | Studs the floor bands project as a cornice |
+| `eaves` | yes / no | `false` | A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more |
 | `band_colour` | colour name or code | `white` | Floor bands, floors and cornice |
 
 #### Walls  (`walls`)
@@ -93,6 +94,7 @@ Roof or top finish.
 | `overhang` | 0..1 | `1` | Eave overhang in studs |
 | `verge` | 0..1 | `0` | Gable-end overhang in studs |
 | `tiers` | 0..9 | `0` | Slope courses; 0 = as steep as the depth allows |
+| `finial` | yes / no | `false` | Hip roofs: a cone finial on the peak |
 | `parapet` | `none` / `plain` / `battlement` | `none` | Flat roofs: parapet or battlements |
 | `merlon` | 1..2 | `1` | Battlement merlon width |
 | `gap` | 1..2 | `1` | Battlement gap width |
@@ -144,4 +146,7 @@ Ground.
 | `porch-door` | A porch needs a front door |
 | `balcony-storeys` | A balcony needs a door and at least 2 storeys |
 | `parapet-flat` | Parapets and battlements only exist on flat roofs and tower tops |
+| `eaves-setback` | Eave roofs round storeys need each upper storey to step in by 1 or more |
+| `setback-fits` | The top storey must stay at least 4 studs wide after all setbacks |
+| `eaves-rect` | Eave roofs only go round rectangular storeys |
 | `sign-shop` | A fascia sign needs a door and a ground storey of 7 or more courses |

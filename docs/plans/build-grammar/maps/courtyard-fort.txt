@@ -1,0 +1,144 @@
+FRONT ELEVATION (top = roof)
+   RRRR                    RRRR   
+   RRRR                    RRRR   
+   RRRR                    RRRR   
+   RRRR                    RRRR   
+   RRRR                    RRRR   
+   RRRR                    RRRR   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTTW W W W W  W W W W WTTTT   
+   TTTTW W W W W  W W W W WTTTT   
+   TTTTW W W W W  W W W W WTTTT   
+   TTTTRRRRRRRRRRRRRRRRRRRRTTTT   
+   TTTTRRRRRRRRRRRRRRRRRRRRTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTttttttttttttttttttttTTTT   
+   TTTTttttttttttttttttttttTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTTttttttttDDDDttttttttTTTT   
+   TTTTttttttttDDDDttttttttTTTT   
+   TTTTtttttttt....ttttttttTTTT   
+..................................
+..................................
+
+PLAN at plate 5
+                                  
+                                  
+                                  
+   TTTT                    TTTT   
+   TTTTWWWWWWWWDDDDWWWWWWWWTTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+    W                        W    
+    W                        W    
+    W    WWWWWWWWWWWWWWWW    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    WWWWWWWWWWWWWWWW    W    
+    W                        W    
+    W                        W    
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTT                    TTTT   
+                                  
+                                  
+                                  
+
+PLAN at plate 28
+                                  
+                                  
+                                  
+   TTTT                    TTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+    W                        W    
+    W                        W    
+    W    WWWWWWWWWWWWWWWW    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    W              W    W    
+    W    WWWWWWWWWWWWWWWW    W    
+    W                        W    
+    W                        W    
+   TTTT                    TTTT   
+   TTTT                    TTTT   
+   TTTTWWWWWWWWWWWWWWWWWWWWTTTT   
+   TTTT                    TTTT   
+                                  
+                                  
+                                  

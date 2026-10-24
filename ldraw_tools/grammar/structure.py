@@ -105,7 +105,8 @@ def band(ctx, st):
     for (role, colour), cs in sorted(groups.items()):
         cs = _free(ctx, cs, y)
         if layered:
-            top = {c for c in cs if c in cells}
+            skirted = s_cfg['eaves'] and st.kind == 'main' and st.index < s_cfg['count'] - 1
+            top = set(cs) if skirted else {c for c in cs if c in cells}      # an eave roof sits on the cornice
             lower, upper_cover = tiling.two_layers(cs, mass & cs, top)
             for (code, i, j, w, d) in lower:
                 _put_cover(ctx, code, colour, role, i, j, w, d, y, f'band s{st.index}')
@@ -113,12 +114,19 @@ def band(ctx, st):
                 if all(ctx.canvas.free(i + a, j + b, y + 1) for a in range(w) for b in range(d)):
                     _put_cover(ctx, code, colour, role, i, j, w, d, y + 1, f'floor s{st.index}')
         else:
-            for (code, i, j, w, d) in tiling.rect_cover(cs, 'plate'):
+            for (code, i, j, w, d) in tiling.supported_cover(cs, mass):
                 _put_cover(ctx, code, colour, role, i, j, w, d, y, f'band s{st.index}')
     for (i0, j0, w, d) in ctx.tower_rects if st.blocked else []:
         for k in range(st.band_h):
             ctx.canvas.put(catalog.ROUND_PLATE_4, ctx.code(cfg['corners']['tower_colour']), 'tower', i0 + 2, j0 + 2, y + k, 0,
                            label='tower band')
+
+
+def eave_skirt(ctx, st):
+    """A one-tier hip skirt round a storey (pagoda, temple): slopes project one stud beyond the wall and rise toward it."""
+    x0, x1, z0, z1 = footprint.bbox(st.cells - st.blocked)
+    roofs.hip(ctx, (x0 - 1, z0 - 1, x1 - x0 + 2, z1 - z0 + 2), st.y_top, ctx.code(ctx.cfg['roof']['colour']), 'roof',
+              label=f'eave s{st.index}', ring_only=True)
 
 
 def _free(ctx, cells, y):
@@ -222,7 +230,8 @@ def main_top(ctx):
     if style == 'gable':
         roofs.gable(ctx, (x0, z0, x1 - x0, z1 - z0), y, st)
     elif style == 'hip':
-        roofs.hip(ctx, (x0, z0, x1 - x0, z1 - z0), y, ctx.code(cfg['roof']['colour']), 'roof', cfg['roof']['tiers'])
+        roofs.hip(ctx, (x0, z0, x1 - x0, z1 - z0), y, ctx.code(cfg['roof']['colour']), 'roof', cfg['roof']['tiers'],
+                  finial=cfg['roof']['finial'])
     elif style == 'flat' and cfg['roof']['parapet'] != 'none':
         r = cfg['roof']
         parapet(ctx, st, cells - st.tower_cells, y, ctx.code(r['crenel_colour']), 'wall', r['parapet_courses'],

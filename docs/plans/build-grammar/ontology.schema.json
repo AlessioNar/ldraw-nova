@@ -146,6 +146,11 @@
      "default": 0,
      "description": "Studs the floor bands project as a cornice"
     },
+    "eaves": {
+     "type": "boolean",
+     "default": false,
+     "description": "A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more"
+    },
     "band_colour": {
      "type": [
       "string",
@@ -163,6 +168,7 @@
     "setback": 0,
     "floors": true,
     "band_projection": 0,
+    "eaves": false,
     "band_colour": "white"
    }
   },
@@ -575,6 +581,11 @@
      "default": 0,
      "description": "Slope courses; 0 = as steep as the depth allows"
     },
+    "finial": {
+     "type": "boolean",
+     "default": false,
+     "description": "Hip roofs: a cone finial on the peak"
+    },
     "parapet": {
      "enum": [
       "none",
@@ -622,6 +633,7 @@
     "overhang": 1,
     "verge": 0,
     "tiers": 0,
+    "finial": false,
     "parapet": "none",
     "merlon": 1,
     "gap": 1,
