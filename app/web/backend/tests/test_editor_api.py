@@ -242,13 +242,13 @@ def test_edits_run_in_one_resident_process(client, chat):
     import build_worker
     if "def run_request" not in (settings.TOOLKIT_DIR / "ldraw_tools/commands/editor.py").read_text():
         pytest.skip("this toolkit has no editor worker op")
-    worker = build_worker.get_editor_worker()
-    before = worker.starts
+    build_worker._editor_worker = None
     open_editor(client, chat)
     assert apply_edits(client, chat, [{"op": "move", "id": "base", "position": [20, -24, 0]}], 1).status_code == 200
     assert client.post(f"/api/chats/{chat}/editor/undo", json={}).status_code == 200
     assert client.post(f"/api/chats/{chat}/editor/redo", json={}).status_code == 200
-    assert worker.alive and worker.starts - before <= 1                  # all four went through the same warm process
+    worker = build_worker._editor_worker
+    assert worker.alive and worker.starts == 1                           # all four went through the same warm process
 
 
 def test_a_toolkit_without_the_editor_op_falls_back_to_the_cli(client, chat, monkeypatch):

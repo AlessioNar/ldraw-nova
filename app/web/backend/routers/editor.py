@@ -6,9 +6,10 @@ The plan is the source of truth and lives in the chat's work folder:
     output/editor/state.json    revision, undo/redo history and the plan's used-piece rows
     output/editor/preview.mpd   the last successfully rebuilt MPD
 
-The backend never imports the toolkit: every change goes through
-`ldraw-agent editor ...` (sandboxed, like every other toolkit call), which
-applies the task-01 edit operations, enforces the inventory gate in "only"
+The backend never imports the toolkit: every change goes through the toolkit's
+`editor` action, run in a resident, warm toolkit process (build_worker's editor
+worker; one sandboxed `ldraw-agent editor ...` process per call is the fallback
+and what agents use). The action applies the task-01 edit operations, enforces the inventory gate in "only"
 mode, rebuilds the preview and commits the three files together — nothing is
 written when the rebuild fails. Requests are serialised per chat with a lock,
 and a stale base revision is a 409 that carries the current revision.
@@ -161,6 +162,9 @@ def _request(arguments: list[str]) -> dict:
 
 async def _run(store, chat_id: str, arguments: list[str]) -> dict:
     if EDITOR_WORKER:
+        work = store.work_dir(chat_id)           # the CLI path gets this from toolkit.workspace
+        work.mkdir(parents=True, exist_ok=True)
+        sandbox.give_to_agent(work)
         try:
             reply = await build_worker.get_editor_worker().request(_request(arguments), timeout=TIMEOUT)
         except build_worker.WorkerTimeout:

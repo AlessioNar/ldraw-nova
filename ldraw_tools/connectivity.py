@@ -93,23 +93,24 @@ def transform_dict(transform):
     return dict(position=transform[:3, 3].tolist(), matrix=transform[:3, :3].tolist())
 
 
-def moved_inspection(inspection, indices, delta):
+def moved_item(item, delta, connections=True):
+    """`item` after the rigid move `delta`; with `connections=False` the connectors are left where they were
+    (enough for bounds and body collisions, and far cheaper)."""
     position, matrix = Vector(*delta[:3, 3]), Matrix(delta[:3, :3].tolist())
-    moved = []
-    for item in inspection.occurrences:
-        if item.index not in indices:
-            moved.append(item)
-            continue
-        occurrence = replace(item.occurrence, position=position + matrix * item.occurrence.position,
-                             matrix=matrix * item.occurrence.matrix)
-        # Transform actual expanded points, not an already enlarged world AABB.
-        points = np.array([jsonable(p) for p in item.local.points])
-        points = points @ np.asarray(occurrence.matrix.rows).T + np.array(jsonable(occurrence.position))
-        moved.append(replace(item, attribution=replace(item.attribution, occurrence=occurrence),
-                             bounds=BoundingBox(Vector(*points.min(axis=0)), Vector(*points.max(axis=0))),
-                             connections=tuple(f.transformed(position=position, matrix=matrix, inherit=False)
-                                               for f in item.connections)))
-    return replace(inspection, occurrences=tuple(moved))
+    occurrence = replace(item.occurrence, position=position + matrix * item.occurrence.position,
+                         matrix=matrix * item.occurrence.matrix)
+    # Transform actual expanded points, not an already enlarged world AABB.
+    points = fastbounds.vertices(item.local.points)
+    points = points @ np.asarray(occurrence.matrix.rows).T + np.array(jsonable(occurrence.position))
+    return replace(item, attribution=replace(item.attribution, occurrence=occurrence),
+                   bounds=BoundingBox(Vector(*points.min(axis=0)), Vector(*points.max(axis=0))),
+                   connections=tuple(f.transformed(position=position, matrix=matrix, inherit=False)
+                                     for f in item.connections) if connections else item.connections)
+
+
+def moved_inspection(inspection, indices, delta):
+    return replace(inspection, occurrences=tuple(
+        moved_item(item, delta) if item.index in indices else item for item in inspection.occurrences))
 
 
 NEAR_MARGIN = 40.0     # LDU around a moved part inside which other placements can still touch or collide with it

@@ -6,7 +6,9 @@ through the same check_schema + build_plan path the agent uses.
 """
 from __future__ import annotations
 
+import collections
 import copy
+import hashlib
 import json
 import math
 import re
@@ -346,7 +348,37 @@ def _spelled(values):
     return [_clean(float(format_ldraw_number(v))) for v in values]
 
 
+_SNAPS = collections.OrderedDict()      # (digest of plan and edit, flags) -> (parts, section, step, index, snapped entry)
+MAX_REMEMBERED_SNAPS = 16
+
+
 def _apply_snap(plan, edit, parts):
+    """Snap the entry; a snap computed a moment ago for this very plan and edit is not computed again.
+
+    `run_editor` applies a batch twice (once to derive its inverse, once for the plan), and the second snap of a
+    batch is the same question as the first.
+    """
+    from . import builder, connectivity
+    try:
+        key = (hashlib.blake2b(json.dumps([plan, edit], sort_keys=True).encode(), digest_size=16).digest(),
+               builder.CULL_SNAP_PREVIEW, connectivity.LOCAL_SNAP_CHECKS)
+    except (TypeError, ValueError):
+        key = None
+    found = _SNAPS.get(key) if key is not None else None
+    if found is not None and found[0] is parts:
+        _, si, ti, ei, baked = found
+        plan["sections"][si]["steps"][ti][ei] = copy.deepcopy(baked)
+        return
+    si, ti, ei, baked = _snapped(plan, edit, parts)
+    plan["sections"][si]["steps"][ti][ei] = baked
+    if key is not None:
+        _SNAPS[key] = (parts, si, ti, ei, copy.deepcopy(baked))
+        while len(_SNAPS) > MAX_REMEMBERED_SNAPS:
+            _SNAPS.popitem(last=False)
+
+
+def _snapped(plan, edit, parts):
+    """(section, step, index, entry) of the snapped placement; the plan itself is not changed."""
     si, ti, ei = _locate(plan, edit)
     section = plan["sections"][si]
     entry = section["steps"][ti][ei]
@@ -377,7 +409,7 @@ def _apply_snap(plan, edit, parts):
         baked["role"] = entry["role"]
     if not np.allclose(matrix, np.eye(3), atol=1e-9):
         baked["matrix"] = matrix
-    section["steps"][ti][ei] = baked
+    return si, ti, ei, baked
 
 
 def apply(plan, edits, parts=None):
@@ -451,9 +483,12 @@ def rebuild(plan, parts):
     """
     from . import incremental
     from .catalog import resolve_plan
-    check_schema(plan)
-    shape = incremental.fingerprint(plan)
-    known = incremental.known_text(shape)
+    try:
+        shape = incremental.fingerprint(plan)     # a plan known from before has passed the schema; build_plan checks the rest
+    except (KeyError, TypeError, AttributeError, ValueError):
+        check_schema(plan)                        # not shaped like a plan: the schema says why
+        raise
+    known = incremental.known_text(shape, parts)
     if known is not None:
         return known
     try:
@@ -465,7 +500,7 @@ def rebuild(plan, parts):
         errors = [d for d in diagnostics if d["severity"] == "error"]
         if errors:
             raise ValueError("Rebuild failed validation: " + "; ".join(d["message"] for d in errors[:3]))
-    incremental.remember(shape, text)
+    incremental.remember(shape, text, parts)
     return text
 
 

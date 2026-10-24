@@ -25,13 +25,13 @@ from dataclasses import replace
 from itertools import chain
 
 import numpy as np
-from ldraw import Model
+from ldraw import Matrix, Model, Vector
 from ldraw.inspection import inspect_model
 
 from .collision import collision_pairs
 from .common import jsonable
 from .connection_adapter import connection_contacts, query_frames
-from .connectivity import moved_inspection, pose, transform_dict
+from .connectivity import moved_item, pose, transform_dict
 from .document import physical_context
 from .geometry import profiles
 from .snapindex import _move
@@ -123,9 +123,10 @@ def _nearest(preview, parts, moving, support, near, instance_limit, hood):
     # What touches the fixed part decides which of its connectors are occupied.
     around = [scene.get(i) for i in scene.near(fixed.bounds) if i not in (m, f)]
     occupied = set()
-    for contact in connection_contacts(scene.inspection([fixed, *around])):
-        occupied.update(((contact.first_occurrence.index, contact.first.feature_id),
-                         (contact.second_occurrence.index, contact.second.feature_id)))
+    for neighbour in around:      # only contacts with the fixed part matter, so only those pairs are searched
+        for contact in connection_contacts(scene.inspection([fixed, neighbour])):
+            occupied.update(((contact.first_occurrence.index, contact.first.feature_id),
+                             (contact.second_occurrence.index, contact.second.feature_id)))
 
     selection = scene.inspection([subject, fixed])
     ordinary = replace(selection, occurrences=tuple(replace(o, connections=tuple(
@@ -155,34 +156,52 @@ def _nearest(preview, parts, moving, support, near, instance_limit, hood):
 
     regular = profiles()
 
-    def examine(candidate, new_world, delta, local):
-        """The candidate's entry in snap_report's list, or None when snap_report would drop it."""
-        moved = moved_inspection(scene.inspection([subject]), {m}, delta).occurrences[0]
+    def survey(delta):
+        """The cheap half of examining a candidate: its pose, what overlaps it, and the body collisions."""
+        moved = moved_item(subject, delta, connections=False)
         others = [scene.get(i) for i in scene.near(moved.bounds) if i not in (m, f)]
-        transformed = scene.inspection([moved, fixed, *others])
+        pairs = list(collision_pairs(scene.inspection([moved, fixed, *others]), regular, moving={m}))
+        return moved, others, pairs, [p for p in pairs if p['status'] == 'rectangular_body_overlap']
+
+    def verified(candidate, delta, moved, others):
+        """The candidate's contact status ('confirmed', ...) and its moved connectors; None when snap_report would drop it."""
+        position, matrix = Vector(*delta[:3, 3]), Matrix(delta[:3, :3].tolist())
+        placed = replace(moved, connections=tuple(feature.transformed(position=position, matrix=matrix, inherit=False)
+                                                   for feature in subject.connections))
         endpoints = {m: candidate.moving.feature_id, f: candidate.fixed.feature_id}
-        mating = connection_contacts(replace(transformed, occurrences=tuple(
+        mating = connection_contacts(replace(scene.inspection([placed, fixed]), occurrences=tuple(
             replace(o, connections=tuple(feature for feature in o.connections if feature.feature_id == endpoints[o.index]))
-            for o in transformed.occurrences if o.index in endpoints)))
-        if not mating:
+            for o in sorted((placed, fixed), key=lambda o: o.index))))
+        return (str(mating[0].status), placed) if mating else None
+
+    def examine(candidate, new_world, delta, local):
+        """The candidate's entry in snap_report's list; 'blocked' for one whose body collides (its other
+        details are only worked out if they matter); None when snap_report would drop it."""
+        moved, others, pairs, blocked = survey(delta)
+        entry = dict(moving=m, fixed=f, **transform_dict(new_world), delta=transform_dict(delta),
+                     local_placement=dict(ref=moving.reference, at=local[:3, 3].tolist(), matrix=local[:3, :3].tolist()),
+                     distance=float(np.linalg.norm(new_world[:3, 3] - old_world[:3, 3])))
+        if blocked:
+            entry.update(contact_status=None, collision=dict(status='blocked', review_count=0),
+                         later=(candidate, delta, moved, others))
+            return entry
+        status = verified(candidate, delta, moved, others)
+        if status is None:
             return None
-        pairs = list(collision_pairs(transformed, regular, moving={m}))
-        blocked = [p for p in pairs if p['status'] == 'rectangular_body_overlap']
+        status, placed = status
         partners = {i for p in pairs for i in p['instances']} - {m}
-        # Only pairs a body overlap makes are asked whether they are connected, so only those are searched.
-        found = connection_contacts(replace(transformed, occurrences=tuple(
-            o for o in transformed.occurrences if o.index == m or o.index in partners))) if partners else ()
-        connected_pairs = {tuple(sorted((c.first_occurrence.index, c.second_occurrence.index))) for c in found}
+        # Only the pairs a body overlap makes are asked whether they are connected, so only those are searched.
+        connected_pairs = set()
+        for partner in (o for o in [fixed, *others] if o.index in partners):
+            for contact in connection_contacts(scene.inspection([placed, partner])):
+                connected_pairs.add(tuple(sorted((contact.first_occurrence.index, contact.second_occurrence.index))))
         for pair in pairs:
             pair['connection_present'] = tuple(sorted(pair['instances'])) in connected_pairs
         review = [p for p in pairs if p['status'] in {'review_aabb_only', 'review_oriented_bounds'}
                   or (p['status'] == 'stud_zone_overlap_review_connections' and not p['connection_present'])]
-        return dict(moving=m, fixed=f, **transform_dict(new_world), delta=transform_dict(delta),
-                    local_placement=dict(ref=moving.reference, at=local[:3, 3].tolist(), matrix=local[:3, :3].tolist()),
-                    contact_status=str(mating[0].status),
-                    collision=dict(status='blocked' if blocked else 'review_required' if review else 'no_collision_found',
-                                   checked_pairs=len(pairs), blocking_issue_count=len(blocked), review_count=len(review)),
-                    distance=float(np.linalg.norm(new_world[:3, 3] - old_world[:3, 3])))
+        entry.update(contact_status=status,
+                     collision=dict(status='review_required' if review else 'no_collision_found', review_count=len(review)))
+        return entry
 
     examined, settled = {}, None
     for order in sorted(range(len(pending)), key=lambda i: (pending[i][0], i)):
@@ -194,8 +213,14 @@ def _nearest(preview, parts, moving, support, near, instance_limit, hood):
                 and entry['contact_status'] == 'confirmed'):
             settled = pending[order][0]
     ranked = [examined[i] for i in sorted(examined) if examined[i] is not None]
+    if all(c['collision']['status'] == 'blocked' for c in ranked):
+        # Nothing usable: snap_report answers "collides" if some blocked candidate is a real connection, else "no
+        # candidate". Blocked candidates are only checked for being connections until one is found.
+        ranked = next(([c] for c in ranked if verified(*c['later']) is not None), [])
+    ranked = [c for c in ranked if c['collision']['status'] != 'blocked'] or ranked
     ranked.sort(key=lambda c: (c['collision']['status'] == 'blocked', c['collision']['review_count'],
                                c['contact_status'] != 'confirmed', c['distance']))
     for index, entry in enumerate(ranked):
         entry['candidate'] = index
+        entry.pop('later', None)
     return dict(candidates=ranked[:LIMIT], candidate_count=len(ranked), checked_candidates=len(examined))

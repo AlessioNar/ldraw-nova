@@ -16,7 +16,7 @@ import pytest
 from ldraw_tools import builder, connectivity, editor, fastbounds, incremental
 from ldraw_tools.builder import build_plan, check_schema
 from ldraw_tools.commands import editor as editor_command
-from ldraw_tools.common import normalized
+from ldraw_tools.common import jsonable, normalized
 from ldraw_tools.editor import apply, import_mpd, rebuild
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -184,14 +184,15 @@ def test_snaps_match_the_old_algorithm_on_a_real_model(official, model, monkeypa
     if not path.is_file():
         pytest.skip(f"{model} is not in the checkout")
     plan, _ = import_mpd(path.read_text(encoding="utf-8"), official)
-    sections = _sections_with_leaves(plan, 25, 80)
+    sections = _sections_with_leaves(plan, 20, 60)       # the old algorithm needs minutes for one snap in a dense section
     assert sections, "the model should have a mid-sized section"
     rng = random.Random(11)
     placed = 0
     for section in rng.sample(sections, min(2, len(sections))):
         entries = [e for step in section["steps"] for e in step if "at" in e and not e["ref"].endswith(".ldr")]
+        top = sorted(entries, key=lambda e: e["at"][1])[:max(4, len(entries) // 4)]      # the highest parts: free tops
         for _ in range(2):
-            target = rng.choice(entries)
+            target = rng.choice(top)
             x, y, z = target["at"]
             add = {"op": "add", "section": section["name"], "part": rng.choice(["3001.dat", "3003.dat", "3022.dat"]),
                    "colour": rng.choice([4, 14]), "position": [x + rng.choice([0, 10]), y - 24, z + rng.choice([0, 10])]}
@@ -250,9 +251,10 @@ def test_submodel_instances_are_culled_inside_but_never_the_support(connected):
     moving = Piece.place("3001.dat", colour=4, position=Vector(0, -24, 100))
     kept, extra = hood.cull(root.objects, support, moving)
     placed = [o for o in kept if isinstance(o, Piece)]
-    assert support in placed and len(placed) == 3                  # the far instance stays as an (emptied) stand-in
-    sizes = sorted(len([o for o in m.objects if isinstance(o, Piece)]) for m in extra.values())
-    assert sizes[0] == 0 and sizes[-1] < 10                         # nothing of the far one, only the near end of the near one
+    assert support in placed and far not in placed and len(placed) == 2      # the far instance is dropped whole
+    assert near not in placed                                       # the near one is replaced by a stand-in ...
+    [stand_in] = extra.values()
+    assert 0 < len([o for o in stand_in.objects if isinstance(o, Piece)]) < 10     # ... that keeps only its nearby end
 
 
 # ---------------------------------------------------------------- schema checks by content
@@ -341,13 +343,13 @@ def test_the_first_rebuild_and_unusual_plans_still_validate_whole(parts, monkeyp
     lambda p: p["sections"][0]["steps"][0][0].__setitem__("colour", 16),
     lambda p: p["sections"][0]["steps"][0][0].__setitem__("matrix", [[2, 0, 0], [0, 1, 0], [0, 0, 1]]),
     lambda p: p["sections"][0]["steps"][0][0].__setitem__("matrix", [[1, 0, 0], [0, 1, 0], [0, 0, 0]]),
-    lambda p: p["sections"][1]["steps"][0].append({"id": "t2", "ref": "3001.dat", "colour": 16, "at": [0, -48, 0]}),
+    lambda p: p["sections"][0]["steps"][1][-1].__setitem__("colour", 16),
 ], ids=["same-spot", "nearly-same-spot", "colour-16-at-the-top", "scaled", "singular", "colour-16-in-submodel-at-top"])
 def test_what_whole_validation_rejects_the_incremental_path_rejects_too(parts, break_it):
     plan = stack_plan()
     rebuild(plan, parts)
     # the tower is only used from main.ldr when something places it; make that so for the submodel case
-    plan["sections"][0]["steps"][1].append({"id": "uses-tower", "ref": "tower.ldr", "colour": 16, "at": [0, 0, 300]})
+    plan["sections"][0]["steps"][1].append({"id": "uses-tower", "ref": "tower.ldr", "colour": 4, "at": [0, 0, 300]})
     rebuild(plan, parts)
     broken = copy.deepcopy(plan)
     break_it(broken)
@@ -405,7 +407,7 @@ def test_fast_bounds_agree_with_pyldraws(official):
         slow = inspection.transformed_bounds(geometry.points, position=position, matrix=matrix)
     finally:
         fastbounds.install()
-    for a, b in zip((*fast.min, *fast.max), (*slow.min, *slow.max)):
+    for a, b in zip((*jsonable(fast.min), *jsonable(fast.max)), (*jsonable(slow.min), *jsonable(slow.max))):
         assert a == pytest.approx(b, abs=1e-9)
 
 
@@ -480,3 +482,87 @@ def test_opening_the_same_model_again_comes_from_the_import_cache(parts, tmp_pat
     edits.write_text(json.dumps([{"op": "move", "id": "p1", "position": [40, 0, 0]}]))
     moved = editor_command.run_request(_request(two, action="apply", edits=str(edits), base_revision=1), Path("/lib"), parts)
     assert moved["ok"], moved
+
+
+def test_idle_jobs_run_between_requests_and_never_ahead_of_one(tmp_path):
+    import collections
+    import os
+    import threading
+    from ldraw_tools import pipeline
+    read, write = os.pipe()
+    stdin = os.fdopen(read, "r", encoding="utf-8")
+    ran = []
+
+    def broken():
+        raise RuntimeError("a warm-up job that fails")
+    idle = collections.deque([lambda: ran.append(1), broken, lambda: ran.append(2)])
+    lines = pipeline._lines(stdin, idle)
+
+    def request_after_the_jobs():
+        while len(ran) < 2:
+            pass
+        os.write(write, b'{"op": "ping"}\n')
+    threading.Thread(target=request_after_the_jobs, daemon=True).start()
+    assert next(lines) == '{"op": "ping"}\n' and ran == [1, 2]       # idle time was used, then the request came
+
+    idle.append(lambda: ran.append(3))
+    os.write(write, b'{"op": "ping", "again": true}\n')
+    assert "again" in next(lines) and ran == [1, 2]                  # a request that is waiting goes first
+    os.close(write)
+    assert list(lines) == [] and ran == [1, 2]                       # at the end of input the worker just stops
+    stdin.close()
+
+
+def test_prewarm_jobs_cover_the_parts_a_plan_uses(parts, monkeypatch):
+    plan = stack_plan()
+    plan["sections"][0]["steps"][0].append({"id": "sym", "ref": "@parts.brick", "colour": 4, "at": [0, 0, 900]})
+    loaded = []
+    jobs = editor_command.prewarm_jobs(types_namespace(loaded), plan)
+    for job in jobs:
+        job()
+    assert loaded[0] == "3001" and sorted(loaded) == ["3001", "3003", "3022"]    # most used first; submodels and symbols left out
+    monkeypatch.setenv("LDRAW_NOVA_EDITOR_PREWARM", "0")
+    assert editor_command.prewarm_jobs(types_namespace([]), plan) == []
+
+
+def types_namespace(loaded):
+    import types
+    return types.SimpleNamespace(geometry=loaded.append)
+
+
+def test_the_same_part_at_one_spot_in_two_rotations_is_not_a_possible_duplicate(parts, monkeypatch):
+    from ldraw_tools.catalog import resolve_plan
+    plan = stack_plan()
+    plan["sections"][0]["steps"][0].append({"id": "turned", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0], "yaw": 90})
+    table, arrays = incremental._structure(resolve_plan(plan, parts))
+    assert not incremental._might_collide("main.ldr", arrays)
+    plan["sections"][0]["steps"][0].append({"id": "twin", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0.001], "yaw": 90})
+    table, arrays = incremental._structure(resolve_plan(plan, parts))
+    assert incremental._might_collide("main.ldr", arrays)
+    # and a model with such a pair still takes the quick path after an edit
+    plan = stack_plan()
+    plan["sections"][0]["steps"][0].append({"id": "turned", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0], "yaw": 90})
+    rebuild(plan, parts)
+    calls = []
+    real = editor.validate_text
+    monkeypatch.setattr(editor, "validate_text", lambda *a, **k: calls.append(1) or real(*a, **k))
+    rebuild(apply(plan, [{"op": "move", "id": "s5", "position": [555, 0, 0]}], parts), parts)
+    assert calls == []
+
+
+def test_a_batch_that_is_applied_twice_snaps_once(connected, monkeypatch):
+    """run_editor derives the inverse by applying the batch, then applies it: the second snap is a repeat."""
+    from ldraw_tools.editor import inverse
+    plan = grid_plan()
+    edits = [{"op": "add", "section": "main.ldr", "part": "3022.dat", "colour": 14, "position": [0, -50, 0]},
+             {"op": "snap", "id": editor._next_id(plan)}]
+    builds = []
+    real = editor.build_plan
+    monkeypatch.setattr(editor, "build_plan", lambda *a, **k: builds.append(1) or real(*a, **k))
+    editor._SNAPS.clear()
+    undo = inverse(plan, edits, connected)
+    result = apply(plan, edits, connected)
+    assert builds == [1]                                            # one snap for both passes
+    assert undo and result["sections"][0]["steps"][-1][-1]["at"] == [0, -32, 0]
+    apply(plan, [edits[0], {**edits[1], "to": "b0"}], connected)
+    assert len(builds) == 2                                         # a different question is asked afresh

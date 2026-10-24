@@ -1,9 +1,12 @@
-"""The manual editor's session operations, one process per request.
+"""The manual editor's session operations.
 
-The web backend never imports the toolkit: it runs `ldraw-agent editor ...`
-through its sandbox and reads the JSON report from stdout. The plan file is the
-source of truth; the state file beside it holds the revision, the undo/redo
-history (inverse operations, not plan copies) and the plan's used-piece rows.
+The web backend never imports the toolkit: it sends each operation to a resident
+toolkit process (`python -m ldraw_tools.pipeline --serve`, op `editor`, see
+`run_request`) or, when that is not available, runs `ldraw-agent editor ...`
+through its sandbox and reads the JSON report. Both end in `run_editor`. The
+plan file is the source of truth; the state file beside it holds the revision,
+the undo/redo history (inverse operations, not plan copies) and the plan's
+used-piece rows.
 
 Exit codes: 0 the action succeeded, 1 the action was refused (conflict, inventory
 shortfall, empty history), 2 an exception (invalid edits, failed rebuild).
@@ -17,7 +20,6 @@ import functools
 import hashlib
 import json
 import os
-import threading
 import types
 from pathlib import Path
 
@@ -42,6 +44,15 @@ def _read(path):
 
 def _sha(text):
     return hashlib.sha256(text.encode()).hexdigest()
+
+
+def _dumps(value):
+    """`common.dumps` for the session files, which hold plain JSON data: the same text without first walking
+    the whole structure in Python to convert it (a big plan took longer to convert than to write)."""
+    try:
+        return json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False)
+    except (TypeError, ValueError):
+        return dumps(value)
 
 
 @functools.lru_cache(maxsize=1)
@@ -98,7 +109,7 @@ def _load(plan_path, state_path):
     # The file is what `_commit` wrote (dumps(plan) + newline): hashing it as read avoids encoding the plan again.
     # A file that was edited by hand (other whitespace) falls back to the plan's own canonical encoding.
     recorded = state.get("plan_sha256")
-    if recorded is not None and recorded != _sha(text.removesuffix("\n")) and recorded != _sha(dumps(plan)):
+    if recorded is not None and recorded != _sha(text.removesuffix("\n")) and recorded != _sha(_dumps(plan)):
         state = {"revision": state.get("revision", 0) + 1, "undo": [], "redo": []}
     state.setdefault("revision", 0)
     state.setdefault("undo", [])
@@ -107,13 +118,13 @@ def _load(plan_path, state_path):
 
 
 def _commit(plan_path, state_path, mpd_path, plan, state, rows, mpd_text):
-    plan_text = dumps(plan)
+    plan_text = _dumps(plan)
     state = {"revision": state["revision"], "undo": state["undo"][-MAX_HISTORY:],
              "redo": state["redo"], "used": rows, "name": state.get("name"), "warnings": state.get("warnings"),
              "plan_sha256": _sha(plan_text)}
     atomic_write(plan_path, plan_text + "\n")
     atomic_write(mpd_path, mpd_text)
-    atomic_write(state_path, dumps(state) + "\n")
+    atomic_write(state_path, _dumps(state) + "\n")
 
 
 def _report(ok, state, **extra):
@@ -143,7 +154,7 @@ def run_editor(args, library, parts):
             if cached is not None:        # this exact model was imported before: its plan and preview are known
                 plan, warnings, rows, mpd_text = (cached[k] for k in ("plan", "warnings", "rows", "mpd"))
                 from .. import incremental
-                incremental.remember(incremental.fingerprint(plan), mpd_text)
+                incremental.remember(incremental.fingerprint(plan), mpd_text, parts)
             else:
                 plan, warnings = import_mpd(source_text, parts)
         else:
@@ -203,31 +214,22 @@ def run_editor(args, library, parts):
     return _report(True, state, plan=candidate, used=rows, mpd=mpd_text)
 
 
-def prewarm(parts, plan):
-    """Load the geometry of every part the plan uses, on a background thread, most used first.
+def prewarm_jobs(parts, plan):
+    """One job per part type the plan uses, most used first, each loading that part's geometry.
 
     The first load of a part type costs far more than the edits that follow (it resolves the part's files and
-    its connection metadata); a snap inspects placements of many types, so without this the first snap of a
-    session pays for each of them. A resident worker has the time while the person looks at the model.
+    its connection metadata); a snap looks at placements of many types, so without this the first snap of a
+    session pays for each of them. The worker runs the jobs between requests (pipeline._lines).
     """
     if os.environ.get("LDRAW_NOVA_EDITOR_PREWARM") == "0":
-        return None
+        return []
     sections = {section["name"].casefold() for section in plan["sections"]}
     uses = collections.Counter(entry["ref"] for section in plan["sections"] for step in section["steps"] for entry in step
                                if entry["ref"].casefold() not in sections and not entry["ref"].startswith("@"))
-
-    def load():
-        for ref, _ in uses.most_common():
-            try:
-                parts.geometry(ref.rsplit(".", 1)[0])
-            except Exception:      # a part with no geometry is the build's problem, not the warm-up's
-                continue
-    thread = threading.Thread(target=load, name="editor-prewarm", daemon=True)
-    thread.start()
-    return thread
+    return [functools.partial(parts.geometry, ref.rsplit(".", 1)[0]) for ref, _ in uses.most_common()]
 
 
-def run_request(request, library, parts):
+def run_request(request, library, parts, idle=None):
     """One editor action for a resident worker: `run_editor` with the CLI's arguments as a JSON object.
 
     The request has `action` (open|apply|undo|redo), the `plan`/`state`/`mpd` paths and the options the CLI
@@ -241,9 +243,10 @@ def run_request(request, library, parts):
     try:
         report, status = run_editor(args, library, parts)
     except (OSError, ValueError, PartError, RecursionError, jsonschema.ValidationError) as exc:
-        report, status = dict(checks_passed=False, error=str(exc), error_type=type(exc).__name__), 2
-    if args.action == "open" and status == 0 and report.get("plan"):
-        prewarm(parts, report["plan"])
+        report, status = dict(ok=False, checks_passed=False, error=str(exc), error_type=type(exc).__name__), 2
+    if idle is not None and args.action == "open" and status == 0 and report.get("plan"):
+        idle.clear()
+        idle.extend(prewarm_jobs(parts, report["plan"]))
     if not request.get("full"):
         report = {k: v for k, v in report.items() if k not in ("plan", "mpd")}
     return {**report, "exit_code": status}

@@ -35,7 +35,7 @@ NEAR = 0.005              # LDU; the original compares at 1e-6, so anything with
 class Fingerprint:
     """A validated plan's shape: per-section headers and the JSON of every placement."""
 
-    __slots__ = ("heads", "keys", "sets", "text")
+    __slots__ = ("heads", "keys", "sets", "text", "parts")
 
     def __init__(self, plan):
         top = {k: v for k, v in plan.items() if k != "sections"}
@@ -45,6 +45,7 @@ class Fingerprint:
                      for s in plan["sections"]]
         self.sets = None
         self.text = None
+        self.parts = None
 
     def members(self):
         if self.sets is None:
@@ -55,9 +56,9 @@ class Fingerprint:
 _BASES: collections.deque[Fingerprint] = collections.deque(maxlen=8)
 
 
-def remember(fingerprint, text):
-    """Record a plan whose built text has passed validation without errors."""
-    fingerprint.text = text
+def remember(fingerprint, text, parts):
+    """Record a plan whose built text has passed validation without errors against this parts library."""
+    fingerprint.text, fingerprint.parts = text, parts
     _BASES.appendleft(fingerprint)
 
 
@@ -65,10 +66,10 @@ def forget():
     _BASES.clear()
 
 
-def known_text(fingerprint):
+def known_text(fingerprint, parts):
     """The text of an already validated plan with exactly this content, else None."""
     for base in _BASES:
-        if base.heads == fingerprint.heads and base.keys == fingerprint.keys:
+        if base.parts is parts and base.heads == fingerprint.heads and base.keys == fingerprint.keys:
             return base.text
     return None
 
@@ -152,8 +153,13 @@ def _unresolved_colour(key, inherits_16, arrays, memo):
 
 
 def _might_collide(root, arrays):
-    """True when two placements of the same part may sit at the same world position."""
-    refs, points = [], []
+    """True when two placements of the same part may sit at the same world transform.
+
+    The original reports a part placed twice at one transform (rounded to six decimals). Here two placements
+    "may" coincide when they are the same part within NEAR of each other in all twelve numbers of position and
+    rotation: a superset of what the original calls the same, found by sorting the positions into grids first.
+    """
+    refs, points, matrices = [], [], []
 
     def walk(key, rotation_matrix, offset):
         entries, position, matrix, children = arrays[key]
@@ -162,6 +168,7 @@ def _might_collide(root, arrays):
             if child is None:
                 refs.append(normalized(entries[i]["ref"]))
                 points.append(world[i])
+                matrices.append((rotation_matrix @ matrix[i]).ravel())
             else:
                 walk(child, rotation_matrix @ matrix[i], world[i])
 
@@ -169,13 +176,19 @@ def _might_collide(root, arrays):
     if len(refs) < 2:
         return False
     ids = np.unique(np.array(refs), return_inverse=True)[1].reshape(-1, 1)
-    points = np.array(points)
+    points, matrices = np.array(points), np.array(matrices)
     for shift in range(8):      # two grids per axis, half a cell apart: a pair closer than NEAR shares a cell in one
         offset = np.array([(shift >> axis & 1) * NEAR for axis in range(3)])
         cells = np.floor((points + offset) / (2 * NEAR)).astype(np.int64)
         rows = np.hstack([ids, cells])
-        if len(np.unique(rows, axis=0)) < len(rows):
-            return True
+        _, inverse, counts = np.unique(rows, axis=0, return_inverse=True, return_counts=True)
+        for group in np.nonzero(counts > 1)[0]:
+            members = np.nonzero(inverse.ravel() == group)[0]
+            for a, first in enumerate(members):
+                close = np.all(np.abs(points[members[a + 1:]] - points[first]) < NEAR, axis=1) & np.all(
+                    np.abs(matrices[members[a + 1:]] - matrices[first]) < NEAR, axis=1)
+                if close.any():
+                    return True
     return False
 
 
@@ -186,7 +199,7 @@ def verdict(plan, resolved, text, parts, fingerprint, instance_limit=100000):
     """
     if not _plain(plan) or plan.get("assets") or plan.get("includes"):
         return None
-    base = next((b for b in _BASES if b.heads == fingerprint.heads), None)
+    base = next((b for b in _BASES if b.parts is parts and b.heads == fingerprint.heads), None)
     if base is None:
         return None
     if base.text == text:

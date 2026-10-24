@@ -13,9 +13,11 @@ start, answer `ping` and be supervised without the parts library.
 """
 from __future__ import annotations
 
+import collections
 import hashlib
 import json
 import os
+import select
 import shutil
 import sys
 import threading
@@ -61,6 +63,7 @@ class Pipeline:
         self.version = toolkit_version()
         self.pool = ThreadPoolExecutor(max_workers=int(os.environ.get("LDRAW_NOVA_RENDER_POOL", "2")))
         self.loaded_seconds = 0.0
+        self.idle = collections.deque()      # small jobs (callables) a worker runs between requests, see `_lines`
 
     def load(self):
         """Import the heavy modules and load the parts once; later calls are free."""
@@ -232,7 +235,7 @@ def _handle(pipeline: Pipeline, request: dict) -> dict:
     if op == "editor":
         from .commands.editor import run_request
         pipeline.load()
-        return run_request(request, pipeline.library, pipeline.parts)
+        return run_request(request, pipeline.library, pipeline.parts, idle=pipeline.idle)
     if op == "generators":
         from .generators import REGISTRY
         from .generators.colours import NAMES
@@ -241,6 +244,38 @@ def _handle(pipeline: Pipeline, request: dict) -> dict:
         keys = ("plan", "vehicle", "palette", "name", "geometry", "glb", "renders", "force", "generator", "params")
         return pipeline.run(request["outdir"], **{k: request[k] for k in keys if k in request})
     raise ValueError(f"Unknown op {op!r}")
+
+
+def _lines(stdin, idle):
+    """The request lines of `stdin`, running `idle` jobs one at a time whenever no request is waiting.
+
+    Idle jobs (warming the parts library for the model that was just opened) share the one thread the requests
+    run on, so they never compete with a request for the interpreter or the library; a request that arrives
+    waits for at most the job in progress. Input that cannot be polled (a list in a test, a pipe on Windows)
+    is simply read.
+    """
+    try:
+        fd = stdin.fileno()
+    except (AttributeError, OSError, ValueError):
+        yield from stdin
+        return
+    while True:
+        waiting = True
+        if idle:
+            try:
+                waiting = bool(select.select([fd], [], [], 0)[0])
+            except (OSError, ValueError):
+                waiting = True
+        if not waiting:
+            try:
+                idle.popleft()()
+            except Exception:          # a failed warm-up job must never reach the protocol
+                pass
+            continue
+        line = stdin.readline()
+        if not line:
+            return
+        yield line
 
 
 def serve(stdin=None, stdout=None) -> int:
@@ -252,7 +287,7 @@ def serve(stdin=None, stdout=None) -> int:
         sys.stdout = sys.stderr
     lock = threading.Lock()
     pipeline = Pipeline()
-    for line in stdin:
+    for line in _lines(stdin, pipeline.idle):
         if not line.strip():
             continue
         request_id = None

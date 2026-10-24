@@ -34,6 +34,11 @@ def _array(points):
     return array
 
 
+def vertices(points):
+    """A part's expanded vertices as an (n, 3) float array, converted once per part."""
+    return _array(points if isinstance(points, tuple) else tuple(points))
+
+
 def transformed_bounds(points, *, position, matrix):
     """Exact world AABB after transforming expanded points (numpy version of the pyldraw function)."""
     array = _array(points if isinstance(points, tuple) else tuple(points))
