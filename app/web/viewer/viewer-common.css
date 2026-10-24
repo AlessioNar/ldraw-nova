@@ -1,13 +1,14 @@
 /* Styles shared by viewer.html, player.html and editor.html. Tokens come from tokens.css (same as the app). */
 @import url("tokens.css");
 :root {
-  /* the 3D scene itself is drawn on a light backdrop (set in glb-view.js / player.js), in both themes */
+  /* the 3D scene is drawn on a light backdrop (ViewerCommon.stageColor), unless ?theme=dark asks for the dark one */
   --stage: #f2f2f2;
   --bar: var(--surface);
   --btn: var(--surface);
   --btn-border: var(--border-strong);
   --btn-active: var(--accent-solid); --btn-active-fg: var(--accent-fg);
 }
+html[data-theme="dark"] { --stage: #0e1a2e; }
 html, body { margin: 0; height: 100%; background: var(--stage); color: var(--fg);
              font: 13px/1.4 var(--font-text); }
 a { color: var(--accent); }

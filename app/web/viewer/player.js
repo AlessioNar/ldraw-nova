@@ -27,7 +27,7 @@ async function main() {
   try {
     await init();
     player = await Player.create($('canvas'), {
-      libraryUrl: '/ldraw/', resolverUrl: '/ldraw-id/', background: '#f2f2f2',
+      libraryUrl: '/ldraw/', resolverUrl: '/ldraw-id/', background: ViewerCommon.stageCss,
       backend: params.get('backend') || undefined,
     });
   } catch (e) {

@@ -45,6 +45,9 @@ Out (canvas → parent):
 - `{type: "obd:changed", revision, undo_depth, redo_depth}` after every successful edit/undo/redo
 - `{type: "obd:error", message}`
 - `{type: "obd:mode", mode}`
+- `{type: "obd:tool", tool}` whenever the active tool changes inside the canvas (shortcut or click), so the rail stays in sync
+- `{type: "obd:steps", total, current}` in Player mode on load and on every step change
+- `{type: "obd:shortcut", action: "save"}` when Ctrl+S / Cmd+S is pressed inside the canvas (default prevented there)
 
 In (parent → canvas): `{type: "obd:command", cmd, ...args}` with `cmd`:
 `undo`, `redo`, `delete`, `set-tool {tool: select|move|rotate|add|paint|delete}`,
