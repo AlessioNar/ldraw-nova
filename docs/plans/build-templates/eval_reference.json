@@ -1,0 +1,473 @@
+{
+ "models": 30,
+ "eligible_models": 331,
+ "scored_parts": 794,
+ "accuracy": 0.383,
+ "by_role": {
+  "base": "8/31 = 0.26",
+  "chassis": "84/120 = 0.70",
+  "door": "0/26 = 0.00",
+  "engine": "17/117 = 0.15",
+  "glass": "8/52 = 0.15",
+  "roof": "79/118 = 0.67",
+  "wheel": "56/176 = 0.32",
+  "window": "0/19 = 0.00",
+  "wing": "52/135 = 0.39"
+ },
+ "top_confusions": [
+  [
+   "wheel -> chassis",
+   80
+  ],
+  [
+   "wing -> body",
+   51
+  ],
+  [
+   "engine -> body",
+   36
+  ],
+  [
+   "engine -> structure",
+   31
+  ],
+  [
+   "wheel -> body",
+   24
+  ],
+  [
+   "door -> chassis",
+   22
+  ],
+  [
+   "glass -> body",
+   22
+  ],
+  [
+   "wing -> trim",
+   20
+  ],
+  [
+   "engine -> wing",
+   20
+  ],
+  [
+   "roof -> chassis",
+   14
+  ],
+  [
+   "window -> chassis",
+   13
+  ],
+  [
+   "base -> body",
+   13
+  ],
+  [
+   "chassis -> structure",
+   13
+  ],
+  [
+   "wheel -> structure",
+   13
+  ],
+  [
+   "chassis -> body",
+   10
+  ]
+ ],
+ "top_missed_parts": [
+  [
+   [
+    "wheel",
+    "chassis",
+    "plate",
+    "Plate  1 x  2"
+   ],
+   14
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "plate",
+    "Plate  2 x  6"
+   ],
+   10
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "plate",
+    "Plate  2 x  2 Round with Axlehole"
+   ],
+   10
+  ],
+  [
+   [
+    "engine",
+    "structure",
+    "technic",
+    "Technic Bush with Two Flanges"
+   ],
+   9
+  ],
+  [
+   [
+    "wheel",
+    "body",
+    "vehicle",
+    "Train Buffer Beam"
+   ],
+   8
+  ],
+  [
+   [
+    "wheel",
+    "body",
+    "vehicle",
+    "Train Coupling Type 2"
+   ],
+   8
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "slope",
+    "Slope Brick 31  1 x  2 x  0.667"
+   ],
+   8
+  ],
+  [
+   [
+    "engine",
+    "body",
+    "brick",
+    "Brick  2 x  2 Round without Reinforc"
+   ],
+   8
+  ],
+  [
+   [
+    "engine",
+    "wing",
+    "plate",
+    "Plate  1 x  8"
+   ],
+   8
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "plate",
+    "Plate  2 x  4"
+   ],
+   7
+  ],
+  [
+   [
+    "wheel",
+    "body",
+    "vehicle",
+    "Train Bogie Plate with Long Pin"
+   ],
+   6
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "plate",
+    "Plate  2 x  2"
+   ],
+   6
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "fence",
+    "Hinge Plate  1 x  2 with 2 Fingers a"
+   ],
+   6
+  ],
+  [
+   [
+    "wing",
+    "trim",
+    "plate",
+    "Plate  1 x  1 with Clip Vertical (Th"
+   ],
+   6
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "plate",
+    "Plate  1 x  4"
+   ],
+   6
+  ],
+  [
+   [
+    "engine",
+    "wing",
+    "wedgeplate",
+    "Wedge Plate  2 x 16 x  0.333 Triple "
+   ],
+   6
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "plate",
+    "Plate  2 x  2"
+   ],
+   5
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "other",
+    "~_Magnet Cylindrical in Casing Black"
+   ],
+   4
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "brick",
+    "Brick  1 x  1 Round with Hollow Stud"
+   ],
+   4
+  ],
+  [
+   [
+    "roof",
+    "detail",
+    "detail",
+    "Minifig Mechanical Arm with Clips Pa"
+   ],
+   4
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "plate",
+    "Plate  1 x  1 Round"
+   ],
+   4
+  ],
+  [
+   [
+    "wheel",
+    "chassis",
+    "other",
+    "~Magnet Cylindrical in Casing (Compl"
+   ],
+   4
+  ],
+  [
+   [
+    "base",
+    "trim",
+    "tile",
+    "Tile  1 x  6"
+   ],
+   4
+  ],
+  [
+   [
+    "wing",
+    "window",
+    "slope",
+    "Slope Brick 31  1 x  1 x  0.667"
+   ],
+   4
+  ],
+  [
+   [
+    "wing",
+    "trim",
+    "plate",
+    "Plate  1 x  3"
+   ],
+   4
+  ],
+  [
+   [
+    "wing",
+    "trim",
+    "plate",
+    "Plate  2 x  2 Corner"
+   ],
+   4
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "tile",
+    "Tile  1 x  2 Grille with Groove"
+   ],
+   4
+  ],
+  [
+   [
+    "window",
+    "chassis",
+    "technic",
+    "Technic Pin with Friction and Slots"
+   ],
+   4
+  ],
+  [
+   [
+    "door",
+    "chassis",
+    "plate",
+    "Plate  1 x  2 with  2 Clips Horizont"
+   ],
+   4
+  ],
+  [
+   [
+    "door",
+    "chassis",
+    "technic",
+    "Technic Pin Joiner Round with Slot"
+   ],
+   4
+  ],
+  [
+   [
+    "roof",
+    "glass",
+    "glass_window",
+    "Glass for Window  1 x  2 x  2 Plane"
+   ],
+   4
+  ],
+  [
+   [
+    "engine",
+    "detail",
+    "plate",
+    "Plate  1 x  1 Round"
+   ],
+   4
+  ],
+  [
+   [
+    "engine",
+    "body",
+    "plate",
+    "Plate  1 x  1 Round"
+   ],
+   4
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "plate",
+    "Plate  1 x  1 with Clip Horizontal ("
+   ],
+   4
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "plate",
+    "Plate  2 x  4"
+   ],
+   4
+  ],
+  [
+   [
+    "wing",
+    "body",
+    "plate",
+    "Plate  1 x  2 with Handle on End"
+   ],
+   4
+  ],
+  [
+   [
+    "window",
+    "body",
+    "slope",
+    "Slope Brick 45  2 x  2 with Computer"
+   ],
+   4
+  ],
+  [
+   [
+    "base",
+    "wing",
+    "plate",
+    "Plate  2 x  3"
+   ],
+   4
+  ],
+  [
+   [
+    "base",
+    "body",
+    "brick",
+    "Bracket  2 x  2 -  2 x  2 Up"
+   ],
+   4
+  ],
+  [
+   [
+    "chassis",
+    "wheel",
+    "wheel",
+    "Wheel Rim 14 x 18 with Holes on Both"
+   ],
+   4
+  ]
+ ],
+ "per_model": {
+  "10002-1.mpd": "4/16",
+  "10170-1.mpd": "6/38",
+  "10183-1_Modern-urban-electric-locomotive.mpd": "14/72",
+  "1620-1.mpd": "6/10",
+  "21002-1.mpd": "8/12",
+  "30313-1.mpd": "8/8",
+  "31031-1.mpd": "0/26",
+  "31049-1_Single-Engine-Airplane.mpd": "22/44",
+  "358-1.mpd": "0/0",
+  "40290-1_Airport-Shuttle.mpd": "5/5",
+  "42031-1.mpd": "26/53",
+  "42061-1.mpd": "24/37",
+  "4436-1.mpd": "0/26",
+  "4555-1.mpd": "4/16",
+  "555-2_Windmill.mpd": "1/5",
+  "60067-1.mpd": "12/19",
+  "6368-1.mpd": "0/10",
+  "6625-1.mpd": "0/12",
+  "6745-1_Harrier-Jet.mpd": "18/66",
+  "6832-1.mpd": "7/13",
+  "6878-1.mpd": "7/39",
+  "6896-1.mpd": "2/2",
+  "6951-1.mpd": "4/12",
+  "7111-1.mpd": "2/25",
+  "744-1_Mobile-Crane.mpd": "0/0",
+  "7725-1.mpd": "64/66",
+  "8020-1_Van.mpd": "10/10",
+  "8270-1.mpd": "32/40",
+  "8815-1_Road-Roller.mpd": "12/12",
+  "8844-1.mpd": "6/100"
+ }
+}

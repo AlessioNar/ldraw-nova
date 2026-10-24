@@ -56,15 +56,15 @@ KINDS = [   # first match wins; matched against the lower-cased library descript
     ('baseplate', r'^(baseplate|road plate|plate .*baseplate)|^baseplate'),
     ('detail', r'^(minifig|figure|animal|plant|flower|tree|flag|sticker|cloth|belville|scala|hose|string|rubber|chain|label|'
                r'sheet|fabric|duplo|bionicle|hero factory|windscreen wiper|tool|cup|cutlery|food|bottle|helmet|hair|torso|'
-               r'head|hips|legs?|arm|hand|neckwear|headwear|hipwear|footwear|stud|display|tag|ring|electric|train (track|wheel)|'
+               r'head|hips|legs?|arm|hand|neckwear|headwear|hipwear|footwear|stud|display|tag|ring|electric|train track|'
                r'antenna|crane hook|barrel|bucket|chest|treasure|sword|spear|shield|weapon|gun|ladder|balloon|belt|backpack)'),
     ('tyre', r'^(tyre|tire)'),
-    ('wheel', r'^wheel(?!.*\barch\b)|wheel rim|\brim\b'),
+    ('wheel', r'^(train )?wheel(?!.*\barch\b)|wheel rim|\brim\b'),
     ('glass_window', r'^glass for|^pane|^window pane|^door glass'),
     ('windscreen', r'windscreen|windshield|canopy|cockpit|^glass'),
     ('window', r'window|shutter'),
     ('door', r'(^|\s)door(?!\s*(handle|knob))|^garage|\bgate\b'),
-    ('wing', r'\bwing\b|aileron|rudder|stabili[sz]er|tailplane|\bflap\b'),
+    ('wing', r'\bwing\b|aileron|rudder|stabili[sz]er|tail ?plane|\bflap\b'),
     ('engine', r'engine|exhaust|propeller|rotor|thruster|turbine|\bmotor\b|\bjet\b|nozzle'),
     ('wedgeplate', r'^(wedge plate|plate special|plate, round corner)|^wedge\b.*plate'),
     ('slope', r'^(slope|roof|wedge|cone)|\bslope\b|curved top|brick, curved'),
@@ -108,6 +108,7 @@ DOMAIN_WORDS = {
 }
 
 
+PORCH_NAME = re.compile(r'porch|balcony|railing|fence|awning|stair')
 SPECIFIC = {'roof', 'window', 'door', 'wheel', 'wing', 'engine', 'glass'}   # names that are surer than geometry
 NAMED_IN = {   # a "wing roof" of a cottage is no aircraft wing: a name only counts in a domain where that role exists
     'building': {'roof', 'window', 'door', 'glass'},
@@ -403,6 +404,8 @@ def _score(leaf, glassy, domain, rel_h, share, lateral, roof_start, wheel_top, s
             named = _name_role(text)
             if named in SPECIFIC and named in NAMED_IN[domain] and .85 > geo.confidence:   # generic names measured worse than geometry
                 return Role(named, .85, f'inside "{text[:40]}"')
+            if domain == 'building' and named == 'trim' and PORCH_NAME.search(text) and .8 > geo.confidence:
+                return Role('trim', .8, f'inside "{text[:40]}"')                       # porch, fence, balcony: never wall
     return geo
 
 

@@ -87,5 +87,79 @@ def main(out_path=None):
         open(out_path, 'w').write(json.dumps(summary, indent=1))
 
 
+SPECIFIC_GOLD = {'roof', 'window', 'door', 'wheel', 'wing', 'engine', 'chassis', 'glass', 'base'}
+
+
+def reference_models(limit=30, low=40, high=500):
+    """Reference models whose submodel names carry a specific role word, spread over the library (every k-th)."""
+    import re
+    from ldraw_tools.common import models_path
+    names = re.compile(r'^0 FILE (.*)$')
+    found = []
+    for path in sorted(models_path().glob('*.mpd')):
+        text = path.read_text(encoding='utf-8', errors='ignore')
+        n = sum(1 for line in text.splitlines() if line.startswith('1 '))
+        sections = [m.group(1) for m in map(names.match, text.splitlines()) if m]
+        hits = {roles._name_role(re.sub(r'\.(ldr|mpd|dat)$', '', x.casefold()).replace('-', ' ').replace('_', ' ')) for x in sections[1:]}
+        if low <= n <= high and (hits & SPECIFIC_GOLD):
+            found.append(path)
+    step = max(len(found) // limit, 1)
+    return found[::step][:limit], len(found)
+
+
+def evaluate_references(limit=30, out_path=None):
+    """Weak gold for reference models: the role word in the innermost submodel name above a part (roof, wheel, window...).
+
+    The classifier runs with use_names=False, so the labels are independent of what it looked at. Only parts inside a
+    submodel whose name says one of the specific roles are scored.
+    """
+    import re
+    from ldraw_tools.editor import import_mpd
+    parts = get_parts()
+    facts = roles.PartFacts(parts)
+    files, available = reference_models(limit)
+    by_role = collections.defaultdict(lambda: [0, 0])
+    confusion = collections.Counter()
+    parts_missed = collections.Counter()
+    per_model, total, ok = {}, 0, 0
+    for path in files:
+        plan, _ = import_mpd(path.read_text(encoding='utf-8', errors='ignore'), parts, name=path.name)
+        found = roles.classify(plan, parts, hints='', use_names=False, facts=facts)
+        sections = {x['name'] for x in plan['sections']}
+        root = plan['sections'][0]['name']
+        hit_n = n = 0
+        for leaf in roles.flatten(plan, parts, facts):
+            gold = None
+            for section, _ in reversed(leaf['chain']):
+                if section != root and section in sections:
+                    gold = roles._name_role(re.sub(r'\.(ldr|mpd|dat)$', '', section.casefold()).replace('-', ' ').replace('_', ' '))
+                    break
+            if gold not in SPECIFIC_GOLD:
+                continue
+            got = found.get(leaf['key'])
+            got_role = got.role if got else 'missing'
+            hit = got_role == gold or (gold == 'wheel' and got_role == 'tyre')       # a wheel submodel holds the tyres too
+            n += 1
+            hit_n += hit
+            by_role[gold][0] += hit
+            by_role[gold][1] += 1
+            if not hit:
+                confusion[f'{gold} -> {got_role}'] += 1
+                parts_missed[(gold, got_role, facts.get(leaf['ref'])['kind'], facts.get(leaf['ref'])['desc'][:36])] += 1
+        total += n
+        ok += hit_n
+        per_model[path.name] = f'{hit_n}/{n}'
+    summary = dict(models=len(files), eligible_models=available, scored_parts=total, accuracy=round(ok / max(total, 1), 3),
+                   by_role={r: f'{a}/{b} = {a / b:.2f}' for r, (a, b) in sorted(by_role.items())},
+                   top_confusions=confusion.most_common(15),
+                   top_missed_parts=[[list(k), v] for k, v in parts_missed.most_common(40)], per_model=per_model)
+    print(json.dumps(summary, indent=1))
+    if out_path:
+        open(out_path, 'w').write(json.dumps(summary, indent=1))
+
+
 if __name__ == '__main__':
-    main(sys.argv[1] if len(sys.argv) > 1 else None)
+    if len(sys.argv) > 1 and sys.argv[1] == '--reference':
+        evaluate_references(int(sys.argv[2]) if len(sys.argv) > 2 else 30, sys.argv[3] if len(sys.argv) > 3 else None)
+    else:
+        main(sys.argv[1] if len(sys.argv) > 1 else None)
