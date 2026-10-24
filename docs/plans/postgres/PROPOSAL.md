@@ -534,3 +534,4 @@ Three agent tasks, in order. Sizes assume one agent per task with tests.
 2. "The backup" is a database dump plus the data volume (model files stay files).
 3. Scheduled backups are opt-in (off by default); the manual backup command is always available.
 4. Retention: request log 180 days; cost history kept forever and survives chat deletion.
+5. Stack (owner, overrides the "plain SQL + small runner" choice above): **SQLAlchemy 2.0** (typed `Mapped[...]` models, sessions with explicit transactions) on the **psycopg 3** driver, with **Alembic** for migrations (autogenerate reviewed by hand, upgrade on start, downgrade available). `sql/0001_init.sql` becomes the reference for the first Alembic revision. All packages hash-pinned in `requirements.lock`. Everything else in this proposal (scope, compose, security, importer, phases) is unchanged.
