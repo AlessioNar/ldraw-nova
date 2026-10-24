@@ -327,6 +327,8 @@ COPY --from=frontend /src/dist/ /opt/web/static/
 # /data/generated: the model collection; /data/chats: chat history;
 # /data/output: agents' work folders (one per chat) and the CLI's default output.
 RUN mkdir -p /data/generated /data/chats /data/output
+# Showcase models: Docker copies them into a new, empty data volume on first start.
+COPY data/generated/ /data/generated/
 VOLUME ["/data", "/config"]
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

@@ -1,6 +1,7 @@
 # Keep the build context to what the image actually needs.
-# (data/ is bind-mounted at runtime, never baked in.)
+# (data/ lives in a volume at runtime; only the showcase models are baked in to seed a new volume.)
 data
+!data/generated
 .env
 .env.*
 .DS_Store

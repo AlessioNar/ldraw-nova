@@ -18,7 +18,10 @@ services:
     ports:
       - "${LDRAW_NOVA_WEB_BIND:-127.0.0.1}:${LDRAW_NOVA_WEB_PORT:-8765}:8000"
     volumes:
-      - ./data:/data       # host ./data <-> container /data (input: everything under it, output: output/)
+      # Models, chats, builds, parts lists and agent work folders. A Docker volume, not a host folder:
+      # on Windows/macOS every file access through a bind mount costs milliseconds and the pages felt slow.
+      # Copy files out with: docker cp ldraw-nova-app:/data/generated ./my-models
+      - data:/data
       - config:/config     # LLM settings, API keys; kept out of ./data
     # Optional: keys referenced from the UI as "os.environ/NAME" (e.g. ANTHROPIC_API_KEY=...)
     env_file:
@@ -42,6 +45,9 @@ services:
     # and look at ./data/output on the host.
 
 volumes:
+  data:
+    # Your models, chats, builds and parts lists (new volumes start with the showcase models).
+    name: ldraw-nova-docker_data
   config:
     # Persist this project's LLM settings and API keys.
     name: ldraw-nova-docker_config
