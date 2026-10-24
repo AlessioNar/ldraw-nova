@@ -39,17 +39,20 @@ class Row:
     rb_part: str = ""
     rb_colour: int = 0
     family: str = ""    # source colour family when the colour is only a default for it (Pileometer): colour approximate
+    note: str = ""      # free text about this row ("blue tub"); optional, never read by counting code
 
     def to_json(self):
         out = dict(part=self.part, colour=self.colour, qty=self.qty, rb_part=self.rb_part, rb_colour=self.rb_colour)
         if self.family:
             out.update(family=self.family, colour_approximate=True)
+        if self.note:
+            out["note"] = self.note
         return out
 
     @classmethod
     def from_json(cls, data):
         return cls(str(data["part"]), int(data["colour"]), int(data["qty"]), str(data.get("rb_part", "")), int(data.get("rb_colour", 0)),
-                   str(data.get("family", "")))
+                   str(data.get("family", "")), str(data.get("note", "")))
 
 
 @dataclass
@@ -65,11 +68,14 @@ class ParseResult:
 
     pileometer: dict | None = None    # Pileometer imports: scans, rows and the colour family mapping used
     review: list[dict] = field(default_factory=list)    # approximate items (colour family only): kept, never counted as owned
+    origin: dict | None = None        # where the data came from: {"format": "rebrickable-csv" | "brickit-pileometer", ...}
 
     def to_json(self):
         out = dict(rows=[r.to_json() for r in self.rows], unmapped_parts=self.unmapped_parts, unmapped_colours=self.unmapped_colours,
                    warnings=self.warnings, dialect=self.dialect, total_rows=self.total_rows,
                    total_pieces=self.total_pieces, spare_pieces=self.spare_pieces)
+        if self.origin:
+            out["origin"] = self.origin
         if self.pileometer:
             out["pileometer"] = self.pileometer
         if self.review:
@@ -82,7 +88,7 @@ class ParseResult:
                    unmapped_colours=list(data.get("unmapped_colours", [])), warnings=list(data.get("warnings", [])),
                    dialect=data.get("dialect", ""), total_rows=int(data.get("total_rows", 0)),
                    total_pieces=int(data.get("total_pieces", 0)), spare_pieces=int(data.get("spare_pieces", 0)),
-                   pileometer=data.get("pileometer"), review=list(data.get("review", [])))
+                   pileometer=data.get("pileometer"), review=list(data.get("review", [])), origin=data.get("origin"))
 
 
 @dataclass
@@ -96,6 +102,10 @@ class Inventory:
     unmapped_colours: list[dict] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     review: list[dict] = field(default_factory=list)    # colour-family items waiting for an exact colour; not in rows, not counted
+    kind: str = ""              # "import" (absent), "set" (parts of a catalogue set) or "loose" (manual and quick adds)
+    set: dict | None = None     # kind "set": {set_num, name, year, theme, copies, state: "parts" | "built", ...}
+    origin: dict | None = None  # {"format": ..., "scan": ..., "file": ...}
+    schema: int = 0             # 2 once the backend has edited the file; absent is 1
 
     @property
     def total_pieces(self):
@@ -118,6 +128,7 @@ class Inventory:
                     rows=[r.to_json() for r in self.rows], unmapped_parts=self.unmapped_parts,
                     unmapped_colours=self.unmapped_colours, warnings=self.warnings,
                     **({"review": self.review} if self.review else {}),
+                    **{k: v for k, v in (("kind", self.kind), ("set", self.set), ("origin", self.origin), ("schema", self.schema)) if v},
                     totals=dict(pieces=self.total_pieces, distinct_parts=self.distinct_parts, distinct_colours=self.distinct_colours,
                                 unmapped_pieces=self.unmapped_pieces))
 
@@ -420,7 +431,7 @@ def make_inventory(name, result, *, source_filename="", id=None):
     return Inventory(id=id or slugify(name), name=name, created_at=time.time(), source_filename=source_filename,
                      rows=[Row.from_json(r.to_json()) for r in result.rows], unmapped_parts=list(result.unmapped_parts),
                      unmapped_colours=list(result.unmapped_colours), warnings=list(result.warnings),
-                     review=[dict(r) for r in result.review])
+                     review=[dict(r) for r in result.review], origin=result.origin)
 
 
 # --------------------------------------------------------------------- queries

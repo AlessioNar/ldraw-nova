@@ -18,12 +18,13 @@ function Unmapped<T>({ title, hint, items, label }: { title: string; hint: strin
   </section>;
 }
 
-/** What an import understood, and what the agent will not see. */
-export default function ImportReportView({ report, onFamilies }: { report: ImportReport; onFamilies?: (choice: Record<string, number>) => Promise<void> }) {
+/** What an import understood, and what the agent will not see. `hideFamilies`: the caller shows the colour-family summary itself. */
+export default function ImportReportView({ report, onFamilies, hideFamilies = false }:
+  { report: ImportReport; onFamilies?: (choice: Record<string, number>) => Promise<void>; hideFamilies?: boolean }) {
   if (report.pileometer) return <div className="import-report">
-    <PileometerSummary report={report} onApply={onFamilies} />
+    {!hideFamilies && <PileometerSummary report={report} onApply={onFamilies} />}
     {report.unmapped_parts.length > 0 && <Unmapped title="Parts not matched" items={report.unmapped_parts}
-      hint="These parts are not in the LDraw library under that number, so the agent will not see them."
+      hint="These parts are not in the LDraw library under that number, or Brickit could not identify them, so they are not counted."
       label={(p) => `${p.rb_part}${p.name ? ` ${p.name}` : ""} · ${p.family ?? "colour " + p.colour} · ×${p.qty}`} />}
   </div>;
   const clean = !report.unmapped_parts.length && !report.unmapped_colours.length && !report.warnings.length;
