@@ -19,6 +19,7 @@ import generator_bridge
 import settings
 import understand
 import usage
+import chat_routing
 from store import get_store
 
 # Seconds a generator takes in the resident worker (build + checks + preview), from the proposal's measurements.
@@ -400,7 +401,7 @@ def ai_estimate() -> dict:
 def _clarify(spec: dict) -> dict:
     ambiguity = next((a for a in spec.get("ambiguities") or [] if a.get("question")), None) or {}
     asked = ambiguity.get("question")
-    out = {"route": "clarify",
+    out = {"route": "clarify", **({} if asked else {"generic": True}),
            "question": asked or 'What would you like to build? For example "a small red car" or "a cottage 10 studs wide".'}
     if ambiguity.get("options"):
         out["choices"] = [str(o) for o in ambiguity["options"][:4]]
@@ -439,7 +440,7 @@ def route(spec: dict, current: Optional[dict] = None, confidence: float = 0.7) -
 
 def _route_edit(spec: dict, current: Optional[dict], confidence: float) -> dict:
     if not current:
-        return {"route": "clarify", "question": "There is nothing to change yet. What would you like to build?"}
+        return {"route": "clarify", "generic": True, "question": "There is nothing to change yet. What would you like to build?"}
     entry = _entry(current["generator"])
     if entry is None:
         return _needs_ai(spec, f"unknown generator {current['generator']!r}")
@@ -458,7 +459,7 @@ def _route_edit(spec: dict, current: Optional[dict], confidence: float) -> dict:
     if not changes and not history:
         if notes:
             return _needs_ai(spec, "; ".join(notes[:2]))
-        return {"route": "clarify", "question": "That already matches the current build. What would you like to change?"}
+        return {"route": "clarify", "generic": True, "question": "That already matches the current build. What would you like to change?"}
     out = {"route": "edit", "generator": entry["id"], "params": params, "changes": changes, "notes": notes,
            "confidence": round(confidence, 2), "cost_eur": 0.0, "seconds_estimate": SECONDS.get(entry["id"], DEFAULT_SECONDS)}
     if history:
@@ -532,6 +533,10 @@ def rules_guess(text: str, current: Optional[dict] = None) -> dict:
 
 # ---------------------------------------------------------------- the decision (one cheap call at most)
 
+def confidence_low(result, spec: dict) -> bool:
+    return result.source != "llm" or float(spec.get("confidence", 1.0)) < 0.6
+
+
 async def describe(text: str, *, current: Optional[dict] = None, build_id: Optional[str] = None,
                    previous_text: Optional[str] = None, llm_id: Optional[str] = None) -> dict:
     """Understand the request (rules first, else one structured call) and route it. See docs/plans/phase2/fast-path.md."""
@@ -551,6 +556,13 @@ async def describe(text: str, *, current: Optional[dict] = None, build_id: Optio
         decision["notes"] = ["no understanding model answered; the request was read by keywords", *decision["notes"]]
     if result.errors and result.source != "llm":
         decision["understanding_errors"] = result.errors[:2]
+    if current and result.source != "rules" and decision["route"] in ("edit", "generator") and (
+            confidence_low(result, spec) or not chat_routing.whole_edit_command(text)):
+        # An understood edit is applied only when the whole message is that edit: an edit word inside a longer instruction
+        # ("go on... consider all bricks as dark grey") or a shaky reading is asked about, never applied.
+        extras = {k: v for k, v in decision.items() if k.startswith("understand")}
+        decision = {"route": "clarify", "generic": True, "spec": spec, **extras,
+                    "question": "That looks like more than a quick change. What would you like to change?"}
     if build_id:
         decision["build_id"] = build_id
     return decision

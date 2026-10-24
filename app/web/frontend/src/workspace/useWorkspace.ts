@@ -214,8 +214,8 @@ export function useWorkspace(id: string) {
   };
 
   /** One chat message through the free fast path. The server saves the turn in the build's chat; the chat shows the result. */
-  const describe = async (text: string, previous?: string): Promise<DescribeResult> => {
-    const r = await wsApi.describe(id, text, previous);
+  const describe = async (text: string, previous?: string, quick?: boolean): Promise<DescribeResult> => {
+    const r = await wsApi.describe(id, text, previous, quick);
     if (r.route === "generator" || r.route === "edit") {
       if (r.draft) setServerDraft(r.draft);
       setViewing(null); await afterBackendChange();

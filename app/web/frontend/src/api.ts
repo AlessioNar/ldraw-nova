@@ -380,7 +380,7 @@ export type GeneratorList = { generators: GeneratorEntry[]; colours: { name: str
  *  engine is not installed: the Describe box then offers only the AI. */
 export type DescribeEstimate = { eur_low?: number; eur_high?: number; minutes_low?: number; minutes_high?: number; basis?: string };
 export type Describe = {
-  route: "generator" | "edit" | "needs_ai" | "clarify";
+  route: "generator" | "edit" | "needs_ai" | "clarify" | "agent";
   generator?: string; title?: string; params?: Record<string, unknown>; notes?: string[];
   changes?: { param: string; label: string; from: unknown; to: unknown }[]; history?: "undo" | "revert";
   question?: string; reason?: string; estimate?: DescribeEstimate; understanding_cost_eur?: number | null;

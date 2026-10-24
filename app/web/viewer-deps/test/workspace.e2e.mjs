@@ -463,6 +463,34 @@ try {
   process.exit(1);
 }
 
+await step('l. chat mode: quick by default, toggle to the AI per message; the AI turn is routed to the chat endpoint (stubbed, nothing runs or is spent)', async () => {
+  await page.goto(`${baseURL}/build/${BUILD}`);
+  await canvasReady();
+  await composer().waitFor();
+  const hint = () => page.locator('.ws-hint-line');
+  await page.waitForFunction(() => /Quick changes · free/.test(document.querySelector('.ws-hint-line')?.textContent ?? ''));
+  assert.equal(await page.getByRole('button', { name: 'Ask the AI instead' }).count(), 1);
+  await page.getByRole('button', { name: 'Ask the AI instead' }).click();
+  assert.match(await hint().innerText(), /Talking to the AI · costs apply/);
+  assert.equal(await page.getByRole('button', { name: 'Quick change instead' }).count(), 1);
+  await page.getByRole('button', { name: 'Quick change instead' }).click();         // back: nothing was sent
+  assert.match(await hint().innerText(), /Quick changes · free/);
+  // flip once and send: the UI must POST to /api/chats/<id>/messages and must NOT call draft/describe. Both are stubbed.
+  const sent = [];
+  await page.route('**/api/chats/*/messages', (route) => { sent.push(route.request().postData()); route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
+  await page.route('**/draft/describe', (route) => { sent.push('DESCRIBE'); route.abort(); });
+  await page.route('**/api/builds/*/chat', (route) => route.request().method() === 'POST' ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'stub-chat' }) }) : route.continue());
+  await page.getByRole('button', { name: 'Ask the AI instead' }).click();
+  await composer().fill('make the roof green');
+  await page.locator('.ws-composer .send-button').click();
+  await page.waitForFunction(() => /Talking to the AI/.test(document.querySelector('.ws-hint-line')?.textContent ?? ''), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(1500);
+  assert.ok(!sent.includes('DESCRIBE'), 'the fast path was not asked');
+  assert.ok(sent.some((b) => b && b.includes('make the roof green')), 'the message went to the chat (agent) endpoint');
+  await page.unroute('**/api/chats/*/messages'); await page.unroute('**/draft/describe'); await page.unroute('**/api/builds/*/chat');
+  await shot('l-chat-mode');
+});
+
 // light theme runs in a fresh context so the iframe (theme=light) and the page agree from the start
 const light = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'light' });
 const lp = await light.newPage();
