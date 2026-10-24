@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings · Toy box mockup</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mockup.css">
+<script>{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}</script>
+</head><body><div class="app"><aside class="sidebar">
+  <div class="brand"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <path fill="#d9382e" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/>
+  <path stroke="#d9382e" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/>
+</svg>
+<span class="brand-name label">Open Brick<br>Designer</span><button class="icon-button round" aria-label="Collapse sidebar"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg></button></div>
+  <a class="button primary new-chat" href="#" title="New chat"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg><span class="label">New chat</span></a>
+  <nav class="nav"><a href="#" class="" title="My Models"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 2.5l7 3.5v8l-7 3.5-7-3.5V6z"/><path d="M3 6l7 3.5L17 6M10 9.5v8"/></svg><span class="label">My Models</span></a><a href="#" class="" title="My Parts"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="8" width="15" height="8" rx="2"/><path d="M5 8V5.5h3V8M12 8V5.5h3V8"/></svg><span class="label">My Parts</span></a></nav>
+  <div class="section-label label">History</div>
+  <div class="history"><a href="#" class="">Small red car<small>v2 · 14 parts · 2h ago</small></a><a href="#" class="">Harbour crane with cargo dock<small>v1 · 212 parts · yesterday</small></a><a href="#" class="">6 x 8 cottage<small>v3 · 96 parts · 3 days ago</small></a><a href="#" class="">Spiral staircase tower<small>v1 · 340 parts · last week</small></a><a href="#" class="">Technic service platform<small>v4 · 880 parts · last week</small></a></div>
+  <div class="sidebar-foot nav"><a href="#" class="active" title="Settings"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M4.3 15.7l1.8-1.8M13.9 6.1l1.8-1.8" stroke-linecap="round"/></svg><span class="label">Settings</span></a></div>
+</aside>
+<main class="main"><div class="topbar-m"><button class="icon-button round" aria-label="Open menu"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg></button><div class="brand"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <path fill="#d9382e" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/>
+  <path stroke="#d9382e" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/>
+</svg>
+<span class="brand-name">Open Brick Designer</span></div><a class="button primary round" href="#" aria-label="New chat"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg></a></div><div class="page">
+  <header class="page-head"><h1>Settings</h1><p class="muted">Add a provider key, pick your models, then choose who builds.</p></header>
+  <div class="grid2"><form class="panel" aria-label="Anthropic key"><div class="provider-head"><span class="pdot" style="background:var(--brick-red)">A</span><strong>Anthropic</strong><span class="badge ok">Key set</span></div>
+  <label class="muted small">API key · <a href="#">get one</a></label>
+  <input type="password" aria-label="Anthropic API key" placeholder="Key saved · type to replace">
+  <div class="keyrow"><button type="submit" class="primary" >Save key</button><button type="button" class="ghost danger-text">Remove key</button></div></form><form class="panel" aria-label="OpenAI key"><div class="provider-head"><span class="pdot" style="background:var(--brick-green)">O</span><strong>OpenAI</strong><span class="badge ">No key</span></div>
+  <label class="muted small">API key · <a href="#">get one</a></label>
+  <input type="password" aria-label="OpenAI API key" placeholder="Paste your API key">
+  <div class="keyrow"><button type="submit" class="primary" >Save key</button></div></form><form class="panel" aria-label="Mistral key"><div class="provider-head"><span class="pdot" style="background:var(--brick-blue)">M</span><strong>Mistral</strong><span class="badge warn">Key rejected</span></div>
+  <label class="muted small">API key · <a href="#">get one</a></label>
+  <input type="password" aria-label="Mistral API key" placeholder="Paste your API key">
+  <div class="keyrow"><button type="submit" class="primary" >Save key</button><button type="button" class="ghost danger-text">Remove key</button></div></form><form class="panel" aria-label="OpenRouter key"><div class="provider-head"><span class="pdot" style="background:#6b4bc4">R</span><strong>OpenRouter</strong><span class="badge ok">Key set</span></div>
+  <label class="muted small">API key · <a href="#">get one</a></label>
+  <input type="password" aria-label="OpenRouter API key" placeholder="Key saved · type to replace">
+  <div class="keyrow"><button type="submit" class="primary" >Save key</button><button type="button" class="ghost danger-text">Remove key</button></div></form></div>
+  <section><div class="page-head"><h2>Models</h2><p class="muted small">Switch on the models you want to use.</p></div></section>
+  <div class="panel list">
+    <div class="model-row"><span class="info"><strong>Claude Sonnet</strong><small>Anthropic · main model</small></span><span class="badge latest">default</span><button class="toggle on" role="switch" aria-checked="true" aria-label="Claude Sonnet"></button></div>
+    <div class="model-row"><span class="info"><strong>Claude Haiku</strong><small>Anthropic · cheap jobs</small></span><span class="badge">worker</span><button class="toggle on" role="switch" aria-checked="true" aria-label="Claude Haiku"></button></div>
+    <div class="model-row"><span class="info"><strong>GPT-5 mini</strong><small>OpenAI</small></span><button class="toggle " role="switch" aria-checked="false" aria-label="GPT-5 mini"></button></div>
+    <div class="model-row"><span class="info"><strong>Mistral Large</strong><small>Mistral · key rejected</small></span><span class="badge warn">own key</span><button class="toggle " role="switch" aria-checked="false" aria-label="Mistral Large"></button></div>
+    <div class="model-row"><span class="info"><strong>DeepSeek via OpenRouter</strong><small>OpenRouter</small></span><button class="toggle on" role="switch" aria-checked="true" aria-label="DeepSeek via OpenRouter"></button></div>
+  </div>
+  <div class="grid2"><div class="panel"><strong>Main model (builds)</strong><small class="muted">The default for new chats. It plans and builds the model.</small><select aria-label="Main model"><option>Claude Sonnet</option></select></div>
+  <div class="panel"><strong>Worker model (cheap jobs, optional)</strong><small class="muted">Needs Full access in the chat. "No workers" turns delegation off.</small><select aria-label="Worker model"><option>Claude Haiku</option></select></div></div>
+</div></main></div></body></html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editor · Toy box mockup</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mockup.css">
+<script>{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}</script>
+</head><body><div class="ed">
+<div class="toolbar"><a class="brand" href="#" style="padding:0"><svg style="width:30px;height:30px" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <path fill="#d9382e" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/>
+  <path stroke="#d9382e" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/>
+</svg>
+</a>
+  <div class="seg" role="group" aria-label="Tool"><button aria-pressed="false" title="Click a part to select it, Shift-click to add more">Select</button><button aria-pressed="true" title="Drag an arrow to move the selection">Move</button><button aria-pressed="false" title="Drag a ring to turn the selection">Rotate</button></div>
+  <span class="sep"></span><button title="Undo (Ctrl+Z)">Undo</button><button disabled title="Redo (Ctrl+Shift+Z)">Redo</button><button class="danger-text" title="Delete the selected parts (Delete)">Delete</button><button title="Select the sub-model this part belongs to (G)">Group</button>
+  <span style="flex:1"></span><button>Open plan…</button><a href="#" class="small">Back to the chat</a><button class="icon-button round" aria-label="Reset view">⌂</button><button class="yellow">Publish</button></div>
+<div class="ed-body">
+  <aside class="side left"><h2>Parts</h2><input aria-label="Search parts" placeholder="Search parts…"><div class="section-label" style="padding:0">Bricks</div>
+    <div class="parts-grid"><div class="part"><b style="background:#d63a2f;width:30px;height:16px"></b>Brick</div><div class="part"><b style="background:#ffc933;width:22px;height:16px"></b>Brick</div><div class="part"><b style="background:#1f64cf;width:38px;height:16px"></b>Brick</div><div class="part"><b style="background:#1b7f45;width:22px;height:16px"></b>Brick</div><div class="part"><b style="background:#e9e5da;width:30px;height:16px"></b>Brick</div><div class="part"><b style="background:#222;width:38px;height:16px"></b>Brick</div></div>
+    <div class="section-label" style="padding:0">Plates and slopes</div>
+    <div class="parts-grid"><div class="part sel"><b style="background:#ffc933;width:34px;height:9px"></b>Plate</div><div class="part"><b style="background:#d63a2f;width:30px;height:12px;border-radius:3px 14px 3px 3px"></b>Slope</div><div class="part"><b style="background:#1f64cf;width:18px;height:9px"></b>Tile</div></div></aside>
+  <div class="canvas" aria-label="3D canvas placeholder"><svg viewBox="0 0 240 150" width="320" aria-hidden="true"><g stroke="rgb(0 0 0 / .25)" stroke-width="2" stroke-linejoin="round"><path d="M40 70l60-30 100 24v36l-60 30-100-24z" fill="#d63a2f"/><path d="M40 70l100 24v36L40 106z" fill="#a82a21"/><path d="M140 94l60-30v36l-60 30z" fill="#bf3227"/><path d="M60 62l40-20 50 12-40 20z" fill="#ffc933"/></g><g fill="#e24a3e" stroke="rgb(0 0 0 / .25)" stroke-width="2"><ellipse cx="86" cy="62" rx="9" ry="5"/><ellipse cx="120" cy="70" rx="9" ry="5"/><ellipse cx="160" cy="80" rx="9" ry="5"/></g></svg>
+    <span class="badge hint">3 parts selected · snaps to studs, hold Alt for free</span></div>
+  <aside class="side right"><h2>Inspector</h2><div class="muted small">3 parts selected</div>
+    <div class="field"><label>Position (LDU)</label><div class="xyz"><input aria-label="X" value="40"><input aria-label="Y" value="-24"><input aria-label="Z" value="80"></div></div>
+    <div class="field"><label>Rotation</label><div class="xyz"><input aria-label="Rotate X" value="0°"><input aria-label="Rotate Y" value="90°"><input aria-label="Rotate Z" value="0°"></div></div>
+    <div class="field"><label>Colour</label><div class="swatches"><i class="swatch sel" style="background:#d63a2f"></i><i class="swatch" style="background:#ffc933"></i><i class="swatch" style="background:#1f64cf"></i><i class="swatch" style="background:#1b7f45"></i><i class="swatch" style="background:#222"></i><i class="swatch" style="background:#e9e5da"></i></div></div>
+    <div class="field"><label>Part</label><strong>Brick 2 x 4</strong><span class="muted small">3001 · Red</span></div></aside>
+</div></div></body></html>

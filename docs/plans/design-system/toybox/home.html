@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Home · Toy box mockup</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mockup.css">
+<script>{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}</script>
+</head><body><div class="app"><aside class="sidebar">
+  <div class="brand"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <path fill="#d9382e" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/>
+  <path stroke="#d9382e" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/>
+</svg>
+<span class="brand-name label">Open Brick<br>Designer</span><button class="icon-button round" aria-label="Collapse sidebar"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg></button></div>
+  <a class="button primary new-chat" href="#" title="New chat"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg><span class="label">New chat</span></a>
+  <nav class="nav"><a href="#" class="" title="My Models"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 2.5l7 3.5v8l-7 3.5-7-3.5V6z"/><path d="M3 6l7 3.5L17 6M10 9.5v8"/></svg><span class="label">My Models</span></a><a href="#" class="" title="My Parts"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="8" width="15" height="8" rx="2"/><path d="M5 8V5.5h3V8M12 8V5.5h3V8"/></svg><span class="label">My Parts</span></a></nav>
+  <div class="section-label label">History</div>
+  <div class="history"><a href="#" class="">Small red car<small>v2 · 14 parts · 2h ago</small></a><a href="#" class="">Harbour crane with cargo dock<small>v1 · 212 parts · yesterday</small></a><a href="#" class="">6 x 8 cottage<small>v3 · 96 parts · 3 days ago</small></a><a href="#" class="">Spiral staircase tower<small>v1 · 340 parts · last week</small></a><a href="#" class="">Technic service platform<small>v4 · 880 parts · last week</small></a></div>
+  <div class="sidebar-foot nav"><a href="#" class="" title="Settings"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M4.3 15.7l1.8-1.8M13.9 6.1l1.8-1.8" stroke-linecap="round"/></svg><span class="label">Settings</span></a></div>
+</aside>
+<main class="main"><div class="topbar-m"><button class="icon-button round" aria-label="Open menu"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h14"/></svg></button><div class="brand"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <path fill="#d9382e" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/>
+  <path stroke="#d9382e" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/>
+</svg>
+<span class="brand-name">Open Brick Designer</span></div><a class="button primary round" href="#" aria-label="New chat"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg></a></div><div class="page home">
+  <div class="hero"><div class="logo-row" aria-hidden="true"><i class="brick r"></i><i class="brick y"></i><i class="brick b"></i><i class="brick g"></i></div>
+  <h1>What should we build?</h1>
+  <p class="muted">Turn your ideas into LEGO models you can explore in 3D. Start building with an agent, or use Plan mode to work out your design.</p></div>
+  <div class="examples"><button class="example"><i></i>Build a small red car with four black wheels</button><button class="example"><i></i>A 6 x 8 cottage with a door, two windows and a sloped roof</button><button class="example"><i></i>Build a spiral staircase around a tall stone tower</button><button class="example"><i></i>Design a harbour crane with a long boom and a cargo dock</button></div>
+  <div class="composer">
+  <textarea rows="2" aria-label="Message" placeholder="Describe a model to build…"></textarea>
+  <div class="composer-row">
+    <button class="ghost round" aria-label="Attach" title="Attach images or documents (up to 4 each)"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 8l-5.5 5.5a2 2 0 0 1-3-3L12 4a3 3 0 0 1 4.2 4.2L9.5 15"/></svg></button>
+    <button class="ghost" aria-label="Chat settings" title="Mode, permissions, parts, workers, budget and more"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h9M16 6h1M3 14h1M8 14h9"/><circle cx="14" cy="6" r="2"/><circle cx="6" cy="14" r="2"/></svg> Build</button>
+    <span class="chip budget" title="Budget per request">Budget €2 per request</span>
+    <span class="spacer"></span>
+    <span class="muted small">Claude Sonnet</span>
+    <button class="primary send" aria-label="Send"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M5 9l5-5 5 5"/></svg></button>
+  </div></div>
+</div></main></div></body></html>
