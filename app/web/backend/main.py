@@ -19,10 +19,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+import build_worker
 import run_state
 import sandbox
 import settings
-from routers import chats, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, spa
+from routers import chats, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, pipeline, spa
 from store import get_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -37,6 +38,7 @@ async def lifespan(_app: FastAPI):
     yield
     for chat_id in list(run_state._runs):
         await run_state.cancel(chat_id)
+    await build_worker.shutdown()
 
 
 app = FastAPI(title="LDraw Nova agent chat", lifespan=lifespan)
@@ -72,7 +74,7 @@ async def same_origin_api(request: Request, call_next):
     return response
 
 
-for module in (environment, llm_models, chats, editor, editor_palette, models_gallery, files, inventories):
+for module in (environment, llm_models, chats, editor, editor_palette, models_gallery, files, inventories, pipeline):
     app.include_router(module.router)
 spa.mount_static(app)
 app.include_router(spa.router)   # catch-all: after every other route and mount
