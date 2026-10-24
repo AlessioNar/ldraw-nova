@@ -46,9 +46,21 @@ def next_version(slug: str) -> int:
     return max((v["version"] for v in versions(slug)), default=0) + 1
 
 
+_groups_cache: tuple = (None, {})
+
+
 def group_versions() -> dict[str, dict[int, Path]]:
     """slug -> {version: model file} for every model in data/generated. An unversioned file (a model dropped into
     the folder) counts as v1 of the build named after it, unless a -v1 exists."""
+    # ponytail: rescan only when the folder's mtime changes (a file added, removed or renamed); every stat on a
+    # Windows bind mount costs ~2 ms and listing a build used to rescan the folder dozens of times.
+    global _groups_cache
+    try:
+        stamp = (str(settings.GENERATED_DIR), settings.GENERATED_DIR.stat().st_mtime_ns)
+    except OSError:
+        stamp = None
+    if stamp is not None and _groups_cache[0] == stamp:
+        return {slug: dict(found) for slug, found in _groups_cache[1].items()}
     groups: dict[str, dict[int, Path]] = {}
     for path in list_models(settings.GENERATED_DIR):
         if path.suffix.lower() not in (".mpd", ".ldr"):
@@ -59,6 +71,8 @@ def group_versions() -> dict[str, dict[int, Path]]:
     for path in list_models(settings.GENERATED_DIR):
         if path.suffix.lower() in (".mpd", ".ldr") and not VERSION_RE.match(path.stem):
             groups.setdefault(slugify(path.stem), {}).setdefault(1, path)
+    if stamp is not None:
+        _groups_cache = (stamp, {slug: dict(found) for slug, found in groups.items()})
     return groups
 
 
@@ -97,7 +111,7 @@ def exists(store: ChatStore, slug: str) -> bool:
     return valid(store, slug) and (read(store, slug) is not None or bool(versions(slug)))
 
 
-def _legacy(store: ChatStore, slug: str) -> dict:
+def _legacy(store: ChatStore, slug: str, index: Optional["Index"] = None) -> dict:
     """The record a build without a build.json would get: title and dates from its files, chats by slug."""
     files = versions(slug)
     paths = [v["path"] for v in files]
@@ -105,19 +119,20 @@ def _legacy(store: ChatStore, slug: str) -> dict:
     if paths:
         title = gallery.description_of(paths[-1]) or gallery.info_heading_of(paths[-1]) or ""
     mtimes = [p.stat().st_mtime for p in paths if p.exists()] or [time.time()]
-    chats = chats_for_slug(store, slug)
-    origin = origin_of(store, slug, paths[0]) if paths else None
+    index = index or Index(store)
+    chats = index.chats_of(slug)
+    origin = origin_of(store, slug, paths[0], index) if paths else None
     kind = {"generator": "generator", "ai": "ai", "editor": "editor", "import": "import"}.get(origin or "", "import")
     return {"id": store.build_key(slug), "title": title or slug.replace("-", " ").capitalize(),
             "created_at": min(mtimes), "updated_at": max(mtimes), "chats": [c["id"] for c in chats],
             "source": {"kind": kind}}
 
 
-def get(store: ChatStore, slug: str) -> Optional[dict]:
+def get(store: ChatStore, slug: str, index: Optional["Index"] = None) -> Optional[dict]:
     """The build's record (stored, or synthesised for a legacy model), None when there is no such build."""
     if not valid(store, slug):
         return None
-    return read(store, slug) or (_legacy(store, slug) if versions(slug) else None)
+    return read(store, slug) or (_legacy(store, slug, index) if versions(slug) else None)
 
 
 def ensure(store: ChatStore, slug: str) -> dict:

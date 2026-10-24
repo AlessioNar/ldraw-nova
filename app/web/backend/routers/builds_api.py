@@ -70,12 +70,12 @@ def _detail(store, slug: str) -> dict:
 
 
 @router.get("/api/builds")
-async def builds_list():
+def builds_list():  # plain def: FastAPI runs it in a thread, so its file I/O never stalls other requests
     store = get_store()
     index, groups = builds.Index(store), builds.group_versions()
     items = []
     for slug in builds.all_slugs(store):
-        record = builds.get(store, slug)
+        record = builds.get(store, slug, index)
         if record is None:
             continue
         item = builds.summary(store, slug, record, index, groups)

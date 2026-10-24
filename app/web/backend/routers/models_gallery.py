@@ -25,7 +25,7 @@ router = APIRouter()
 
 
 @router.get("/api/models")
-async def models_list():
+def models_list():  # plain def: runs in a thread, its file I/O never stalls other requests
     """Every model in data/generated, newest first. Models without a snapshot
     or BOM get them made in the background; poll until
     `pending` is 0."""
