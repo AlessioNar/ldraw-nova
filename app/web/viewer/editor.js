@@ -23,6 +23,9 @@
   const toolButtons = document.querySelectorAll('button[data-tool]');
 
   if (!chatId) { setStatus('No chat given: add ?chat=<chat id>', true); return; }
+  const chatLink = $('chat-link');
+  chatLink.href = `/chat/${encodeURIComponent(chatId)}`;
+  chatLink.hidden = false;
   if (!WEBGL.isWebGLAvailable()) { setStatus('WebGL is not available in this browser.', true); return; }
 
   const narrow = matchMedia('(max-width: 560px), (pointer: coarse)');
@@ -619,7 +622,11 @@
     setStatus('Publishing…', false);
     try {
       const result = await call('/publish', {});
-      setStatus(`Published (${(result.models || []).join(', ') || 'saved'}).`, false);
+      // The chat now has a message and a card for this publish; say what was published and link to it.
+      const check = result.parts_check;
+      const checkText = check ? ` Parts check: ${check.complete ? 'all parts owned' : check.summary}` : '';
+      setStatus(`Published as v${result.version || '?'}, ${result.pieces || '?'} piece${result.pieces === 1 ? '' : 's'}.${checkText} It is in the chat as "edited by you".`, false);
+      if (result.chat_url) { chatLink.href = result.chat_url; chatLink.textContent = `View v${result.version || ''} in the chat`; }
     } catch (e) { setStatus(`Could not publish: ${e.message}`, true); }
     finally { state.busy = false; refreshControls(); }
   });

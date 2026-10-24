@@ -47,6 +47,7 @@ class ToolContext:
     write_root: Path | None = None                        # a worker's own folder: file tools write only here (planner: None)
     ledger: BudgetLedger = field(default_factory=BudgetLedger)   # the run's shared budget (workers reserve from it)
     limits: WorkerLimits = field(default_factory=WorkerLimits)   # the turn's worker semaphore, delegation count, stray guard
+    origin: str | None = None                             # "editor" when the person publishes from the 3D editor
 
     @property
     def work_dir(self) -> Path:
@@ -214,7 +215,8 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
         shutil.copyfile(bom, bom_path_for(target))
     else:
         warnings.append("Preview/BOM rendering failed; the model can still be opened in 3D.")
-    ref = ctx.store.add_model(ctx.chat_id, name or source.stem, target, warnings)
+    ref = ctx.store.add_model(ctx.chat_id, name or source.stem, target, warnings, origin=ctx.origin,
+                              source=source.relative_to(ctx.work_dir).as_posix() if ctx.work_dir in source.parents else None)
     ctx.emit("model", {"id": ref["id"], "name": ref["name"]})
     model_url = "/files/generated/" + quote(target.name)
     result = {"model_url": model_url, "source": artifact_url(ctx, source),

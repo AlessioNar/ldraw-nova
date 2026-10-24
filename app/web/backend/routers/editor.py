@@ -221,7 +221,7 @@ def _archive(folder) -> None:
     """Move the session files aside (editor/archive/<time>/) so a new session can start; nothing is deleted."""
     target = folder / "archive" / time.strftime("%Y%m%d-%H%M%S")
     target.mkdir(parents=True, exist_ok=True)
-    for name in ("plan.json", "state.json", "preview.mpd", "request.json", "owned.json"):
+    for name in ("plan.json", "state.json", "preview.mpd", "request.json", "owned.json", "agent-seen.json"):
         if (folder / name).exists():
             shutil.move(str(folder / name), str(target / name))
 
@@ -328,11 +328,24 @@ async def editor_publish(chat_id: str, body: EditorPublish):
         tmp.write_bytes(preview.encode("utf-8"))
         tmp.replace(target)
         sandbox.give_to_agent(target)
-    ctx = tools.ToolContext(chat_id, store, lambda *args: None, options=chat.get("options") or {})
+    ctx = tools.ToolContext(chat_id, store, lambda *args: None, options=chat.get("options") or {}, origin="editor")
     try:
         result = await tools.t_publish_model(ctx, str(target), name)
     except tools.ToolError as exc:
         raise HTTPException(400, str(exc)) from None
     publish = json.JSONDecoder().raw_decode(result.content)[0]
-    return {"ok": True, "publish": publish, "parts_check": result.parts_check,
-            "models": [ref["id"] for ref in result.models]}
+    ref = result.models[0]
+    version = ref.get("version")
+    pieces = sum(row[2] for row in state.get("used") or [])
+    check = result.parts_check
+    note = f" Parts check: {check['summary']}" if check else ""
+    # Record the person's publish in the chat: it is also what the agent reads on its next turn.
+    store.add_message(chat_id, {
+        "role": "user", "_editor_publish": True, "_models": [ref["id"]],
+        "_label": f"You edited the plan in the 3D editor and published it as v{version}",
+        "content": f"I edited the plan in the 3D editor (revision {state.get('revision', 0)}, {pieces} pieces) and "
+                   f"published it as v{version}, {name}. The plan is output/editor/plan.json and the published "
+                   f"file output/{target.name}.{note}",
+        **({"_parts_check": check} if check else {})})
+    return {"ok": True, "publish": publish, "parts_check": check, "models": [ref["id"]], "model_id": ref["id"],
+            "version": version, "name": name, "pieces": pieces, "chat_url": f"/chat/{chat_id}#model-{ref['id']}"}

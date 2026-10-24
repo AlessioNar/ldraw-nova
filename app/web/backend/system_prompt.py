@@ -75,7 +75,30 @@ def delegation_offered(options: dict | None, chat_id: str | None = None) -> bool
     return any(t["function"]["name"] == "delegate" for t in available_tools(options or {}, chat_id))
 
 
-def system_prompt_parts(store: ChatStore, chat_id: str, lean: bool = False, delegation: bool = False) -> tuple[str, str]:
+def continuity_block(store: ChatStore, chat_id: str, options: dict | None = None) -> str:
+    """Where this chat stands, for the volatile tail (never the cached prefix): the latest model version and its
+    source file, the editor plan path, and a note when the person changed the plan since the agent last looked."""
+    import editor_tools                                   # lazy: editor_tools imports the router, which imports tools
+    lines = []
+    models = store.models(chat_id)
+    if models:
+        last = models[-1]
+        source = f"output/{last['source']}" if last.get("source") else f"published file {Path(last['model']).name}"
+        who = "published by the person from the 3D editor" if last.get("origin") == "editor" else "latest published model"
+        lines.append(f"- {who}: v{last.get('version') or len(models)} ({last['name']}), source {source}. "
+                     "A request for a change continues from it: start from that file or its generator and publish the result as the next version.")
+    session = editor_tools._api()._session(store, chat_id)
+    if session is not None:
+        lines.append(f"- editor plan (the person edits it in 3D): output/editor/plan.json, revision {session[1].get('revision', 0)}")
+        if (options or {}).get("mode", "agent") == "agent" and (options or {}).get("permissions") != "read_only":
+            note = editor_tools.turn_note(store, chat_id)
+            if note:
+                lines.append("- " + note)
+    return "\n\nWhere this chat stands (app state):\n" + "\n".join(lines) if lines else ""
+
+
+def system_prompt_parts(store: ChatStore, chat_id: str, lean: bool = False, delegation: bool = False,
+                        options: dict | None = None) -> tuple[str, str]:
     """The system prompt split at its stability boundary, for prompt caching.
 
     The first part is byte-identical on every turn of a chat (instructions.md
@@ -97,7 +120,7 @@ def system_prompt_parts(store: ChatStore, chat_id: str, lean: bool = False, dele
         stable += LEAN_NOTE
     if delegation:
         stable += DELEGATION_NOTE
-    volatile = "\n\nCurrent output files:\n" + work_listing(work_dir)
+    volatile = "\n\nCurrent output files:\n" + work_listing(work_dir) + continuity_block(store, chat_id, options)
     notes = work_dir / "NOTES.md"
     if notes.is_file() and not notes.is_symlink():
         with notes.open(errors="replace") as handle:
@@ -122,7 +145,7 @@ def system_message(store: ChatStore, chat_id: str, model: str, options: dict,
     keeps an empty second block, where bounded_history() appends its trim note.
     """
     stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options),
-                                          delegation_offered(options, chat_id))
+                                          delegation_offered(options, chat_id), options)
     tail = "" if tail_in_system is False or (tail_in_system is None and settings.TAIL_AFTER_HISTORY) \
         else volatile + mode_prompt(options)
     if not providers.supports_prompt_caching(model):
@@ -180,7 +203,7 @@ def outbound_messages(store: ChatStore, chat_id: str, messages: list[dict], mode
     """
     if settings.TAIL_AFTER_HISTORY:
         stable, volatile = system_prompt_parts(store, chat_id, use_lean_prompt(model, options),
-                                              delegation_offered(options, chat_id))
+                                              delegation_offered(options, chat_id), options)
         system, history = dict(messages[0]), messages[1:]
         content = system["content"]
         if isinstance(content, str):

@@ -64,7 +64,7 @@ def test_tools_follow_mode_and_plan(client, chat):
     assert "editor_open" in before and not {"editor_state", "editor_edit"} & before
     assert client.post(f"/api/chats/{chat}/editor", json={}).status_code == 200
     after = names(agent_mode, chat)
-    assert {"editor_state", "editor_edit"} <= after and "editor_open" not in after
+    assert {"editor_state", "editor_edit", "editor_open"} <= after
     for opts in ({"mode": "plan"}, {"mode": "chat"}, {"mode": "agent", "permissions": "read_only"}):
         assert not names(opts, chat) & {"editor_state", "editor_edit", "editor_open"}
     run = run_state.Run(chat)

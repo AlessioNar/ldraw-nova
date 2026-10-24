@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { downloadGlb, downloadUrl, partsLabel, timeAgo, type ModelFile, type ViewerMode } from "../api";
+import { downloadGlb, downloadUrl, partsLabel, timeAgo, type ChatModel, type ModelFile, type ViewerMode } from "../api";
 import { useApp } from "../context";
 import InfoModal from "./InfoModal";
 
 type Props = {
-  model: ModelFile & { warnings?: string[]; created_at?: number };
+  model: ModelFile & Partial<Pick<ChatModel, "warnings" | "created_at" | "version" | "latest" | "title" | "origin" | "changes">>;
   showChats?: boolean;
   onDelete?: () => Promise<void>;
 };
@@ -78,7 +78,9 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
         {deleteError && <p className="warn-text small" role="alert">{deleteError}</p>}
         <div className="model-title">
           <span className="model-file">
-            <strong className="ellipsis" title={model.file}>{model.file}</strong>
+            {model.version != null && <span className="version-badge" title={model.latest ? "The latest version in this chat" : "An earlier version in this chat"}>v{model.version}{model.latest ? " · latest" : ""}</span>}
+            {model.origin === "editor" && <span className="version-badge edited" title="You edited the plan in the 3D editor and published it">edited by you</span>}
+            <strong className="ellipsis" title={model.file}>{model.version != null ? model.title || model.file : model.file}</strong>
             {model.parts != null ? (
               <span className="muted">, {partsLabel(model.parts)}</span>
             ) : bomBusy ? (
@@ -92,10 +94,15 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
           )}
         </div>
         {showWarnings && warnings.length > 0 && <ul className="model-warnings small">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
+        {model.version != null && model.version > 1 && model.changes && (
+          <p className="model-changes small" title="Compared with the previous version's parts list">
+            <strong>Changed since v{model.version - 1}:</strong> {model.changes.summary}
+          </p>
+        )}
         {model.info_heading && <p className="model-info-heading"><strong>{model.info_heading}</strong></p>}
-        {model.description && <p className="model-description">{model.description}</p>}
+        {model.description && !(model.version != null && model.title === model.description) && <p className="model-description">{model.description}</p>}
         <div className="muted small ellipsis">
-          {timeAgo(model.created_at ?? model.mtime)}
+          {model.version != null && <>{model.file} · </>}{timeAgo(model.created_at ?? model.mtime)}
           {showChats && model.chats && model.chats.length > 0 && (
             <>
               {" · from "}

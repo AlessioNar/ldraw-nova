@@ -129,10 +129,15 @@ class ChatStore:
 
     # --- models the chat produced (references into data/generated) ---------
 
-    def add_model(self, chat_id: str, name: str, model_path: Path, warnings: list[str]) -> dict:
-        record = {"id": secrets.token_hex(6), "name": name, "model": self.ref(chat_id, model_path),
-                  "warnings": warnings, "created_at": time.time()}
+    def add_model(self, chat_id: str, name: str, model_path: Path, warnings: list[str],
+                  source: Optional[str] = None, origin: Optional[str] = None) -> dict:
+        """Record a published model. `version` counts the chat's models (v1, v2, ...), whatever file name the
+        agent picked; `source` is the work-folder file it was published from; `origin` "editor" marks the
+        person's own publish."""
         with self._lock:
+            record = {"id": secrets.token_hex(6), "name": name, "model": self.ref(chat_id, model_path),
+                      "warnings": warnings, "created_at": time.time(), "version": len(self.models(chat_id)) + 1,
+                      **({"source": source} if source else {}), **({"origin": origin} if origin else {})}
             self._append(chat_id, "models.jsonl", record)
         return record
 

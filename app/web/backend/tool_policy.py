@@ -20,8 +20,8 @@ def available_tools(options: dict, chat_id: str | None = None) -> list[dict]:
         tools = [t for t in tools if t["function"]["name"] != "delegate"]
     if options.get("mode") == "plan" or options.get("permissions") == "read_only":
         return [t for t in tools if t["function"]["name"] in READ_TOOLS]
-    # editor tools: agent mode only; state/edit once the chat has an editor plan, editor_open until then
-    hidden = editor_tools.OPEN_TOOLS if editor_tools.has_plan(chat_id) else editor_tools.EDIT_TOOLS
+    # editor tools: agent mode only; editor_open always (with replace it swaps in a rebuilt plan), state/edit once the chat has a plan
+    hidden = set() if editor_tools.has_plan(chat_id) else editor_tools.EDIT_TOOLS
     return [t for t in tools if t["function"]["name"] not in hidden]
 
 

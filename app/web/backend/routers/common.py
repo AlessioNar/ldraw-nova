@@ -8,6 +8,7 @@ from urllib.parse import quote
 from fastapi import HTTPException
 
 import gallery
+import model_versions
 import settings
 from leocad_render import bom_path_for, snapshot_path_for
 from paths import rel_to
@@ -61,12 +62,23 @@ def is_pending(info: dict) -> bool:
 
 
 def chat_models(store: ChatStore, chat_id: str) -> dict[str, dict]:
-    """The models a chat produced (references into data/generated), keyed by id."""
-    result = {}
-    for ref in store.models(chat_id):
+    """The models a chat produced (references into data/generated), keyed by id, oldest first.
+
+    Each carries its per-chat `version` (v1, v2, ... in publish order, whatever file name the agent picked),
+    a human `title`, `latest`, `origin` ("editor" for the person's own publish) and `changes`, the difference
+    from the previous version computed from the two BOMs."""
+    refs = store.models(chat_id)
+    result, previous = {}, None
+    for index, ref in enumerate(refs):
         path = store.resolve(chat_id, ref["model"])
-        result[ref["id"]] = {**model_info(path), "id": ref["id"], "name": ref["name"],
-                             "warnings": ref.get("warnings", []), "created_at": ref["created_at"]}
+        info = model_info(path)
+        result[ref["id"]] = {**info, "id": ref["id"], "name": ref["name"],
+                             "warnings": ref.get("warnings", []), "created_at": ref["created_at"],
+                             "version": ref.get("version") or index + 1, "latest": index == len(refs) - 1,
+                             "title": info["description"] or info["info_heading"] or ref["name"],
+                             "origin": ref.get("origin"),
+                             "changes": model_versions.diff(previous, path) if previous and path.is_file() else None}
+        previous = path if path.is_file() else previous
     return result
 
 
