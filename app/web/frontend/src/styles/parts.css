@@ -1,5 +1,6 @@
 /* --- My Parts --- */
-.parts-page { max-width: 1000px; }
+/* .parts-page is the scroller (.page): full width so the scrollbar sits at the window edge, with a centred 1000px column */
+.parts-page { padding-inline: max(32px, calc((100% - 1000px) / 2)); }
 .parts-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .inventory-card { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .inventory-card h2 { font-size: 16px; }

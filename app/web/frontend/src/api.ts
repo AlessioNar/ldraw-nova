@@ -19,7 +19,7 @@ export type ModelFile = {
   error: string | null;
   bom_status: SnapshotStatus;
   bom_error: string | null;
-  chats?: { id: string; title: string }[]; // chats that produced it (My Models page)
+  chats?: { id: string; title: string }[]; // chats that produced it (My Builds page)
 };
 
 /** A model a chat produced: a reference into data/generated. */

@@ -36,9 +36,9 @@ export default function Sidebar({ collapsed, onToggle, onClose }: { collapsed: b
         <span className="label">New chat</span>
       </NavLink>
       <nav className="nav">
-        <NavLink to="/models" title="My Models" aria-label="My Models">
+        <NavLink to="/models" title="My Builds" aria-label="My Builds">
           <span className="nav-icon" aria-hidden>▣</span>
-          <span className="label">My Models</span>
+          <span className="label">My Builds</span>
         </NavLink>
         <NavLink to="/parts" title="My Parts" aria-label="My Parts">
           <span className="nav-icon" aria-hidden>▤</span>

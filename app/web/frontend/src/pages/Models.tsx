@@ -49,7 +49,7 @@ export default function Models() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>My Models</h1>
+          <h1>My Builds</h1>
           <p className="muted">
             Your generated models and models you’ve added. Open a model to explore it in 3D.
             {pending > 0 && (

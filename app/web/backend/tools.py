@@ -2,7 +2,7 @@
 which LiteLLM translates for every provider.
 
 Where things go:
-  /data/generated/        finished models (flat) + their .png snapshots: the My Models page
+  /data/generated/        finished models (flat) + their .png snapshots: the My Builds page
   /data/output/<chat>/    the chat's work folder: scripts' cwd, notes, plans, scratch files
   /data/chats/<chat>/renders/   extra renders shown in the chat
 """
@@ -410,7 +410,7 @@ TOOLS: dict[str, tuple[dict, Callable[..., Awaitable[ToolResult]]]] = {
          "timeout": {"type": "integer", "description": "Seconds, default 300, maximum 1800"}},
         ["arguments"]), t_run_toolkit),
     "publish_model": (_fn("publish_model",
-        "Publish an output MPD revision as an interactive model card in this chat and the My Models collection. "
+        "Publish an output MPD revision as an interactive model card in this chat and the My Builds collection. "
         "Preserves source bytes, runs toolkit geometry validation, renders a snapshot and BOM. Failed checks "
         "are flagged for repair. Use after generating a model and again after final visual review. "
         "Use the returned card_url for interactive links, not the raw model_url. "

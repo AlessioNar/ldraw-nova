@@ -1,4 +1,4 @@
-"""My Models collection: listing, deletion, GLB export and zip downloads."""
+"""My Builds collection: listing, deletion, GLB export and zip downloads."""
 from __future__ import annotations
 
 import tempfile
@@ -77,7 +77,7 @@ def model_from_url(url: str) -> Optional[Path]:
 async def model_glb(url: str, existing_only: bool = False):
     """Prefer the model's sibling GLB. Otherwise convert and cache it, unless
     the 3D viewer is only checking for an authored alternate (existing_only)."""
-    model = model_from_url(url) or not_found("not a model in My Models")
+    model = model_from_url(url) or not_found("not a model in My Builds")
     try:
         if existing_only:
             out = glb.sibling_glb(model) or not_found("no sibling GLB")

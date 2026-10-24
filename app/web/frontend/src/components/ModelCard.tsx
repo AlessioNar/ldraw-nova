@@ -32,7 +32,7 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   async function remove() {
-    if (!onDelete || !confirm(`Delete “${model.file}” and its preview, parts list and notes from My Models? This cannot be undone. Original chat work files are kept.`)) return;
+    if (!onDelete || !confirm(`Delete “${model.file}” and its preview, parts list and notes from My Builds? This cannot be undone. Original chat work files are kept.`)) return;
     setDeleting(true); setDeleteError("");
     try { await onDelete(); }
     catch (e) { setDeleteError((e as Error).message); }
@@ -62,7 +62,7 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
   } else if (model.status === "failed") {
     thumb = <span className="thumb-missing" title={model.error ?? ""}>Snapshot failed — open in 3D</span>;
   } else {
-    thumb = <span className="thumb-missing">This model was deleted from My Models</span>;
+    thumb = <span className="thumb-missing">This model was deleted from My Builds</span>;
   }
 
   return (

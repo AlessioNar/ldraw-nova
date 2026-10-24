@@ -4,7 +4,7 @@ Each model has two siblings with the same base name, both made with LeoCAD:
   <name>.png  its snapshot, rendered from the home view
   <name>.csv  its bill of materials (BOM), which also gives the part count
 Missing ones are made in the background, one model at a time, whenever
-something asks for them (the My Models page, a chat that references the model).
+something asks for them (the My Builds page, a chat that references the model).
 A failed one isn't retried until the model file changes.
 
 An optional third sibling, <name>.md, is whatever its author wants to say
@@ -120,7 +120,7 @@ async def _work_queue() -> None:
                     log.info("making %s for %s", kind, model.name)
                     await ARTIFACTS[kind][1](model)
                     _failed.pop((model, kind), None)
-                except Exception as exc:  # noqa: BLE001 - shown on the My Models page
+                except Exception as exc:  # noqa: BLE001 - shown on the My Builds page
                     _failed[(model, kind)] = (_mtime(model), render.describe_error(exc))
                     log.warning("%s of %s failed: %s", kind, model.name, _failed[(model, kind)][1])
         finally:
