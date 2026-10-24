@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chat · Toy box mockup</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mockup.css">
+<script>{const t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;}</script>
+</head><body><div class="app"><aside class="sidebar">
+  <div class="brand"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <path fill="#d9382e" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/>
+  <path stroke="#d9382e" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/>
+</svg>
+<span class="brand-name label">Open Brick<br>Designer</span><button class="icon-button round" aria-label="Collapse sidebar"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg></button></div>
+  <a class="button primary new-chat" href="#" title="New chat"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg><span class="label">New chat</span></a>
+  <nav class="nav"><a href="#" class="" title="My Models"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10 2.5l7 3.5v8l-7 3.5-7-3.5V6z"/><path d="M3 6l7 3.5L17 6M10 9.5v8"/></svg><span class="label">My Models</span></a><a href="#" class="" title="My Parts"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="8" width="15" height="8" rx="2"/><path d="M5 8V5.5h3V8M12 8V5.5h3V8"/></svg><span class="label">My Parts</span></a></nav>
+  <div class="section-label label">History</div>
+  <div class="history"><a href="#" class="active">Small red car<small>v2 · 14 parts · 2h ago</small></a><a href="#" class="">Harbour crane with cargo dock<small>v1 · 212 parts · yesterday</small></a><a href="#" class="">6 x 8 cottage<small>v3 · 96 parts · 3 days ago</small></a><a href="#" class="">Spiral staircase tower<small>v1 · 340 parts · last week</small></a><a href="#" class="">Technic service platform<small>v4 · 880 parts · last week</small></a></div>
+  <div class="sidebar-foot nav"><a href="#" class="" title="Settings"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M4.3 15.7l1.8-1.8M13.9 6.1l1.8-1.8" stroke-linecap="round"/></svg><span class="label">Settings</span></a></div>
+</aside>
+<main class="main" style="background-image:none"><div class="chat-head"><h2>Small red car</h2><span class="badge">2 requests</span><span class="badge ok">€0.84 spent</span><button>Open in 3D</button></div>
+<div class="thread" id="thread"><div class="page">
+  <div class="msg user"><div class="bubble">Make the wheels bigger and add a spoiler on the back</div></div>
+  <div class="reply"><div class="avatar" aria-hidden="true"><i></i></div><div class="body">
+    <p>On it. I will start from v1 and swap the wheels for larger ones, then add a small spoiler over the rear axle.</p>
+    <div class="tool"><span class="status"></span><b>Saved model</b><span class="arg">small-red-car-v2.ldr</span><span class="chev">›</span></div>
+    <div class="tool"><span class="status running"></span><b>Rendered</b><span class="arg">small-red-car-v2.png</span><span class="chev">›</span></div>
+    <div class="model-card fresh">
+      <div class="ribbon"><span class="badge latest">v2 · latest</span><span class="badge edited">edited by you</span></div>
+      <div class="thumb-wrap"><img class="thumb" src="../../deterministic-first/screenshots/car-red.png" alt="Render of the red car, version 2"><button class="thumb-hint">View in 3D</button></div>
+      <div class="model-meta">
+        <div class="model-title"><strong>Small red car with spoiler</strong><span class="muted">, 17 parts</span></div>
+        <p class="model-changes small"><strong>Changed since v1:</strong> 4 wheels swapped for a larger size, 1 spoiler and 2 plates added.</p>
+        <p class="muted small">small-red-car-v2.ldr · just now</p>
+        <div class="model-actions"><button class="primary">Open in 3D editor</button><button>Parts list</button><button>Download .ldr</button><button>Download .glb</button></div>
+      </div>
+    </div>
+  </div></div>
+</div></div>
+<div class="dock"><div class="inner"><div class="alert budget small" role="alert" style="flex-direction:row;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px"><div><strong>Stopped: budget reached</strong>This request used its €2 budget. Everything done so far is kept. Continue to carry on from here.</div>
+      <div class="actions" style="flex:none;gap:8px"><button class="yellow">Continue with +€2</button><button>Raise budget to €5</button></div></div><div class="composer"><span class="chip continuing" title="A follow-up continues from this model, not from scratch">Continuing from v2: small-red-car-v2.ldr</span>
+  <textarea rows="2" aria-label="Message" placeholder="Describe a change to this model, or ask for a new one…"></textarea>
+  <div class="composer-row">
+    <button class="ghost round" aria-label="Attach" title="Attach images or documents (up to 4 each)"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 8l-5.5 5.5a2 2 0 0 1-3-3L12 4a3 3 0 0 1 4.2 4.2L9.5 15"/></svg></button>
+    <button class="ghost" aria-label="Chat settings" title="Mode, permissions, parts, workers, budget and more"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h9M16 6h1M3 14h1M8 14h9"/><circle cx="14" cy="6" r="2"/><circle cx="6" cy="14" r="2"/></svg> Build</button>
+    <span class="chip budget" title="Budget per request">Budget €2 per request</span>
+    <span class="spacer"></span>
+    <span class="muted small">Claude Sonnet</span>
+    <button class="primary send" aria-label="Send"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M5 9l5-5 5 5"/></svg></button>
+  </div></div></div></div>
+</main></div></body></html>

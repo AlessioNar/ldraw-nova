@@ -1,0 +1,109 @@
+/* Toy box design tokens for Open Brick Designer.
+   Existing variable names (--bg, --surface, --accent ...) are kept so the app's CSS keeps working;
+   new names are additions. Light is the default; dark follows the OS or [data-theme="dark"]. */
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap");
+
+:root {
+  /* brick palette (fills; never use yellow as text on light surfaces) */
+  --brick-red: #d63a2f;
+  --brick-yellow: #ffc933;
+  --brick-blue: #1f64cf;
+  --brick-green: #1b7f45;
+
+  /* surfaces: warm paper, white cards */
+  --bg: #fbf6ec;
+  --surface: #ffffff;
+  --surface-2: #f4ede0;
+  --border: #e3d9c6;
+  --border-strong: #cfc2a8;
+  --input-border: #857b66;         /* form fields: 3:1+ against page and card (WCAG 1.4.11) */
+  --fg: #1d2230;
+  --muted: #5b6272;
+
+  /* accent = brick red (primary action) */
+  --accent: #cf3429;
+  --accent-fill: #cf3429;          /* button background; text-safe with white */
+  --accent-edge: #9c2219;          /* the "pressed depth" edge under raised buttons */
+  --accent-fg: #ffffff;
+  --accent-soft: #fde7e3;
+
+  /* semantic roles */
+  --info: #1a58b8;
+  --info-border: #b4cdf0;
+  --info-soft: #e8f0fc;
+  --ok: #17703c;
+  --ok-soft: #e1f3e8;
+  --warn: #8a4b00;
+  --warn-soft: #fff0c2;
+  --danger: #b42318;
+  --danger-soft: #fde4e1;
+  --highlight: var(--brick-yellow);  /* "latest", selected, celebration */
+  --highlight-ink: #3a2a00;          /* text on yellow fills */
+
+  --user-bubble: #e8f0fc;
+  --stud: rgb(29 34 48 / 0.07);      /* grid/stud motif dots */
+
+  /* type */
+  --font-ui: "Nunito", ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-xs: 12px;  --text-sm: 13.5px; --text-base: 15px;
+  --text-lg: 17px;  --text-xl: 22px;   --text-2xl: 32px;
+  --leading: 1.5;
+
+  /* spacing (4px base) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  /* radii: chunky */
+  --radius-sm: 8px; --radius: 14px; --radius-lg: 22px; --radius-pill: 999px;
+
+  /* shadows: tactile. --raise is the solid edge under buttons. */
+  --shadow: 0 1px 0 rgb(29 34 48 / 0.04), 0 4px 14px rgb(60 40 10 / 0.07);
+  --shadow-pop: 0 10px 30px rgb(60 40 10 / 0.16);
+  --raise: 0 3px 0 var(--border-strong);
+  --raise-pressed: 0 1px 0 var(--border-strong);
+  --focus: 0 0 0 3px color-mix(in srgb, var(--brick-blue) 45%, transparent);
+
+  /* motion */
+  --ease: cubic-bezier(.3, 1.4, .5, 1);   /* slight overshoot, like a brick clicking in */
+  --dur-fast: 90ms; --dur: 180ms;
+
+  --sidebar-w: 288px; --rail-w: 60px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161f; --surface: #1d2130; --surface-2: #272c3e;
+    --border: #333a50; --border-strong: #0c0e15; --input-border: #6a7496;
+    --fg: #f3f1ea; --muted: #a8aec2;
+    --accent: #ff7467; --accent-fill: #d23a2e; --accent-edge: #a52a20; --accent-fg: #ffffff; --accent-soft: #3d1c1e;
+    --info: #8db7ff; --info-border: #3a5a92; --info-soft: #1b2a47;
+    --ok: #5ddc8b; --ok-soft: #153525;
+    --warn: #ffd361; --warn-soft: #3b3010;
+    --danger: #ff8a7e; --danger-soft: #3f1a1a;
+    --highlight-ink: #2a1f00;
+    --user-bubble: #22304d;
+    --stud: rgb(255 255 255 / 0.05);
+    --shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 6px 18px rgb(0 0 0 / 0.35);
+    --shadow-pop: 0 14px 36px rgb(0 0 0 / 0.55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14161f; --surface: #1d2130; --surface-2: #272c3e;
+  --border: #333a50; --border-strong: #0c0e15; --input-border: #6a7496;
+  --fg: #f3f1ea; --muted: #a8aec2;
+  --accent: #ff7467; --accent-fill: #d23a2e; --accent-edge: #a52a20; --accent-fg: #ffffff; --accent-soft: #3d1c1e;
+  --info: #8db7ff; --info-border: #3a5a92; --info-soft: #1b2a47;
+  --ok: #5ddc8b; --ok-soft: #153525;
+  --warn: #ffd361; --warn-soft: #3b3010;
+  --danger: #ff8a7e; --danger-soft: #3f1a1a;
+  --highlight-ink: #2a1f00;
+  --user-bubble: #22304d;
+  --stud: rgb(255 255 255 / 0.05);
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 6px 18px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 14px 36px rgb(0 0 0 / 0.55);
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) { :root { --dur-fast: 0ms; --dur: 0ms; } }
