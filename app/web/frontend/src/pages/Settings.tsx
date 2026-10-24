@@ -21,6 +21,8 @@ export default function Settings() {
   const [newId, setNewId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [understandingId, setUnderstandingId] = useState<string | null>(null);
+  useEffect(() => { api.llmModels().then(r => setUnderstandingId(r.understanding_id ?? null)).catch(() => {}); }, [llms]);
   useEffect(() => { api.catalog().then(r => setCatalog(r.models)).catch(e => setError(e.message)); }, []);
   const supported = llms.filter(m => !isUnsupported(m));
   const providers = [...new Set(["anthropic", "openai", "mistral", "openrouter", ...supported.map(m => agentProvider(String(m.litellm_params.model)))]), ...(supported.length < llms.length ? [NEEDS_KEY] : [])];
@@ -37,6 +39,10 @@ export default function Settings() {
           <small className="muted">The default for new chats. It plans and builds the model.</small>
           <ModelPicker value={defaultLlmId} disabled={busy || !llms.length} label="Main model"
             onChange={id => { setBusy(true); api.defaultLlm(id).then(refreshLlms, e => setError(e.message)).finally(() => setBusy(false)); }} /></div>
+        <div className="panel role-picker"><strong>Understanding model (reads your requests)</strong>
+          <small className="muted">One cheap call turns a request into settings for the free builders. Automatic uses Claude Haiku 5.5 when you have added it, otherwise the main model.</small>
+          <ModelPicker value={understandingId} disabled={busy || !llms.length} emptyLabel="Automatic" label="Understanding model"
+            onChange={id => { setBusy(true); api.setUnderstandingDefault(id || null).then(r => setUnderstandingId(r.understanding_id), e => setError(e.message)).finally(() => setBusy(false)); }} /></div>
         <div className="panel role-picker"><strong>Worker model (cheap jobs, optional)</strong>
           <small className="muted">Needs Full access in the chat. "No workers" turns delegation off.</small>
           <WorkerModelPicker value={defaultWorkerId} disabled={busy}

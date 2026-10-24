@@ -45,6 +45,7 @@ def _load() -> dict:
     data.setdefault("models", [])
     data.setdefault("default_id", None)
     data.setdefault("worker_id", None)
+    data.setdefault("understanding_id", None)
     for entry in data["models"]:
         params = entry.get("litellm_params", {})
         _upgrade_key_ref(params)
@@ -246,6 +247,8 @@ def delete(entry_id: str) -> bool:
             data["default_id"] = data["models"][0]["id"] if data["models"] else None
         if data["worker_id"] == entry_id:
             data["worker_id"] = None
+        if data.get("understanding_id") == entry_id:
+            data["understanding_id"] = None
         _save(data)
         return len(data["models"]) < before
 
@@ -271,6 +274,22 @@ def set_worker_default(entry_id: Optional[str]) -> None:
         if entry_id is not None and not any(m["id"] == entry_id for m in data["models"]):
             raise ValueError("Unknown model")
         data["worker_id"] = entry_id
+        _save(data)
+
+
+def understanding_default() -> Optional[str]:
+    """The entry chosen in Settings to read requests (the understanding step), if it still exists. None = automatic."""
+    data = _load()
+    return data["understanding_id"] if any(m["id"] == data["understanding_id"] for m in data["models"]) else None
+
+
+def set_understanding_default(entry_id: Optional[str]) -> None:
+    """Choose the understanding model; None means automatic (Haiku 5.5 when added, else the main model)."""
+    with _lock:
+        data = _load()
+        if entry_id is not None and not any(m["id"] == entry_id for m in data["models"]):
+            raise ValueError("Unknown model")
+        data["understanding_id"] = entry_id
         _save(data)
 
 
