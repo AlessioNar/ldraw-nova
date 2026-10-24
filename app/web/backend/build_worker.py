@@ -26,6 +26,7 @@ import toolkit
 REQUEST_TIMEOUT = int(os.environ.get("LDRAW_NOVA_WORKER_TIMEOUT", "300"))
 STARTUP_TIMEOUT = 120
 MAX_QUEUE = int(os.environ.get("LDRAW_NOVA_WORKER_QUEUE", "4"))
+EDITOR_QUEUE = int(os.environ.get("LDRAW_NOVA_EDITOR_QUEUE", "32"))
 MAX_REPLY_BYTES = 256 * 1024 * 1024
 
 
@@ -133,7 +134,7 @@ class BuildWorker:
             proc.stdin.write(line.encode())
             await proc.stdin.drain()
             # a fresh worker also pays start-up and library loading, so allow for it
-            allowance = STARTUP_TIMEOUT if payload.get("op", "build") == "build" else 0
+            allowance = STARTUP_TIMEOUT if payload.get("op", "build") in ("build", "editor") else 0
             raw = await asyncio.wait_for(proc.stdout.readline(), timeout + allowance)
         except asyncio.TimeoutError:
             await self._kill()
@@ -155,6 +156,7 @@ class BuildWorker:
 
 
 _worker: BuildWorker | None = None
+_editor_worker: BuildWorker | None = None
 
 
 def get_worker() -> BuildWorker:
@@ -164,8 +166,21 @@ def get_worker() -> BuildWorker:
     return _worker
 
 
+def get_editor_worker() -> BuildWorker:
+    """A second resident toolkit process for the 3D editor's operations.
+
+    Editing is interactive and a build can run for minutes, so edits get their own warm process instead of
+    queueing behind builds; the queue is longer because every change of a session goes through it.
+    """
+    global _editor_worker
+    if _editor_worker is None:
+        _editor_worker = BuildWorker(max_queue=EDITOR_QUEUE)
+    return _editor_worker
+
+
 async def shutdown() -> None:
-    global _worker
-    if _worker is not None:
-        await _worker.close()
-        _worker = None
+    global _worker, _editor_worker
+    for worker in (_worker, _editor_worker):
+        if worker is not None:
+            await worker.close()
+    _worker = _editor_worker = None

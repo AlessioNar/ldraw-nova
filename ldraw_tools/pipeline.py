@@ -229,6 +229,10 @@ def _handle(pipeline: Pipeline, request: dict) -> dict:
         os._exit(3)
     if op == "hang" and os.environ.get("LDRAW_NOVA_WORKER_DEBUG") == "1":
         time.sleep(3600)
+    if op == "editor":
+        from .commands.editor import run_request
+        pipeline.load()
+        return run_request(request, pipeline.library, pipeline.parts)
     if op == "generators":
         from .generators import REGISTRY
         from .generators.colours import NAMES

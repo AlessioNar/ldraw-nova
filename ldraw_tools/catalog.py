@@ -6,7 +6,6 @@ records determine availability and colours; cached dimensions are search hints.
 from __future__ import annotations
 
 import ast
-import copy
 import math
 import os
 import re
@@ -83,24 +82,35 @@ def resolve_colour(symbol, parts):
 
 
 def resolve_plan(plan, parts):
-    """Leave the editable symbolic plan intact; resolve only the build copy."""
-    result=copy.deepcopy(plan)
+    """Leave the editable symbolic plan intact; resolve only the build copy.
+
+    The result has its own sections/steps lists; a placement is copied only when a symbol in it is resolved,
+    otherwise it is shared with `plan` (callers only read the resolved plan).
+    """
     references, colours = {}, {}
-    for section in result['sections']:
+    sections = []
+    for section in plan['sections']:
+        steps = []
         for step in section['steps']:
+            resolved = []
             for p in step:
-                if p['ref'].startswith('@'):
-                    symbol=p['ref']
-                    if symbol not in references:
-                        references[symbol] = resolve_part(symbol,parts)
-                    p['ref']=references[symbol]
-                    p.setdefault('purpose',symbol)
-                if isinstance(p['colour'],str):
-                    symbol=p['colour']
-                    if symbol not in colours:
-                        colours[symbol] = resolve_colour(symbol,parts)
-                    p['colour']=colours[symbol]
-    return result
+                if p['ref'].startswith('@') or isinstance(p['colour'],str):
+                    p = dict(p)
+                    if p['ref'].startswith('@'):
+                        symbol=p['ref']
+                        if symbol not in references:
+                            references[symbol] = resolve_part(symbol,parts)
+                        p['ref']=references[symbol]
+                        p.setdefault('purpose',symbol)
+                    if isinstance(p['colour'],str):
+                        symbol=p['colour']
+                        if symbol not in colours:
+                            colours[symbol] = resolve_colour(symbol,parts)
+                        p['colour']=colours[symbol]
+                resolved.append(p)
+            steps.append(resolved)
+        sections.append({**section, 'steps': steps})
+    return {**plan, 'sections': sections}
 
 
 def search_catalog(parts, kind, query='', *, category=None, limit=12, include_unavailable=False, max_size=None, measure=False):

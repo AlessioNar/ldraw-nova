@@ -9,10 +9,14 @@ import numpy as np
 from ldraw import Matrix, Vector, inspect_model
 from ldraw.part_geometry_types import BoundingBox
 
+from . import fastbounds
 from .collision import collision_pairs
 from .common import jsonable, normalized
 from .document import physical_context
 from .connection_adapter import connection_contacts, query_frames
+
+
+fastbounds.install()
 
 
 def metadata_summary(metadata):
@@ -108,9 +112,47 @@ def moved_inspection(inspection, indices, delta):
     return replace(inspection, occurrences=tuple(moved))
 
 
+NEAR_MARGIN = 40.0     # LDU around a moved part inside which other placements can still touch or collide with it
+LOCAL_SNAP_CHECKS = True   # False checks every candidate against the whole model: the slow reference for the tests
+
+
+def _stationary_boxes(inspection):
+    boxes = np.array([[*jsonable(o.bounds.min), *jsonable(o.bounds.max)] for o in inspection.occurrences], dtype=float)
+    return boxes.reshape(-1, 6)
+
+
+def _within(boxes, bounds, margin=NEAR_MARGIN):
+    """Which of `boxes` (rows of low xyz, high xyz) lie within `margin` of the box `bounds`."""
+    low, high = np.array(jsonable(bounds.min)) - margin, np.array(jsonable(bounds.max)) + margin
+    return np.all((boxes[:, 3:] >= low) & (boxes[:, :3] <= high), axis=1)
+
+
+def near_moved(transformed, boxes, moving_indices, always=()):
+    """`transformed` without the placements that are far from every moved one (they cannot change the checks).
+
+    Contacts, body collisions and interface reviews are only read where they involve a moved occurrence, and
+    each needs the two parts to overlap within a connector's reach, so placements farther than NEAR_MARGIN from
+    all moved bounds are left out. Indices are untouched. `boxes` are the pre-move bounds of every occurrence.
+    """
+    occurrences = transformed.occurrences
+    if not LOCAL_SNAP_CHECKS:
+        return transformed
+    moved = [i for i, o in enumerate(occurrences) if o.index in moving_indices]
+    if not moved:
+        return transformed
+    moved_low = np.min([jsonable(occurrences[i].bounds.min) for i in moved], axis=0)
+    moved_high = np.max([jsonable(occurrences[i].bounds.max) for i in moved], axis=0)
+    keep = _within(boxes, BoundingBox(Vector(*moved_low), Vector(*moved_high)))
+    keep[moved] = True
+    keep |= np.array([o.index in always for o in occurrences], dtype=bool)
+    if keep.all():
+        return transformed
+    return replace(transformed, occurrences=tuple(o for o, k in zip(occurrences, keep) if k))
+
+
 def snap_report(model, parts, moving, fixed=None, *, limit=5, moving_depth=None,
                 moving_feature=None, fixed_feature=None, max_candidates=100,
-                instance_limit=100000, allow_occupied=False):
+                instance_limit=100000, allow_occupied=False, inspection=None):
     """Rank distinct placements and check the entire moving subtree against peers.
 
     A depth is zero-based in the selected leaf's root-to-leaf path. Omitted
@@ -119,9 +161,11 @@ def snap_report(model, parts, moving, fixed=None, *, limit=5, moving_depth=None,
     from .geometry import profiles
     if limit <= 0 or max_candidates <= 0:
         raise ValueError('limit and max_candidates must be positive')
-    inspection = inspect_connections(model, parts, instance_limit)
+    if inspection is None:      # a caller that already inspected this exact model passes the result in
+        inspection = inspect_connections(model, parts, instance_limit)
     if not inspection.complete:
         raise ValueError('Cannot snap incomplete geometry/metadata; inspect diagnostics first')
+    boxes = _stationary_boxes(inspection)
     subject = occurrence_at(inspection, moving)
     path = subject.occurrence.path
     depth = len(path)-1 if moving_depth is None else moving_depth
@@ -142,7 +186,14 @@ def snap_report(model, parts, moving, fixed=None, *, limit=5, moving_depth=None,
                                   ('fixed', fixed_feature, [f for o in targets for f in o.connections])]:
         if value is not None and not any(f.feature_id == value for f in features):
             raise ValueError(f'Unknown {name} feature ID {value!r}; use connectors to list stable IDs')
-    contacts = connection_contacts(inspection)
+    # Only occupancy of the fixed part's connectors and of the moving assembly's own is read below, and a contact
+    # needs two parts within reach of each other: with a chosen fixed part, its neighbours are enough.
+    scope = inspection
+    if fixed is not None and LOCAL_SNAP_CHECKS:
+        centre = next(o for o in inspection.occurrences if o.index == fixed)
+        scope = replace(inspection, occurrences=tuple(
+            o for o, near in zip(inspection.occurrences, _within(boxes, centre.bounds)) if near or o.index in moving_indices))
+    contacts = connection_contacts(scope)
     occupied = set()
     for contact in contacts:
         a, b = contact.first_occurrence.index, contact.second_occurrence.index
@@ -165,6 +216,7 @@ def snap_report(model, parts, moving, fixed=None, *, limit=5, moving_depth=None,
         parent = parent @ pose(hop.piece.position, hop.piece.matrix)
     target_world = parent @ pose(path[depth].piece.position, path[depth].piece.matrix)
     regular = profiles()
+    moving_managed = any(managed(f) for o in inspection.occurrences if o.index in moving_indices for f in o.connections)
     for candidate in raw:
         if candidate.fixed_occurrence.index in moving_indices:
             continue
@@ -186,10 +238,18 @@ def snap_report(model, parts, moving, fixed=None, *, limit=5, moving_depth=None,
             truncated = True
             break
         checked += 1
-        transformed = moved_inspection(inspection, moving_indices, delta)
+        moved = moved_inspection(inspection, moving_indices, delta)
+        transformed = near_moved(moved, boxes, moving_indices, (candidate.fixed_occurrence.index,))
         pairs = list(collision_pairs(transformed, regular, moving=moving_indices))
         blocked = [p for p in pairs if p['status'] == 'rectangular_body_overlap']
-        new_contacts = connection_contacts(transformed)
+        if LOCAL_SNAP_CHECKS and not moving_managed:
+            # Contacts are only read for the pairs a body overlap reports, and (with nothing Technic in the moving
+            # assembly) for conflicts that involve it: the moving parts and what they overlap are all that matters.
+            partners = {i for p in pairs for i in p['instances']} - moving_indices
+            new_contacts = connection_contacts(replace(transformed, occurrences=tuple(
+                o for o in transformed.occurrences if o.index in moving_indices or o.index in partners)))
+        else:
+            new_contacts = connection_contacts(transformed)
         from .technic_review import review_inspection
         interface_errors = []
         if managed(candidate.moving):
