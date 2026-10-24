@@ -78,9 +78,65 @@ def rect_cover(cells, kind='plate', longest=8):
     return out
 
 
+def _footprint(entry):
+    _, i, j, w, d = entry
+    return {(i + a, j + b) for a in range(w) for b in range(d)}
+
+
+def cover_variants(cells):
+    """Second-layer covers to try, from the preferred one outward: crossing orientation, plate length, and where
+    the seams fall (1-3 lines peeled off one edge first)."""
+    cells = set(cells)
+    if not cells:
+        return
+    for offset in (1, 2, 3):
+        for axis in (0, 1):
+            for transpose in (True, False):
+                for longest in (6, 4, 8, 3):
+                    for lead in ('first', 'last'):
+                        src = {(j, i) for (i, j) in cells} if transpose else cells
+                        vals = sorted({c[axis] for c in src})
+                        lines = set(vals[:offset] if lead == 'first' else vals[-offset:])
+                        out = []
+                        for part in ({c for c in src if c[axis] not in lines}, {c for c in src if c[axis] in lines}):
+                            out += rect_cover(part, 'plate', longest=longest)
+                        if transpose:
+                            out = [(code, b, a, d, w) for (code, a, b, w, d) in out]
+                        yield out
+
+
+def two_layers(cells, support, upper_cells=None):
+    """(lower, upper) plate covers of `cells` so that together they form one piece that touches `support` cells.
+
+    The lower layer is the plain cover; the upper layer is the first variant whose plates, with the lower ones
+    that they overlap, form a single connected group containing a plate on a support cell.
+    """
+    lower = rect_cover(cells, 'plate')
+    for upper in cover_variants(cells if upper_cells is None else upper_cells):
+        pieces = [(_footprint(e), 0) for e in lower] + [(_footprint(e), 1) for e in upper]
+        parent = list(range(len(pieces)))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        owner = {}
+        for k, (fp, layer) in enumerate(pieces):
+            for c in fp:
+                owner.setdefault((c, 1 - layer), []).append(k)
+        for k, (fp, layer) in enumerate(pieces):
+            for c in fp:
+                for other in owner.get((c, layer), ()):
+                    parent[find(k)] = find(other)
+        roots = {find(k) for k in range(len(pieces))}
+        if len(roots) == 1 and any(fp & support for fp, layer in pieces if layer == 0):
+            return lower, upper
+    return lower, rect_cover_t(cells if upper_cells is None else upper_cells)
+
+
 def rect_cover_t(cells, kind='plate'):
-    """Like rect_cover but plates lie along z, are at most 6 long and start one stud off, so a second layer
-    straddles the seams of the first."""
+    """Like rect_cover but plates lie along z, are at most 6 long and start one stud off."""
     cells = set(cells)
     if not cells:
         return []

@@ -86,6 +86,12 @@ def band(ctx, st):
         else:
             key = ('trim', trim)
         groups.setdefault(key, set()).add(c)
+    if st.index == 0:
+        from .details import balcony_cells
+        extra = {c for c in balcony_cells(ctx) if ctx.canvas.free(c[0], c[1], y)}
+        if extra:
+            groups.setdefault(('detail', ctx.code(cfg['details']['balcony_colour'])), set()).update(extra | {(c[0], c[1] + 1) for c in extra if (c[0], c[1] + 1) in mass})
+            groups[('trim', trim)] = groups.get(('trim', trim), set()) - groups[('detail', ctx.code(cfg['details']['balcony_colour']))]
     p = s_cfg['band_projection']
     if p:
         ring = set()
@@ -98,15 +104,22 @@ def band(ctx, st):
         groups.setdefault(key, set()).update(ring)       # cut together with the slab so plates straddle wall and cornice
     layered = st.band_h == 2
     for (role, colour), cs in sorted(groups.items()):
-        for (code, i, j, w, d) in tiling.rect_cover(_free(ctx, cs, y), 'plate'):
-            _put_cover(ctx, code, colour, role, i, j, w, d, y, f'band s{st.index}')
+        cs = _free(ctx, cs, y)
         if layered:
-            top = {c for c in cs if c in cells}          # a second layer across the first ties the slab together
-            for (code, i, j, w, d) in tiling.rect_cover_t(_free(ctx, top, y + 1), 'plate'):
-                _put_cover(ctx, code, colour, role, i, j, w, d, y + 1, f'floor s{st.index}')
+            top = {c for c in cs if c in cells}
+            lower, upper_cover = tiling.two_layers(cs, mass & cs, top)
+            for (code, i, j, w, d) in lower:
+                _put_cover(ctx, code, colour, role, i, j, w, d, y, f'band s{st.index}')
+            for (code, i, j, w, d) in upper_cover:
+                if all(ctx.canvas.free(i + a, j + b, y + 1) for a in range(w) for b in range(d)):
+                    _put_cover(ctx, code, colour, role, i, j, w, d, y + 1, f'floor s{st.index}')
+        else:
+            for (code, i, j, w, d) in tiling.rect_cover(cs, 'plate'):
+                _put_cover(ctx, code, colour, role, i, j, w, d, y, f'band s{st.index}')
     for (i0, j0, w, d) in ctx.tower_rects if st.blocked else []:
-        ctx.canvas.put(catalog.ROUND_PLATE_4, ctx.code(cfg['corners']['tower_colour']), 'tower', i0 + 2, j0 + 2, y, 0,
-                       label='tower band')
+        for k in range(st.band_h):
+            ctx.canvas.put(catalog.ROUND_PLATE_4, ctx.code(cfg['corners']['tower_colour']), 'tower', i0 + 2, j0 + 2, y + k, 0,
+                           label='tower band')
 
 
 def _free(ctx, cells, y):

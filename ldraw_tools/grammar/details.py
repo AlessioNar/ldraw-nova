@@ -103,20 +103,13 @@ def balcony_cells(ctx):
 
 
 def balcony(ctx):
+    """Railing on the balcony floor (the floor itself is cut with the first floor band, see structure.band)."""
     cfg = ctx.cfg['details']
-    cells = balcony_cells(ctx)
-    if not cells:
-        return
     st = ctx.storeys[0]
     y = st.y_band
     colour = ctx.code(cfg['balcony_colour'])
-    free = {c for c in cells if ctx.canvas.free(c[0], c[1], y)}
-    wall = {(c[0], c[1] + 1) for c in free}
-    wall = {c for c in wall if ctx.canvas.free(c[0], c[1], y)}
-    for (code, i, j, w, d) in tiling.rect_cover(free | wall, 'plate'):
-        _put_cover(ctx, code, colour, 'detail', i, j, w, d, y, 'balcony floor')
-    for (i, j) in sorted(free):
-        if ctx.canvas.free(i, j, y + 1):
+    for (i, j) in sorted(balcony_cells(ctx)):
+        if not ctx.canvas.free(i, j, y) and ctx.canvas.free(i, j, y + 1):
             ctx.canvas.put(catalog.ROUND_BRICK_1, colour, 'detail', i + .5, j + .5, y + 1, 0, label='balcony rail')
 
 

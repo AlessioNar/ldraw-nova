@@ -5,7 +5,7 @@ PRESETS = {
     'house': dict(
         title='House',
         description='Two-storey brick house: gable roof with chimney, porch, plinth, tall windows.',
-        keywords=('house', 'home', 'villa', 'family house'),
+        keywords=('house', 'home', 'villa'),
         config={'name': 'house', 'footprint': {'width': 16, 'depth': 10}, 'storeys': {'count': 2},
                 'walls': {'colour': 'tan', 'plinth': True, 'plinth_colour': 'light grey'},
                 'roof': {'style': 'gable', 'colour': 'dark red', 'verge': 1},
@@ -13,7 +13,7 @@ PRESETS = {
     'cottage': dict(
         title='Cottage',
         description='Low half-timbered cottage: one tall storey, steep gable roof, chimney, small windows.',
-        keywords=('cottage', 'cabin', 'bungalow', 'farmhouse'),
+        keywords=('cottage', 'cabin', 'bungalow'),
         config={'name': 'cottage', 'footprint': {'width': 14, 'depth': 8},
                 'storeys': {'count': 1, 'courses': 7, 'band_colour': 'reddish brown'},
                 'walls': {'style': 'timber', 'colour': 'white', 'timber_colour': 'reddish brown',
@@ -36,7 +36,7 @@ PRESETS = {
     'townhouse': dict(
         title='Two-storey townhouse',
         description='Narrow brick townhouse with a hip roof, cornice bands, arched windows and a balcony over the door.',
-        keywords=('townhouse', 'terrace', 'town house', 'row house'),
+        keywords=('townhouse', 'terrace', 'terraced'),
         config={'name': 'townhouse', 'footprint': {'width': 12, 'depth': 12},
                 'storeys': {'count': 2, 'courses': 6, 'band_colour': 'white', 'band_projection': 1},
                 'walls': {'colour': 'sand red', 'plinth': True, 'plinth_colour': 'light grey'},
