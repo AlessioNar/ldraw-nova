@@ -14,6 +14,7 @@ from pathlib import Path
 _tmp = Path(tempfile.mkdtemp(prefix="ldraw-nova-web-tests-"))
 os.environ["LDRAW_NOVA_DATA_DIR"] = str(_tmp / "data")
 os.environ["LDRAW_NOVA_WEB_CONFIG_DIR"] = str(_tmp / "config")
+os.environ.setdefault("LDRAW_NOVA_ALLOWED_HOSTS", "testserver")      # Starlette TestClient's Host
 os.environ["LDRAW_NOVA_GLB_CACHE_DIR"] = str(_tmp / "glb-cache")
 (_tmp / "data" / "output").mkdir(parents=True)
 

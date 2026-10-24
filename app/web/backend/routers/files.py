@@ -35,7 +35,10 @@ def files(path: str, download: bool = False):
     file = safe_join(settings.DATA_DIR, path)
     if file is None or file_url(file) is None:
         not_found()
-    return _serve(settings.DATA_DIR, path, download=download)
+    # Agent code can write any file into generated/: never let the browser run one (e.g. .html, .svg) with this
+    # origin's API access. `sandbox` gives a document a unique origin and no scripts; fetch() and <img> ignore it.
+    return _serve(settings.DATA_DIR, path, download=download,
+                  headers={"Content-Security-Policy": "sandbox", "X-Content-Type-Options": "nosniff"})
 
 
 @router.get("/reference-models/{path:path}")

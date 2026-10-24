@@ -20,6 +20,17 @@ REQUIRED_NAME = "TYPESAFE_API_KEY"
 REQUIRED_ID = "typesafe-api-key"
 
 
+# Applied to the server's own os.environ (root, in the image): a variable like these would change how every
+# later process the server starts loads code. Provider keys and endpoints never need them.
+FORBIDDEN_NAMES = {"PATH", "HOME", "SHELL", "IFS", "ENV", "BASH_ENV", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONHOME",
+                   "LDRAW_NOVA_WEB_CONFIG_DIR", "LDRAW_NOVA_AGENT_USER", "LDRAW_NOVA_TOOLKIT_DIR"}
+FORBIDDEN_PREFIXES = ("LD_", "DYLD_", "PYTHON", "BASH_FUNC_", "NODE_OPTIONS", "UV_", "PIP_")
+
+
+def _forbidden(name: str) -> bool:
+    return name.upper() in FORBIDDEN_NAMES or name.upper().startswith(FORBIDDEN_PREFIXES)
+
+
 def _clean(rows: list, previous: list) -> list[dict]:
     if not isinstance(rows, list) or len(rows) > 256:
         raise ValueError("Provide at most 256 environment variables")
@@ -38,6 +49,8 @@ def _clean(rows: list, previous: list) -> list[dict]:
         if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,254}", name.strip()):
             raise ValueError("Variable names must start with a letter or underscore and contain only letters, digits or underscores")
         name = name.strip()
+        if _forbidden(name):
+            raise ValueError(f"{name} changes how the server starts programs and cannot be set here")
         if name in names:
             raise ValueError("Each environment variable name must be unique")
         row_id = row.get("id")
