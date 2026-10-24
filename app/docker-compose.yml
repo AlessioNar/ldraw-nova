@@ -17,12 +17,20 @@ services:
     # you trust (or restrict access with your host firewall).
     ports:
       - "${LDRAW_NOVA_WEB_BIND:-127.0.0.1}:${LDRAW_NOVA_WEB_PORT:-8765}:8000"
+    # The database starts first; the app brings its schema up to date (alembic upgrade head) when it starts.
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [default, db-net]
     volumes:
       # Models, chats, builds, parts lists and agent work folders. A Docker volume, not a host folder:
       # on Windows/macOS every file access through a bind mount costs milliseconds and the pages felt slow.
       # Copy files out with: docker cp ldraw-nova-app:/data/generated ./my-models
       - data:/data
       - config:/config     # LLM settings, API keys; kept out of ./data
+      # The database password (a file, never an environment variable): root:70 0440, so the server (root) reads it and
+      # the agent user (uid 999) cannot. The firewall rule in entrypoint.sh also keeps agent code off port 5432.
+      - secrets:/run/secrets:ro
     # Optional: keys referenced from the UI as "os.environ/NAME" (e.g. ANTHROPIC_API_KEY=...)
     env_file:
       - path: .env
@@ -69,6 +77,94 @@ services:
     #   python3 /app/example.py
     # and look at ./data/output on the host.
 
+  # ---- PostgreSQL: the application database (request log and cost history today; more later) --------------------
+  # See docs/plans/postgres/PROPOSAL.md. No published port, and it sits on an internal network only the app joins.
+
+  # One-shot: generates the two database passwords on the first start (plain `docker compose up -d` needs no setup).
+  db-secrets:
+    image: postgres:18-alpine@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
+    restart: "no"
+    user: "0:0"
+    network_mode: none
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER, DAC_OVERRIDE]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    volumes: [secrets:/s]
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e; umask 077
+        for f in db_admin_password db_password; do
+          [ -s /s/$$f ] || head -c 32 /dev/urandom | base64 | tr -d '=+/' | head -c 40 > /s/$$f
+          chown 0:70 /s/$$f; chmod 0440 /s/$$f
+        done
+
+  db:
+    image: postgres:18-alpine@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
+    container_name: ldraw-nova-db
+    restart: unless-stopped
+    user: "70:70"                   # the postgres user of the image; no root, so no capabilities are needed at all
+    init: true
+    networks: [db-net]              # internal network, no published port (the dev override publishes 127.0.0.1:5433)
+    depends_on:
+      db-secrets:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: obd_admin      # bootstrap superuser: reachable only through the local socket (backups, restore)
+      POSTGRES_DB: obd
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=trust"
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    volumes:
+      - db:/var/lib/postgresql      # the 18 image keeps its data under /var/lib/postgresql/18/docker
+      - secrets:/run/secrets:ro
+      - ./db/initdb:/docker-entrypoint-initdb.d:ro    # creates the role obd_app (owner of the database, not a superuser)
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=20", "-c", "work_mem=8MB",
+              "-c", "idle_in_transaction_session_timeout=60000", "-c", "log_min_duration_statement=500"]
+    healthcheck:
+      # Over TCP on purpose: during first-time initialisation the temporary server listens on the socket only.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U obd_admin -d obd"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ["/tmp", "/run/postgresql"]
+    mem_limit: 512m
+    pids_limit: 128
+
+  # Opt-in scheduled backups: `docker compose --profile backup up -d`. One dump a day (7 kept) plus one on Sundays
+  # (4 kept) in the volume ldraw-nova-docker_backups. A dump is not the whole backup: see scripts/backup.sh.
+  db-backup:
+    image: postgres:18-alpine@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
+    profiles: [backup]
+    container_name: ldraw-nova-db-backup
+    restart: unless-stopped
+    user: "0:0"                     # owns the freshly created backups volume; capabilities are all dropped
+    init: true
+    networks: [db-net]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - secrets:/run/secrets:ro
+      - backups:/backups
+      - ./db/backup-loop.sh:/backup-loop.sh:ro
+    entrypoint: ["sh", "/backup-loop.sh"]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: ["/tmp"]
+    mem_limit: 256m
+    pids_limit: 64
+
+networks:
+  db-net:
+    internal: true                  # the database can not reach the internet, and nothing outside can reach it
+
 volumes:
   data:
     # Your models, chats, builds and parts lists (new volumes start with the showcase models).
@@ -76,3 +172,12 @@ volumes:
   config:
     # Persist this project's LLM settings and API keys.
     name: ldraw-nova-docker_config
+  db:
+    # PostgreSQL data (request log, cost history). Back it up with scripts/backup.sh; `down -v` deletes it.
+    name: ldraw-nova-docker_db
+  secrets:
+    # The generated database passwords (root-owned files).
+    name: ldraw-nova-docker_secrets
+  backups:
+    # Only used by the opt-in `backup` profile.
+    name: ldraw-nova-docker_backups

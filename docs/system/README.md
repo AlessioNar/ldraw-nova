@@ -10,6 +10,7 @@ This folder explains how the system works, written for the owner. It aims at und
 | [workspace-and-editor.md](workspace-and-editor.md) | Builds, versions, the draft, the 3D canvas, editor operations |
 | [parts-and-collection.md](parts-and-collection.md) | Parts lists, Brickit/Pileometer import, "maybe" pieces, what-can-I-build, parts check |
 | [data-and-storage.md](data-and-storage.md) | What lives where: volumes, folders, files, the reference library |
+| [database.md](database.md) | PostgreSQL: what is in it, how it is secured, backup and restore, tests |
 | [settings-and-providers.md](settings-and-providers.md) | LLM providers, keys, the three model roles, cost tracking |
 | [security.md](security.md) | The short version of the security pass |
 | [operations.md](operations.md) | Dev mode, rebuilds, tests, logs, common tasks |

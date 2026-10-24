@@ -10,11 +10,12 @@ The statuses below are inferred from the plan documents, the code and the git hi
 | Rebrickable mapping | Part and colour maps for parts list imports | [rebrickable-mapping.md](../plans/rebrickable-mapping.md) |
 | Agent loop performance | Rolling cache breakpoint, volatile state after history, masking of old tool output | [loop-perf/](../plans/loop-perf/REPORT.md) |
 | 3D editor core | Plan editing, palette, colours, agent handover | [manual-builder/](../plans/manual-builder/README.md) |
-| Chat redesign | Sidebar, four-control composer, build header, grouped transcript (the doc header still says "nothing implemented") | [chat-redesign/PROPOSAL.md](../plans/chat-redesign/PROPOSAL.md) |
+| Chat redesign | Sidebar (since replaced by the app bar), four-control composer, build header, grouped transcript (the doc header still says "nothing implemented") | [chat-redesign/PROPOSAL.md](../plans/chat-redesign/PROPOSAL.md) |
 | Design system | "Blueprint with a hint of Toy box" applied; follows the OS light/dark theme | [design-system/applied](../plans/design-system/applied/README.md) |
 | Deterministic first, core | Generator registry, understanding step, resident build worker with cache, fast path | [deterministic-first/PROPOSAL.md](../plans/deterministic-first/PROPOSAL.md) (tasks 1–3) |
 | Fast path API | `POST /api/describe`, selectable understanding model | [phase2/fast-path.md](../plans/phase2/fast-path.md) |
 | Build workspace | Builds, versions, one draft, always-3D workspace, proposals, editor speed-ups | [build-workspace/](../plans/build-workspace/README.md), [CONTRACT.md](../plans/build-workspace/CONTRACT.md) |
+| App shell | Sidebar replaced by a slim app bar; Home is a four-tile menu; My Builds is a card grid of every build | (no plan doc) |
 | Brickit Pileometer import | Including colour-family review | [parts-catalogue/PROPOSAL.md](../plans/parts-catalogue/PROPOSAL.md) (pre-existing part) |
 | Security pass and hardening | Firewall, Host allowlist, separate Jev key, hash locks | [security pass](../security/2026-10-24-security-pass.md) |
 | UX journeys | Three audits with ranked friction lists; many fixes delivered since | [journeys/](../plans/journeys/01-first-run-and-building.md) |

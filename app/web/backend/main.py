@@ -7,6 +7,7 @@ The routes live in routers/, one module per area.
 """
 from __future__ import annotations
 
+import asyncio
 import ipaddress
 import logging
 import os
@@ -22,13 +23,22 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 import build_worker
+import db
+import request_log
 import run_state
 import sandbox
 import settings
-from routers import builds_api, chats, describe_api, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, pipeline, spa, understand_api, workspace_api
+from db import migrate as db_migrate
+from routers import builds_api, chats, collection, costs_api, describe_api, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, pipeline, spa, understand_api, workspace_api
 from store import get_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+
+
+async def _prune_request_log_daily() -> None:
+    while True:
+        await asyncio.sleep(24 * 3600)
+        await asyncio.to_thread(request_log.prune)
 
 
 @asynccontextmanager
@@ -37,7 +47,14 @@ async def lifespan(_app: FastAPI):
         folder.mkdir(parents=True, exist_ok=True)
     sandbox.give_to_agent(settings.GENERATED_DIR)      # agent scripts may publish models there
     get_store()
+    # The schema is brought up to date before anything uses the database; if it cannot be reached the app still
+    # starts (nothing stored there is needed to build) and /api/environment says "Database: unavailable".
+    if await asyncio.to_thread(db_migrate.upgrade_when_ready):
+        await asyncio.to_thread(request_log.prune)
+    pruning = asyncio.create_task(_prune_request_log_daily())
     yield
+    pruning.cancel()
+    await asyncio.to_thread(db.dispose)
     for chat_id in list(run_state._runs):
         await run_state.cancel(chat_id)
     await build_worker.shutdown()
@@ -88,7 +105,7 @@ async def reject_unknown_host(request: Request, call_next):
 
 def body_limit_mb(path: str) -> int:
     # An inventory upload carries a CSV of up to 25 MB (the route enforces that) inside its JSON body.
-    return 27 if path == "/api/inventories" else 18
+    return 27 if path in ("/api/inventories", "/api/collection/imports/preview") else 18
 
 
 class ChunkedBodyLimit:
@@ -155,7 +172,7 @@ async def same_origin_api(request: Request, call_next):
 
 app.add_middleware(ChunkedBodyLimit)   # outermost: also guards bodies the middlewares above never see in full
 
-for module in (builds_api, environment, llm_models, chats, editor, editor_palette, models_gallery, files, inventories, understand_api, describe_api, pipeline, workspace_api):
+for module in (builds_api, costs_api, environment, llm_models, chats, editor, editor_palette, models_gallery, files, inventories, collection, understand_api, describe_api, pipeline, workspace_api):
     app.include_router(module.router)
 spa.mount_static(app)
 app.include_router(spa.router)   # catch-all: after every other route and mount
