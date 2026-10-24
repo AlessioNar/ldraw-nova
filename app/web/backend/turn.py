@@ -26,6 +26,7 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
     ctx = ToolContext(chat_id=chat_id, store=store, emit=run.emit, options=run.options, ledger=run.ledger)
 
     sink = ChatSink(store, chat_id, run)
+    run.ledger.begin_request(store.messages(chat_id))      # the budget is per request, not per chat
 
     def save(message: dict) -> int:
         return sink.add(message)
@@ -37,9 +38,9 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
         spent = run.ledger.planner_spent_eur(stored)          # stored cost plus worker cost not yet saved
         if spent < budget:
             return False
-        save({"role": "assistant", "_ui_only": True, "_notice": True,
-              "content": f"Budget reached: about €{spent:.2f} of €{budget:.2f} spent in this chat. "
-                         "Raise the budget in the chat box and send a message to continue."})
+        save({"role": "assistant", "_ui_only": True, "_notice": True, "_budget_reached": {"spent_eur": round(spent, 2), "limit_eur": budget},
+              "content": f"Budget reached: about €{spent:.2f} of the €{budget:.2f} budget for this request is spent. "
+                         "Work so far is kept. Continue with more budget to carry on from here."})
         return True
 
     def build_messages(stored: list[dict]) -> list[dict]:

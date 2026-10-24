@@ -247,3 +247,13 @@
   .bh-cost { gap: 6px; }
   .bh-workers { flex: 0 1 auto; font-size: 12px; }
 }
+
+.bh-scope, .bh-total { color: var(--muted); font-size: 12px; font-weight: 400; }
+.bh-state.stopped { color: var(--danger); }
+.build-header.stopped { border-left: 3px solid var(--danger); }
+.composer .budget-chip.over { color: var(--danger); border-color: var(--danger); }
+.composer .budget-chip small { margin-left: 4px; color: var(--muted); font-size: 11px; }
+.budget-stop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; padding: 10px 12px; border: 1px solid var(--danger); border-radius: 10px; background: var(--surface); }
+.budget-stop p { flex: 1 1 220px; margin: 0; font-size: 13px; }
+.budget-stop p strong { display: block; color: var(--danger); }
+.budget-stop .actions { display: flex; flex-wrap: wrap; gap: 8px; }

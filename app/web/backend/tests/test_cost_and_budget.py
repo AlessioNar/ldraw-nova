@@ -95,7 +95,8 @@ def test_budget_validation():
         model_catalog.validate_options(unpriced, {"budget_eur": 2})
 
 
-def test_turn_stops_before_calling_the_model_once_the_budget_is_spent(monkeypatch, store):
+def test_budget_is_per_request_not_per_chat(monkeypatch, store):
+    """Earlier requests' cost does not count against a new request; a follow-up keeps its full budget."""
     entry = llm_config.create({"model_name": "opus", "litellm_params": {"model": "anthropic/claude-opus-5-5", "api_key": "k"},
                                "capabilities": {"tools": True, "vision": True}})
     fake, calls = scripted([[chunk(content="ok")]])
@@ -108,12 +109,30 @@ def test_turn_stops_before_calling_the_model_once_the_budget_is_spent(monkeypatc
         await agent.start_turn(store, chat["id"], "continue", entry["id"], {"permissions": "full", "budget_eur": budget})
         await run_state._runs[chat["id"]].task
 
-    asyncio.run(run(2.0))
-    notice = store.messages(chat["id"])[-1]
-    assert calls == [] and notice["_notice"] and "Budget reached" in notice["content"] and "€2.50 of €2.00" in notice["content"]
-    # A larger budget lets the next turn go through.
-    asyncio.run(run(5.0))
+    asyncio.run(run(2.0))                       # the chat already cost 2.50, yet this request has its own 2.00
     assert len(calls) == 1
+    assert not any(m.get("_budget_reached") for m in store.messages(chat["id"]))
+
+
+def test_ledger_counts_only_the_current_request(monkeypatch):
+    import budget
+    monkeypatch.setenv("LDRAW_NOVA_EUR_PER_USD", "1")
+    old = [{"role": "assistant", "_usage": {**record(1, 1), "cost_usd": 3.0}}]
+    ledger = budget.BudgetLedger(2.0)
+    assert ledger.remaining_eur(old) == -1.0    # no request started: whole chat counts (old behaviour)
+    ledger.begin_request(old)
+    assert ledger.remaining_eur(old) == 2.0 and ledger.planner_spent_eur(old) == 0.0
+    both = old + [{"role": "assistant", "_usage": {**record(1, 1), "cost_usd": 0.5}}]
+    assert ledger.remaining_eur(both) == 1.5
+    assert ledger.reserve("w1", 5.0, both) == 1.5      # workers reserve from what is left of the request budget
+
+
+def test_turn_stats_report_the_requests_cost(monkeypatch):
+    monkeypatch.setenv("LDRAW_NOVA_EUR_PER_USD", "1")
+    messages = [{"role": "user", "content": "a"}, {"role": "assistant", "_usage": {**record(1, 1), "cost_usd": 1.5}},
+                {"role": "user", "content": "b"}, {"role": "assistant", "_usage": {**record(1, 1), "cost_usd": 0.25}}]
+    stats = usage.turn_stats(messages)
+    assert stats["request_cost_eur"] == 0.25 and usage.usage_totals(messages)["cost_eur"] == 1.75
 
 
 def test_budget_stops_a_turn_between_steps_not_only_before_the_first(monkeypatch, store):
@@ -143,3 +162,4 @@ def test_budget_stops_a_turn_between_steps_not_only_before_the_first(monkeypatch
     assert len(calls) == 1, "the second step must not run after the budget was exceeded"
     assert any(m.get("_usage", {}).get("cost_usd", 0) > 0.01 for m in messages)
     assert messages[-1].get("_notice") and "Budget reached" in messages[-1]["content"]
+    assert messages[-1]["_budget_reached"]["limit_eur"] == 0.01 and messages[-1]["_budget_reached"]["spent_eur"] >= 0.01

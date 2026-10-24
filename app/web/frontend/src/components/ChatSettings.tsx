@@ -6,6 +6,8 @@ import { tokenLabel } from "../modelChoices";
 
 export const DEFAULT_BUDGET_EUR = 2;
 const BUDGETS = [1, 2, 5, 10, 20];
+/** The next preset above `b` (or double it past the last one): what "Raise budget" offers. */
+export const raisedBudget = (b: number) => BUDGETS.find(n => n > b) ?? b * 2;
 const KEY = "ldraw-nova.chatSettings";
 const EFFORT_NAMES: Record<string, string> = { none: "No reasoning", low: "Low", medium: "Medium", high: "High", xhigh: "XHigh", max: "Max" };
 const PERMISSION_HINTS: Record<TurnOptions["permissions"], string> = {
@@ -98,9 +100,9 @@ export default function ChatSettings({ options, onChange, profile, defaultWorker
       <div className="setting-row"><label>Workers</label>
         <WorkerModelPicker value={options.worker_model_id !== undefined ? options.worker_model_id : defaultWorkerId} disabled={disabled}
           onChange={id => onChange({ ...options, worker_model_id: id })} /></div>
-      <div className="setting-row"><label htmlFor="set-budget">Budget</label>
+      <div className="setting-row"><label htmlFor="set-budget">Budget<small className="muted">per request</small></label>
         <div><select id="set-budget" ref={budget} disabled={disabled} value={budgetValue}
-          title="Stop when this chat has cost about this much (estimated from list prices)"
+          title="Each request (message) stops when it has cost about this much, planner and workers together. Estimated from list prices."
           onChange={e => {
             const v = e.target.value;
             setCustom(v === "custom");

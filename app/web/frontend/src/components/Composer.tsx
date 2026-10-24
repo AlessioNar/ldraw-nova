@@ -10,7 +10,7 @@ import DocumentIcon from "./DocumentIcon";
 
 const DOCUMENT_TYPES = ".pdf,.txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.rtf,.docx,.xlsx,.pptx,.mpd,.ldr,.dat";
 
-export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions }: {
+export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions, budgetReached }: {
   llmId: string | null;
   onLlmChange: (id: string) => void;
   onSend: (text: string, options: TurnOptions, images: string[], documents: DocumentUpload[]) => Promise<void> | void;
@@ -18,6 +18,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   running: boolean;
   autoFocus?: boolean;
   initialText?: string;
+  budgetReached?: boolean; // the last request stopped at its budget: the chip turns red
   initialOptions?: TurnOptions;
 }) {
   const { llms, defaultWorkerId } = useApp();
@@ -61,6 +62,11 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     onLlmChange(id);
   }
   useEffect(() => setText(initialText), [initialText]);
+  // The chat's saved budget changed (a "Continue with more budget" button raised it): show it in the chip.
+  const savedBudget = initialOptions?.budget_eur;
+  useEffect(() => {
+    if (savedBudget !== undefined) setSelection(cur => cur.options.budget_eur === savedBudget ? cur : { ...cur, options: { ...cur.options, budget_eur: savedBudget } });
+  }, [savedBudget]);
   useEffect(() => {
     if (!attachOpen) return;
     const onDown = (e: PointerEvent) => { if (!attachMenu.current?.contains(e.target as Node) && !attachButton.current?.contains(e.target as Node)) setAttachOpen(false); };
@@ -170,9 +176,9 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     <div className="composer-toolbar">
       <div className="turn-options">
         <ModelPicker value={llmId} onChange={chooseModel} disabled={disabled || !llms.length} />
-        <button type="button" ref={budgetButton} className="compact-control chat-settings-trigger budget-chip" aria-haspopup="dialog" aria-expanded={panel === "budget"}
-          title="Stop when this chat has cost about this much. Click to change." onClick={() => setPanel(panel === "budget" ? null : "budget")}>
-          {budgetLabel(options.budget_eur)}
+        <button type="button" ref={budgetButton} className={`compact-control chat-settings-trigger budget-chip${budgetReached ? " over" : ""}`} aria-haspopup="dialog" aria-expanded={panel === "budget"}
+          title="Spend limit for each request: planner and workers stop when a message has cost about this much. Click to change." onClick={() => setPanel(panel === "budget" ? null : "budget")}>
+          {budgetLabel(options.budget_eur)}{options.budget_eur ? <small> per request</small> : null}
         </button>
         <button type="button" ref={settingsButton} className="compact-control chat-settings-trigger settings-button" aria-haspopup="dialog" aria-expanded={panel === "settings"}
           aria-label={nonDefault ? "Chat settings (changed from defaults)" : "Chat settings"} title="Mode, permissions, parts, workers, budget and more"
