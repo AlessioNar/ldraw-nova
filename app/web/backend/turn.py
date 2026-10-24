@@ -7,6 +7,7 @@ import logging
 import inference
 import llm_config
 import model_catalog
+import provider_errors
 import settings
 from store import ChatStore
 from history import llm_history
@@ -74,7 +75,10 @@ async def run_turn(store: ChatStore, run: Run, entry: dict, execute_tool) -> Non
         raise
     except Exception as exc:  # noqa: BLE001 - provider/auth/network errors end the turn, not the chat
         log.warning("turn failed for chat %s: %s", chat_id, exc.__class__.__name__)
-        message = str(exc) if isinstance(exc, ValueError) else f"{exc.__class__.__name__}: Provider request failed. Check login, model access and settings."
+        model = entry["litellm_params"]["model"]
+        message = str(exc) if isinstance(exc, ValueError) else (
+            provider_errors.describe(exc, model, own_key=bool(llm_config.own_key(entry)))
+            or f"{exc.__class__.__name__}: Provider request failed. Check login, model access and settings.")
         save({"role": "assistant", "_ui_only": True, "_error": True, "content": message})
         run.emit("turn_error", {"message": message})   # not "error": EventSource reserves it
     finally:

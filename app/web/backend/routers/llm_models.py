@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Optional
 
-import httpx
 import litellm
 import yaml
 from fastapi import APIRouter, HTTPException
@@ -16,7 +15,9 @@ import inference
 import llm_config
 import model_catalog
 import model_discovery
+import provider_errors
 import providers
+from provider_errors import KEY_CHECKS
 from .common import not_found
 
 router = APIRouter()
@@ -99,6 +100,12 @@ async def llm_models_test(entry_id: str):
         result["connection_status"] = llm_config.record_connection_test(entry_id, fingerprint, result["ok"], metadata)
         result["profile"] = model_catalog.entry_profile(llm_config.get(entry_id) or entry)
         return result
+    own = llm_config.own_key(entry)
+    pid = provider_errors.provider_id(entry["litellm_params"]["model"])
+    if own and pid in KEY_CHECKS:
+        checked = await provider_errors.check_key(pid, own, remember=False)
+        if checked["status"] == "rejected":
+            return await tested({"ok": False, "error": checked["error"]})
     try:
         params = await inference.params_for(entry, {})
         params.setdefault("max_tokens", 4096)
@@ -151,38 +158,20 @@ def llm_provider_models(provider: str):
     return {"models": sorted(m for m in candidates if model_catalog.builder_supported(m))}
 
 
-# Provider key checks use each provider's free lookup, never a completion, so Test spends no tokens.
-KEY_CHECKS = {
-    "anthropic": ("ANTHROPIC_API_KEY", "https://api.anthropic.com/v1/models?limit=1",
-                  lambda key: {"x-api-key": key, "anthropic-version": "2023-06-01"}),
-    "openai": ("OPENAI_API_KEY", "https://api.openai.com/v1/models", lambda key: {"Authorization": f"Bearer {key}"}),
-    # OpenRouter's model list is public; /key is the free call that actually checks the key.
-    "mistral": ("MISTRAL_API_KEY", "https://api.mistral.ai/v1/models", lambda key: {"Authorization": f"Bearer {key}"}),
-    "openrouter": ("OPENROUTER_API_KEY", "https://openrouter.ai/api/v1/key", lambda key: {"Authorization": f"Bearer {key}"}),
-}
-
-
 @router.get("/api/llm-providers/keys")
 def llm_provider_keys():
     """Which providers have a key set (saved here or inherited); never the key itself."""
     env = environment_config.snapshot()
-    return {"keys": {p: bool(env.get(name)) for p, (name, _url, _h) in KEY_CHECKS.items()}}
+    return {"keys": {p: bool(env.get(name)) for p, (name, _url, _h) in KEY_CHECKS.items()},
+            "rejected": provider_errors.rejected_providers()}
 
 
 @router.post("/api/llm-providers/{provider}/test")
 async def llm_provider_test(provider: str):
     if provider not in KEY_CHECKS:
         raise HTTPException(400, "No free key check exists for this provider")
-    name, url, headers = KEY_CHECKS[provider]
+    name = KEY_CHECKS[provider][0]
     key = environment_config.snapshot().get(name)
     if not key:
-        return {"ok": False, "error": f"No key saved. Paste your {name} first."}
-    try:
-        async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
-            await model_discovery._fetch_json(client, url, headers(key))
-        return {"ok": True, "message": "Key accepted (checked with the provider's free models lookup; no tokens used)."}
-    except httpx.HTTPStatusError as exc:
-        code = exc.response.status_code
-        return {"ok": False, "error": "The provider rejected this key." if code in (401, 403) else f"The provider answered HTTP {code}."}
-    except Exception:  # noqa: BLE001 - never echo an error that could contain the key
-        return {"ok": False, "error": "Could not reach the provider. Check the network and try again."}
+        return {"ok": False, "status": "missing", "error": f"No key saved. Paste your {name} first."}
+    return await provider_errors.check_key(provider, key)

@@ -24,7 +24,7 @@ async function storeKey(env: string, value: string) {
   await api.saveEnvironment(rows);
 }
 
-function ProviderCard({ provider, hasKey, saved, onChanged }: { provider: typeof PROVIDERS[number]; hasKey: boolean; saved: boolean; onChanged: () => void }) {
+function ProviderCard({ provider, hasKey, saved, rejected, onChanged }: { provider: typeof PROVIDERS[number]; hasKey: boolean; saved: boolean; rejected: boolean; onChanged: () => void }) {
   const { refreshLlms } = useApp();
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -35,17 +35,24 @@ function ProviderCard({ provider, hasKey, saved, onChanged }: { provider: typeof
     finally { setBusy(false); }
   };
   const save = (event: FormEvent) => { event.preventDefault(); if (!value.trim()) return; run(async () => {
-    await storeKey(provider.env, value.trim()); setValue(""); onChanged(); refreshLlms();
-    setResult({ ok: true, text: "Key saved. Click Test to check it." });
+    await storeKey(provider.env, value.trim()); setValue("");
+    setResult({ ok: true, text: "Key saved. Checking it with the provider…" });
+    let r: Awaited<ReturnType<typeof api.testProvider>> | null = null;
+    try { r = await api.testProvider(provider.id); } catch { /* saved but not checked */ }
+    onChanged(); refreshLlms();
+    if (r?.ok) setResult({ ok: true, text: "Key saved and accepted by " + provider.name + "." });
+    else if (r?.status === "rejected") setResult({ ok: false, text: r.error ?? `Key rejected by ${provider.name}.` });
+    else setResult({ ok: true, text: `Key saved but not checked: ${provider.name} could not be reached. Click Test to try again.` });
   }); };
   const test = () => run(async () => {
     const r = await api.testProvider(provider.id);
     setResult({ ok: r.ok, text: (r.ok ? r.message : r.error) ?? "" });
+    onChanged(); refreshLlms();
   });
   const remove = () => run(async () => { await storeKey(provider.env, ""); onChanged(); refreshLlms(); });
   return <form className="panel provider-card" onSubmit={save} aria-label={`${provider.name} key`}>
     <header className="provider-card-head"><strong>{provider.name}</strong>
-      <span className={`badge ${hasKey ? "ok" : ""}`}>{hasKey ? "Key set" : "No key"}</span></header>
+      <span className={`badge ${hasKey && !rejected ? "ok" : rejected ? "warn" : ""}`}>{!hasKey ? "No key" : rejected ? "Key rejected" : "Key set"}</span></header>
     <label className="provider-key"><span className="muted small">API key · <a href={provider.keysUrl} target="_blank" rel="noreferrer">get one</a></span>
       <input type="password" autoComplete="new-password" spellCheck={false} maxLength={65536} disabled={busy}
         aria-label={`${provider.name} API key`} placeholder={hasKey ? "Key saved · type to replace" : "Paste your API key"}
@@ -82,10 +89,11 @@ function ModelRow({ name, profile, entry, env, busy, onAdd, onRemove, onUseProvi
 export default function ProviderSettings({ catalog, onError }: { catalog: ModelProfile[]; onError: (message: string) => void }) {
   const { llms, refreshLlms } = useApp();
   const [keys, setKeys] = useState<Record<string, boolean>>({});
+  const [rejectedIds, setRejectedIds] = useState<string[]>([]);
   const [savedNames, setSavedNames] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const load = useCallback(() => {
-    api.providerKeys().then(r => setKeys(r.keys)).catch(e => onError(e.message));
+    api.providerKeys().then(r => { setKeys(r.keys); setRejectedIds(r.rejected ?? []); }).catch(e => onError(e.message));
     api.environment().then(r => setSavedNames(r.variables.filter(v => v.has_value).map(v => v.name))).catch(() => {});
   }, [onError]);
   useEffect(load, [load]);
@@ -99,7 +107,7 @@ export default function ProviderSettings({ catalog, onError }: { catalog: ModelP
       <header className="page-head settings-models-head"><div><h2 id="providers-heading">Providers</h2>
         <p className="muted small">Paste one API key per provider. It is saved once and never shown again.</p></div></header>
       <div className="provider-cards">{PROVIDERS.map(p =>
-        <ProviderCard key={p.id} provider={p} hasKey={!!keys[p.id]} saved={savedNames.includes(p.env)} onChanged={load} />)}</div>
+        <ProviderCard key={p.id} provider={p} hasKey={!!keys[p.id]} saved={savedNames.includes(p.env)} rejected={rejectedIds.includes(p.id)} onChanged={load} />)}</div>
     </section>
     <section aria-labelledby="models-heading">
       <header className="page-head settings-models-head"><div><h2 id="models-heading">Models</h2>

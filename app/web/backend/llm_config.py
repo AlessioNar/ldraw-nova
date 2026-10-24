@@ -309,6 +309,13 @@ def resolve_params(entry: dict) -> dict:
     return _map_env_refs(entry["litellm_params"], resolve)
 
 
+def own_key(entry: dict) -> str:
+    """The literal key an entry carries itself (not an environment reference); empty if none or a custom api_base."""
+    params = entry["litellm_params"]
+    key = params.get("api_key")
+    return key if isinstance(key, str) and key and not key.startswith("os.environ/") and not params.get("api_base") else ""
+
+
 def capabilities(entry: dict) -> dict[str, bool]:
     """Only advertise capabilities verified by the model catalog/provider metadata."""
     spec = model_catalog.profile(entry["litellm_params"]["model"])
