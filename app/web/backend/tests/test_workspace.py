@@ -189,6 +189,10 @@ def test_describe_regenerates_for_generator_and_edit_routes_and_spends_nothing_o
     assert edited["route"] == "edit" and edited["draft"]["changes"] == 2
     assert seen[1] == {"generator": "house", "params": {"width": 8, **seen[1]["params"]}}      # the build's generator source
     assert client.get(f"/api/builds/{slug}/editor").json()["revision"] == view["revision"] + 1
+    # Undo walks the settings the fast path edits from back too: the next edit is judged against what is on the canvas
+    undo(client, slug, client.get(f"/api/builds/{slug}/editor").json())
+    client.post(f"/api/builds/{slug}/draft/describe", json={"text": "wider", "persist": False})
+    assert seen[-1]["params"]["width"] == seen[1]["params"]["width"] == 8
 
     async def nothing(payload):
         raise AssertionError("the generator must not run")
@@ -200,6 +204,55 @@ def test_describe_regenerates_for_generator_and_edit_routes_and_spends_nothing_o
         assert reply.status_code == 200 and reply.json()["route"] == route and reply.json()["draft"]["changes"] == 2
     assert client.get(f"/api/builds/{slug}/editor").json()["revision"] == revision               # untouched
     assert client.post(f"/api/builds/{slug}/draft/describe", json={"text": "  "}).status_code == 422
+
+
+def test_describe_turns_are_saved_in_the_build_chat(client, monkeypatch):
+    """One history per build: the fast path's turns (text, route, changes, cost 0, timing) land in the attached chat,
+    previous_text defaults to the last user message, and the agent later reads the turns as ordinary history."""
+    import history
+    slug = make_build(client, "ws chat", TINY)
+    seen = []
+
+    async def fake(text, current=None, build_id=None, previous_text=None, **kw):
+        seen.append(previous_text)
+        return answers[text]
+
+    answers = {
+        "a house": {"route": "generator", "generator": "house", "title": "House", "params": {"width": 8}, "notes": ["width clamped to 8"], "cost_eur": 0.0},
+        "wider": {"route": "edit", "generator": "house", "params": {"width": 12}, "notes": [],
+                  "changes": [{"param": "width", "label": "Width", "from": 8, "to": 12}], "cost_eur": 0.0},
+        "a castle": {"route": "needs_ai", "reason": "no generator", "spec": {"intent": "new_model", "subject": {"kind": "castle"}},
+                     "estimate": {"eur_low": 1.0, "eur_high": 2.0, "minutes_low": 3, "minutes_high": 6}},
+        "hmm": {"route": "clarify", "question": "What?"},
+    }
+    monkeypatch.setattr(fast_path, "describe", fake)
+    assert client.get(f"/api/builds/{slug}/workspace").json()["chat_id"] is None
+    first = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "a house"}).json()
+    chat_id = first["chat_id"]
+    assert chat_id and first["took_ms"] >= 0
+    assert client.get(f"/api/builds/{slug}/workspace").json()["chat_id"] == chat_id
+    client.post(f"/api/builds/{slug}/draft/describe", json={"text": "wider"})
+    client.post(f"/api/builds/{slug}/draft/describe", json={"text": "a castle", "previous_text": "explicit"})
+    hmm = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "hmm"}).json()
+    assert hmm["choices"] and hmm["chat_id"] == chat_id                      # chips for a one-question answer
+    assert seen == [None, "a house", "explicit", "a castle"]                  # previous_text: given, else the last user message
+    messages = get_store().messages(chat_id)
+    assert [m["role"] for m in messages] == ["user", "assistant"] * 4
+    edit_turn = messages[3]["_fast_path"]
+    assert edit_turn["route"] == "edit" and edit_turn["cost_eur"] == 0.0 and edit_turn["changes"][0]["label"] == "Width" and "took_ms" in edit_turn
+    assert "width clamped to 8" in messages[1]["content"]
+    # the agent sees the turns, and the understood spec of the needs_ai turn, as normal history without our metadata
+    sent = history.llm_history(messages, False, lambda ref: None)
+    assert [m["content"] for m in sent if m["role"] == "user"] == ["a house", "wider", "a castle", "hmm"]
+    assert "castle" in sent[5]["content"] and "Waiting for the person to confirm" in sent[5]["content"]
+    assert not any(k.startswith("_") for m in sent for k in m)
+    # persist=false leaves the chat alone; a note is for the person only
+    client.post(f"/api/builds/{slug}/draft/describe", json={"text": "wider", "persist": False})
+    assert len(get_store().messages(chat_id)) == 8
+    client.post(f"/api/builds/{slug}/chat/note", json={"text": "Cancelled."})
+    note = get_store().messages(chat_id)[-1]
+    assert note["_ui_only"] and note["role"] == "assistant"
+    assert all(m["content"] != "Cancelled." for m in history.llm_history(get_store().messages(chat_id), False, lambda ref: None))
 
 
 def test_describe_by_rules_needs_no_model(client, monkeypatch):

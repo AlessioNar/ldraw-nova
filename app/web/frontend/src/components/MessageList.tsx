@@ -23,9 +23,10 @@ function ErrorText({ text }: { text: string }) {
   return after === undefined ? <>{text}</> : <>{before}<Link to="/settings">Open Settings</Link>{after}</>;
 }
 
-export default function MessageList({ detail, running, draft, persisting, tools, workers, now, error, scrollerRef, bottomRef, onScroll }: {
+export default function MessageList({ detail, running, draft, persisting, tools, workers, now, error, scrollerRef, bottomRef, onScroll, fast }: {
   detail: ChatDetail; running: boolean; draft: string; persisting: string; tools: RunningTool[]; workers: LiveWorker[]; now: number; error: string | null;
   scrollerRef: Ref<HTMLDivElement>; bottomRef: Ref<HTMLDivElement>; onScroll: UIEventHandler<HTMLDivElement>;
+  fast?: (m: Message) => ReactNode;   // how the workspace chat draws a reply of the free fast path
 }) {
   const messages = detail.messages;
   const results = new Map(messages.filter((m) => m.role === "tool").map((m) => [m.tool_call_id, m]));
@@ -99,6 +100,11 @@ export default function MessageList({ detail, running, draft, persisting, tools,
       if (m._editor_publish && (published.length || m.parts_check)) {
         nodes.push(<div key={`cards-${m.id}`} className="msg assistant">{published.map(modelCard)}{m.parts_check && <PartsCheckCard check={m.parts_check} />}</div>);
       }
+      continue;
+    }
+    if (m._fast_path && fast) {
+      flush();
+      nodes.push(<div key={m.id} className="msg assistant fast-path">{fast(m)}</div>);
       continue;
     }
     if (text(m)) {

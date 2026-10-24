@@ -57,8 +57,10 @@ The four ways to start a new build (`pages/NewBuild.tsx`):
 - a top bar;
 - a tool rail: select, move, rotate, add, paint, delete;
 - the **3D canvas**;
-- right-hand tabs: **Parts / Piece / AI / Settings**;
-- a bottom **Describe bar**, a version strip, and a live "N of M owned" parts check.
+- right-hand tabs: **Chat / Parts / Piece / Settings**. The panel is resizable (drag, arrow keys on the focused handle, double-click resets, collapsible), as is the version strip; sizes are kept in `localStorage` (`obd.ws.layout`). Phones keep the bottom sheet;
+- a bottom version strip and a live "N of M owned" parts check.
+
+**One chat per build.** Every message in the Chat tab first goes to `POST /api/builds/{id}/draft/describe` (the free fast path, with the last user message as `previous_text`). A generator or edit answer is applied to the draft and shown as a compact reply with Undo; a clarify answer is one question with quick-reply chips; a needs_ai answer is a card with the estimate and "Ask the AI" / "Cancel" (nothing paid runs before Ask the AI). The server saves every turn (user text, then an assistant message with `_fast_path` metadata: route, changes, notes, cost 0, timing) in the build's attached chat, creating it on first use, so the agent later reads them as ordinary history. The needs_ai turn's text carries the understood spec. `/chat/:id` of a build chat redirects to `/build/:id?tab=chat`; chats without a build keep the chat page.
 
 **State** lives in `components/workspace/useWorkspace.ts` and the API calls in `wsApi.ts`.
 

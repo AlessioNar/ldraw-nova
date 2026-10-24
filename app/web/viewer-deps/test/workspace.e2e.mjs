@@ -4,6 +4,7 @@
 //   docker run -d --init --name obd-ws-int-check --cap-add NET_ADMIN -p 127.0.0.1:8826:8000 -v obd-ws-int-data:/data <image>
 //   WS_E2E_URL=http://127.0.0.1:8826 WS_E2E_CONTAINER=obd-ws-int-check PLAYWRIGHT_CHANNEL=chrome node test/workspace.e2e.mjs
 // It creates its own "E2E house" generator build (one version) and leaves it behind: use a throwaway volume.
+// The chat steps use rules-path phrases only: no AI call is made and "Ask the AI" is never clicked.
 // WS_E2E_SHOTS names the screenshot folder. The proposal is created by the backend code path a build-attached chat
 // publish uses (workspace.create_proposal, via docker exec): no AI call, no cost.
 import assert from 'node:assert/strict';
@@ -16,8 +17,25 @@ import { chromium } from 'playwright';
 const baseURL = process.env.WS_E2E_URL ?? 'http://127.0.0.1:8826';
 const container = process.env.WS_E2E_CONTAINER ?? 'obd-ws-int-check';
 const shots = process.env.WS_E2E_SHOTS ?? join(dirname(fileURLToPath(import.meta.url)), '../../../../docs/plans/build-workspace/integration-screenshots');
+const VAGUE = process.env.WS_E2E_VAGUE ?? 'hmm';
+const NEEDS_AI = process.env.WS_E2E_NEEDS_AI ?? 'a helicopter';
 let BUILD;      // a throwaway generator build made below: the seeded data may carry anyone's versions and drafts
 mkdirSync(shots, { recursive: true });
+
+// A proposal made by the backend code path a build-attached chat publish uses (no AI call, no cost).
+function makeProposal() {
+  execFileSync('docker', ['exec', '-i', container, 'python3', '-'], { input: `
+import sys
+sys.path.insert(0, "/app/web/backend")
+from store import get_store
+import workspace
+store = get_store()
+files = sorted(__import__("glob").glob("/data/generated/${BUILD}-v*.mpd"))
+base = open(files[-1], encoding="utf-8").read()
+extra = "".join(f"1 4 {x} -176 {z} 1 0 0 0 1 0 0 0 1 3001.dat\\n" for x, z in ((0, -300), (80, -300), (160, -300)))
+workspace.create_proposal(store, "${BUILD}", base.replace("0 NOFILE", extra + "0 NOFILE", 1), None, base_text=base)
+` });
+}
 
 const results = [];
 async function step(name, fn) {
@@ -48,6 +66,9 @@ const canvasReady = async () => {
   await page.waitForSelector('iframe.ws-frame');
   await page.waitForFunction(() => document.querySelector('.ws-overlay'), null, { timeout: 60000 });   // shown once obd:ready arrived
 };
+const composer = () => page.locator('.ws-composer textarea[aria-label="Message"]');
+const sendChat = async (text) => { await composer().fill(text); await page.locator('.ws-composer .send-button').click(); };
+const waitChatReply = (route, n = 1) => page.waitForFunction(([rt, count]) => document.querySelectorAll(`.ws-chat [data-route="${rt}"]`).length >= count, [route, n], { timeout: 60000 });
 const reloads = async () => (await canvas().evaluate(() => window.__msgs)).filter((m) => m.cmd === 'reload').length;
 
 async function selectBrick() {          // click a grid of points over the canvas until something is selected
@@ -85,7 +106,9 @@ try {
   });
 
   await step('a2. Parts tab lists owned parts from the palette (inventory_only)', async () => {
-    const res = await page.waitForResponse((r) => r.url().includes('/editor/palette') && r.url().includes('inventory_only=true'), { timeout: 15000 }).catch(() => null);
+    const opened = page.waitForResponse((r) => r.url().includes('/editor/palette') && r.url().includes('inventory_only=true'), { timeout: 15000 }).catch(() => null);
+    await page.locator('.ws-tabs [role=tab]', { hasText: 'Parts' }).click();       // Chat is the first tab now
+    const res = await opened;
     const direct = await fetch(`${baseURL}/api/builds/${BUILD}/editor/palette?inventory_only=true&limit=50`).then((r) => r.status);
     assert.ok(res || direct === 200 || direct === 400, 'palette endpoint answered');
     if (direct === 200) await page.waitForSelector('.ws-part:not([disabled])', { timeout: 15000 });
@@ -112,20 +135,89 @@ try {
     await waitStatus(/v1 · saved/);
   });
 
-  await step('c. describe "make the roof blue": fast path, one undo step, canvas reloaded', async () => {
+  await step('c. chat "make the roof blue": free hint, applied at once, compact reply with Undo, one undo step, canvas reloaded', async () => {
     const before = await reloads();
-    await page.locator('#ws-describe-input').fill('make the roof blue');
-    await page.waitForFunction(() => /Fast path|Probably/.test(document.querySelector('.ws-hint')?.textContent ?? ''), null, { timeout: 10000 });
-    await shot('c1-describe-hint');
-    await page.getByRole('button', { name: 'Apply' }).click();
+    assert.match(await page.locator('.ws-tabs [role=tab]').first().innerText(), /^Chat/, 'Chat is the first tab');
+    await page.locator('.ws-tabs [role=tab]', { hasText: 'Chat' }).click();
+    assert.equal(await page.locator('.ws-describe').count(), 0, 'no separate Describe bar');
+    await composer().fill('make the roof blue');
+    await page.waitForFunction(() => /Free, about 1 s/.test(document.querySelector('.ws-hint-line')?.textContent ?? ''), null, { timeout: 40000 });
+    await shot('c1-chat-hint');
+    await page.locator('.ws-composer .send-button').click();
+    await waitChatReply('edit');
     await waitStatus(/draft, \d+ change/);
+    const reply = await page.locator('.ws-chat [data-route="edit"]').last().innerText();
+    assert.match(reply, /→/, `a from → to line: ${reply}`);
+    assert.match(reply, /free/, 'shows it was free');
+    assert.equal(await page.locator('.ws-chat .ws-fp-undo').count(), 1, 'Undo chip on the latest step');
     const d = await draft();
-    assert.ok(d.changes >= 1 && d.undo_depth >= 1, `draft changed (${JSON.stringify(d)})`);
     assert.equal(d.changes, 1, 'one undo step');
     for (let i = 0; i < 50 && (await reloads()) <= before; i++) await page.waitForTimeout(200);
     assert.ok((await reloads()) > before, 'canvas was sent reload');
     await page.waitForTimeout(1500);
-    await shot('c2-roof-blue');
+    await shot('c2-roof-blue-chat');
+    await page.locator('.ws-chat .ws-fp-undo').click();                 // undo just that step, from the chat
+    await waitStatus(/v1 · saved/);
+    assert.equal((await draft()).changes, 0);
+    await page.waitForFunction(() => /Undone/.test(document.querySelector('.ws-chat')?.textContent ?? ''));
+    assert.equal(await page.locator('.ws-chat .ws-fp-undo').count(), 0, 'Undo is spent');
+    await sendChat('make the roof blue');                               // and apply it again: the history keeps both turns
+    await waitChatReply('edit', 2);
+    await waitStatus(/draft, \d+ change/);
+    assert.equal((await draft()).changes, 1);
+    // one saved history: the chat of the build has both fast-path turns
+    const chat = (await api('GET', `/api/builds/${BUILD}/workspace`)).chat_id;
+    assert.ok(chat, 'the build has an attached chat');
+    const saved = (await api('GET', `/api/chats/${chat}`)).messages.filter((m) => m._fast_path);
+    assert.equal(saved.length, 2);
+    assert.equal(saved[0]._fast_path.cost_eur, 0);
+    await page.waitForTimeout(1500);
+  });
+
+  await step('c3. a vague message gets one question with quick replies; a chip is the next message', async () => {
+    await sendChat(VAGUE);
+    await waitChatReply('clarify');
+    const chips = await page.locator('.ws-chat .ws-chips .ws-chip-btn').allInnerTexts();
+    assert.ok(chips.length >= 2, `chips: ${chips}`);
+    assert.ok(chips.includes('Just pick for me'), 'Just pick for me is offered');
+    await shot('c3-clarify-chips');
+    const before = await page.locator('.ws-chat .msg.user').count();
+    await page.locator('.ws-chat .ws-chips .ws-chip-btn').first().click();
+    await page.waitForFunction((n) => document.querySelectorAll('.ws-chat .msg.user').length > n, before, { timeout: 60000 });
+    await waitChatReply('edit', 3);                                    // the chip was an ordinary message: the free path applied it
+    await waitStatus(/draft, 2 changes/);
+    await shot('c3b-chip-applied');
+    await page.locator('.ws-chat .ws-fp-undo').click();               // and back to one change for the next steps
+    await waitStatus(/draft, 1 change/);
+  });
+
+  await step('c4. a message only the AI can do shows the estimate card; Cancel runs nothing paid', async () => {
+    // a build without a generator: "a helicopter" has no rule and no generator, so it is a needs_ai answer (no model call)
+    const other = (await api('POST', '/api/builds', { title: `E2E ai ${Date.now()}`, source: { kind: 'empty' } })).id;
+    await page.goto(`${baseURL}/build/${other}`);
+    await canvasReady();
+    await composer().waitFor();
+    await composer().fill(NEEDS_AI);
+    await page.waitForFunction(() => /AI, about/.test(document.querySelector('.ws-hint-line')?.textContent ?? ''), null, { timeout: 40000 });
+    await shot('c4a-hint-ai');
+    await page.locator('.ws-composer .send-button').click();
+    await waitChatReply('needs_ai');
+    const card = await page.locator('.ws-chat [data-route="needs_ai"]').last().innerText();
+    assert.match(card, /This needs the AI: about .*min/i);
+    assert.equal(await page.getByRole('button', { name: 'Ask the AI' }).count(), 1);
+    await shot('c4b-needs-ai-card');
+    const chat = (await api('GET', `/api/builds/${other}/workspace`)).chat_id;
+    await page.getByRole('button', { name: 'Cancel' }).last().click();
+    await page.waitForFunction(() => /Cancelled\. Nothing was spent/.test(document.querySelector('.ws-chat')?.textContent ?? ''));
+    assert.equal(await page.getByRole('button', { name: 'Ask the AI' }).count(), 0, 'the card is closed');
+    const detail = await api('GET', `/api/chats/${chat}`);
+    assert.ok(!(detail.usage?.cost_eur > 0), 'nothing was spent');
+    assert.equal(detail.messages.filter((m) => m.role === 'assistant' && m.tool_calls?.length).length, 0, 'the agent never started');
+    assert.equal(detail.chat.running, false);
+    await shot('c4c-cancelled');
+    await page.goto(`${baseURL}/build/${BUILD}`);                 // back to the house for the next steps
+    await canvasReady();
+    await waitStatus(/draft, \d+ change/);
   });
 
   await step('d. Settings: change a param, Regenerate warns about manual edits, Undo restores', async () => {
@@ -237,31 +329,21 @@ try {
   await step('i. proposal: review card, Preview (read-only), Keep -> draft, Undo restores', async () => {
     const old = (await api('GET', `/api/builds/${BUILD}/proposals`)).proposals;
     for (const p of old) await api('POST', `/api/builds/${BUILD}/proposals/${p.id}/discard`);
-    execFileSync('docker', ['exec', '-i', container, 'python3', '-'], { input: `
-import sys
-sys.path.insert(0, "/app/web/backend")
-from store import get_store
-import workspace
-store = get_store()
-files = sorted(__import__("glob").glob("/data/generated/${BUILD}-v*.mpd"))
-base = open(files[-1], encoding="utf-8").read()
-extra = "".join(f"1 4 {x} -176 {z} 1 0 0 0 1 0 0 0 1 3001.dat\\n" for x, z in ((0, -300), (80, -300), (160, -300)))
-workspace.create_proposal(store, "${BUILD}", base.replace("0 NOFILE", extra + "0 NOFILE", 1), None, base_text=base)
-` });
+    makeProposal();
     await page.reload();
     await canvasReady();
     await waitStatus(/· saved/);
-    await page.getByRole('tab', { name: /AI/ }).click();
+    await page.locator('.ws-tabs [role=tab]', { hasText: 'Chat' }).click();
     await page.waitForSelector('.ws-ai-card');
-    assert.match(await page.locator('.ws-ai-card').innerText(), /\+ 3 parts/);
+    assert.match(await page.locator('.ws-ai-card').first().innerText(), /\+ 3 parts/);
     await shot('i1-ai-card');
-    await page.locator('.ws-ai-card').getByRole('button', { name: 'Preview' }).click();
+    await page.locator('.ws-ai-card').first().getByRole('button', { name: 'Preview' }).click();
     await page.waitForSelector('.ws-ro');
     assert.match(await page.locator('.ws-ro').innerText(), /Previewing the AI proposal/);
     assert.equal(await page.locator('.ws-top .ws-save').isDisabled(), true);
     await page.waitForTimeout(2500);
     await shot('i2-preview');
-    await page.locator('.ws-ai-card').getByRole('button', { name: 'Keep in draft' }).click();
+    await page.locator('.ws-ai-card').first().getByRole('button', { name: 'Keep in draft' }).click();
     await waitStatus(/1 change/);
     assert.equal((await draft()).changes, 1);
     assert.equal((await api('GET', `/api/builds/${BUILD}/proposals`)).proposals.length, 0);
@@ -273,6 +355,78 @@ workspace.create_proposal(store, "${BUILD}", base.replace("0 NOFILE", extra + "0
     await shot('i4-undone');
   });
 
+  await step('i2. side panel: drag, keys, double-click reset, collapse, remembered after reload', async () => {
+    const sep = page.locator('.ws-split[data-edge="panel"]');
+    const width = async () => Number(await sep.getAttribute('aria-valuenow'));
+    const real = () => page.locator('.ws-panels').evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    assert.equal(await sep.getAttribute('role'), 'separator');
+    assert.equal(await width(), 344);
+    await sep.focus();
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowLeft');       // the divider moves left: the panel grows
+    assert.equal(await width(), 344 + 48);
+    assert.ok(Math.abs((await real()) - 392) <= 1, `panel really is 392 wide (${await real()})`);
+    const box = await sep.boundingBox();
+    const y = box.y + 100;                                                      // away from the collapse button in the middle
+    await page.mouse.move(box.x + 4, y);
+    await page.mouse.down(); await page.mouse.move(box.x - 96, y, { steps: 6 }); await page.mouse.up();
+    assert.ok(Math.abs((await width()) - 492) <= 2, `dragged to about 492 (${await width()})`);
+    await sep.focus(); await page.keyboard.press('End');
+    assert.equal(await width(), Math.floor(1440 * 0.6), 'max is 60% of the window');
+    await page.keyboard.press('Home');
+    assert.equal(await width(), 280, 'min is 280');
+    await shot('i2-panel-narrow');
+    await sep.dblclick({ position: { x: 4, y: 6 } });
+    assert.equal(await width(), 344, 'double-click resets');
+    await sep.focus(); await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft');   // 376, remembered below
+    await page.locator('.ws-split[data-edge="panel"] .ws-split-btn').click();
+    await page.waitForFunction(() => document.querySelector('.ws')?.classList.contains('panel-collapsed'));
+    assert.equal(await page.locator('.ws-panels').isVisible(), false, 'panel collapsed: the 3D view takes the whole width');
+    await page.waitForTimeout(800);
+    await shot('i2-panel-collapsed');
+    await page.reload();
+    await canvasReady();
+    assert.equal(await page.locator('.ws.panel-collapsed').count(), 1, 'collapsed state remembered');
+    await page.locator('.ws-split[data-edge="panel"] .ws-split-btn').click();
+    await page.waitForSelector('.ws-panels', { state: 'visible' });
+    assert.equal(Number(await page.locator('.ws-split[data-edge="panel"]').getAttribute('aria-valuenow')), 376, 'width remembered');
+    assert.ok(Math.abs((await real()) - 376) <= 1);
+    await page.reload();
+    await canvasReady();
+    assert.equal(Number(await page.locator('.ws-split[data-edge="panel"]').getAttribute('aria-valuenow')), 376, 'width survives another reload');
+    await page.locator('.ws-split[data-edge="panel"]').dblclick({ position: { x: 4, y: 6 } });
+  });
+
+  await step('i3. version strip: resize, collapse to a thin bar, remembered', async () => {
+    const strip = page.locator('.ws-split[data-edge="strip"]');
+    const height = () => page.locator('.ws-bottom').evaluate((el) => Math.round(el.getBoundingClientRect().height));
+    const normal = await height();
+    await strip.focus();
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowUp');
+    assert.ok((await height()) > normal, 'taller after ArrowUp');
+    await page.keyboard.press('Home');
+    await strip.locator('.ws-split-btn').click();
+    await page.waitForSelector('.ws-bottom.thin');
+    assert.ok((await height()) < normal, `thin bar is thinner (${await height()} < ${normal})`);
+    await shot('i3-strip-thin');
+    await page.reload();
+    await canvasReady();
+    assert.equal(await page.locator('.ws-bottom.thin').count(), 1, 'thin bar remembered');
+    await page.locator('.ws-split[data-edge="strip"] .ws-split-btn').click();
+    await page.waitForFunction(() => !document.querySelector('.ws-bottom.thin'));
+    await page.locator('.ws-split[data-edge="strip"]').dblclick({ position: { x: 4, y: 4 } });
+    assert.ok(Math.abs((await height()) - normal) <= 2, 'reset goes back to the automatic height');
+  });
+
+  await step('i4. /chat/:id of a build chat redirects to the workspace with the Chat tab', async () => {
+    const chat = (await api('GET', `/api/builds/${BUILD}/workspace`)).chat_id;
+    await page.goto(`${baseURL}/chat/${chat}`);
+    await page.waitForFunction((b) => location.pathname === `/build/${b}` && location.search === '?tab=chat', BUILD, { timeout: 15000 });
+    await canvasReady();
+    assert.equal(await page.locator('.ws-tabs [role=tab]', { hasText: 'Chat' }).getAttribute('aria-selected'), 'true');
+    assert.equal(await page.getByRole('link', { name: /Open full chat/ }).count(), 0, 'no "Open full chat"');
+    await shot('i4-redirected-chat');
+  });
+
   await step('j. phone width: View/Player only, bottom sheet', async () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForFunction(() => document.querySelector('.ws-rail'));
@@ -282,9 +436,20 @@ workspace.create_proposal(store, "${BUILD}", base.replace("0 NOFILE", extra + "0
     assert.equal(await page.locator('.ws-tool').count(), 0, 'no edit tools on a phone');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'no horizontal scroll');
     await shot('j1-phone');
-    await page.locator('.ws-tabs [role=tab]', { hasText: 'AI' }).click();     // opens the bottom sheet
+    await page.locator('.ws-tabs [role=tab]', { hasText: 'Chat' }).click();     // opens the bottom sheet
     await page.waitForSelector('.ws.sheet-open');
     await shot('j2-phone-sheet');
+    makeProposal();                                                           // Keep makes a toast: it must sit above the composer
+    await page.reload();
+    await page.waitForSelector('.ws-rail');
+    await page.locator('.ws-tabs [role=tab]', { hasText: 'Chat' }).click();
+    await page.waitForSelector('.ws-ai-card');
+    await page.locator('.ws-ai-card').first().getByRole('button', { name: 'Keep in draft' }).click();
+    await page.waitForSelector('.ws-toast');
+    const toast = await page.locator('.ws-toast').boundingBox();
+    const input = await composer().boundingBox();
+    assert.ok(toast.y + toast.height <= input.y + 1, `toast (bottom ${toast.y + toast.height}) is above the composer (top ${input.y})`);
+    await shot('j3-phone-toast-above-composer');
   });
 
   await step('k. light theme', async () => {

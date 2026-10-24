@@ -103,11 +103,10 @@ export default function CanvasPane({ ws }: { ws: Workspace }) {
           <div className="ws-empty-card">
             <div className="brick-row" aria-hidden="true">{[4, 14, 1, 2].map((c) => <i key={c} style={{ background: colourHex(c) }} />)}</div>
             <p><strong>Nothing here yet.</strong></p>
-            <p className="muted">Describe what you want below, or pick a part and click to place it.</p>
+            <p className="muted">Describe what you want in the chat, or pick a part and click to place it.</p>
             <div className="ws-empty-actions">
-              <button className="primary" onClick={() => document.getElementById("ws-describe-input")?.focus()}>Describe it</button>
+              <button className="primary" onClick={() => { ws.setTab("chat"); setTimeout(() => document.querySelector<HTMLTextAreaElement>(".ws-composer textarea")?.focus(), 60); }}>Describe it</button>
               <button onClick={() => ws.setTab("parts")}>Pick a part</button>
-              {!ws.phone && <button onClick={() => ws.setTab("ai")}>Ask the AI</button>}
             </div>
           </div>
         </div>

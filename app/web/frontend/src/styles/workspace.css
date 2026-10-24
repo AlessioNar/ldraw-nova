@@ -1,9 +1,9 @@
 /* Build workspace (/build/:id). Ported from docs/plans/build-workspace/mockup.css with the app's own tokens (theme.css). */
 .ws {
   flex: 1 1 0; min-height: 0; min-width: 0; display: grid; position: relative;
-  grid-template-columns: 56px minmax(0, 1fr) 344px;
+  grid-template-columns: 56px minmax(0, 1fr) 10px var(--ws-panel-w, 344px);
   grid-template-rows: 48px minmax(0, 1fr) auto;
-  grid-template-areas: "top top top" "rail stage panels" "bottom bottom bottom";
+  grid-template-areas: "top top top top" "rail stage split panels" "bottom bottom bottom bottom";
 }
 .ws .mono { font-family: var(--font-mono); }
 .ws .muted { color: var(--muted); }
@@ -145,7 +145,8 @@
 .ws-composer .composer { max-width: none; margin: 0; }
 .ws-composer .composer textarea { min-height: 52px; }
 .ws-composer .composer-toolbar { flex-wrap: wrap; }
-.ws-composer .composer-hint { display: none; }
+.ws-composer .composer-hint { display: block; font-size: var(--fs-xs); }
+.ws-hint-line b { color: var(--ok); font-weight: 600; } .ws-hint-line b.cost { color: var(--warn); }
 .ws-composer .panel.approval { margin: 0; }
 
 .ws-about { margin: 0; }
@@ -156,11 +157,6 @@
 
 /* ---------- bottom: describe + versions ---------- */
 .ws-bottom { grid-area: bottom; background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
-.ws-describe { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); }
-.ws-describe > svg { color: var(--muted); flex: none; }
-.ws-describe input { flex: 0 1 460px; min-width: 120px; }
-.ws-hint { flex: 1; min-width: 0; line-height: 1.3; }
-.ws-hint b { color: var(--ok); font-weight: 600; } .ws-hint b.cost { color: var(--warn); }
 .ws-versions { display: flex; align-items: center; gap: 12px; padding: 7px 14px; min-width: 0; }
 .ws-vlabel { flex: none; }
 .ws-vstrip { display: flex; gap: 0; align-items: center; overflow-x: auto; min-width: 0; padding: 2px 0; }
@@ -199,14 +195,14 @@
 
 /* ---------- medium: narrower right panel, shorter labels ---------- */
 @media (max-width: 1100px) {
-  .ws { grid-template-columns: 52px minmax(0, 1fr) 300px; }
+  .ws { grid-template-columns: 52px minmax(0, 1fr) 10px var(--ws-panel-w, 344px); }
   .ws-lbl, .ws-discard { display: none; }
-  .ws-hint { display: none; }
 }
 
 /* ---------- narrow / phone: panels become a bottom sheet, the rail a bottom toolbar ---------- */
 @media (max-width: 759px) {
   .ws { grid-template-columns: minmax(0, 1fr); grid-template-rows: 46px minmax(0, 1fr) auto auto; grid-template-areas: "top" "stage" "rail" "bottom"; padding-bottom: 46px; }
+  .ws-split { display: none; }
   .ws-top { gap: 7px; padding: 0 10px; overflow: hidden; }
   .ws-sep, .ws-top > svg, .ws-chip.kind, .ws-discard, .ws-group, .ws-menu { display: none; }
   .ws-name { font-size: var(--fs-md); }
@@ -216,8 +212,7 @@
   .ws-rail { flex-direction: row; border-right: 0; border-top: 1px solid var(--border); padding: 4px 8px; justify-content: center; overflow: visible; }
   .ws-modes { flex-direction: row; gap: 4px; border-top: 0; padding-top: 0; margin: 0; }
   .ws-mode { width: 56px; }
-  .ws-describe { padding: 6px 10px; } .ws-describe > svg { display: none; } .ws-describe input { flex: 1; }
-  .ws-versions { padding: 6px 10px; gap: 8px; } .ws-vlabel { display: none; }
+    .ws-versions { padding: 6px 10px; gap: 8px; } .ws-vlabel { display: none; }
   .ws-pc-txt { display: none; }
   .ws-pcheck .mono { display: none; }
   .ws-pcheck::after { content: "Parts"; }
@@ -226,7 +221,8 @@
   .ws-handle { display: flex; position: absolute; left: 0; right: 0; top: 0; height: 12px; border: 0; background: none; padding: 0; justify-content: center; align-items: center; z-index: 2; }
   .ws-handle span { width: 36px; height: 4px; border-radius: 3px; background: var(--border-strong); }
   .ws-tabs { padding-top: 8px; } .ws-tabs button { padding: 8px 4px 7px; }
-  .ws-toast { bottom: 150px; }
+  .ws-toast { bottom: 58px; }                                  /* above the closed sheet ... */
+  .ws.sheet-open .ws-toast { bottom: calc(min(58dvh, 520px) + 10px); }   /* ... and above the open one, so it never covers the composer */
   .ws-ro { flex-wrap: wrap; gap: 6px; padding: 7px 8px 7px 10px; }
   .ws-ro .ws-spacer { display: none; }
   .ws-tl.lower, .ws-tr.lower { top: 100px; }
@@ -234,3 +230,40 @@
   .ws-panel .gen-fields { grid-template-columns: 1fr; }
 }
 
+
+/* ---------- the chat: fast-path replies, quick replies ---------- */
+.ws-fp { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; font-size: var(--fs-sm); display: flex; flex-direction: column; gap: 4px; max-width: 100%; }
+.ws-fp[data-route="clarify"] { background: none; border: 0; padding: 0; }
+.ws-fp-line { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.ws-fp-line .ws-meta { color: var(--muted); font-size: var(--fs-xs); }
+.ws-fp-undo { margin-left: auto; padding: 1px 10px; font-size: var(--fs-xs); }
+.ws-fp-notes { margin: 0; padding-left: 16px; color: var(--muted); font-size: var(--fs-xs); }
+.ws-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ws-chip-btn { border-radius: 999px; padding: 3px 12px; font-size: var(--fs-xs); background: var(--surface); }
+.ws-chip-btn.pick { border-style: dashed; color: var(--muted); }
+.ws-fp-ai.past { background: var(--surface-2); border-color: var(--border); }
+
+/* ---------- resizable panels ---------- */
+.ws-split { position: relative; z-index: 6; touch-action: none; outline-offset: -2px; }
+.ws-split.v { grid-area: split; cursor: col-resize; background: var(--surface); border-left: 1px solid var(--border); }
+.ws-split.h { height: 9px; cursor: row-resize; background: var(--surface); border-top: 1px solid var(--border); flex: none; }
+.ws-grip { position: absolute; background: var(--border-strong); border-radius: 2px; transition: background .12s; }
+.ws-split.v .ws-grip { left: 4px; top: calc(50% + 28px); height: 36px; width: 3px; }
+.ws-split.h .ws-grip { top: 3px; left: calc(50% + 34px); width: 36px; height: 3px; }
+.ws-split:hover .ws-grip, .ws-split:focus-visible .ws-grip { background: var(--accent); }
+.ws-split:focus-visible { outline: 2px solid var(--accent); }
+.ws-split-btn { position: absolute; padding: 0; line-height: 1; background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--fg-2); font-size: 14px; border-radius: 6px; }
+.ws-split.v .ws-split-btn { top: calc(50% - 22px); left: -4px; width: 18px; height: 40px; }
+.ws-split.h .ws-split-btn { left: calc(50% - 22px); top: -5px; width: 40px; height: 16px; font-size: 12px; }
+.ws-split.v.collapsed { border-left: 0; }
+.ws-split.v.collapsed .ws-split-btn { left: -12px; }
+@media (min-width: 760px) {
+  .ws.panel-collapsed .ws-panels { display: none; }
+  .ws.panel-collapsed { grid-template-columns: 56px minmax(0, 1fr) 10px 0; }
+}
+.ws-bottom { position: relative; }
+.ws-versions.sized { overflow-y: auto; align-items: flex-start; }
+.ws-versions.sized .ws-vstrip { flex-wrap: wrap; row-gap: 4px; }
+.ws-bottom.thin .ws-versions { padding-top: 3px; padding-bottom: 3px; min-height: 0; }
+.ws-vthin { padding: 1px 10px; font-size: var(--fs-xs); background: var(--surface-2); }
+.ws-fp-title { font-weight: 600; font-size: var(--fs-sm); }
