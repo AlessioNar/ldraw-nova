@@ -161,8 +161,9 @@ export const api = {
   editModel: (filename: string) => request<{ build: string; file: string; editor_url: string; warnings: string[] }>(`/api/models/${encodeURIComponent(filename)}/edit`, { method: "POST" }),
   deleteModel: (filename: string) => request<{ deleted: string[] }>(`/api/models/${encodeURIComponent(filename)}`, { method: "DELETE" }),
 
-  llmModels: () => request<{ models: LlmEntry[]; default_id: string | null; worker_id?: string | null }>("/api/llm-models"),
+  llmModels: () => request<{ models: LlmEntry[]; default_id: string | null; worker_id?: string | null; understanding_id?: string | null }>("/api/llm-models"),
   setWorkerDefault: (id: string | null) => request<{ worker_id: string | null }>("/api/llm-workers/default", { method: "PUT", body: json({ id }) }),
+  setUnderstandingDefault: (id: string | null) => request<{ understanding_id: string | null }>("/api/llm-understanding/default", { method: "PUT", body: json({ id }) }),
   editLlm: (id: string) => request<LlmEntry>(`/api/llm-models/${id}/edit`),
   createLlm: (entry: Partial<LlmEntry>) => request<LlmEntry>("/api/llm-models", { method: "POST", body: json(entry) }),
   updateLlm: (id: string, entry: Partial<LlmEntry>) =>
@@ -372,14 +373,16 @@ export type GeneratorEntry = {
 };
 export type GeneratorList = { generators: GeneratorEntry[]; colours: { name: string; code: number }[] };
 
-/** What /api/describe (the fast path's decision engine) answers; every field but `route` is optional so a newer
- *  backend can add to it. A 404 means the engine is not installed: the Describe box then offers only the AI. */
+/** What /api/describe (the fast path's decision engine, docs/plans/phase2/fast-path.md) answers. A 404 means the
+ *  engine is not installed: the Describe box then offers only the AI. */
+export type DescribeEstimate = { eur_low?: number; eur_high?: number; minutes_low?: number; minutes_high?: number; basis?: string };
 export type Describe = {
   route: "generator" | "edit" | "needs_ai" | "clarify";
-  generator?: string; params?: Record<string, unknown>; question?: string; options?: string[];
-  estimate?: { low?: number; high?: number; min?: number; max?: number; eur?: [number, number] } | [number, number] | number;
-  reason?: string; message?: string; summary?: string;
+  generator?: string; title?: string; params?: Record<string, unknown>; notes?: string[];
+  changes?: { param: string; label: string; from: unknown; to: unknown }[]; history?: "undo" | "revert";
+  question?: string; reason?: string; estimate?: DescribeEstimate; understanding_cost_eur?: number | null;
 };
+export type DescribeHint = { route: Describe["route"]; hint: string; confidence: number; estimate?: DescribeEstimate };
 
 const buildBase = (id: string) => `/api/builds/${encodeURIComponent(id)}`;
 export const buildsApi = {
@@ -399,17 +402,15 @@ export const buildsApi = {
     request<Chat>(`${buildBase(id)}/chat`, { method: "POST", body: json({ llm_model_id, new: isNew }) }),
   describe: (text: string, build_id?: string, current?: { generator: string; params: Record<string, unknown> }) =>
     request<Describe>("/api/describe", { method: "POST", body: json({ text, build_id, current }) }),
-  estimate: (text: string) => request<Describe["estimate"] & object>(`/api/describe/estimate?text=${encodeURIComponent(text)}`),
+  hint: (text: string, generator?: string) =>
+    request<DescribeHint>(`/api/describe/estimate?text=${encodeURIComponent(text)}${generator ? `&generator=${encodeURIComponent(generator)}` : ""}`),
 };
 
-/** "about €0.40–0.90" from whatever shape the estimate came in. */
-export function estimateLabel(e: Describe["estimate"] | undefined): string | null {
-  if (e == null) return null;
-  const range = Array.isArray(e) ? e : typeof e === "number" ? [e, e]
-    : e.eur ?? [e.low ?? e.min, e.high ?? e.max];
-  const [low, high] = range as [number | undefined, number | undefined];
-  const fmt = (n: number) => n.toFixed(n < 1 ? 2 : 1).replace(/\.?0+$/, "");
+/** "about €1–2" from the estimate a needs_ai answer carries. */
+export function estimateLabel(e: DescribeEstimate | undefined): string | null {
+  const low = e?.eur_low, high = e?.eur_high;
   if (low == null && high == null) return null;
+  const fmt = (n: number) => n.toFixed(2).replace(/\.?0+$/, "");
   if (low == null || high == null || low === high) return `about €${fmt((low ?? high)!)}`;
   return `about €${fmt(low)}–${fmt(high)}`;
 }

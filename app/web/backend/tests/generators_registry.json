@@ -1,0 +1,1337 @@
+{
+ "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat,ship | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent",
+ "entries": [
+  {
+   "id": "house",
+   "title": "House",
+   "families": [
+    "house",
+    "building"
+   ],
+   "kinds": [
+    "house",
+    "cottage",
+    "home",
+    "bungalow",
+    "villa",
+    "barn",
+    "cabin",
+    "shop",
+    "townhouse"
+   ],
+   "description": "Brick house: shell with door and windows, gabled or flat roof, optional porch, chimney, dormer.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "width": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 24,
+      "x-even": true,
+      "default": 8,
+      "description": "Front wall width in studs (even; odd values round up)"
+     },
+     "depth": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 20,
+      "x-even": true,
+      "default": 6,
+      "description": "Side wall length in studs (even)"
+     },
+     "courses": {
+      "type": "integer",
+      "minimum": 4,
+      "maximum": 14,
+      "default": 6,
+      "description": "Wall height in brick courses; a door needs at least 6, 10+ adds an upper window row"
+     },
+     "door_side": {
+      "enum": [
+       "left",
+       "centre",
+       "right",
+       "none"
+      ],
+      "default": "left",
+      "description": "Where the door sits on the front"
+     },
+     "door_style": {
+      "enum": [
+       "traditional",
+       "glazed",
+       "hatch"
+      ],
+      "default": "traditional"
+     },
+     "windows": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 8,
+      "default": 2,
+      "description": "Total 4-stud windows, placed on window_sides in front, left, right, back order"
+     },
+     "window_sides": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+       "enum": [
+        "front",
+        "back",
+        "left",
+        "right"
+       ]
+      },
+      "default": [
+       "front",
+       "left",
+       "right",
+       "back"
+      ]
+     },
+     "roof_style": {
+      "enum": [
+       "gable",
+       "flat"
+      ],
+      "default": "gable"
+     },
+     "roof_tiers": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9,
+      "default": 0,
+      "description": "Slope courses of a gable roof; 0 = as steep as the depth allows"
+     },
+     "porch": {
+      "type": "boolean",
+      "default": false,
+      "description": "8x4 pillared porch over the door"
+     },
+     "chimney": {
+      "enum": [
+       "none",
+       "left",
+       "right"
+      ],
+      "default": "none",
+      "description": "Chimney on the gable ridge"
+     },
+     "dormer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Dormer window in the front roof slope"
+     },
+     "wall_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Walls (colour name or code)",
+      "default": "tan"
+     },
+     "trim_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Window frames, door frame, eaves ring (colour name or code)",
+      "default": "white"
+     },
+     "roof_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof (colour name or code)",
+      "default": "dark red"
+     },
+     "door_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Door leaf (colour name or code)",
+      "default": "reddish brown"
+     },
+     "glass_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Window glass (colour name or code)",
+      "default": "clear"
+     },
+     "chimney_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Chimney bricks (colour name or code)",
+      "default": "dark grey"
+     }
+    }
+   },
+   "roles": [
+    "wall",
+    "trim",
+    "roof",
+    "door",
+    "window",
+    "porch",
+    "chimney",
+    "base"
+   ],
+   "coverage": [
+    "door",
+    "windows",
+    "roof tiers",
+    "porch",
+    "chimney",
+    "dormer",
+    "two storeys"
+   ],
+   "quality": "Compact stepped-roof house; windows are 4 studs wide, so a front fits door plus (width-4)//4 windows.",
+   "defaults": {
+    "width": 8,
+    "depth": 6,
+    "courses": 6,
+    "door_side": "left",
+    "door_style": "traditional",
+    "windows": 2,
+    "window_sides": [
+     "front",
+     "left",
+     "right",
+     "back"
+    ],
+    "roof_style": "gable",
+    "roof_tiers": 0,
+    "porch": false,
+    "chimney": "none",
+    "dormer": false,
+    "wall_colour": "tan",
+    "trim_colour": "white",
+    "roof_colour": "dark red",
+    "door_colour": "reddish brown",
+    "glass_colour": "clear",
+    "chimney_colour": "dark grey"
+   }
+  },
+  {
+   "id": "grand-tourer",
+   "title": "Grand tourer",
+   "families": [
+    "car"
+   ],
+   "kinds": [
+    "car",
+    "coupe",
+    "sports car",
+    "sedan",
+    "racing car",
+    "roadster",
+    "supercar"
+   ],
+   "description": "Long sculpted bonnet, inset low cabin, continuous shoulders and a short rear deck.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "length": {
+      "type": "integer",
+      "minimum": 14,
+      "maximum": 32,
+      "x-even": true,
+      "default": 18,
+      "description": "Body length in studs (even)"
+     },
+     "wheelbase": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 24,
+      "x-even": true,
+      "default": 10,
+      "description": "Axle distance in studs (even, at most length - 8)"
+     },
+     "palette": {
+      "enum": [
+       "heritage-racing",
+       "coastal-delivery",
+       "desert-utility"
+      ],
+      "default": "heritage-racing",
+      "description": "Preset colour scheme; the colour params override it"
+     },
+     "body": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Body panels (colour name or code)"
+     },
+     "roof": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof and cab top (colour name or code)"
+     },
+     "trim": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trim and bumpers (colour name or code)"
+     },
+     "wheels": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wheel rims (tyres stay black) (colour name or code)"
+     },
+     "glass": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Glazing (transparent colours) (colour name or code)"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Metal fittings, bumpers, mirrors (colour name or code)"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "roof",
+    "glass",
+    "wood",
+    "metal",
+    "trim",
+    "chassis",
+    "headlamp",
+    "tail_lamp",
+    "wheel",
+    "tyre"
+   ],
+   "coverage": [
+    "colours",
+    "length",
+    "wheelbase"
+   ],
+   "quality": "Recognisable vehicle; fixed-size six-stud body",
+   "defaults": {
+    "length": 18,
+    "wheelbase": 10,
+    "palette": "heritage-racing"
+   }
+  },
+  {
+   "id": "delivery-van",
+   "title": "Delivery van",
+   "families": [
+    "van",
+    "truck"
+   ],
+   "kinds": [
+    "van",
+    "delivery van",
+    "minibus",
+    "camper",
+    "bus"
+   ],
+   "description": "Short bonnet, upright cab and a taller quiet cargo box with a restrained belt line.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "length": {
+      "type": "integer",
+      "minimum": 18,
+      "maximum": 32,
+      "x-even": true,
+      "default": 18,
+      "description": "Body length in studs (even)"
+     },
+     "wheelbase": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 24,
+      "x-even": true,
+      "default": 10,
+      "description": "Axle distance in studs (even, at most length - 8)"
+     },
+     "palette": {
+      "enum": [
+       "heritage-racing",
+       "coastal-delivery",
+       "desert-utility"
+      ],
+      "default": "coastal-delivery",
+      "description": "Preset colour scheme; the colour params override it"
+     },
+     "body": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Body panels (colour name or code)"
+     },
+     "roof": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof and cab top (colour name or code)"
+     },
+     "trim": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trim and bumpers (colour name or code)"
+     },
+     "wheels": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wheel rims (tyres stay black) (colour name or code)"
+     },
+     "glass": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Glazing (transparent colours) (colour name or code)"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Metal fittings, bumpers, mirrors (colour name or code)"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "roof",
+    "glass",
+    "wood",
+    "metal",
+    "trim",
+    "chassis",
+    "headlamp",
+    "tail_lamp",
+    "wheel",
+    "tyre"
+   ],
+   "coverage": [
+    "colours",
+    "length",
+    "wheelbase"
+   ],
+   "quality": "Recognisable vehicle; fixed-size six-stud body",
+   "defaults": {
+    "length": 18,
+    "wheelbase": 10,
+    "palette": "coastal-delivery"
+   }
+  },
+  {
+   "id": "pickup",
+   "title": "Workshop pickup",
+   "families": [
+    "truck",
+    "car"
+   ],
+   "kinds": [
+    "pickup",
+    "pickup truck",
+    "ute",
+    "truck"
+   ],
+   "description": "Separate cab and open load bed, capped bed rails, contrasting bumpers and functional cargo space.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "length": {
+      "type": "integer",
+      "minimum": 18,
+      "maximum": 32,
+      "x-even": true,
+      "default": 20,
+      "description": "Body length in studs (even)"
+     },
+     "wheelbase": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 24,
+      "x-even": true,
+      "default": 12,
+      "description": "Axle distance in studs (even, at most length - 8)"
+     },
+     "palette": {
+      "enum": [
+       "heritage-racing",
+       "coastal-delivery",
+       "desert-utility"
+      ],
+      "default": "desert-utility",
+      "description": "Preset colour scheme; the colour params override it"
+     },
+     "body": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Body panels (colour name or code)"
+     },
+     "roof": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof and cab top (colour name or code)"
+     },
+     "trim": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trim and bumpers (colour name or code)"
+     },
+     "wheels": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wheel rims (tyres stay black) (colour name or code)"
+     },
+     "glass": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Glazing (transparent colours) (colour name or code)"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Metal fittings, bumpers, mirrors (colour name or code)"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "roof",
+    "glass",
+    "wood",
+    "metal",
+    "trim",
+    "chassis",
+    "headlamp",
+    "tail_lamp",
+    "wheel",
+    "tyre"
+   ],
+   "coverage": [
+    "colours",
+    "length",
+    "wheelbase"
+   ],
+   "quality": "Recognisable vehicle; fixed-size six-stud body",
+   "defaults": {
+    "length": 20,
+    "wheelbase": 12,
+    "palette": "desert-utility"
+   }
+  },
+  {
+   "id": "tipper-truck",
+   "title": "Site tipper truck",
+   "families": [
+    "truck"
+   ],
+   "kinds": [
+    "tipper",
+    "dump truck",
+    "lorry",
+    "truck",
+    "construction truck"
+   ],
+   "description": "Forward cab with moulded seats, mirrors and a dedicated tipper bucket carried on a System chassis.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "length": {
+      "type": "integer",
+      "minimum": 14,
+      "maximum": 32,
+      "x-even": true,
+      "default": 22,
+      "description": "Body length in studs (even)"
+     },
+     "wheelbase": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 24,
+      "x-even": true,
+      "default": 14,
+      "description": "Axle distance in studs (even, at most length - 8)"
+     },
+     "palette": {
+      "enum": [
+       "heritage-racing",
+       "coastal-delivery",
+       "desert-utility"
+      ],
+      "default": "desert-utility",
+      "description": "Preset colour scheme; the colour params override it"
+     },
+     "body": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Body panels (colour name or code)"
+     },
+     "roof": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof and cab top (colour name or code)"
+     },
+     "trim": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trim and bumpers (colour name or code)"
+     },
+     "wheels": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wheel rims (tyres stay black) (colour name or code)"
+     },
+     "glass": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Glazing (transparent colours) (colour name or code)"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Metal fittings, bumpers, mirrors (colour name or code)"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "roof",
+    "glass",
+    "wood",
+    "metal",
+    "trim",
+    "chassis",
+    "headlamp",
+    "tail_lamp",
+    "wheel",
+    "tyre"
+   ],
+   "coverage": [
+    "colours",
+    "length",
+    "wheelbase"
+   ],
+   "quality": "Recognisable vehicle; fixed-size six-stud body",
+   "defaults": {
+    "length": 22,
+    "wheelbase": 14,
+    "palette": "desert-utility"
+   }
+  },
+  {
+   "id": "touring-motorcycle",
+   "title": "Touring motorcycle",
+   "families": [
+    "motorcycle"
+   ],
+   "kinds": [
+    "motorcycle",
+    "motorbike",
+    "bike",
+    "scooter"
+   ],
+   "description": "Dedicated motorcycle frame and vintage fairing, separate spoked wheels/tyres and a rear luggage rack.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "palette": {
+      "enum": [
+       "heritage-racing",
+       "coastal-delivery",
+       "desert-utility"
+      ],
+      "default": "heritage-racing",
+      "description": "Preset colour scheme; the colour params override it"
+     },
+     "body": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Body panels (colour name or code)"
+     },
+     "roof": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof and cab top (colour name or code)"
+     },
+     "trim": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trim and bumpers (colour name or code)"
+     },
+     "wheels": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wheel rims (tyres stay black) (colour name or code)"
+     },
+     "glass": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Glazing (transparent colours) (colour name or code)"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Metal fittings, bumpers, mirrors (colour name or code)"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "roof",
+    "glass",
+    "wood",
+    "metal",
+    "trim",
+    "chassis",
+    "headlamp",
+    "tail_lamp",
+    "wheel",
+    "tyre"
+   ],
+   "coverage": [
+    "colours"
+   ],
+   "quality": "Recognisable, fixed size",
+   "defaults": {
+    "palette": "heritage-racing"
+   }
+  },
+  {
+   "id": "harbour-launch",
+   "title": "Harbour launch",
+   "families": [
+    "boat"
+   ],
+   "kinds": [
+    "boat",
+    "launch",
+    "motorboat",
+    "speedboat",
+    "ship"
+   ],
+   "description": "Purpose-made boat hull, open helm with a real seat and steering wheel, navigation lights and life ring.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "palette": {
+      "enum": [
+       "heritage-racing",
+       "coastal-delivery",
+       "desert-utility"
+      ],
+      "default": "coastal-delivery",
+      "description": "Preset colour scheme; the colour params override it"
+     },
+     "body": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Body panels (colour name or code)"
+     },
+     "roof": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof and cab top (colour name or code)"
+     },
+     "trim": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trim and bumpers (colour name or code)"
+     },
+     "glass": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Glazing (transparent colours) (colour name or code)"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Metal fittings, bumpers, mirrors (colour name or code)"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "roof",
+    "glass",
+    "wood",
+    "metal",
+    "trim",
+    "chassis",
+    "headlamp",
+    "tail_lamp",
+    "wheel",
+    "tyre"
+   ],
+   "coverage": [
+    "colours"
+   ],
+   "quality": "Recognisable, fixed size",
+   "defaults": {
+    "palette": "coastal-delivery"
+   }
+  },
+  {
+   "id": "courier-jet",
+   "title": "Courier jet",
+   "families": [
+    "aircraft"
+   ],
+   "kinds": [
+    "plane",
+    "jet",
+    "aeroplane",
+    "airplane",
+    "aircraft",
+    "airliner"
+   ],
+   "description": "Matched aircraft nose/glass and tapered rear, swept wings, dedicated engine pods and an equipped cockpit.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "palette": {
+      "enum": [
+       "heritage-racing",
+       "coastal-delivery",
+       "desert-utility"
+      ],
+      "default": "coastal-delivery",
+      "description": "Preset colour scheme; the colour params override it"
+     },
+     "body": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Body panels (colour name or code)"
+     },
+     "roof": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Roof and cab top (colour name or code)"
+     },
+     "trim": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trim and bumpers (colour name or code)"
+     },
+     "glass": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Glazing (transparent colours) (colour name or code)"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Metal fittings, bumpers, mirrors (colour name or code)"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "roof",
+    "glass",
+    "wood",
+    "metal",
+    "trim",
+    "chassis",
+    "headlamp",
+    "tail_lamp",
+    "wheel",
+    "tyre"
+   ],
+   "coverage": [
+    "colours"
+   ],
+   "quality": "Recognisable, fixed size",
+   "defaults": {
+    "palette": "coastal-delivery"
+   }
+  },
+  {
+   "id": "starfighter",
+   "title": "Starfighter",
+   "families": [
+    "spaceship"
+   ],
+   "kinds": [
+    "starfighter",
+    "spaceship",
+    "starship",
+    "spacecraft",
+    "fighter",
+    "space fighter",
+    "rocket ship",
+    "x-wing"
+   ],
+   "description": "Small original spacecraft: stepped wings, slope nose, canopy, 1/2/4 jet engines.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "length": {
+      "type": "integer",
+      "minimum": 12,
+      "maximum": 28,
+      "x-even": true,
+      "default": 16,
+      "description": "Hull length in studs"
+     },
+     "wingspan": {
+      "type": "integer",
+      "minimum": 8,
+      "maximum": 28,
+      "x-even": true,
+      "default": 16,
+      "description": "Wing tip to tip in studs"
+     },
+     "wing_style": {
+      "enum": [
+       "delta",
+       "swept",
+       "straight"
+      ],
+      "default": "delta"
+     },
+     "nose": {
+      "type": "number",
+      "minimum": 0.25,
+      "maximum": 0.6,
+      "default": 0.4,
+      "description": "Fraction of the length ahead of the wings"
+     },
+     "engines": {
+      "enum": [
+       1,
+       2,
+       4
+      ],
+      "default": 2
+     },
+     "hull_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Fuselage (colour name or code)",
+      "default": "white"
+     },
+     "wing_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wing underlayer (colour name or code)",
+      "default": "light grey"
+     },
+     "accent_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wing top stripes, tail (colour name or code)",
+      "default": "blue"
+     },
+     "canopy_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Canopy (transparent) (colour name or code)",
+      "default": "trans light blue"
+     },
+     "engine_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Engine shells (colour name or code)",
+      "default": "dark grey"
+     },
+     "engine_core": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Engine core (colour name or code)",
+      "default": "orange"
+     }
+    }
+   },
+   "roles": [
+    "hull",
+    "wing",
+    "accent",
+    "canopy",
+    "engine"
+   ],
+   "coverage": [
+    "colours",
+    "size",
+    "wing shape",
+    "engine count"
+   ],
+   "quality": "Simple blocky starfighter built from plates and bricks; not a detailed replica.",
+   "defaults": {
+    "length": 16,
+    "wingspan": 16,
+    "wing_style": "delta",
+    "nose": 0.4,
+    "engines": 2,
+    "hull_colour": "white",
+    "wing_colour": "light grey",
+    "accent_colour": "blue",
+    "canopy_colour": "trans light blue",
+    "engine_colour": "dark grey",
+    "engine_core": "orange"
+   }
+  },
+  {
+   "id": "arcade-bay",
+   "title": "Arcade bay",
+   "families": [
+    "building",
+    "scene"
+   ],
+   "kinds": [
+    "arcade",
+    "arch",
+    "archway",
+    "colonnade",
+    "bay",
+    "gateway"
+   ],
+   "description": "Four-stud open arch with adjustable brick piers and a layered cornice.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "height": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 10,
+      "default": 3,
+      "description": "Brick courses of the piers or post"
+     },
+     "colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Main colour (colour name or code)",
+      "default": "tan"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Accent colour (colour name or code)",
+      "default": "dark tan"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "accent",
+    "light"
+   ],
+   "coverage": [
+    "height",
+    "colours"
+   ],
+   "quality": "Small accent piece for a scene, not a whole building",
+   "defaults": {
+    "height": 3,
+    "colour": "tan",
+    "accent": "dark tan"
+   }
+  },
+  {
+   "id": "street-lantern",
+   "title": "Street lantern",
+   "families": [
+    "garden",
+    "scene"
+   ],
+   "kinds": [
+    "lamp",
+    "lantern",
+    "street lamp",
+    "lamppost",
+    "streetlight"
+   ],
+   "description": "Slender round-brick street lantern with a moulded transparent light and dish shade.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "height": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 10,
+      "default": 6,
+      "description": "Brick courses of the piers or post"
+     },
+     "colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Main colour (colour name or code)",
+      "default": "black"
+     },
+     "accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Accent colour (colour name or code)",
+      "default": "light grey"
+     }
+    }
+   },
+   "roles": [
+    "body",
+    "accent",
+    "light"
+   ],
+   "coverage": [
+    "height",
+    "colours"
+   ],
+   "quality": "Small accent piece for a scene, not a whole building",
+   "defaults": {
+    "height": 6,
+    "colour": "black",
+    "accent": "light grey"
+   }
+  }
+ ],
+ "colours": [
+  "azure",
+  "beige",
+  "black",
+  "blue",
+  "bright green",
+  "bright light blue",
+  "bright light orange",
+  "bright light yellow",
+  "bright pink",
+  "brown",
+  "burgundy",
+  "charcoal",
+  "chrome",
+  "clear",
+  "cream",
+  "dark azure",
+  "dark blue",
+  "dark bluish grey",
+  "dark brown",
+  "dark green",
+  "dark grey",
+  "dark orange",
+  "dark pink",
+  "dark red",
+  "dark tan",
+  "dark turquoise",
+  "flesh",
+  "gold",
+  "green",
+  "grey",
+  "lavender",
+  "light blue",
+  "light bluish grey",
+  "light brown",
+  "light green",
+  "light grey",
+  "light turquoise",
+  "light violet",
+  "light yellow",
+  "lilac",
+  "lime",
+  "magenta",
+  "maroon",
+  "medium azure",
+  "medium blue",
+  "medium green",
+  "medium lavender",
+  "medium lilac",
+  "navy",
+  "navy blue",
+  "nougat",
+  "olive",
+  "olive green",
+  "orange",
+  "pearl gold",
+  "pearl silver",
+  "pink",
+  "purple",
+  "red",
+  "reddish brown",
+  "rust",
+  "salmon",
+  "sand blue",
+  "sand green",
+  "sand red",
+  "silver",
+  "sky blue",
+  "smoke",
+  "tan",
+  "tinted",
+  "trans black",
+  "trans blue",
+  "trans clear",
+  "trans dark blue",
+  "trans green",
+  "trans light blue",
+  "trans orange",
+  "trans red",
+  "trans yellow",
+  "transparent",
+  "turquoise",
+  "white",
+  "yellow"
+ ],
+ "signature": "fixture"
+}

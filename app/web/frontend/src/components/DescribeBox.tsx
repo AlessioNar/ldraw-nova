@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { buildsApi, estimateLabel, type Describe } from "../api";
 
 export type DescribeOutcome =
-  | { kind: "generator"; generator: string; params: Record<string, unknown> }
+  | { kind: "generator"; generator: string; params: Record<string, unknown>; summary: string }
   | { kind: "ai" };
 
 type Step =
@@ -27,9 +27,18 @@ export default function DescribeBox({ initialText = "", examples = [], busy, llm
   useEffect(() => setText(initialText), [initialText]);
   useEffect(() => setState({ step: "idle" }), [text]);
 
+  const [hint, setHint] = useState("");
+  const generatorId = current?.generator;
+  useEffect(() => {      // rules only, a millisecond: a soft hint under the box while typing
+    setHint("");
+    if (text.trim().length < 3) return;
+    const timer = setTimeout(() => buildsApi.hint(text, generatorId).then((h) => setHint(h.confidence >= 0.7 ? h.hint : h.hint && `Probably: ${h.hint}`)).catch(() => {}), 350);
+    return () => clearTimeout(timer);
+  }, [text, generatorId]);
+
   async function askAi(note: string, known?: Describe["estimate"]) {
     let label = estimateLabel(known);
-    if (!label) label = await buildsApi.estimate(text).then((e) => estimateLabel(e)).catch(() => null);
+    if (!label) label = await buildsApi.hint(text, generatorId).then((h) => estimateLabel(h.estimate)).catch(() => null);
     setState({ step: "ai", estimate: label, note });
   }
 
@@ -48,9 +57,15 @@ export default function DescribeBox({ initialText = "", examples = [], busy, llm
       return;
     }
     const generator = answer.generator ?? (answer.route === "edit" ? current?.generator : undefined);
+    if (answer.history) {
+      setState({ step: "idle" });
+      return setError(`"${answer.history}" is done from the versions list: pick the version you want and edit or view it.`);
+    }
     if ((answer.route === "generator" || answer.route === "edit") && generator) {
       setState({ step: "idle" });
-      return onOutcome({ kind: "generator", generator, params: answer.params ?? {} }, value);
+      const changed = (answer.changes ?? []).map((c) => `${c.label}: ${String(c.from)} to ${String(c.to)}`);
+      const summary = [...changed, ...(answer.notes ?? [])].join("; ");
+      return onOutcome({ kind: "generator", generator, params: answer.params ?? {}, summary }, value);
     }
     if (answer.route === "clarify") {
       return setState({ step: "clarify", question: answer.question ?? answer.message ?? "Can you say a little more?", options: answer.options ?? [] });
@@ -67,6 +82,7 @@ export default function DescribeBox({ initialText = "", examples = [], busy, llm
       {examples.length > 0 && !text && (
         <div className="describe-examples">{examples.map((ex) => <button key={ex} type="button" className="chip" onClick={() => setText(ex)}>{ex}</button>)}</div>
       )}
+      {hint && state.step === "idle" && <p className="muted small describe-hint">{hint}</p>}
       {error && <div className="banner error">{error}</div>}
       {state.step === "clarify" && (
         <div className="banner describe-ask" role="status">

@@ -73,12 +73,12 @@ export default function BuildPage() {
     finally { setBusy(null); }
   }
 
-  async function generate(generator: string, params: Record<string, unknown>) {
+  async function generate(generator: string, params: Record<string, unknown>, summary = "") {
     const made = await act("generate", () => buildsApi.generate(id, generator, params));
     if (!made) return;
     await reload(); refreshBuilds();
     setPicked(null); setPanel("none");
-    setNotice(`Saved as v${made.version}.`);
+    setNotice(`Saved as v${made.version}.${summary ? ` ${summary}.` : ""}`);
   }
 
   async function askAi(text?: string) {
@@ -96,7 +96,7 @@ export default function BuildPage() {
   }
 
   async function onDescribed(outcome: DescribeOutcome, text: string) {
-    if (outcome.kind === "generator") return generate(outcome.generator, outcome.params);
+    if (outcome.kind === "generator") return generate(outcome.generator, outcome.params, outcome.summary);
     return askAi(text);
   }
 

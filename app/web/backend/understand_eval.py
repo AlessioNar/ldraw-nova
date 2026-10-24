@@ -4,7 +4,7 @@ Run the live check ONCE, on purpose (it makes one model call per golden prompt, 
 
     docker compose exec ldraw-nova-app bash -c "cd /app/web/backend && python3 understand_eval.py --live"
 
-It uses the model chosen by `understand.model_params()` (Settings worker model, else LDRAW_NOVA_UNDERSTAND_LLM_ID,
+It uses the model chosen by `understand.model_params()` (Settings understanding model, else LDRAW_NOVA_UNDERSTAND_LLM_ID,
 else a configured anthropic/claude-haiku-5-5 entry), or `--llm-id <id>` for a specific configured entry (a Mistral
 Small 4 entry works too). Without `--live` nothing is called. Prints the family / colour / edit match rates, median
 cost and latency, and every mismatch; `--json FILE` also saves the rows.
