@@ -17,7 +17,7 @@ def motorcycle(palette):
     m.add('85983',c['body'],h=body_h,z=2.5,id='vintage-fairing')
     m.step()
     for label,z in [('front',-53.5),('rear',53.5)]:
-        m.add('50862',c['metal'],h=radius,z=z/20,yaw=90,id=label+'-rim')
+        m.add('50862',c.get('wheel',c['metal']),h=radius,z=z/20,yaw=90,id=label+'-rim')
         m.add('50861',256,h=radius,z=z/20,yaw=90,id=label+'-tyre')
     m.step()
     m.add('3839b',c['metal'],h=body_h+8,z=2.5,yaw=90,id='luggage-rack')

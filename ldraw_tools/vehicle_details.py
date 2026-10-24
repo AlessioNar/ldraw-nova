@@ -24,7 +24,11 @@ DETAILS = {
 }
 
 
+CUSTOM_PALETTES={}  # name -> roles; filled by ldraw_tools.generators.colours for colour-from-name palettes
+
+
 def vehicle_colours(palette):
+    if palette in CUSTOM_PALETTES:return CUSTOM_PALETTES[palette]
     available=palettes()
     if palette not in available or available[palette].get('family')!='vehicle':
         raise ValueError('Choose a vehicle palette: '+', '.join(k for k,v in available.items() if v.get('family')=='vehicle'))

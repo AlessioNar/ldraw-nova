@@ -191,7 +191,7 @@ def _added_entry(plan, edit, parts):
 
 def _moved_entry(entry, position):
     result = {"id": entry["id"], "ref": entry["ref"], "colour": entry["colour"], "at": position}
-    for key in ("purpose", "yaw", "matrix", "repeat"):
+    for key in ("purpose", "role", "yaw", "matrix", "repeat"):
         if key in entry:
             result[key] = copy.deepcopy(entry[key])
     return result
@@ -337,7 +337,7 @@ def _apply_snap(plan, edit, parts):
     # `nearest`: of the ways to connect the two parts, take the one closest to where the part was dropped.
     snapped = {"id": entry["id"], "ref": entry["ref"], "colour": entry["colour"],
                "snap": {"to": target["id"], "near": copy.deepcopy(entry["at"]), "nearest": True}}
-    for key in ("purpose", "yaw", "matrix"):
+    for key in ("purpose", "role", "yaw", "matrix"):
         if key in entry:
             snapped[key] = copy.deepcopy(entry[key])
     probe = copy.deepcopy(plan)
@@ -355,6 +355,8 @@ def _apply_snap(plan, edit, parts):
     baked = {"id": entry["id"], "ref": entry["ref"], "colour": entry["colour"], "at": at}
     if "purpose" in entry:
         baked["purpose"] = entry["purpose"]
+    if "role" in entry:
+        baked["role"] = entry["role"]
     if not np.allclose(matrix, np.eye(3), atol=1e-9):
         baked["matrix"] = matrix
     section["steps"][ti][ei] = baked
