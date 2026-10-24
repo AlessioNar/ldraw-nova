@@ -8,7 +8,16 @@ const greeting = () => { const h = new Date().getHours(); return h < 5 ? "Good e
 const pct = (x: number) => `${Math.floor(x * 100)}%`;
 
 /** The newest builds as big cards; the empty state doubles as the first-run welcome. */
+/** Ask, then delete a build with all its versions; its chats are kept (they move to Older chats). */
+export async function confirmDeleteBuild(b: { id: string; title: string; versions: number }): Promise<boolean> {
+  if (!confirm(`Delete the build "${b.title}"?
+
+This removes its ${b.versions} version${b.versions === 1 ? "" : "s"}, the draft and its previews. Chats about it are kept. This cannot be undone.`)) return false;
+  try { await buildsApi.remove(b.id); return true; } catch (e) { alert((e as Error).message); return false; }
+}
+
 function Continue({ builds }: { builds: BuildSummary[] | null }) {
+  const { refreshBuilds } = useApp();
   if (!builds) return <div className="wb-cards">{[0, 1, 2, 3].map((i) => <div key={i} className="wb-card skeleton" aria-hidden />)}</div>;
   if (!builds.length) return (
     <div className="panel wb-empty">
@@ -21,14 +30,18 @@ function Continue({ builds }: { builds: BuildSummary[] | null }) {
       {builds.slice(0, 8).map((b) => {
         const origin = b.latest_origin;
         return (
-          <Link key={b.id} to={`/build/${b.id}`} className="wb-card" title={b.title}>
-            <span className="wb-thumb">{b.latest?.image_url ? <img src={b.latest.image_url} alt="" loading="lazy" /> : <i aria-hidden>no preview yet</i>}</span>
-            <span className="wb-meta">
-              <strong className="ellipsis">{b.title}</strong>
-              <span className="muted small">{b.versions > 0 ? `v${b.versions}` : "no version yet"} · {timeAgo(b.updated_at)}</span>
-              {origin && ORIGIN_LABEL[origin] && <span className={`origin-badge origin-${origin}`}>{ORIGIN_LABEL[origin]}</span>}
-            </span>
-          </Link>
+          <div key={b.id} className="wb-card-wrap">
+            <Link to={`/build/${b.id}`} className="wb-card" title={b.title}>
+              <span className="wb-thumb">{b.latest?.image_url ? <img src={b.latest.image_url} alt="" loading="lazy" /> : <i aria-hidden>no preview yet</i>}</span>
+              <span className="wb-meta">
+                <strong className="ellipsis">{b.title}</strong>
+                <span className="muted small">{b.versions > 0 ? `v${b.versions}` : "no version yet"} · {timeAgo(b.updated_at)}</span>
+                {origin && ORIGIN_LABEL[origin] && <span className={`origin-badge origin-${origin}`}>{ORIGIN_LABEL[origin]}</span>}
+              </span>
+            </Link>
+            <button type="button" className="icon-button wb-delete" title="Delete build" aria-label={`Delete build ${b.title}`}
+              onClick={async () => { if (await confirmDeleteBuild(b)) refreshBuilds(); }}>✕</button>
+          </div>
         );
       })}
     </div>

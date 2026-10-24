@@ -55,6 +55,12 @@ async def models_delete(filename: str):
             or model.suffix.lower() not in MODEL_SUFFIXES or model.is_symlink()
             or not model.is_file()):
         not_found("Model not found")
+    return {"deleted": delete_model_file(model)}
+
+
+def delete_model_file(model: Path) -> list[str]:
+    """Delete a model in data/generated with its preview, parts list, notes and GLB (409 while it is processed)."""
+    root = settings.GENERATED_DIR.resolve()
     if model in gallery.publishing or gallery._current == model or render.is_busy(model) or glb.is_converting(model):
         raise HTTPException(409, "This model is still being processed. Try deleting it again when processing finishes.")
     # Notes/previews are shared if car.mpd and car.ldr both exist: retain those.
@@ -69,7 +75,7 @@ async def models_delete(filename: str):
     gallery.forget(model)
     # Keep chat records as history. Their existing missing-model state explains
     # that a model is gone, while the agent's original work files remain intact.
-    return {"deleted": deleted}
+    return deleted
 
 
 def model_from_url(url: str) -> Optional[Path]:

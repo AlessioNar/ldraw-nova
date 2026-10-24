@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import re
+import shutil
 import time
 from pathlib import Path
 from typing import Any, Optional
@@ -50,6 +51,36 @@ def _check(store, build_id: str) -> dict:
     if not builds.valid(store, build_id):
         not_found("no such build")
     return builds.get(store, build_id) or not_found("no such build")
+
+
+@router.delete("/api/builds/{build_id}")
+async def builds_delete(build_id: str):
+    """Delete a build: every version file (with its preview, parts list, GLB) and its folder (draft, proposals,
+    editor work). Chats attached to it are kept and detached, so they move to Older chats."""
+    from .models_gallery import delete_model_file      # lazy: that router imports builds too
+    store = get_store()
+    record = _check(store, build_id)
+    chats = [c for c in store.list_chats() if c.get("build_id") == build_id or c["id"] in record.get("chats", [])]
+    if any(run_state.is_running(c["id"]) for c in chats):
+        raise HTTPException(409, "A chat on this build is still running. Stop it first.")
+    deleted = []
+    for entry in builds.versions(build_id):
+        if entry["path"].is_file() and not entry["path"].is_symlink():
+            for attempt in range(60):           # a fresh version may still be rendering its preview: wait up to 30 s
+                try:
+                    deleted += delete_model_file(entry["path"])
+                    break
+                except HTTPException as exc:
+                    if exc.status_code != 409 or attempt == 59:
+                        raise
+                    await asyncio.sleep(0.5)
+    folder = builds.dir_of(store, build_id)
+    if folder.is_dir() and not folder.is_symlink() and folder.resolve().parent == store.builds_dir.resolve():
+        shutil.rmtree(folder)
+    for chat in chats:
+        if chat.get("build_id") == build_id:
+            store.update_chat(chat["id"], build_id=None)
+    return {"deleted": deleted, "chats_kept": [c["id"] for c in chats]}
 
 
 def _detail(store, slug: str) -> dict:

@@ -189,3 +189,23 @@ def test_a_chat_attached_to_a_build_proposes_into_it(client):
     assert "belongs to the build" in note and "PROPOSAL" in note and "waiting for review" in note
     assert client.get(f"/api/builds/{slug}").json()["build"]["chats"] == 2
     assert chat["id"] not in {c["id"] for c in client.get("/api/builds").json()["older_chats"]}
+
+
+def test_deleting_a_build_removes_its_versions_and_folder_but_keeps_its_chats(client):
+    store = get_store()
+    slug = client.post("/api/builds", json={"title": "Doomed build", "source": {"kind": "import"}}).json()["id"]
+    for name in ("a.ldr", "b.ldr"):
+        assert client.post(f"/api/builds/{slug}/import", json={"filename": name, "content": TINY}).status_code == 200
+    chat = store.create_chat("About the doomed build", build_id=slug)
+    builds.attach_chat(store, slug, chat["id"])
+    assert len(list(settings.GENERATED_DIR.glob(f"{slug}-v*.ldr"))) == 2
+
+    gone = client.delete(f"/api/builds/{slug}")
+    assert gone.status_code == 200 and f"{slug}-v1.ldr" in gone.json()["deleted"]
+    assert not list(settings.GENERATED_DIR.glob(f"{slug}-v*"))
+    assert not builds.dir_of(store, slug).exists()
+    assert client.get(f"/api/builds/{slug}").status_code == 404
+    assert slug not in {b["id"] for b in client.get("/api/builds").json()["builds"]}
+    kept = store.get_chat(chat["id"])
+    assert kept is not None and not kept.get("build_id")
+    assert client.delete(f"/api/builds/{slug}").status_code == 404
