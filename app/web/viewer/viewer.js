@@ -47,7 +47,7 @@ var scene = null;
     return parseColor.call(this, colorID);
   };
 
-  LDR.Options.bgColor = 0xF2F2F2;
+  LDR.Options.bgColor = ViewerCommon.stageColor;
   LDR.Colors.envMapPrefix = 'vendor/ldbi/textures/cube/';
   LDR.Colors.textureMaterialPrefix = 'vendor/ldbi/textures/materials/';
 

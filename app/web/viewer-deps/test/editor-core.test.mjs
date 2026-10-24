@@ -267,3 +267,134 @@ test("nudgeEdits: arrows move a stud, Page Up/Down a plate, Shift+arrow turns a 
   assert.deepEqual(C.nudgeEdits(nodes, ["top"], "ArrowUp", true), []);
   assert.deepEqual(C.nudgeEdits(nodes, ["top"], "a", false), []);
 });
+
+// ---- the build workspace canvas ----------------------------------------------------------------
+
+const SUB_MPD = `0 FILE main.ldr
+0 // e1: base
+1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 // e2: roof
+1 16 100 -24 0 1 0 0 0 1 0 0 0 1 roof.ldr
+0 FILE roof.ldr
+0 // r1: tile
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 3068b.dat
+0 // r2: tile
+1 24 20 0 0 1 0 0 0 1 0 0 0 1 3068b.dat
+`;
+const SUB_PLAN = { sections: [
+  { name: "main.ldr", steps: [[{ id: "e1" }, { id: "e2" }]] },
+  { name: "roof.ldr", steps: [[{ id: "r1" }, { id: "r2" }]] },
+] };
+
+test("effectiveColours: 16 takes the parent's colour, 24 its edge colour", () => {
+  const nodes = C.flatten(SUB_MPD.replace("1 16 100", "1 7 100"), SUB_PLAN).nodes;
+  const eff = C.effectiveColours(nodes);
+  assert.equal(eff.get("e1"), 4);
+  assert.equal(eff.get("e2/r1"), 7);
+  assert.equal(eff.get("e2/r2"), -8);                      // edge of colour 7
+  assert.equal(C.effectiveColours(C.flatten(SUB_MPD, SUB_PLAN).nodes).get("e2/r1"), 16);
+});
+
+test("sceneMatrix flips y and z the way ldbi does", () => {
+  const n = { matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1], position: [10, -24, 5] };
+  assert.deepEqual(C.sceneMatrix(n).map(v => v + 0), [1, 0, 0, 10, 0, -1, 0, 24, 0, 0, -1, -5, 0, 0, 0, 1]);
+});
+
+test("diffLeaves tells moved, recoloured, added and removed parts apart", () => {
+  const before = C.flatten(SUB_MPD, SUB_PLAN).nodes;
+  const known = new Map();
+  const eff = C.effectiveColours(before);
+  for (const n of before.filter(n => n.leaf)) known.set(n.key, { ref: n.ref.toLowerCase(), colour: eff.get(n.key), tf: C.sceneMatrix(n).join(",") });
+  assert.deepEqual(C.diffLeaves(known, before.filter(n => n.leaf), eff), { add: [], remove: [], rebuild: [], move: [] });
+  const after = C.predictEdits(before, [
+    { op: "move", id: "e1", section: "main.ldr", position: [0, 0, 40] },
+    { op: "recolour", id: "r1", section: "roof.ldr", colour: 2 },
+    { op: "delete", id: "r2", section: "roof.ldr" },
+  ]);
+  const diff = C.diffLeaves(known, after.filter(n => n.leaf), C.effectiveColours(after));
+  assert.deepEqual(diff, { add: [], remove: ["e2/r2"], rebuild: ["e2/r1"], move: ["e1"] });
+  const grown = C.diffLeaves(known, [...before.filter(n => n.leaf), { ...before[0], key: "new", ref: "3001.dat" }], new Map([...eff, ["new", 4]]));
+  assert.deepEqual(grown.add, ["new"]);
+});
+
+test("predictEdits moves a sub-model's parts with it, without touching the input", () => {
+  const nodes = C.flatten(SUB_MPD, SUB_PLAN).nodes;
+  const snapshot = JSON.stringify(nodes);
+  const moved = C.predictEdits(nodes, [{ op: "move", id: "e2", section: "main.ldr", position: [100, -24, 60] }]);
+  assert.equal(JSON.stringify(nodes), snapshot);
+  assert.deepEqual(moved.find(n => n.key === "e2/r2").position, [120, -24, 60]);
+  const turned = C.predictEdits(nodes, [{ op: "rotate", id: "e2", section: "main.ldr", axis: "y", degrees: 90 }]);
+  near(turned.find(n => n.key === "e2/r2").position, [100, -24, -20]);
+  const deleted = C.predictEdits(nodes, [{ op: "delete", id: "e2", section: "main.ldr" }]);
+  assert.deepEqual(deleted.map(n => n.key), ["e1"]);
+});
+
+// A flat "camera": x and y are the part's x and y over 200, z is the distance.
+const flatCamera = point => [point[0] / 200, -point[1] / 200, 1];
+
+test("boxSelect picks the parts whose centre is inside the rectangle", () => {
+  const nodes = C.flatten(SUB_MPD, SUB_PLAN).nodes.filter(n => n.leaf);
+  const boxes = { "3001.dat": BOX, "3068b.dat": { min: [-10, -4, -10], max: [10, 0, 10] } };
+  const keys = rect => C.boxSelect(rect, nodes, boxes, flatCamera);
+  assert.deepEqual(keys({ x0: -1, y0: -1, x1: 1, y1: 1 }), ["e1", "e2/r1", "e2/r2"]);
+  assert.deepEqual(keys({ x0: 0.4, y0: 1, x1: 0.7, y1: -1 }), ["e2/r1", "e2/r2"]);
+  assert.deepEqual(keys({ x0: 0.1, y0: 0.2, x1: -0.1, y1: -0.2 }), ["e1"]);         // corners in any order
+  assert.deepEqual(C.boxSelect({ x0: -1, y0: -1, x1: 1, y1: 1 }, nodes, boxes, () => [0, 0, -1]), []);   // behind the camera
+  assert.deepEqual(C.boxSelect({ x0: -1, y0: -1, x1: 1, y1: 1 }, nodes, {}, flatCamera), []);            // no boxes known
+  const touch = C.boxSelect({ x0: 0.45, y0: 0.5, x1: 0.46, y1: -0.5 }, nodes, boxes, flatCamera, "touch");
+  assert.deepEqual(touch, ["e2/r1"]);
+  assert.deepEqual(C.mergeSelection(["a"], ["a", "b"], true), ["a", "b"]);
+  assert.deepEqual(C.mergeSelection(["a"], ["b"], false), ["b"]);
+});
+
+test("parseCommand accepts the contract's commands and refuses the rest", () => {
+  const origin = "http://x.test", base = "http://x.test/viewer/editor.html";
+  const ok = d => C.parseCommand({ type: "obd:command", ...d }, origin, base);
+  assert.deepEqual(ok({ cmd: "undo" }), { cmd: "undo" });
+  assert.deepEqual(ok({ cmd: "set-tool", tool: "paint" }), { cmd: "set-tool", tool: "paint" });
+  assert.deepEqual(ok({ cmd: "set-colour", colour: "14" }), { cmd: "set-colour", colour: 14 });
+  assert.deepEqual(ok({ cmd: "add-part", part: "3001.dat", colour: 4 }), { cmd: "add-part", part: "3001.dat", colour: 4 });
+  assert.deepEqual(ok({ cmd: "set-mode", mode: "player" }), { cmd: "set-mode", mode: "player" });
+  assert.deepEqual(ok({ cmd: "step", n: 3 }), { cmd: "step", n: 3 });
+  assert.deepEqual(ok({ cmd: "view-version", url: "/api/builds/a/proposals/p.mpd" }), { cmd: "view-version", url: "http://x.test/api/builds/a/proposals/p.mpd" });
+  for (const bad of [{ cmd: "nope" }, { cmd: "set-tool", tool: "lasso" }, { cmd: "set-colour", colour: -1 }, { cmd: "set-colour", colour: 1.5 },
+    { cmd: "add-part", part: "../x", colour: 1 }, { cmd: "add-part", part: "3001" }, { cmd: "set-mode", mode: "x" }, { cmd: "step", n: 0 },
+    { cmd: "view-version", url: "https://evil.test/a.mpd" }, { cmd: "view-version", url: "javascript:alert(1)" }, { cmd: "view-version" }]) {
+    assert.throws(() => ok(bad), Error, JSON.stringify(bad));
+  }
+  assert.throws(() => C.parseCommand({ type: "other", cmd: "undo" }, origin, base));
+  assert.throws(() => C.parseCommand(null, origin, base));
+  assert.throws(() => ok({ cmd: { toString: () => "undo" } }));
+});
+
+test("trustedMessage needs the same origin and the parent window", () => {
+  const parent = {}, other = {};
+  const event = (origin, source, data) => ({ origin, source, data });
+  assert.equal(C.trustedMessage(event("http://a", parent, { type: "x" }), "http://a", parent), true);
+  assert.equal(C.trustedMessage(event("http://evil", parent, { type: "x" }), "http://a", parent), false);
+  assert.equal(C.trustedMessage(event("http://a", other, { type: "x" }), "http://a", parent), false);
+  assert.equal(C.trustedMessage(event("http://a", parent, "text"), "http://a", parent), false);
+  assert.equal(C.trustedMessage(event("http://a", parent, null), "http://a", parent), false);
+});
+
+test("add tool: ground placement, snapping target and the edit batch", () => {
+  const nodes = C.flatten(SUB_MPD, SUB_PLAN).nodes.filter(n => n.leaf);
+  const boxes = { "3001.dat": BOX, "3068b.dat": { min: [-10, -4, -10], max: [10, 0, 10] } };
+  const newBox = { min: [-20, -4, -40], max: [20, 24, 40] };
+  const far = C.placementFor({ origin: [333, -500, 477], direction: [0, 1, 0] }, nodes, boxes, newBox, 0, "main.ldr");
+  assert.deepEqual(far.world, [340, -24, 480]);                       // on the stud grid, body ends on the ground
+  assert.equal(far.section, "main.ldr");
+  assert.equal(far.to, null);
+  const onBase = C.placementFor({ origin: [0, -500, 0], direction: [0, 1, 0] }, nodes, boxes, newBox, 0, "main.ldr");
+  assert.equal(onBase.to, "e1");
+  assert.equal(C.placementFor({ origin: [0, -5, 0], direction: [1, 0, 0] }, [], {}, newBox, 0, "main.ldr"), null);
+  assert.equal(C.nextEntryId({ sections: [{ steps: [[{ id: "e1" }, { id: "e3" }]] }] }), "e2");
+  const edits = C.addEdits({ sections: [{ steps: [[{ id: "e1" }]] }] }, "3001", 4, onBase);
+  assert.deepEqual(edits, [{ op: "add", section: "main.ldr", part: "3001.dat", colour: 4, position: onBase.local }, { op: "snap", id: "e2", to: "e1" }]);
+  assert.equal(C.addEdits({ sections: [{ steps: [[]] }] }, "3001.dat", 4, far, false).length, 1);
+});
+
+test("pieceInfo describes a selected part for the parent page", () => {
+  const n = C.flatten(SUB_MPD, SUB_PLAN).nodes.find(p => p.key === "e2/r2");
+  assert.deepEqual(C.pieceInfo(n, "Tile 1 x 2"), { id: "r2", part: "3068b", name: "Tile 1 x 2", colour: 24, position: [20, 0, 0], rotation: IDENTITY, section: "roof.ldr" });
+});

@@ -1,7 +1,9 @@
 <!doctype html>
 <!--
   LDraw 3D editor: the viewer's scene (ldbi, three.js r139) with picking and a move/rotate gizmo.
-  Usage: /viewer/editor.html?chat=<chat id>
+  Usage: /viewer/editor.html?chat=<chat id>   (or ?build=<slug>, or ?space=chats|builds&id=<id>)
+  Embedded in the build workspace: ?space=builds&id=<slug>&embed=1&mode=edit|view|player&theme=dark|light, driven by
+  window.postMessage (obd:command in, obd:* out; docs/plans/build-workspace/CONTRACT.md).
   The plan lives on the server (task 02's /api/chats/<id>/editor endpoints); this page sends an edit
   when a drag ends and shows the model the backend rebuilt. viewer.html stays read-only.
 -->
@@ -36,6 +38,18 @@
   </button>
 </div>
 <div id="stage" tabindex="0" aria-label="3D model editor"></div>
+<div id="player-stage" hidden>
+  <canvas id="player-canvas"></canvas>
+  <div id="player-bar">
+    <button id="player-prev" class="icon" title="Previous step (Left)" aria-label="Previous step">&#9664;</button>
+    <button id="player-play" class="icon" title="Play / pause (Space)" aria-label="Play">&#9654;</button>
+    <button id="player-next" class="icon" title="Next step (Right)" aria-label="Next step">&#9654;&#9654;</button>
+    <input id="player-scrub" type="range" min="0" max="1000" value="0" aria-label="Step">
+    <span id="player-step">Step - / -</span>
+  </div>
+</div>
+<div id="marquee" hidden></div>
+<div id="snap" role="status" hidden></div>
 <div id="start" hidden>
   <p id="start-text">This chat has no model to edit yet.</p>
   <ul id="plans"></ul>
@@ -69,6 +83,8 @@
 <script src="vendor/ldbi/js/LDRStuds.js"></script>
 <script src="viewer-common.js"></script>
 <script src="editor-core.js"></script>
+<script src="editor-scene.js"></script>
+<script src="editor-player.js"></script>
 <script src="editor.js"></script>
 </body>
 </html>

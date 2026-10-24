@@ -8,6 +8,13 @@ var ViewerCommon = (function () {
   const theme = params.get('theme');
   if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
 
+  // The 3D stage's backdrop. It follows the page theme only when one is asked for (?theme=); without it the stage stays
+  // light, as it always was. Dark is the app's canvas colour, so a dark page gets a dark stage rather than a grey slab.
+  const darkStage = theme === 'dark';
+  const STAGE = { light: 0xf2f2f2, dark: 0x0e1a2e };
+  const stageColor = darkStage ? STAGE.dark : STAGE.light;
+  const stageCss = '#' + stageColor.toString(16).padStart(6, '0');
+
   // The same two camera modes in both pages.
   const HINTS = {
     inspect: 'Drag to rotate · Shift+drag to pan · Scroll to zoom, and keep scrolling to go inside',
@@ -23,13 +30,14 @@ var ViewerCommon = (function () {
 
   const fileNameOf = url => decodeURIComponent(url.split('/').pop().split('?')[0]);
 
-  // Poly mode draws flat wireframes on a light background: pull near-white
-  // colours down so their lines don't vanish. Mutates and returns the colour.
-  function polyColor(color) {
+  // Poly mode draws flat wireframes on the stage: pull colours that match the backdrop away from it (near-white on the
+  // light stage, near-black on the dark one) so their lines don't vanish. Mutates and returns the colour.
+  function polyColor(color, dark = darkStage) {
     const hsl = color.getHSL({});
-    if (hsl.l > 0.82) color.setHSL(hsl.h, hsl.s, 0.62);
+    if (dark) { if (hsl.l < 0.28) color.setHSL(hsl.h, hsl.s, 0.58); }
+    else if (hsl.l > 0.82) color.setHSL(hsl.h, hsl.s, 0.62);
     return color;
   }
 
-  return { params, modelUrl, knownParts, HINTS, plural, statusSetter, fileNameOf, polyColor };
+  return { params, modelUrl, knownParts, HINTS, plural, statusSetter, fileNameOf, polyColor, darkStage, stageColor, stageCss };
 })();
