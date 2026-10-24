@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { buildsApi, downloadGlb, downloadUrl, type GeneratorEntry } from "../../api";
 import { useApp } from "../../context";
-import { confirmDeleteBuild } from "../../pages/Home";
+import { confirmDeleteBuild } from "../../buildActions";
 import type { Workspace } from "../../workspace/useWorkspace";
 import Icon from "./Icon";
 
 const KIND_TAG: Record<string, string> = { ai: "AI build", import: "Imported" };
 
-/** "← Builds", the build name (click to rename), generator tag, draft status, undo/redo, discard and save. */
+/** The build's own bar under the app bar: the build name (click to rename), generator tag, draft status, undo/redo, discard and save. */
 export default function TopBar({ ws }: { ws: Workspace }) {
   const { detail, draft, changes, viewing, nextVersion, baseVersion, latest, empty } = ws;
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -40,9 +40,6 @@ export default function TopBar({ ws }: { ws: Workspace }) {
 
   return (
     <header className="ws-top">
-      <Link className="ws-back" to="/" title="Back to all builds">← Builds</Link>
-      <span className="ws-sep" />
-      <Icon name="logo" size={20} />
       {renaming == null
         ? <h1 className="ws-name ellipsis" title="Click to rename" tabIndex={0} onClick={() => setRenaming(build.title)}
             onKeyDown={(e) => { if (e.key === "Enter") setRenaming(build.title); }}>{build.title}</h1>
@@ -66,7 +63,7 @@ export default function TopBar({ ws }: { ws: Workspace }) {
         <summary className="ws-icon-btn" title="More" aria-label="More actions">⋯</summary>
         <div className="ws-menu-pop">
           <button className="danger-text" onClick={async () => {
-            if (await confirmDeleteBuild({ id: build.id, title: build.title, versions: build.versions })) { refreshBuilds(); navigate("/"); }
+            if (await confirmDeleteBuild({ id: build.id, title: build.title, versions: build.versions })) { refreshBuilds(); navigate("/builds"); }
           }}>Delete build…</button>
         </div>
       </details>

@@ -29,7 +29,8 @@ Dev mode details (`app/docker-compose.dev.yml`):
 - **Startup line**: "Sandbox isolation: on (...)", or a WARNING if it is off.
 - **Agent transcripts**: `/data/chats/<id>/messages.jsonl`, and the workers in `workers/<id>.jsonl`. Cost per step is the `_usage` field.
 - **Agent files**: `/data/output/<chat-id>/`, including `NOTES.md` and the scripts in `generators/`.
-- **Understanding-call cost**: only in the server log at INFO. It is not persisted.
+- **Understanding-call cost and every other model call**: the `usage_event` table (`GET /api/costs`), see [database.md](database.md).
+- **Database**: `docker logs ldraw-nova-db`; a shell with `docker compose exec db psql -U obd_admin obd`.
 - **Shell in**: `docker compose exec ldraw-nova-app bash`.
 
 ## Tests
@@ -45,6 +46,10 @@ Dev mode details (`app/docker-compose.dev.yml`):
 
 - **CI jobs**: `quick` runs the frontend build, ruff and the models-pack verify. `image` runs the full build, smoke checks (including `jev-rerank --help`) and both test suites.
 - **Rule of thumb from your memory notes**: test against throwaway containers, never the running `ldraw-nova-app` or its volumes. Live API tests have a small euro budget.
+
+## Backups
+
+`bash scripts/backup.sh` (database dump plus data volume, into `./backups` or `$BACKUP_DIR`) and `bash scripts/restore.sh <dump>`; opt-in daily backups with `docker compose --profile backup up -d`. Details in [database.md](database.md).
 
 ## Common tasks
 

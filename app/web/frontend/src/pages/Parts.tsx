@@ -1,33 +1,64 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { inventoryApi, timeAgo, type Inventory } from "../api";
+import { collectionApi, inventoryApi, timeAgo, type Inventory } from "../api";
+import AddPartsMenu, { type AddWay } from "../components/parts/AddPartsMenu";
+import AddSetDialog from "../components/parts/AddSetDialog";
 import BuildablePanel from "../components/parts/BuildablePanel";
+import CollectionView from "../components/parts/CollectionView";
 import InventoryDetailView from "../components/parts/InventoryDetailView";
+import QuickAddDialog from "../components/parts/QuickAddDialog";
+import ReviewQueue from "../components/parts/ReviewQueue";
+import SourceHistory from "../components/parts/SourceHistory";
+import SourcesView from "../components/parts/SourcesView";
 import UploadDialog from "../components/parts/UploadDialog";
+import type { OnChanged } from "../components/parts/changes";
 
-/** The user's named parts inventories, and one inventory's contents at /parts/:id. */
+type View = "collection" | "sources" | "review" | "build";
+const VIEWS: View[] = ["collection", "sources", "review", "build"];
+type Dialog = null | { kind: AddWay; replace?: string };
+type Notice = { text: string; source?: string } | null;
+
+/** My Parts: the collection (every source added together), its sources, the review queue, what can I build; and one source's parts at /parts/:id. */
 export default function Parts() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [search, setSearch] = useSearchParams();
-  const tab = search.get("view") === "build" ? "build" : "lists";
-  const [items, setItems] = useState<Inventory[] | null>(null);
+  const asked = search.get("view") as View | null;
+  const view: View = asked && VIEWS.includes(asked) ? asked : "collection";
+  const sourceFilter = search.get("source") ?? "";
+  const [sources, setSources] = useState<Inventory[] | null>(null);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [version, setVersion] = useState(0);
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [notice, setNotice] = useState<Notice>(null);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => inventoryApi.list().then(r => { setItems(r.inventories); setError(""); }, e => setError((e as Error).message)), []);
-  useEffect(() => { void load(); }, [load]);
+  const load = useCallback(() => collectionApi.overview().then(r => { setSources(r.sources); setError(""); }, e => setError((e as Error).message)), []);
+  useEffect(() => { void load(); }, [load, version]);
   useEffect(() => setRenaming(false), [id]);
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 15000);
+    return () => clearTimeout(t);
+  }, [notice]);
 
-  const current = id ? items?.find(i => i.id === id) : undefined;
+  const changed: OnChanged = useCallback((text, undo) => { setNotice({ text, source: undo?.source }); setVersion(v => v + 1); }, []);
+  const go = (v: View, extra: Record<string, string> = {}) => setSearch(v === "collection" && !Object.keys(extra).length ? {} : { view: v, ...extra });
+  const real = (sources ?? []).filter(s => !s.virtual);
+  const reviewPieces = real.reduce((n, s) => n + (s.review_pieces ?? 0), 0);
+  const current = id ? real.find(i => i.id === id) : undefined;
 
+  async function undo() {
+    if (!notice?.source) return;
+    try { const r = await collectionApi.undo(notice.source); setNotice({ text: `Undid: ${r.summary}` }); setVersion(v => v + 1); }
+    catch (e) { setNotice({ text: (e as Error).message }); }
+  }
   async function remove(inv: Inventory) {
-    if (!confirm(`Delete "${inv.name}"?\n\nChats that use it will no longer steer towards these parts.`)) return;
+    if (!confirm(`Delete "${inv.name}" and its history?\n\nChats that use it will no longer steer towards these parts.`)) return;
     setBusy(true);
-    try { await inventoryApi.remove(inv.id); await load(); if (id === inv.id) navigate("/parts"); }
+    try { await inventoryApi.remove(inv.id); setVersion(v => v + 1); if (id === inv.id) navigate("/parts"); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
@@ -35,64 +66,68 @@ export default function Parts() {
     e.preventDefault();
     if (!current || !draft.trim()) return;
     setBusy(true);
-    try { await inventoryApi.rename(current.id, draft.trim()); setRenaming(false); await load(); }
+    try { await inventoryApi.rename(current.id, draft.trim()); setRenaming(false); setVersion(v => v + 1); }
     catch (err) { setError((err as Error).message); }
     finally { setBusy(false); }
   }
 
-  const upload = <button type="button" className="primary" onClick={() => setUploading(true)}>+ Upload parts list</button>;
-  const dialog = uploading && <UploadDialog onClose={() => setUploading(false)} onImported={() => void load()} />;
+  const dialogs = <>
+    {dialog?.kind === "quick" && <QuickAddDialog onClose={() => setDialog(null)} onChanged={changed} />}
+    {dialog?.kind === "set" && <AddSetDialog onClose={() => setDialog(null)} onChanged={changed} />}
+    {dialog?.kind === "import" && <UploadDialog sources={sources ?? []} replaceId={dialog.replace} onClose={() => setDialog(null)} onChanged={changed} />}
+  </>;
+  const toast = notice && <div className="parts-notice" role="status">
+    <span>{notice.text}</span>
+    {notice.source && <button type="button" onClick={() => void undo()}>Undo</button>}
+    <button type="button" className="icon-button" aria-label="Dismiss" onClick={() => setNotice(null)}>✕</button>
+  </div>;
 
   if (id) {
     return <div className="page parts-page">
-      <p className="small"><Link to="/parts">← My Parts</Link></p>
+      <p className="small"><Link to="/parts?view=sources">← Sources</Link></p>
       {error && <div className="banner error" role="alert">{error}</div>}
-      {items && !current && !error && <p className="muted">This inventory no longer exists. <Link to="/parts">Back to My Parts</Link></p>}
+      {sources && !current && !error && <p className="muted">This source no longer exists. <Link to="/parts">Back to My Parts</Link></p>}
       {current && <>
         <header className="page-head">
           {renaming ? <form className="rename-form" onSubmit={rename}>
-            <input autoFocus aria-label="Inventory name" value={draft} maxLength={80} onChange={e => setDraft(e.target.value)} onKeyDown={e => e.key === "Escape" && setRenaming(false)} />
+            <input autoFocus aria-label="Source name" value={draft} maxLength={80} onChange={e => setDraft(e.target.value)} onKeyDown={e => e.key === "Escape" && setRenaming(false)} />
             <button type="submit" className="primary" disabled={busy || !draft.trim()}>Save</button>
             <button type="button" onClick={() => setRenaming(false)}>Cancel</button>
-          </form> : <div><h1>{current.name}</h1><p className="muted small">{current.source_filename ?? "No source file"} · added {timeAgo(current.created_at)}</p></div>}
+          </form> : <div><h1>{current.name}</h1><p className="muted small">
+            {current.kind === "set" && current.set ? `Set ${current.set.set_num} · ${current.set.copies} ${current.set.copies === 1 ? "copy" : "copies"} · ` : current.kind === "loose" ? "Manual and quick adds · " : `${current.source_filename ?? "No source file"} · `}added {timeAgo(current.created_at)}</p></div>}
           <div className="head-actions">
-            <button type="button" disabled={busy || renaming} onClick={() => { setDraft(current.name); setRenaming(true); }}>Rename</button>
+            {(current.kind ?? "import") === "import" && <button type="button" disabled={busy} onClick={() => setDialog({ kind: "import", replace: current.id })}>Replace file</button>}
+            <button type="button" disabled={busy || renaming || current.kind === "loose"} onClick={() => { setDraft(current.name); setRenaming(true); }}>Rename</button>
             <button type="button" className="danger-text" disabled={busy} onClick={() => void remove(current)}>Delete</button>
           </div>
         </header>
-        <InventoryDetailView id={current.id} />
+        <InventoryDetailView id={current.id} key={`${current.id}-${version}`} />
+        <SourceHistory source={current.id} version={version} onChanged={changed} />
       </>}
-      {dialog}
+      {dialogs}{toast}
     </div>;
   }
 
   return <div className="page parts-page">
     <header className="page-head"><div><h1>My Parts</h1>
-      <p className="muted">Upload the bricks you own as a Rebrickable CSV. In a chat, choose Prefer or Only my parts and the agent designs with them.</p></div>
-      <div className="head-actions">{upload}</div></header>
+      <p className="muted">Your collection: every source added together. In a chat, choose Prefer or Only my parts and the agent designs with them.</p></div>
+      <div className="head-actions"><AddPartsMenu onPick={way => setDialog({ kind: way })} /></div></header>
     {error && <div className="banner error" role="alert">{error}</div>}
-    {!!items?.length && <div className="segmented parts-tabs" role="group" aria-label="My Parts view">
-      <button type="button" aria-pressed={tab === "lists"} onClick={() => setSearch({})}>Parts lists</button>
-      <button type="button" aria-pressed={tab === "build"} onClick={() => setSearch({ view: "build" })}>What can I build?</button>
-    </div>}
-    {!!items?.length && tab === "build" && <BuildablePanel inventories={items} />}
-    {!items && !error && <p className="muted"><span className="spinner" aria-hidden /> Loading…</p>}
-    {items && !items.length && !error && <div className="panel parts-empty-state">
-      <h2>No parts lists yet</h2>
-      <p className="muted">Export your inventory from Rebrickable (My Parts, Export, Rebrickable CSV) or any tool that writes Part, Color and Quantity columns, then upload it here.</p>
-      {upload}
-    </div>}
-    {!!items?.length && tab === "lists" && <div className="card-grid parts-grid">{items.map(inv => <article className="panel inventory-card" key={inv.id}>
-      <h2 className="ellipsis"><Link to={`/parts/${inv.id}`}>{inv.name}</Link></h2>
-      <p className="muted small ellipsis">{inv.source_filename ?? "No source file"} · {timeAgo(inv.created_at)}</p>
-      <p className="inventory-pieces"><strong>{inv.total_pieces.toLocaleString()}</strong> pieces</p>
-      <p className="muted small">{inv.distinct_parts.toLocaleString()} distinct parts · {inv.distinct_colours.toLocaleString()} colours</p>
-      {(inv.unmapped_parts > 0 || inv.unmapped_colours > 0) && <p className="small"><span className="badge warn">{inv.unmapped_parts + inv.unmapped_colours} unrecognised</span></p>}
-      <div className="card-actions">
-        <Link className="button" to={`/parts/${inv.id}`}>View parts</Link>
-        <button type="button" className="danger-text" disabled={busy} aria-label={`Delete ${inv.name}`} onClick={() => void remove(inv)}>Delete</button>
+    {!sources && !error && <p className="muted"><span className="spinner" aria-hidden /> Loading…</p>}
+    {sources && <>
+      <div className="segmented parts-tabs" role="group" aria-label="My Parts view">
+        <button type="button" aria-pressed={view === "collection"} onClick={() => go("collection")}>Collection</button>
+        <button type="button" aria-pressed={view === "sources"} onClick={() => go("sources")}>Sources ({real.length})</button>
+        <button type="button" aria-pressed={view === "review"} onClick={() => go("review")}>Review{reviewPieces > 0 ? ` (${reviewPieces.toLocaleString()})` : ""}</button>
+        <button type="button" aria-pressed={view === "build"} onClick={() => go("build")}>What can I build?</button>
       </div>
-    </article>)}</div>}
-    {dialog}
+      {view === "collection" && <CollectionView version={version} source={sourceFilter} onSource={s => setSearch(s ? { source: s } : {})}
+        onChanged={changed} onReview={() => go("review")} onAdd={() => setDialog({ kind: "quick" })} />}
+      {view === "sources" && <SourcesView sources={sources} version={version} onChanged={changed} onRemoved={() => setVersion(v => v + 1)}
+        onShow={s => go("collection", { source: s })} onReplace={s => setDialog({ kind: "import", replace: s })} />}
+      {view === "review" && <ReviewQueue version={version} onChanged={changed} />}
+      {view === "build" && (real.length ? <BuildablePanel inventories={real} /> : <p className="muted">Add some parts first, then see which set models you can build.</p>)}
+    </>}
+    {dialogs}{toast}
   </div>;
 }

@@ -10,12 +10,14 @@ variant the composer calls while typing.
 """
 from __future__ import annotations
 
+import asyncio
 import re
 import statistics
 import time
 from typing import Any, Optional
 
 import generator_bridge
+import request_log
 import settings
 import understand
 import usage
@@ -532,6 +534,7 @@ def rules_guess(text: str, current: Optional[dict] = None) -> dict:
         est = decision["estimate"]
         out.update(estimate=est, hint=f"AI build: ~€{est['eur_low']:g}–{est['eur_high']:g}, ~{est['minutes_low']}–{est['minutes_high']} min")
     out["took_ms"] = round((time.monotonic() - started) * 1000, 1)
+    request_log.record_estimate(text, out, spec=spec, current=current)
     return out
 
 
@@ -544,6 +547,7 @@ def confidence_low(result, spec: dict) -> bool:
 async def describe(text: str, *, current: Optional[dict] = None, build_id: Optional[str] = None,
                    previous_text: Optional[str] = None, llm_id: Optional[str] = None) -> dict:
     """Understand the request (rules first, else one structured call) and route it. See docs/plans/phase2/fast-path.md."""
+    started = time.monotonic()
     await generator_bridge.ensure()
     current_spec = _current_spec(current)
     params = None
@@ -569,4 +573,6 @@ async def describe(text: str, *, current: Optional[dict] = None, build_id: Optio
                     "question": "That looks like more than a quick change. What would you like to change?"}
     if build_id:
         decision["build_id"] = build_id
+    await asyncio.to_thread(request_log.record_describe, text, decision, spec=spec, started=started,
+                            usage_event_id=result.usage_event_id, current=current)
     return decision

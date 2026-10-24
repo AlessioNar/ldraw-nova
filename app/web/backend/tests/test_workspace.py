@@ -522,8 +522,8 @@ def test_a_reply_with_no_agent_gets_a_clarify_about_the_build(client, monkeypatc
     assert follow["route"] == "clarify" and "Ask the AI" not in follow["choices"]
     _agent_chat(slug, [("user", "hi"), ("assistant", "Done.")])
     client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes", "quick": True})
-    last = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes"}).json()   # quick turn is last: quick mode again
-    assert last["route"] == "clarify" and "Ask the AI" in last["choices"]
+    last = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes"}).json()   # a quick turn doesn't end the AI conversation
+    assert last["route"] == "agent"
 
 
 def test_edit_words_inside_a_long_instruction_are_not_applied(client, monkeypatch, house_registry):

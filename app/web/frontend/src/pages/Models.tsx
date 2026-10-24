@@ -7,7 +7,8 @@ import ModelCard from "../components/ModelCard";
 // that have none, and we poll until they're all rendered.
 const POLL_MS = 1500;
 
-export default function Models() {
+/** The per-file gallery (downloads, per-file delete, zip of everything): mounted only when its disclosure on My Builds is open. */
+export default function ModelFiles() {
   const [models, setModels] = useState<ModelFile[] | null>(null);
   const [pending, setPending] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -48,12 +49,11 @@ export default function Models() {
   );
 
   return (
-    <div className="page">
+    <div className="model-files">
       <header className="page-head">
         <div>
-          <h1>My Builds</h1>
           <p className="muted">
-            Your generated models and models you’ve added. Open a model to explore it in 3D.
+            Every model file on disk, including ones no build owns. Open a model to explore it in 3D.
             {pending > 0 && (
               <>
                 {" "}
