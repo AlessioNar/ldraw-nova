@@ -1,12 +1,12 @@
 /* Provider connections and per-turn agent controls. */
 .attachments { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; }
 .attachments > div { position: relative; }
-.attachments img { max-width: 160px; max-height: 120px; border-radius: 8px; object-fit: contain; }
+.attachments img { max-width: 160px; max-height: 120px; border-radius: var(--radius); object-fit: contain; }
 .attachments button { position: absolute; top: 2px; right: 2px; padding: 2px 7px; }
 .approval { padding: 14px; margin-bottom: 10px; }
 .approval pre { max-height: 200px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
 /* Long builds: visible stage, elapsed time and bounded streaming command logs. */
-.build-activity { display: flex; align-items: center; gap: .65rem; padding: .6rem .8rem; margin-bottom: .6rem; border: 1px solid var(--border); border-radius: 8px; font-size: .85rem; }
+.build-activity { display: flex; align-items: center; gap: .65rem; padding: .6rem .8rem; margin-bottom: .6rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: .85rem; }
 .build-activity > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .build-activity time { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .live-tool-output { max-height: 180px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .75rem; padding: .65rem; }

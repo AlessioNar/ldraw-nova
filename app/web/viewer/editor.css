@@ -9,7 +9,7 @@
 #plans button { width: 100%; text-align: left; }
 #plans small { display: block; opacity: 0.7; }
 #start-text { margin: 0; max-width: min(560px, 90vw); text-align: center; }
-#desktop-note { position: fixed; left: 12px; right: 12px; top: 56px; z-index: 2; padding: 6px 10px; border-radius: 6px;
+#desktop-note { position: fixed; left: 12px; right: 12px; top: 56px; z-index: 2; padding: 6px 10px; border-radius: var(--radius);
                 background: var(--bar); border: 1px solid var(--btn-border); }
 #desktop-note[hidden] { display: none; }
 body.readonly .editing { display: none; }

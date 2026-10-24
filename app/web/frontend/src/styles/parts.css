@@ -19,7 +19,7 @@
 .parts-table th, .parts-table td { padding: 6px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .parts-table tbody tr:last-child td { border-bottom: 0; }
 .parts-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--surface-2); white-space: nowrap; }
-.parts-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.parts-table .num { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent); }
 .pager { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .pager span { margin-right: auto; }
@@ -42,10 +42,10 @@
 .parts-progress progress { width: 100%; accent-color: var(--accent); }
 .import-report { display: flex; flex-direction: column; gap: 10px; }
 .report-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 0; }
-.report-facts > div { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+.report-facts > div { background: var(--surface-2); border-radius: var(--radius); padding: 8px 10px; }
 .report-facts dt { font-size: 11px; color: var(--muted); }
 .report-facts dd { margin: 1px 0 0; font-weight: 600; overflow-wrap: anywhere; }
-.report-unmapped { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.report-unmapped { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
 .report-unmapped h4 { margin: 0 0 4px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
 .report-unmapped p { margin: 0 0 6px; }
 .report-unmapped ul { margin: 0 0 6px; padding-left: 18px; font-size: 13px; max-height: 240px; overflow-y: auto; }

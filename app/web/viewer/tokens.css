@@ -1,0 +1,79 @@
+/* A copy of the token block in frontend/src/styles/theme.css (keep them in sync): Blueprint dark by default, paper-print light via prefers-color-scheme or <html data-theme>. */
+@font-face {
+  font-family: "Hanken Grotesk"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url("/fonts/HankenGrotesk-latin-var.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 600; font-display: swap;
+  src: url("/fonts/JetBrainsMono-latin-var.woff2") format("woff2");
+}
+
+:root {
+  --font-text: "Hanken Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --fs-label: 11px;   /* small-caps labels, tracked */
+  --fs-xs: 12px; --fs-sm: 13px; --fs-md: 14.5px; --fs-lg: 17px; --fs-xl: 24px; --fs-2xl: 32px;
+  --track-label: 0.08em;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+  /* Blueprint is 3/5/8; the Toy box hint rounds it a little */
+  --radius-sm: 4px; --radius: 7px; --radius-lg: 11px; --radius-pill: 99px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --t-fast: 100ms; --t: 160ms;
+  --sidebar-w: 272px; --rail-w: 52px;
+  --grid-minor: 24px; --grid-major: 120px;
+  /* Toy box brick colours: fills and markers only, never text */
+  --brick-red: #d63a2f; --brick-yellow: #ffc933; --brick-blue: #2f74e0; --brick-green: #23a05a;
+}
+
+/* ---------- dark: blueprint (default) ---------- */
+:root, :root[data-theme="dark"] {
+  --bg: #0b1424; --surface: #101b2f; --surface-2: #162439; --surface-3: #1d2e49;
+  --border: #26395a; --border-strong: #4a6791;
+  --fg: #e8eef8; --fg-2: #b6c4dc; --muted: #8da0be;
+  --accent: #ff5f52;          /* text and lines */
+  --accent-solid: #d9382e;    /* fills (white text on it) */
+  --accent-edge: #8e211a;     /* tactile edge under primary buttons */
+  --accent-fg: #ffffff; --accent-soft: #3a1a22;
+  --info: #7fb4ff; --info-soft: #14284a; --info-border: #2f568f;
+  --ok: #4fd9a0; --ok-soft: #0f2f2a;
+  --warn: #f5b942; --warn-soft: #33290f;
+  --danger: #ff7a70; --danger-soft: #3b1a20;
+  --grid-minor-c: rgb(120 160 230 / 0.055); --grid-major-c: rgb(120 160 230 / 0.11);
+  --shadow: 0 0 0 1px rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.35);
+  --pop-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
+  --canvas: #0a1220;
+  color-scheme: dark;
+}
+/* ---------- light: paper print ---------- */
+:root[data-theme="light"] {
+  --bg: #f2f0e9; --surface: #fbfaf6; --surface-2: #ebe8df; --surface-3: #e0ddd2;
+  --border: #cdc9bb; --border-strong: #7d889e;
+  --fg: #15233b; --fg-2: #33456a; --muted: #5a6985;
+  --accent: #c42d23; --accent-solid: #c42d23; --accent-edge: #861c15;
+  --accent-fg: #ffffff; --accent-soft: #fbe3df;
+  --info: #1d4f9a; --info-soft: #e1ebf8; --info-border: #9db9de;
+  --ok: #0b6e49; --ok-soft: #dcf0e6;
+  --warn: #8f5a00; --warn-soft: #f8ecc8;
+  --danger: #b0261c; --danger-soft: #fbe0dc;
+  --grid-minor-c: rgb(40 80 150 / 0.05); --grid-major-c: rgb(40 80 150 / 0.10);
+  --shadow: 0 1px 0 rgb(21 35 59 / 0.06), 0 4px 14px rgb(21 35 59 / 0.07);
+  --pop-shadow: 0 8px 28px rgb(21 35 59 / 0.2);
+  --canvas: #e9e6dc;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f2f0e9; --surface: #fbfaf6; --surface-2: #ebe8df; --surface-3: #e0ddd2;
+    --border: #cdc9bb; --border-strong: #7d889e; --fg: #15233b; --fg-2: #33456a; --muted: #5a6985;
+    --accent: #c42d23; --accent-solid: #c42d23; --accent-edge: #861c15; --accent-fg: #fff; --accent-soft: #fbe3df;
+    --info: #1d4f9a; --info-soft: #e1ebf8; --info-border: #9db9de;
+    --ok: #0b6e49; --ok-soft: #dcf0e6; --warn: #8f5a00; --warn-soft: #f8ecc8;
+    --danger: #b0261c; --danger-soft: #fbe0dc;
+    --grid-minor-c: rgb(40 80 150 / 0.05); --grid-major-c: rgb(40 80 150 / 0.10);
+    --shadow: 0 1px 0 rgb(21 35 59 / 0.06), 0 4px 14px rgb(21 35 59 / 0.07);
+    --pop-shadow: 0 8px 28px rgb(21 35 59 / 0.2);
+    --canvas: #e9e6dc; color-scheme: light;
+  }
+}
+:root { --user-bubble: var(--surface-3); }
+

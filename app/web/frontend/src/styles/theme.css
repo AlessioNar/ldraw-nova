@@ -1,105 +1,159 @@
-:root {
-  --bg: #fafafa;
-  --surface: #ffffff;
-  --surface-2: #f4f4f5;
-  --border: #e4e4e7;
-  --fg: #18181b;
-  --muted: #71717a;
-  --accent: #d9382e;
-  --accent-fg: #ffffff;
-  --accent-soft: #fdecea;
-  --info: #285fa3;
-  --info-border: #aec8e7;
-  --info-soft: #edf4fd;
-  --ok: #15803d;
-  --warn: #b45309;
-  --warn-soft: #fef3c7;
-  --danger: #b42318;
-  --danger-soft: #fee4e2;
-  --user-bubble: #f1f1f3;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 2px 8px rgb(0 0 0 / 0.04);
-  --radius: 10px;
-  --sidebar-w: 288px;
-  --rail-w: 48px;
-  color-scheme: light;
+/* Open Brick Designer design system: "Blueprint" (deep slate, measurement grid, mono numbers)
+   with a few "Toy box" touches (slightly rounder corners, a tactile primary button, brick colours as accents).
+   Dark is the default; light ("paper print") follows prefers-color-scheme and either can be forced with
+   <html data-theme="dark|light">. The same token block is copied in app/web/viewer/tokens.css for the viewer pages.
+   Fonts are self-hosted (public/fonts, SIL OFL); the stacks fall back to system fonts. */
+@font-face {
+  font-family: "Hanken Grotesk"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url("/fonts/HankenGrotesk-latin-var.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono"; font-style: normal; font-weight: 400 600; font-display: swap;
+  src: url("/fonts/JetBrainsMono-latin-var.woff2") format("woff2");
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111113;
-    --surface: #18181b;
-    --surface-2: #232327;
-    --border: #2e2e33;
-    --fg: #f4f4f5;
-    --muted: #a1a1aa;
-    --accent: #ef5a4f;
-    --accent-fg: #ffffff;
-    --accent-soft: #3a1a18;
-    --info: #9fc6ff;
-    --info-border: #405d80;
-    --info-soft: #1d2c41;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --warn-soft: #3a2e10;
-    --danger: #f97066;
-    --danger-soft: #3b1614;
-    --user-bubble: #26262b;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
-    color-scheme: dark;
+:root {
+  --font-text: "Hanken Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --fs-label: 11px;   /* small-caps labels, tracked */
+  --fs-xs: 12px; --fs-sm: 13px; --fs-md: 14.5px; --fs-lg: 17px; --fs-xl: 24px; --fs-2xl: 32px;
+  --track-label: 0.08em;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+  /* Blueprint is 3/5/8; the Toy box hint rounds it a little */
+  --radius-sm: 4px; --radius: 7px; --radius-lg: 11px; --radius-pill: 99px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --t-fast: 100ms; --t: 160ms;
+  --sidebar-w: 272px; --rail-w: 52px;
+  --grid-minor: 24px; --grid-major: 120px;
+  /* Toy box brick colours: fills and markers only, never text */
+  --brick-red: #d63a2f; --brick-yellow: #ffc933; --brick-blue: #2f74e0; --brick-green: #23a05a;
+}
+
+/* ---------- dark: blueprint (default) ---------- */
+:root, :root[data-theme="dark"] {
+  --bg: #0b1424; --surface: #101b2f; --surface-2: #162439; --surface-3: #1d2e49;
+  --border: #26395a; --border-strong: #4a6791;
+  --fg: #e8eef8; --fg-2: #b6c4dc; --muted: #8da0be;
+  --accent: #ff5f52;          /* text and lines */
+  --accent-solid: #d9382e;    /* fills (white text on it) */
+  --accent-edge: #8e211a;     /* tactile edge under primary buttons */
+  --accent-fg: #ffffff; --accent-soft: #3a1a22;
+  --info: #7fb4ff; --info-soft: #14284a; --info-border: #2f568f;
+  --ok: #4fd9a0; --ok-soft: #0f2f2a;
+  --warn: #f5b942; --warn-soft: #33290f;
+  --danger: #ff7a70; --danger-soft: #3b1a20;
+  --grid-minor-c: rgb(120 160 230 / 0.055); --grid-major-c: rgb(120 160 230 / 0.11);
+  --shadow: 0 0 0 1px rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.35);
+  --pop-shadow: 0 8px 32px rgb(0 0 0 / 0.5);
+  --canvas: #0a1220;
+  color-scheme: dark;
+}
+/* ---------- light: paper print ---------- */
+:root[data-theme="light"] {
+  --bg: #f2f0e9; --surface: #fbfaf6; --surface-2: #ebe8df; --surface-3: #e0ddd2;
+  --border: #cdc9bb; --border-strong: #7d889e;
+  --fg: #15233b; --fg-2: #33456a; --muted: #5a6985;
+  --accent: #c42d23; --accent-solid: #c42d23; --accent-edge: #861c15;
+  --accent-fg: #ffffff; --accent-soft: #fbe3df;
+  --info: #1d4f9a; --info-soft: #e1ebf8; --info-border: #9db9de;
+  --ok: #0b6e49; --ok-soft: #dcf0e6;
+  --warn: #8f5a00; --warn-soft: #f8ecc8;
+  --danger: #b0261c; --danger-soft: #fbe0dc;
+  --grid-minor-c: rgb(40 80 150 / 0.05); --grid-major-c: rgb(40 80 150 / 0.10);
+  --shadow: 0 1px 0 rgb(21 35 59 / 0.06), 0 4px 14px rgb(21 35 59 / 0.07);
+  --pop-shadow: 0 8px 28px rgb(21 35 59 / 0.2);
+  --canvas: #e9e6dc;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f2f0e9; --surface: #fbfaf6; --surface-2: #ebe8df; --surface-3: #e0ddd2;
+    --border: #cdc9bb; --border-strong: #7d889e; --fg: #15233b; --fg-2: #33456a; --muted: #5a6985;
+    --accent: #c42d23; --accent-solid: #c42d23; --accent-edge: #861c15; --accent-fg: #fff; --accent-soft: #fbe3df;
+    --info: #1d4f9a; --info-soft: #e1ebf8; --info-border: #9db9de;
+    --ok: #0b6e49; --ok-soft: #dcf0e6; --warn: #8f5a00; --warn-soft: #f8ecc8;
+    --danger: #b0261c; --danger-soft: #fbe0dc;
+    --grid-minor-c: rgb(40 80 150 / 0.05); --grid-major-c: rgb(40 80 150 / 0.10);
+    --shadow: 0 1px 0 rgb(21 35 59 / 0.06), 0 4px 14px rgb(21 35 59 / 0.07);
+    --pop-shadow: 0 8px 28px rgb(21 35 59 / 0.2);
+    --canvas: #e9e6dc; color-scheme: light;
   }
 }
+:root { --user-bubble: var(--surface-3); }
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: var(--fs-md)/1.5 var(--font-text);
   -webkit-font-smoothing: antialiased;
 }
 a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
-code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
-code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
-h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
-h2 { font-size: 16px; margin: 0; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+code, pre, kbd, .mono { font-family: var(--font-mono); }
+code, kbd, .mono { font-size: 0.92em; font-feature-settings: "zero", "tnum"; }
+pre { font-size: 12.5px; }
+code { background: var(--surface-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+h1 { font-size: var(--fs-xl); line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.02em; }
+h2 { font-size: var(--fs-lg); margin: 0; letter-spacing: -0.01em; }
 h3 { font-size: 15px; margin: 0 0 12px; }
+.label { font-size: var(--fs-label); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
+
+/* the faint measurement grid: minor every 24px, major every 120px */
+.grid-bg {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-major-c) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major-c) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor-c) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor-c) 1px, transparent 1px);
+  background-size: var(--grid-major) var(--grid-major), var(--grid-major) var(--grid-major), var(--grid-minor) var(--grid-minor), var(--grid-minor) var(--grid-minor);
+  background-position: -1px -1px;
+}
 
 button, .button, input, select, textarea { font: inherit; color: inherit; }
 button, .button {
   display: inline-flex; align-items: center; gap: 6px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-  padding: 5px 11px; cursor: pointer; white-space: nowrap; line-height: 1.4;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 5px 11px; cursor: pointer; white-space: nowrap; line-height: 1.4; font-size: var(--fs-sm); font-weight: 500;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
 }
 button:hover, .button:hover { background: var(--surface-2); text-decoration: none; }
 button:disabled { opacity: 0.5; cursor: default; }
-button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-button.primary:hover { filter: brightness(1.05); }
-button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+/* primary: the only filled red button, with a tactile edge that presses in */
+button.primary {
+  background: var(--accent-solid); border-color: var(--accent-solid); color: var(--accent-fg); font-weight: 600;
+  box-shadow: 0 2px 0 var(--accent-edge); transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), filter var(--t-fast);
+}
+button.primary:hover { background: var(--accent-solid); filter: brightness(1.08); }
+button.primary:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--accent-edge); }
+button.primary:disabled { box-shadow: none; }
+button.danger { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+button.danger:hover { background: var(--danger-soft); filter: brightness(1.1); }
 .danger-text { color: var(--danger); }
 .icon-button { border: none; background: none; padding: 4px 8px; color: var(--muted); }
+.icon-button:hover { color: var(--fg); }
 input, select, textarea {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; width: 100%;
+  background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 7px 10px; width: 100%;
+  font-size: var(--fs-sm);
 }
-input:focus, select:focus, textarea:focus, button:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 1px;
-}
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .muted { color: var(--muted); }
-.small { font-size: 12.5px; }
+.small { font-size: var(--fs-sm); }
 .pad { padding: 0 12px; }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .ok-text { color: var(--ok); }
 .warn-text { color: var(--warn); }
 .badge {
-  display: inline-block; font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 99px;
-  background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); white-space: nowrap;
+  display: inline-block; font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: var(--radius-sm);
+  background: transparent; color: var(--fg-2); border: 1px solid var(--border-strong); white-space: nowrap;
 }
-.badge.ok { color: var(--ok); }
-.badge.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.badge.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: var(--ok-soft); }
+.badge.warn { color: var(--warn); background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
 .banner {
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 8px 12px; margin: 8px 0; color: var(--muted); white-space: pre-wrap;
+  padding: 8px 12px; margin: 8px 0; color: var(--fg-2); white-space: pre-wrap;
 }
-.banner.error { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+.banner.error { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
