@@ -198,7 +198,6 @@ async def draft_discard(build_id: str):
     """Back to the version the draft started on, with no changes."""
     store = get_store()
     _check(store, build_id)
-    key = store.build_key(build_id)
     record = _record(store, build_id)
     if record is None:
         not_found("there is no draft to discard")

@@ -3,11 +3,7 @@ import { colourHex } from "../../ldrawColours";
 import { useColours } from "../../workspace/colours";
 import type { CanvasCommand, CanvasEvent } from "../../workspace/types";
 import type { Workspace } from "../../workspace/useWorkspace";
-import { usingStubs } from "../../workspace/wsApi";
-import FakeCanvas, { type FakeHandle } from "./FakeCanvas";
 import Icon from "./Icon";
-
-const READY_WAIT_MS = 3500;
 
 function useTheme(): "dark" | "light" {
   const read = (): "dark" | "light" => {
@@ -29,21 +25,19 @@ function useTheme(): "dark" | "light" {
 /** The canvas iframe (viewer/editor.html in embed mode) plus the workspace's overlays on top of it. */
 export default function CanvasPane({ ws }: { ws: Workspace }) {
   const frame = useRef<HTMLIFrameElement>(null);
-  const fakeRef = useRef<FakeHandle>(null);
   const theme = useTheme();
   const initialMode = useRef(ws.phone ? "view" : "edit");
-  const [fake, setFake] = useState(false);
   const colours = useColours();
   const { id, registerCanvas, onCanvasEvent } = ws;
   const loaded = !!ws.draft;
   const src = useMemo(() => `/viewer/editor.html?space=builds&id=${encodeURIComponent(id)}&embed=1&mode=${initialMode.current}&theme=${theme}`, [id, theme]);
 
-  // messages in: only from our own frame (or the stand-in)
+  // messages in: only from our own frame
   useEffect(() => {
     const on = (e: MessageEvent) => {
       if (e.source !== frame.current?.contentWindow || e.origin !== location.origin) return;
       const d = e.data as CanvasEvent | undefined;
-      if (typeof d?.type === "string" && d.type.startsWith("obd:")) { setFake(false); onCanvasEvent(d); }
+      if (typeof d?.type === "string" && d.type.startsWith("obd:")) onCanvasEvent(d);
     };
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
@@ -52,17 +46,9 @@ export default function CanvasPane({ ws }: { ws: Workspace }) {
   // commands out
   useEffect(() => {
     registerCanvas((c: CanvasCommand) => {
-      if (fakeRef.current) fakeRef.current.handle(c);
-      else frame.current?.contentWindow?.postMessage({ type: "obd:command", ...c }, location.origin);
+      frame.current?.contentWindow?.postMessage({ type: "obd:command", ...c }, location.origin);
     });
-  }, [registerCanvas, fake]);
-
-  // no obd:ready while the stubs are active: the real canvas is not there yet, show the stand-in
-  useEffect(() => {
-    if (!loaded || ws.canvasReady || fake) return;
-    const t = setTimeout(() => { if (usingStubs()) setFake(true); }, READY_WAIT_MS);
-    return () => clearTimeout(t);
-  }, [loaded, ws.canvasReady, fake, src]);
+  }, [registerCanvas]);
 
   const viewing = ws.viewing;
   const viewedRow = viewing?.kind === "version" ? ws.versions.find((v) => v.version === viewing.version) : undefined;
@@ -74,7 +60,6 @@ export default function CanvasPane({ ws }: { ws: Workspace }) {
   return (
     <main className="ws-stage">
       {loaded && <iframe key={src} ref={frame} className="ws-frame" src={src} title="3D canvas" allow="fullscreen" />}
-      {fake && <FakeCanvas ref={fakeRef} id={id} empty={ws.empty} viewing={!!viewing} imageUrl={viewedRow?.detail?.image_url ?? ws.versions.at(-1)?.detail?.image_url} onEvent={onCanvasEvent} />}
       {!loaded && <div className="ws-loading muted"><span className="spinner" aria-hidden /> Opening the build…</div>}
 
       {viewing && (
@@ -92,7 +77,7 @@ export default function CanvasPane({ ws }: { ws: Workspace }) {
         </div>
       )}
 
-      {ws.canvasReady || fake ? (
+      {ws.canvasReady ? (
         <>
           <div className={`ws-overlay ws-tl${viewing ? " lower" : ""}`}>
             <button className="ws-icon-btn solid" title="Reset view (Home)" aria-label="Reset view" onClick={() => ws.send({ cmd: "focus" })}><Icon name="fit" /></button>
@@ -101,6 +86,14 @@ export default function CanvasPane({ ws }: { ws: Workspace }) {
         </>
       ) : null}
 
+      {ws.mode === "player" && ws.steps && ws.steps.total > 0 && (
+        <div className="ws-steps" role="group" aria-label="Build steps">
+          <button className="ws-icon-btn" aria-label="Previous step" disabled={ws.steps.current <= 1} onClick={() => ws.send({ cmd: "step", n: ws.steps!.current - 1 })}>&lsaquo;</button>
+          <input type="range" min={1} max={ws.steps.total} value={ws.steps.current} aria-label="Step" onChange={(e) => ws.send({ cmd: "step", n: Number(e.target.value) })} />
+          <button className="ws-icon-btn" aria-label="Next step" disabled={ws.steps.current >= ws.steps.total} onClick={() => ws.send({ cmd: "step", n: ws.steps!.current + 1 })}>&rsaquo;</button>
+          <span className="mono" id="ws-step-label">Step {ws.steps.current} of {ws.steps.total}</span>
+        </div>
+      )}
       {lead && !viewing && (
         <div className="ws-selchip" role="status">
           {ws.selection.length > 1

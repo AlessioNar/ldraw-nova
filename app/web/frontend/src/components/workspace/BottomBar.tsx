@@ -42,7 +42,7 @@ function DescribeBar({ ws }: { ws: Workspace }) {
   else if (ask && "question" in ask) line = <b className="cost">{ask.question}</b>;
   else if (ask) line = <><b className="cost">{ask.note.replace(/[.\s]+$/, "")}.</b> The AI can try{ask.estimate ? `: ${ask.estimate}` : ""}. Nothing is spent until you send it there.</>;
   else if (hint?.route === "needs_ai") line = <>No rule fits this. The AI can try{estimateLabel(hint.estimate) ? `: ${estimateLabel(hint.estimate)}` : ""}. It asks before it spends.</>;
-  else if (hint?.hint) line = <><b>{hint.confidence >= 0.7 ? "Fast path" : "Probably"}:</b> {hint.hint}. Free, about 1 s.</>;
+  else if (hint?.hint) line = <><b>{hint.confidence >= 0.7 ? "Fast path" : "Probably"}:</b> {hint.hint.replace(/^Fast path:\s*/, "")}. About 1 s.</>;
 
   const toAi = !!ask && !("question" in ask);
   return (

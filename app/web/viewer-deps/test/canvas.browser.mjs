@@ -133,6 +133,18 @@ test('ready, selection, colour, delete, undo and redo through the protocol', asy
   assert.equal(piece.colour, 4);
   assert.deepEqual(piece.position, [100, -24, 0]);
   assert.equal(piece.rotation.length, 9);
+  // the selection outline sits ON the selected part: its world box equals the part group's world box
+  const boxes = await c.state(() => {
+    const shown = editorState.shown, node = shown.byKey.get(editorState.selected[0]);
+    const world = o => { o.updateWorldMatrix(true, true); const b = new THREE.Box3().setFromObject(o); return [...b.min.toArray(), ...b.max.toArray()]; };
+    const p = node.position, group = scene.baseObject.children[0].children.find(g => {
+      const e = g.matrix.elements;
+      return Math.abs(e[12] - p[0]) < 1e-3 && Math.abs(e[13] + p[1]) < 1e-3 && Math.abs(e[14] + p[2]) < 1e-3;
+    });
+    return { outline: world(shown.selectionBoxes), part: group && world(group) };
+  });
+  assert.ok(boxes.part, 'the part group was found');
+  boxes.outline.forEach((v, i) => assert.ok(Math.abs(v - boxes.part[i]) < 1, `selection outline matches the part (${JSON.stringify(boxes)})`));
   assert.ok(piece.name.length > 0);
 
   // set-colour recolours the selection, once, and reports the change
