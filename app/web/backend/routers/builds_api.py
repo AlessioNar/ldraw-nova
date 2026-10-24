@@ -5,6 +5,7 @@ A build is a model project with versions (see builds.py). The 3D editor serves a
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 import time
@@ -70,7 +71,16 @@ def _detail(store, slug: str) -> dict:
 
 
 @router.get("/api/builds")
-def builds_list():  # plain def: FastAPI runs it in a thread, so its file I/O never stalls other requests
+async def builds_list():
+    # File scanning runs in threads so it never stalls other requests; the background
+    # renders are queued from the event loop, which ensure_artifacts needs.
+    items = await asyncio.to_thread(_build_items)
+    gallery.ensure_artifacts(settings.GENERATED_DIR / b["latest"]["file"] for b in items[:60]
+                             if b["latest"] and (settings.GENERATED_DIR / b["latest"]["file"]).is_file())
+    return await asyncio.to_thread(_builds_payload, items)
+
+
+def _build_items() -> list[dict]:
     store = get_store()
     index, groups = builds.Index(store), builds.group_versions()
     items = []
@@ -83,8 +93,11 @@ def builds_list():  # plain def: FastAPI runs it in a thread, so its file I/O ne
             item["source"] = {**item["source"], "kind": builds.origin_of(store, slug, builds.versions(slug, groups)[0]["path"], index)}
         items.append(item)
     items.sort(key=lambda b: b["updated_at"], reverse=True)
-    gallery.ensure_artifacts(settings.GENERATED_DIR / b["latest"]["file"] for b in items[:60]
-                             if b["latest"] and (settings.GENERATED_DIR / b["latest"]["file"]).is_file())
+    return items
+
+
+def _builds_payload(items: list[dict]) -> dict:
+    store = get_store()
     older = [{"id": c["id"], "title": c["title"], "updated_at": c["updated_at"], "running": run_state.is_running(c["id"])}
              for c in builds.older_chats(store)]
     return {"builds": items, "older_chats": older, "pending": sum(1 for b in items if b["pending"])}

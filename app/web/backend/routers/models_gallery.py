@@ -1,6 +1,8 @@
 """My Builds collection: listing, deletion, GLB export and zip downloads."""
 from __future__ import annotations
 
+import asyncio
+
 import tempfile
 import zipfile
 from pathlib import Path
@@ -25,12 +27,18 @@ router = APIRouter()
 
 
 @router.get("/api/models")
-def models_list():  # plain def: runs in a thread, its file I/O never stalls other requests
+async def models_list():
     """Every model in data/generated, newest first. Models without a snapshot
     or BOM get them made in the background; poll until
     `pending` is 0."""
-    models = gallery.collection(settings.GENERATED_DIR)
+    # File scanning runs in a thread so it never stalls other requests; the background
+    # renders are queued from the event loop, which ensure_artifacts needs.
+    models = await asyncio.to_thread(gallery.collection, settings.GENERATED_DIR)
     gallery.ensure_artifacts(models)
+    return await asyncio.to_thread(_models_payload, models)
+
+
+def _models_payload(models: list) -> dict:
     index, origins = model_chat_index(get_store()), model_origins(get_store())
     items = [{**model_info(path), "chats": index.get(path, []), "origin": origins.get(path),
               "build": builds.slug_of_file(path.name)} for path in models]
