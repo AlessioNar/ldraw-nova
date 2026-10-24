@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build workspace mockup</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-select" viewBox="0 0 24 24"><path d="M5 3l14 8-6 2 4 7-3 1-4-7-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-add" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="6.5" r="1.6" fill="currentColor"/><circle cx="15" cy="6.5" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-paint" viewBox="0 0 24 24"><path d="M5 14l8-9 6 6-8 9H7z M17 15c1.5 2 2 3 2 4a2 2 0 0 1-4 0c0-1 .5-2 2-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-delete" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 6L4 11l5 5M4 11h9a6 6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 -3)"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 6l5 5-5 5M20 11h-9a6 6 0 0 0 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 -3)"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4M9 21H5a2 2 0 0 1-2-2v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-logo" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="1.5" fill="var(--accent-solid)"/><rect x="6" y="5" width="4" height="4" fill="var(--accent-solid)"/><rect x="14" y="5" width="4" height="4" fill="var(--accent-solid)"/></symbol>
+  </defs>
+</svg>
+
+<div id="app" class="grid-bg" data-mode="edit" data-panel="parts">
+
+  <!-- top bar: no app sidebar, just a way back -->
+  <header id="topbar">
+    <a class="back" href="#" title="Back to all builds">&larr; Builds</a>
+    <span class="sep"></span>
+    <svg class="logo" width="20" height="20"><use href="#i-logo"/></svg>
+    <h1 id="build-name">House</h1>
+    <span class="chip kind" title="This build was made by a generator">Generator: House</span>
+    <span class="spacer"></span>
+    <span id="draft-chip" class="status" role="status"></span>
+    <span class="group">
+      <button id="undo" class="icon-btn" title="Undo (Ctrl+Z)"><svg width="18" height="18"><use href="#i-undo"/></svg><span class="lbl">Undo</span></button>
+      <button id="redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)"><svg width="18" height="18"><use href="#i-redo"/></svg><span class="lbl">Redo</span></button>
+    </span>
+    <button id="discard" title="Throw the draft away and go back to the latest version">Discard draft</button>
+    <button id="save" class="primary" title="Turn the draft into a version (Ctrl+S)">Save as v4</button>
+  </header>
+
+  <!-- left: tool rail -->
+  <nav id="rail" aria-label="Tools">
+    <div class="tools">
+      <button class="tool" data-tool="select" aria-pressed="true" title="Select (V): click a piece, Shift-click to add"><svg width="22" height="22"><use href="#i-select"/></svg><kbd>V</kbd></button>
+      <button class="tool" data-tool="move" aria-pressed="false" title="Move (M): drag an arrow, snaps to studs, Alt for free"><svg width="22" height="22"><use href="#i-move"/></svg><kbd>M</kbd></button>
+      <button class="tool" data-tool="rotate" aria-pressed="false" title="Rotate (R): 15 degree steps, Alt for free"><svg width="22" height="22"><use href="#i-rotate"/></svg><kbd>R</kbd></button>
+      <button class="tool" data-tool="add" aria-pressed="false" title="Add brick (B): pick a part in the palette, click to place"><svg width="22" height="22"><use href="#i-add"/></svg><kbd>B</kbd></button>
+      <button class="tool" data-tool="paint" aria-pressed="false" title="Paint (P): click a piece to give it the palette colour"><svg width="22" height="22"><use href="#i-paint"/></svg><kbd>P</kbd></button>
+      <button class="tool danger-tool" data-tool="delete" aria-pressed="false" title="Delete (Del): click a piece to remove it"><svg width="22" height="22"><use href="#i-delete"/></svg><kbd>Del</kbd></button>
+    </div>
+    <div class="modes" role="group" aria-label="Canvas mode">
+      <button class="mode" data-mode="edit" aria-pressed="true" title="Edit: tools on"><svg width="20" height="20"><use href="#i-pencil"/></svg><span>Edit</span></button>
+      <button class="mode" data-mode="view" aria-pressed="false" title="View: orbit and inspect, nothing can change"><svg width="20" height="20"><use href="#i-eye"/></svg><span>View</span></button>
+      <button class="mode" data-mode="player" aria-pressed="false" title="Player: step through the build, brick by brick"><svg width="20" height="20"><use href="#i-play"/></svg><span>Player</span></button>
+    </div>
+  </nav>
+
+  <!-- centre: the 3D canvas (a static render with hotspots in this mockup) -->
+  <main id="stage">
+    <div id="ro-banner" hidden>
+      <span>Viewing <strong id="ro-v">v1</strong> (read-only) <span class="muted" id="ro-meta"></span></span>
+      <span class="spacer"></span>
+      <button id="branch" class="primary">Branch from here</button>
+      <button id="back-draft">Back to draft</button>
+    </div>
+    <div id="canvas-fit">
+      <div id="scene">
+        <img id="render" src="../deterministic-first/screenshots/gen-house-full.png" alt="The house model rendered in 3D" draggable="false">
+        <svg id="hot" viewBox="0 0 1000 800" aria-label="Pieces you can click">
+          <g id="polys"></g>
+          <g id="gizmo" hidden>
+            <g id="giz-move">
+              <line x1="0" y1="0" x2="62" y2="31" stroke="#d63a2f" stroke-width="4"/><path d="M70 35l-14-2 5-12z" fill="#d63a2f"/>
+              <line x1="0" y1="0" x2="-62" y2="31" stroke="#2f74e0" stroke-width="4"/><path d="M-70 35l14-2-5-12z" fill="#2f74e0"/>
+              <line x1="0" y1="0" x2="0" y2="-70" stroke="#23a05a" stroke-width="4"/><path d="M0 -80l-8 13h16z" fill="#23a05a"/>
+            </g>
+            <g id="giz-rot"><ellipse cx="0" cy="0" rx="62" ry="26" fill="none" stroke="#ffc933" stroke-width="4"/></g>
+            <circle r="5" fill="#fff" stroke="#15233b" stroke-width="2"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div id="sel-chip" hidden></div>
+    <div id="canvas-tl" class="overlay">
+      <button class="icon-btn solid" title="Reset view (Home)"><svg width="18" height="18"><use href="#i-fit"/></svg></button>
+      <span class="chip mono" id="snap">Snap 1 stud / 15&deg;</span>
+    </div>
+    <div id="canvas-tr" class="overlay"><span class="chip mono" id="count-chip">112 parts</span></div>
+    <div id="player" hidden>
+      <button id="p-play" class="icon-btn solid" title="Play / pause (Space)"><svg width="18" height="18"><use href="#i-play"/></svg></button>
+      <input id="p-range" type="range" min="1" max="38" value="38" aria-label="Build step">
+      <span class="mono" id="p-label">Step 38 / 38</span>
+    </div>
+    <div id="mode-note" class="overlay" hidden></div>
+  </main>
+
+  <!-- right: panels (tabs). On a narrow window this becomes a bottom sheet -->
+  <aside id="panels" aria-label="Panels">
+    <button id="sheet-handle" aria-label="Expand or collapse the panel"><span></span></button>
+    <div id="tabs" role="tablist">
+      <button role="tab" data-panel="parts" aria-selected="true">Parts</button>
+      <button role="tab" data-panel="piece" aria-selected="false">Piece<i class="dot" id="piece-dot" hidden></i></button>
+      <button role="tab" data-panel="ai" aria-selected="false">AI<i class="dot" id="ai-dot"></i></button>
+      <button role="tab" data-panel="gen" aria-selected="false">Settings</button>
+    </div>
+
+    <!-- 1 Parts -->
+    <section class="panel" data-panel="parts" role="tabpanel">
+      <input id="part-search" type="search" placeholder="Part number or name" aria-label="Search parts">
+      <div class="row-label"><span class="label">Colour for new bricks</span><span class="mono small" id="col-name">Blue</span></div>
+      <div id="swatches" class="swatches"></div>
+      <div class="row-label"><span class="label">Your parts</span><span class="muted small">remaining, live as you add</span></div>
+      <ul id="mine" class="parts-list"></ul>
+      <div class="row-label"><span class="label">Full library</span><span class="muted small mono">1,284 parts</span></div>
+      <ul id="library" class="parts-list"></ul>
+      <p class="muted small">Parts you do not own are marked. They still go in the model, and the parts check counts them as missing.</p>
+    </section>
+
+    <!-- 2 Piece -->
+    <section class="panel" data-panel="piece" role="tabpanel" hidden>
+      <div id="piece-empty" class="empty">
+        <div class="brick-row"><i style="background:var(--brick-red)"></i><i style="background:var(--brick-yellow)"></i><i style="background:var(--brick-blue)"></i><i style="background:var(--brick-green)"></i></div>
+        <p><strong>Nothing selected.</strong></p>
+        <p class="muted small">Click a piece in the 3D view. Shift-click adds more, drag on empty space to box-select, <kbd>G</kbd> widens to its sub-model.</p>
+        <p class="muted small">In this mockup try the roof, chimney, dormer, porch roof, a pillar or the walls.</p>
+      </div>
+      <div id="piece-body" hidden>
+        <div class="piece-head">
+          <span class="swatch big" id="pc-swatch"></span>
+          <div><h3 id="pc-name">Slope 45 2 x 4</h3><div class="muted small"><span class="mono" id="pc-no">3037</span> &middot; <span id="pc-col">Blue</span> &middot; <span id="pc-owned"></span></div></div>
+        </div>
+        <div class="label">Colour</div>
+        <div id="pc-swatches" class="swatches"></div>
+        <div class="label">Position (studs)</div>
+        <div class="xyz">
+          <label>X<input class="mono" id="px" value="4"></label>
+          <label>Y<input class="mono" id="py" value="9"></label>
+          <label>Z<input class="mono" id="pz" value="3"></label>
+        </div>
+        <div class="label">Rotation (degrees)</div>
+        <div class="xyz">
+          <label>X<input class="mono" value="0"></label>
+          <label>Y<input class="mono" id="pry" value="0"></label>
+          <label>Z<input class="mono" value="0"></label>
+        </div>
+        <div class="label">Quick actions</div>
+        <div class="actions">
+          <button data-act="nudge-l">&larr; 1 stud</button><button data-act="nudge-r">1 stud &rarr;</button>
+          <button data-act="up">Up 1 plate</button><button data-act="rot">Rotate 90&deg;</button>
+          <button data-act="dup">Duplicate</button><button data-act="group">Select group (G)</button>
+          <button data-act="del" class="danger">Delete</button>
+        </div>
+        <p class="muted small">Every change here is one step in the draft, so Undo takes it back.</p>
+      </div>
+    </section>
+
+    <!-- 3 AI -->
+    <section class="panel" data-panel="ai" role="tabpanel" hidden>
+      <div class="chat-head"><span class="label">Chat for this build</span><a href="#" class="small">Open full chat</a></div>
+      <div class="chat" id="chat">
+        <div class="msg user"><p>A small cottage with a chimney and a porch</p><span class="meta mono">v1 &middot; 2 days ago</span></div>
+        <div class="msg agent"><p>Built from the House generator: 8 x 6, tan walls, red roof. No AI used.</p><span class="meta mono">v1 &middot; free</span></div>
+        <div class="msg user"><p>White walls, a blue roof, add the porch, the chimney and a dormer</p></div>
+        <div class="msg agent"><p>Changed 5 settings on the generator and regenerated.</p><span class="meta mono">v2 &middot; free &middot; 0.9 s</span></div>
+        <div class="msg user"><p>Put a little garden fence in front of the porch</p></div>
+        <div class="msg agent"><p>No generator option does that, so I built it: 14 parts, a row of 1 x 4 fence bricks and two corner posts, all from parts you own.</p>
+          <div id="ai-card" class="ai-card">
+            <div class="label">Review before it joins the draft</div>
+            <div class="mono diffline"><span class="ok-t">+ 14 parts</span> <span class="muted">&middot; 0 removed &middot; 0 moved</span></div>
+            <div class="ai-actions"><button id="ai-keep" class="primary">Keep in draft</button><button id="ai-show">Preview</button><button id="ai-drop">Discard</button></div>
+          </div>
+          <span class="meta mono" id="ai-meta">proposed &middot; AI &middot; 0.06 EUR</span></div>
+      </div>
+      <div class="composer">
+        <textarea id="ai-text" rows="2" placeholder="Ask the AI about this build"></textarea>
+        <div class="composer-foot"><span class="muted small">About 0.05 EUR, 20-40 s. Runs only when you send.</span><button class="primary" id="ai-send">Ask AI</button></div>
+        <p class="muted small">Simple edits (colours, sizes, a chimney) never need this: use the Describe bar below, it is free.</p>
+      </div>
+    </section>
+
+    <!-- 4 Generator settings -->
+    <section class="panel" data-panel="gen" role="tabpanel" hidden>
+      <div class="chat-head"><span class="label">House generator</span><span class="chip mono">no AI</span></div>
+      <p class="muted small gen-about">A parametric house: walls, roof, door, windows. Changing a setting regenerates the build into the draft.</p>
+      <div id="gen-warn" class="banner warn" hidden></div>
+      <form id="gen-form" class="gen-fields" onsubmit="return false">
+        <div class="gen-field"><label>Width (studs)</label><div class="gen-slider"><input type="range" min="6" max="16" value="8" data-k="width"><output class="mono">8</output></div></div>
+        <div class="gen-field"><label>Depth (studs)</label><div class="gen-slider"><input type="range" min="6" max="16" value="6" data-k="depth"><output class="mono">6</output></div></div>
+        <div class="gen-field"><label>Courses (wall height)</label><div class="gen-slider"><input type="range" min="4" max="14" value="8" data-k="courses"><output class="mono">8</output></div></div>
+        <div class="gen-field"><label>Roof tiers</label><div class="gen-slider"><input type="range" min="1" max="4" value="3" data-k="tiers"><output class="mono">3</output></div></div>
+        <div class="gen-group"><span class="label">Colours</span></div>
+        <div class="gen-field"><label>Walls</label><select data-k="body"><option>White</option><option>Tan</option><option>Light Bluish Gray</option><option>Red</option></select></div>
+        <div class="gen-field"><label>Roof</label><select data-k="roof" id="gen-roof"><option>Blue</option><option>Red</option><option>Dark Bluish Gray</option><option>Green</option></select></div>
+        <div class="gen-field"><label>Trim</label><select data-k="trim"><option>Dark Bluish Gray</option><option>White</option><option>Black</option></select></div>
+        <div class="gen-group"><span class="label">Features</span></div>
+        <div class="gen-field inline"><input type="checkbox" class="gen-check" id="f-porch" checked data-k="porch"><label for="f-porch">Porch</label></div>
+        <div class="gen-field inline"><input type="checkbox" class="gen-check" id="f-chim" checked data-k="chimney"><label for="f-chim">Chimney</label></div>
+        <div class="gen-field inline"><input type="checkbox" class="gen-check" id="f-dorm" checked data-k="dormer"><label for="f-dorm">Dormer window</label></div>
+        <div class="gen-field"><label>Windows</label><div class="gen-multi"><label><input type="checkbox" checked>Front</label><label><input type="checkbox" checked>Side</label><label><input type="checkbox">Back</label></div></div>
+      </form>
+      <div class="gen-actions">
+        <span class="muted small" id="gen-status">Free, about 1 s</span>
+        <button id="gen-reset">Reset</button><button id="gen-apply" class="primary" disabled>Regenerate</button>
+      </div>
+    </section>
+  </aside>
+
+  <!-- bottom: describe bar + versions -->
+  <footer id="bottom">
+    <div id="describe">
+      <svg width="18" height="18" class="muted"><use href="#i-pencil"/></svg>
+      <input id="desc-input" type="text" placeholder="Describe a change, e.g. make the roof blue" aria-label="Describe a change">
+      <span id="desc-hint" class="hint muted small"></span>
+      <button id="desc-go" class="primary">Apply</button>
+    </div>
+    <div id="versions">
+      <span class="label vlabel">Versions</span>
+      <div id="vstrip" role="tablist" aria-label="Versions"></div>
+      <span class="spacer"></span>
+      <button id="pcheck" class="pcheck" title="Do you own the parts for what is on the canvas?"></button>
+    </div>
+  </footer>
+
+  <div id="toast" role="status" hidden></div>
+</div>
+<script src="mockup.js"></script>
+</body>
+</html>

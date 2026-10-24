@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build workspace, phone width</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  body { display: flex; gap: 40px; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+  figure { margin: 0; text-align: center; }
+  figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  iframe { width: 390px; height: 800px; border: 8px solid var(--border-strong); border-radius: 28px; background: var(--bg); }
+</style></head>
+<body class="grid-bg">
+  <figure><iframe id="a" title="Sheet collapsed"></iframe><figcaption>Sheet collapsed: only the tab row shows, the canvas gets the screen</figcaption></figure>
+  <figure><iframe id="b" title="Sheet open"></iframe><figcaption>Sheet open: panel slides up over the bottom bars (Piece tab, roof selected)</figcaption></figure>
+<script>
+  const q = new URLSearchParams(location.search), t = q.get("theme") ? "&theme=" + q.get("theme") : "";
+  document.documentElement.dataset.theme = q.get("theme") || "";
+  a.src = "mockup.html?draft=2" + t;
+  b.src = "mockup.html?draft=2&sel=roof&tool=move&sheet=open" + t;
+</script></body></html>
