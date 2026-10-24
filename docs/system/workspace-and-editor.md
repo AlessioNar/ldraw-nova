@@ -36,13 +36,16 @@ A model in `/data/generated` without a `build.json` is still listed, as a "legac
 
 | Route | Page | Notes |
 |---|---|---|
-| `/` | Home ("Workbench") | Describe box, "Continue" cards for the 8 newest builds, a "From my parts" summary, and links to the other ways to start |
+| `/` | Home | A menu of four tiles (New build, My Builds, My Parts, Settings), each with one live line: build count and the latest build, pieces and colour families to review |
 | `/new` | New build | Four ways, described below |
-| `/build/:id` | **Workspace** (`components/workspace/Workspace`) | Full-screen, with no sidebar |
+| `/build/:id` | **Workspace** (`components/workspace/Workspace`) | Full-screen, with its own top bar (← Builds, logo home, build name, actions) instead of the app bar |
 | `/build/:id/edit`, `/chat/:id/edit` | Legacy editor page (`EditorPage.tsx`) | Still used by "Empty" and by My Builds → Edit |
-| `/models` | My Builds | Every model file in `/data/generated`, with zip download, edit and delete |
+| `/builds` | My Builds (`pages/Builds.tsx`) | Every build as a card, newest first, with a name filter and a New build card; "Older chats" (chats without a build) and "All model files" (every file in `/data/generated`, with zip download, edit and delete) fold away below. `/models` redirects here |
 | `/chat/:id` | Chat | The agent conversation |
 | `/parts` | My Parts | See [parts-and-collection.md](parts-and-collection.md) |
+| `/settings` | Settings | See [settings-and-providers.md](settings-and-providers.md) |
+
+Every page except the workspace sits under the app bar (`components/AppBar.tsx`): the logo and name link Home, and My Builds, My Parts and Settings sit on the right (a menu button below 820 px). There is no sidebar. The standalone viewer, player and editor pages carry the same logo as a link Home, hidden when they are embedded (`?embed=1` or inside an iframe).
 
 The four ways to start a new build (`pages/NewBuild.tsx`):
 

@@ -15,6 +15,10 @@
 
 .describe-box { display: flex; flex-direction: column; gap: 10px; }
 .describe-box textarea { resize: vertical; min-height: 76px; }
+.describe-box.compact { gap: 6px; }
+.describe-input { display: flex; gap: 8px; align-items: flex-end; }
+.describe-box.compact textarea { flex: 1; min-width: 0; resize: none; min-height: 0; overflow-y: auto; }
+.describe-input > button { flex: none; height: 38px; }
 .describe-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .chip { white-space: normal; text-align: left; font-weight: 400; background: var(--surface-2); border-color: var(--border); font-size: var(--fs-xs); }
 .chip:hover { border-color: var(--accent); }
@@ -105,10 +109,6 @@
 
 
 /* --- build cards (My Builds) --- */
-.describe-box.compact { gap: 6px; }
-.describe-input { display: flex; gap: 8px; align-items: flex-end; }
-.describe-box.compact textarea { flex: 1; min-width: 0; resize: none; min-height: 0; overflow-y: auto; }
-.describe-input > button { flex: none; height: 38px; }
 .wb-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 .wb-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; color: var(--fg); text-decoration: none; box-shadow: var(--shadow); transition: border-color var(--t) var(--ease), transform var(--t) var(--ease); }
 a.wb-card:hover { border-color: var(--accent); transform: translateY(-2px); }
