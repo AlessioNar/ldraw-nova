@@ -1,0 +1,566 @@
+{
+ "rules+heuristic": {
+  "n": 74,
+  "rates": {
+   "intent": {
+    "matched": 52,
+    "of": 74,
+    "rate": 0.703
+   },
+   "family": {
+    "matched": 38,
+    "of": 42,
+    "rate": 0.905
+   },
+   "colours": {
+    "matched": 17,
+    "of": 19,
+    "rate": 0.895
+   },
+   "edits": {
+    "matched": 10,
+    "of": 28,
+    "rate": 0.357
+   },
+   "calls": 0,
+   "median_cost_usd": null,
+   "median_latency_s": null,
+   "fallbacks": 64
+  },
+  "by_source": {
+   "rules_fallback": 64,
+   "rules": 10
+  },
+  "full_match": 46,
+  "fails": [
+   {
+    "id": "owner-starship",
+    "prompt": "Build a small white and blue starship",
+    "src": "rules_fallback",
+    "bad": [
+     "colours"
+    ]
+   },
+   {
+    "id": "new-falcon",
+    "prompt": "Build the Millennium Falcon",
+    "src": "rules_fallback",
+    "bad": [
+     "family"
+    ]
+   },
+   {
+    "id": "new-shop",
+    "prompt": "a small corner shop with a green awning",
+    "src": "rules_fallback",
+    "bad": [
+     "colours"
+    ]
+   },
+   {
+    "id": "new-technic",
+    "prompt": "technic gearbox",
+    "src": "rules_fallback",
+    "bad": [
+     "family"
+    ]
+   },
+   {
+    "id": "new-scene",
+    "prompt": "a street with a house and a tree",
+    "src": "rules_fallback",
+    "bad": [
+     "family"
+    ]
+   },
+   {
+    "id": "q-parts",
+    "prompt": "what parts does a small car need?",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "q-buildable",
+    "prompt": "is this buildable with real bricks?",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "other-hello",
+    "prompt": "hello",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "fu-car-yellow",
+    "prompt": "make the car yellow",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-roof-red-door-white",
+    "prompt": "make the roof red and the door white",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wheels-bigger",
+    "prompt": "bigger wheels",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wheels-chimney",
+    "prompt": "bigger wheels, and add a chimney",
+    "src": "rules_fallback",
+    "bad": [
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-longer",
+    "prompt": "make it longer",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wider2",
+    "prompt": "make it 2 studs wider",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-longer-pct",
+    "prompt": "10 percent longer",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-taller",
+    "prompt": "taller please",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-smaller",
+    "prompt": "make it smaller",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-lower-roof",
+    "prompt": "lower the roof",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-two-windows",
+    "prompt": "add two windows on the left side",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-fence",
+    "prompt": "put a fence around it",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-flatbed",
+    "prompt": "swap the cab for a flatbed",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-design",
+    "prompt": "use a different design",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-truck-instead",
+    "prompt": "make it a truck instead",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-windows-clear",
+    "prompt": "the windows should be clear",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wheels-paint-body",
+    "prompt": "bigger wheels and paint the body red",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-question",
+    "prompt": "why is the roof blue?",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "fu-new-ship",
+    "prompt": "build me a spaceship instead",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "family"
+    ]
+   },
+   {
+    "id": "fu-more-windows",
+    "prompt": "two more windows",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   }
+  ]
+ },
+ "heuristic only": {
+  "n": 74,
+  "rates": {
+   "intent": {
+    "matched": 51,
+    "of": 74,
+    "rate": 0.689
+   },
+   "family": {
+    "matched": 38,
+    "of": 42,
+    "rate": 0.905
+   },
+   "colours": {
+    "matched": 17,
+    "of": 19,
+    "rate": 0.895
+   },
+   "edits": {
+    "matched": 9,
+    "of": 28,
+    "rate": 0.321
+   },
+   "calls": 0,
+   "median_cost_usd": null,
+   "median_latency_s": null,
+   "fallbacks": 74
+  },
+  "by_source": {
+   "rules_fallback": 74
+  },
+  "full_match": 45,
+  "fails": [
+   {
+    "id": "owner-starship",
+    "prompt": "Build a small white and blue starship",
+    "src": "rules_fallback",
+    "bad": [
+     "colours"
+    ]
+   },
+   {
+    "id": "new-falcon",
+    "prompt": "Build the Millennium Falcon",
+    "src": "rules_fallback",
+    "bad": [
+     "family"
+    ]
+   },
+   {
+    "id": "new-shop",
+    "prompt": "a small corner shop with a green awning",
+    "src": "rules_fallback",
+    "bad": [
+     "colours"
+    ]
+   },
+   {
+    "id": "new-technic",
+    "prompt": "technic gearbox",
+    "src": "rules_fallback",
+    "bad": [
+     "family"
+    ]
+   },
+   {
+    "id": "new-scene",
+    "prompt": "a street with a house and a tree",
+    "src": "rules_fallback",
+    "bad": [
+     "family"
+    ]
+   },
+   {
+    "id": "q-parts",
+    "prompt": "what parts does a small car need?",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "q-buildable",
+    "prompt": "is this buildable with real bricks?",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "other-hello",
+    "prompt": "hello",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "fu-again",
+    "prompt": "again",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-car-yellow",
+    "prompt": "make the car yellow",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-roof-red-door-white",
+    "prompt": "make the roof red and the door white",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wheels-bigger",
+    "prompt": "bigger wheels",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wheels-chimney",
+    "prompt": "bigger wheels, and add a chimney",
+    "src": "rules_fallback",
+    "bad": [
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-longer",
+    "prompt": "make it longer",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wider2",
+    "prompt": "make it 2 studs wider",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-longer-pct",
+    "prompt": "10 percent longer",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-taller",
+    "prompt": "taller please",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-smaller",
+    "prompt": "make it smaller",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-lower-roof",
+    "prompt": "lower the roof",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-two-windows",
+    "prompt": "add two windows on the left side",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-fence",
+    "prompt": "put a fence around it",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-flatbed",
+    "prompt": "swap the cab for a flatbed",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-design",
+    "prompt": "use a different design",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-truck-instead",
+    "prompt": "make it a truck instead",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-windows-clear",
+    "prompt": "the windows should be clear",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-wheels-paint-body",
+    "prompt": "bigger wheels and paint the body red",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   },
+   {
+    "id": "fu-question",
+    "prompt": "why is the roof blue?",
+    "src": "rules_fallback",
+    "bad": [
+     "intent"
+    ]
+   },
+   {
+    "id": "fu-new-ship",
+    "prompt": "build me a spaceship instead",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "family"
+    ]
+   },
+   {
+    "id": "fu-more-windows",
+    "prompt": "two more windows",
+    "src": "rules_fallback",
+    "bad": [
+     "intent",
+     "edits"
+    ]
+   }
+  ]
+ }
+}
