@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ldraw-nova/spec.v1",
+  "title": "spec.v1",
+  "description": "What the user wants, as understood from one message. The only input of the deterministic router.",
+  "type": "object",
+  "required": ["intent", "subject"],
+  "additionalProperties": false,
+  "properties": {
+    "intent": {"enum": ["new_model", "edit", "question", "other"]},
+    "subject": {
+      "type": "object",
+      "required": ["family"],
+      "additionalProperties": false,
+      "properties": {
+        "family": {"enum": ["car", "truck", "van", "motorcycle", "boat", "aircraft", "spaceship", "house", "building", "tower", "garden", "technic", "mechanism", "scene", "other"]},
+        "kind": {"type": "string", "maxLength": 60, "description": "free noun, e.g. 'cottage', 'tipper truck', 'starfighter'"},
+        "style": {"type": "array", "items": {"type": "string", "maxLength": 30}, "maxItems": 6, "description": "e.g. ['classic','sporty']"}
+      }
+    },
+    "size": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scale": {"enum": ["micro", "mini", "small", "medium", "large"]},
+        "studs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": {"type": "integer", "minimum": 1},
+            "depth": {"type": "integer", "minimum": 1},
+            "length": {"type": "integer", "minimum": 1},
+            "height_courses": {"type": "integer", "minimum": 1}
+          }
+        },
+        "unit_ambiguous": {"type": "boolean"}
+      }
+    },
+    "colours": {
+      "type": "object",
+      "description": "role -> colour name from the supplied list",
+      "properties": {
+        "body": {"type": "string"}, "roof": {"type": "string"}, "trim": {"type": "string"},
+        "wheels": {"type": "string"}, "glass": {"type": "string"}, "accent": {"type": "string"}
+      },
+      "additionalProperties": {"type": "string"}
+    },
+    "features": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "maxLength": 60},
+          "count": {"type": "integer", "minimum": 1},
+          "where": {"type": "string", "maxLength": 40},
+          "required": {"type": "boolean"}
+        }
+      },
+      "description": "chimney, window x2, open cockpit, tow hook, ..."
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "parts_mode": {"enum": ["off", "prefer", "only"]},
+        "max_parts": {"type": "integer", "minimum": 1},
+        "budget_eur": {"type": "number", "minimum": 0},
+        "must_use": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+        "avoid": {"type": "array", "items": {"type": "string"}, "maxItems": 8}
+      }
+    },
+    "edits": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/edit"}},
+    "reference_hint": {"type": "string", "maxLength": 80, "description": "named real set or franchise, if any; routes to retrieval"},
+    "ambiguities": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field": {"type": "string"},
+          "question": {"type": "string", "maxLength": 200},
+          "options": {"type": "array", "items": {"type": "string"}, "maxItems": 5}
+        }
+      }
+    },
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  },
+  "$defs": {
+    "edit": {
+      "type": "object",
+      "required": ["op", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "op": {"enum": ["set_colour", "set_param", "scale_param", "add_feature", "remove_feature", "swap_part", "replace_model", "undo", "revert"]},
+        "target": {"type": "string", "maxLength": 40, "description": "role or feature: roof, body, wheels, cab, bed, door, window, chimney, whole"},
+        "value": {"type": ["string", "number", "boolean", "null"]},
+        "delta": {"type": "string", "maxLength": 20, "description": "bigger | smaller | longer | shorter | wider | taller | lower"},
+        "amount": {"type": "number"},
+        "unit": {"enum": ["studs", "courses", "percent", "steps"]},
+        "where": {"type": "string", "maxLength": 40},
+        "count": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}
