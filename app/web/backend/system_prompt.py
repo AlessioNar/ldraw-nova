@@ -86,8 +86,9 @@ def continuity_block(store: ChatStore, chat_id: str, options: dict | None = None
         slug, files = chat["build_id"], builds.versions(chat["build_id"])
         title = (builds.get(store, slug) or {}).get("title", slug)
         latest = f" Its latest version is v{files[-1]['version']}, the file {files[-1]['path'].name} in the model collection (read it from there)." if files else " It has no version yet."
-        lines.append(f"- this chat belongs to the build \"{title}\".{latest} publish_model adds the NEXT VERSION of this build "
-                     "(whatever name you give it): continue from the latest version instead of starting a new model.")
+        lines.append(f"- this chat belongs to the build \"{title}\".{latest} publish_model does not add a version: it sends your model to the build as a PROPOSAL "
+                     "the person reviews (keep in draft, preview or discard). Continue from the latest version instead of starting a new model, "
+                     "and say in your final message that the change is waiting for review in the build.")
     models = store.models(chat_id)
     if models:
         last = models[-1]

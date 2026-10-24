@@ -166,7 +166,7 @@ def test_empty_build_opens_the_editor_and_saves_v1(client):
     assert client.post(f"/api/builds/{slug}/editor/publish", json={}).json()["version"] == 2
 
 
-def test_a_chat_attached_to_a_build_publishes_into_it(client):
+def test_a_chat_attached_to_a_build_proposes_into_it(client):
     store = get_store()
     slug = client.post("/api/builds", json={"title": "Attached car", "source": {"kind": "ai"}}).json()["id"]
     chat = client.post(f"/api/builds/{slug}/chat", json={}).json()
@@ -176,19 +176,16 @@ def test_a_chat_attached_to_a_build_publishes_into_it(client):
     ctx = tools.ToolContext(chat["id"], store, lambda *_: None)
     ctx.work_dir.mkdir(parents=True, exist_ok=True)
     (ctx.work_dir / "model.mpd").write_text(TINY)
-    for _ in range(2):                                       # whatever name the agent picks, it is the build's next version
+    for _ in range(2):                                       # whatever name the agent picks, it is a proposal of the build, not a version
         result = asyncio.run(tools.t_publish_model(ctx, "output/model.mpd", "Something Else Entirely"))
-        assert result.models
-    files = sorted(p.name for p in settings.GENERATED_DIR.glob(f"{slug}-v*.mpd"))
-    assert files == [f"{slug}-v1.mpd", f"{slug}-v2.mpd"]
+        assert not result.models and "waiting for review" in result.content
+    assert not list(settings.GENERATED_DIR.glob(f"{slug}-v*.mpd"))
     assert not list(settings.GENERATED_DIR.glob("something-else-entirely*"))
+    assert len(client.get(f"/api/builds/{slug}/proposals").json()["proposals"]) == 2
     detail = client.get(f"/api/builds/{slug}").json()
-    assert [(v["version"], v["origin"]) for v in detail["versions"]] == [(1, "ai"), (2, "ai")]
+    assert detail["versions"] == []
     assert chat["id"] in {c["id"] for c in detail["chats"] if c["attached"]}
-    shown = client.get(f"/api/chats/{chat['id']}").json()
-    assert shown["build"]["id"] == slug and shown["build"]["latest"]["version"] == 2
-    assert sorted(m["version"] for m in shown["models"].values()) == [1, 2]
     note = system_prompt.continuity_block(store, chat["id"])
-    assert "belongs to the build" in note and f"{slug}-v2.mpd" in note
+    assert "belongs to the build" in note and "PROPOSAL" in note and "waiting for review" in note
     assert client.get(f"/api/builds/{slug}").json()["build"]["chats"] == 2
     assert chat["id"] not in {c["id"] for c in client.get("/api/builds").json()["older_chats"]}
