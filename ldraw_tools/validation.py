@@ -226,7 +226,7 @@ def validate_text(text, parts, *, name="model.mpd", assembly=True, raw=None, ins
             if normalized(sub.name) not in used:
                 problems.append(issue("mpd.unreachable", "Section is unreachable from the main model.", section=sub.name, severity="warning"))
         if assembly and not occurrences:
-            problems.append(issue("assembly.empty", "The main model must contain at least one physical part."))
+            problems.append(issue("assembly.empty", "The model is empty: it has no physical parts yet.", severity="info"))
     return model, problems
 
 

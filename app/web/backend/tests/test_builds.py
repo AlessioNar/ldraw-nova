@@ -155,6 +155,12 @@ def test_empty_build_opens_the_editor_and_saves_v1(client):
     opened = client.post(f"/api/builds/{slug}/edit")
     assert opened.status_code == 200, opened.text
     assert opened.json()["editor_url"] == f"/build/{slug}/edit" and opened.json()["plan"]["sections"]
+    assert opened.json()["plan"]["sections"][0]["steps"] == [[]]                 # a truly empty plan
+    refused = client.post(f"/api/builds/{slug}/editor/publish", json={})
+    assert refused.status_code == 400 and "Add at least one brick" in refused.text
+    added = client.post(f"/api/builds/{slug}/editor/edits", json={"base_revision": opened.json()["revision"], "edits": [
+        {"op": "add", "section": "model.ldr", "part": "3001.dat", "colour": 4, "position": [0, 0, 0]}]})
+    assert added.status_code == 200, added.text
     saved = client.post(f"/api/builds/{slug}/editor/publish", json={})
     assert saved.status_code == 200, saved.text
     assert saved.json()["file"] == f"{slug}-v1.mpd"

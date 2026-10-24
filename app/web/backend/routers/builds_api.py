@@ -294,7 +294,7 @@ async def builds_edit(build_id: str):
     if files:
         return await edit_model_file(store, files[-1]["path"].name)
     key = store.build_key(build_id)
-    view = (await open_session(store, key, name=build_id)) if _session(store, key) is None else _view(store, key)
+    view = (await open_session(store, key, name=build_id, empty=True)) if _session(store, key) is None else _view(store, key)
     return {**view, "build": build_id, "file": None, "editor_url": f"/build/{build_id}/edit"}
 
 

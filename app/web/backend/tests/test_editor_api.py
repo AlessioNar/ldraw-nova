@@ -181,11 +181,11 @@ def test_edit_inside_a_sub_model_changes_every_copy(client, chat):
     assert run.status_code == 200 and "1 4 40 -24 100" in run.json()["mpd"]
     turned = apply_edits(client, chat, [{"op": "rotate", "id": "row", "section": "ship.ldr", "axis": "y", "degrees": 90}], 3)
     assert turned.status_code == 400 and "repeated placement" in turned.text
-    # The last part of a sub-model cannot be deleted from it (the editor deletes the instance instead).
+    # The last part of a sub-model can be deleted too: the sub-model section is left with one empty step.
     first = apply_edits(client, chat, [{"op": "delete", "id": "w1", "section": "wing.ldr"}], 3)
     assert first.status_code == 200, first.text
     last = apply_edits(client, chat, [{"op": "delete", "id": "w2", "section": "wing.ldr"}], 4)
-    assert last.status_code == 400 and "no steps left" in last.text
+    assert last.status_code == 200 and last.json()["plan"]["sections"][1]["steps"] == [[]]
 
 
 def test_only_mode_refuses_and_prefer_flags(client, chat, inventories_dir):
