@@ -78,10 +78,10 @@ sequenceDiagram
   participant API as Backend editor API
   participant EW as Resident editor worker
   R->>C: obd:command {cmd: set-tool / add-part / undo / view-version ...}
-  C->>API: POST /api/builds/{id}/editor/edits {ops, base_revision}
+  C->>API: POST /api/builds/{id}/editor/edits {ops, base_revision, delta: true}
   API->>EW: apply ops to plan.json, rebuild
   EW-->>API: new revision (or 409 conflict)
-  API-->>C: updated model
+  API-->>C: the changed entries (or the whole model when it cannot say so)
   C-->>R: obd:changed / obd:selection / obd:steps
 ```
 
@@ -95,6 +95,8 @@ sequenceDiagram
 - **Internal ops**: `set_entry, insert, replace_plan`. `replace_plan` is what Regenerate, text edits and Keep-proposal use, so each of those is **one** undo step.
 - **The plan JSON is the source of truth.** The MPD is rebuilt from it, and nothing is written if the rebuild fails (`routers/editor.py:1-17`).
 - **Requests are serialised.** A stale `base_revision` returns 409, and the client re-reads.
+- **Adding is optimistic.** The add tool shows the brick at the drop position at once (grey dashed outline) and sends the request in the background; adds queue in order. The answer slides it to its snapped place (120 ms) or, if refused, removes it and reports why (`obd:error`). `edits`, `undo` and `redo` take `delta: true` and then answer `{delta, revision, undo_depth, redo_depth, splices, parts}`: `splices` are replacements of runs of entries inside plan steps (`plan_delta` in `ldraw_tools/commands/editor.py`), applied by `EditorCore.applyDelta` to the canvas's plan and nodes. The whole view (plan and preview MPD) is still sent without the flag (agent, old pages), when the plan's shape changed, and on reload; the canvas asks for it whenever a changed entry is relative, repeated or a sub-model.
+- **Warm-up.** Opening a workspace (`GET .../editor`, resuming a build) starts the editor worker and queues the geometry of the plan's part types. A snap that finds no free candidate within 0.25 s of examining (`fastsnap.BUDGET_SECONDS`, env `LDRAW_NOVA_SNAP_BUDGET`) is refused, and the canvas then adds the part unsnapped.
 - **Speed.** A resident editor worker was added, separate from the build worker so edits never queue behind a build. On a 1,124-part cottage:
   - move went from about 3.5 s to 105–200 ms;
   - undo went from about 4 s to 25–32 ms;
