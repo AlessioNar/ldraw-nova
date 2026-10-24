@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildsApi, estimateLabel, type Describe } from "../api";
 
 export type DescribeOutcome =
@@ -16,8 +16,8 @@ type Step =
  * generator or an edit of the current one without any AI. When it cannot, the box ASKS before a paid AI build,
  * with the estimate. Without the engine (HTTP 404) only "Build with AI" is offered.
  */
-export default function DescribeBox({ initialText = "", examples = [], busy, llmReady, submitLabel, placeholder, current, buildId, onOutcome }: {
-  initialText?: string; examples?: string[]; busy?: boolean; llmReady: boolean; submitLabel: string; placeholder?: string;
+export default function DescribeBox({ compact, initialText = "", examples = [], busy, llmReady, submitLabel, placeholder, current, buildId, onOutcome }: {
+  compact?: boolean; initialText?: string; examples?: string[]; busy?: boolean; llmReady: boolean; submitLabel: string; placeholder?: string;
   current?: { generator: string; params: Record<string, unknown> }; buildId?: string;
   onOutcome: (outcome: DescribeOutcome, text: string) => void | Promise<void>;
 }) {
@@ -73,12 +73,28 @@ export default function DescribeBox({ initialText = "", examples = [], busy, llm
     return askAi(answer.reason ?? "A generator cannot do this one.", answer.estimate);
   }
 
+  const area = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {      // compact: one line that grows with the text
+    const el = area.current;
+    if (!compact || !el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    el.style.overflowY = el.scrollHeight > 160 ? "auto" : "hidden";
+  }, [compact, text]);
+
   const working = busy || state.step === "thinking";
   return (
-    <div className="describe-box">
-      <textarea value={text} rows={3} aria-label="Describe your model" placeholder={placeholder ?? "e.g. A 6 x 8 cottage with a door, two windows and a sloped roof"}
+    <div className={`describe-box${compact ? " compact" : ""}`}>
+      <div className="describe-input">
+      <textarea ref={area} value={text} rows={compact ? 1 : 3} aria-label="Describe your model" placeholder={placeholder ?? "e.g. A 6 x 8 cottage with a door, two windows and a sloped roof"}
         onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submit(); } }} />
+        onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submit(); } else if (compact && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }} />
+      {compact && state.step !== "ai" && (
+        <button type="button" className="primary" disabled={!text.trim() || working} onClick={submit}>
+          {working && <span className="spinner" aria-hidden />} {submitLabel}
+        </button>
+      )}
+      </div>
       {examples.length > 0 && !text && (
         <div className="describe-examples">{examples.map((ex) => <button key={ex} type="button" className="chip" onClick={() => setText(ex)}>{ex}</button>)}</div>
       )}
@@ -104,7 +120,7 @@ export default function DescribeBox({ initialText = "", examples = [], busy, llm
           </div>
         </div>
       )}
-      {state.step !== "ai" && (
+      {state.step !== "ai" && !compact && (
         <div className="gen-actions">
           <button type="button" className="primary" disabled={!text.trim() || working} onClick={submit}>
             {working && <span className="spinner" aria-hidden />} {submitLabel}

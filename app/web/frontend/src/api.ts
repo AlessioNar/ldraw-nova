@@ -353,7 +353,7 @@ export type BuildVersion = ModelFile & {
 };
 export type BuildSummary = {
   id: string; key: string; title: string; created_at: number; updated_at: number; source: BuildSource;
-  versions: number; latest: (ModelFile & { version: number }) | null; chats: number; pending: boolean;
+  versions: number; latest: (ModelFile & { version: number }) | null; latest_origin?: BuildOrigin | null; chats: number; pending: boolean;
 };
 export type BuildDetail = {
   build: BuildSummary; versions: BuildVersion[]; source: BuildSource; pending: boolean;

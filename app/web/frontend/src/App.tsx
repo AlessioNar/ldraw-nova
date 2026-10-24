@@ -9,6 +9,7 @@ import BuildPage from "./pages/BuildPage";
 import ChatPage from "./pages/ChatPage";
 import EditorPage from "./pages/EditorPage";
 import Home from "./pages/Home";
+import NewBuild from "./pages/NewBuild";
 import Models from "./pages/Models";
 import Parts from "./pages/Parts";
 import Settings from "./pages/Settings";
@@ -107,8 +108,8 @@ export default function App() {
           </button>
           <KeyBanner />
           <Routes>
-            <Route path="/" element={<Navigate to="/new" replace />} />
-            <Route path="/new" element={<Home />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/new" element={<NewBuild />} />
             <Route path="/build/:id" element={<BuildPage />} />
             <Route path="/chat/:id" element={<ChatPage />} />
             <Route path="/chat/:id/edit" element={<EditorPage />} />
@@ -117,7 +118,7 @@ export default function App() {
             <Route path="/parts" element={<Parts />} />
             <Route path="/parts/:id" element={<Parts />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/new" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
