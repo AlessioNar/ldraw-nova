@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import buildable
+import collection
 import inventories
 from inventories import InventoryError
 
@@ -42,7 +43,7 @@ def inventories_list():
 @router.post("/api/inventories")
 async def inventories_create(body: NewInventory):
     try:
-        return await inventories.import_csv(body.name, body.csv, bool(body.include_spares), body.family_colours)
+        return await collection.import_csv(body.name, body.csv, bool(body.include_spares), body.family_colours)
     except InventoryError as exc:
         raise failure(exc) from None
 
@@ -92,7 +93,7 @@ async def inventories_family_colours(inventory_id: str, body: FamilyColours):
     """Maps a Pileometer import's colour families again from the stored CSV, replacing the inventory."""
     try:
         name, csv_text = inventories.remap_families(inventory_id)
-        return await inventories.import_csv(name, csv_text, False, body.family_colours, replace=inventory_id)
+        return await collection.import_csv(name, csv_text, False, body.family_colours, replace=inventory_id)
     except InventoryError as exc:
         raise failure(exc) from None
 

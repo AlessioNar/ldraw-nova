@@ -9,8 +9,8 @@ from pathlib import Path
 
 from .. import buildable
 from ..common import atomic_write, dumps, get_parts
-from ..inventory import (Inventory, ParseError, check_model, make_inventory, parse_rebrickable_csv,
-                         search_owned, slugify, summary)
+from .. import importers
+from ..inventory import Inventory, ParseError, check_model, make_inventory, search_owned, slugify, summary
 from .base import Command, positive
 
 
@@ -59,6 +59,7 @@ def register(commands):
     p.add_argument("--name", help="Inventory name (default: the file name)")
     p.add_argument("--include-spares", action="store_true", help="Count spare parts as owned")
     p.add_argument("--force", action="store_true", help="Replace an existing inventory with the same name")
+    p.add_argument("--dry-run", action="store_true", help="Parse and report only; write nothing (the web app previews imports with this)")
     p.add_argument("--family-colour", action="append", default=[], metavar="FAMILY=CODE",
                    help="Pileometer: LDraw colour for a colour family, e.g. Grays=72 (repeatable)")
     common(p)
@@ -199,15 +200,22 @@ def run(args, library, parts):
             if not code.strip().isdigit():
                 raise ValueError(f"--family-colour expects FAMILY=CODE, got {item!r}")
             family_colours[family.strip().title()] = int(code)
-        result = parse_rebrickable_csv(text, include_spares=args.include_spares, library=optional_library(), family_colours=family_colours)
+        result = importers.parse(text, include_spares=args.include_spares, library=optional_library(), family_colours=family_colours,
+                                 filename=path.name)
         name = args.name or path.stem
         inv = make_inventory(name, result, source_filename=path.name)
+        fmt = (result.origin or {}).get("format", "")
+        report = dict(inventory=inv.to_json(), dialect=result.dialect, format=fmt, total_rows=result.total_rows,
+                      total_pieces=result.total_pieces, spare_pieces=result.spare_pieces, warnings=result.warnings, stored="")
+        if args.dry_run:
+            if result.pileometer:
+                report["pileometer"] = result.pileometer
+            return finish(report, lines_import(inv, result, path) + ["  dry run: nothing stored"])
         if (store / f"{inv.id}.json").exists() and not args.force:
             raise ValueError(f"Inventory {inv.id!r} already exists in {store}; use --force or another --name")
         atomic_write(store / f"{inv.id}.json", json.dumps(inv.to_json(), indent=2) + "\n")
         shutil.copyfile(path, store / f"{inv.id}.csv")
-        report = dict(inventory=inv.to_json(), dialect=result.dialect, total_rows=result.total_rows, total_pieces=result.total_pieces,
-                      spare_pieces=result.spare_pieces, warnings=result.warnings, stored=str(store / f"{inv.id}.json"))
+        report["stored"] = str(store / f"{inv.id}.json")
         if result.pileometer:
             report["pileometer"] = result.pileometer
         return finish(report, lines_import(inv, result, path) + [f"  stored: {store / (inv.id + '.json')}"])
