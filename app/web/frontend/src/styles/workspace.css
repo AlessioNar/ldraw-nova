@@ -61,7 +61,7 @@
 .ws-tl { left: 12px; top: 12px; } .ws-tr { right: 12px; top: 12px; }
 .ws-tl.lower, .ws-tr.lower { top: 66px; }
 .ws-overlay .ws-chip { background: var(--surface); border-color: var(--border-strong); color: var(--fg); }
-.ws-selchip { position: absolute; z-index: 3; left: 12px; bottom: 12px; background: var(--surface); color: var(--fg); border: 1px solid var(--accent); border-radius: var(--radius); padding: 5px 11px; font-size: var(--fs-xs); box-shadow: var(--shadow); max-width: calc(100% - 24px); }
+.ws-selchip { position: absolute; z-index: 3; left: 12px; bottom: 48px; background: var(--surface); color: var(--fg); border: 1px solid var(--accent); border-radius: var(--radius); padding: 5px 11px; font-size: var(--fs-xs); box-shadow: var(--shadow); max-width: calc(100% - 24px); }
 .ws-selchip .mono { color: var(--muted); }
 .ws-ro { position: absolute; z-index: 5; left: 12px; right: 12px; top: 12px; display: flex; align-items: center; gap: 10px; background: var(--info-soft); color: var(--fg); border: 1px solid var(--info-border); border-radius: var(--radius); padding: 7px 8px 7px 14px; box-shadow: var(--shadow); font-size: var(--fs-sm); }
 .ws-empty-canvas { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; pointer-events: none; padding: 16px; }
@@ -234,5 +234,3 @@
   .ws-panel .gen-fields { grid-template-columns: 1fr; }
 }
 
-.ws-steps { position: absolute; z-index: 3; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 10px; font-size: var(--fs-xs); box-shadow: var(--shadow); max-width: calc(100% - 24px); }
-.ws-steps input[type="range"] { width: clamp(80px, 22vw, 220px); }

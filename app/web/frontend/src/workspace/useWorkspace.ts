@@ -160,7 +160,8 @@ export function useWorkspace(id: string) {
   }
   const undo = () => { if (!viewing) send({ cmd: "undo" }); };
   const redo = () => { if (!viewing) send({ cmd: "redo" }); };
-  const afterBackendChange = async () => { await reloadAll(); send({ cmd: "reload" }); };
+  // A read-only view (version or proposal) ignores reload, so leave it first (a no-op when the canvas shows the draft).
+  const afterBackendChange = async () => { await reloadAll(); send({ cmd: "back-to-draft" }); send({ cmd: "reload" }); };
 
   const setTool = useCallback((t: Tool) => { setToolState(t); sendRef.current({ cmd: "set-tool", tool: t }); }, []);
   const setMode = useCallback((m: CanvasMode) => { setModeState(m); sendRef.current({ cmd: "set-mode", mode: m }); }, []);
