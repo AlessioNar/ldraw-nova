@@ -100,3 +100,5 @@
 }
 @media (max-width: 900px) { .ways { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .ways { grid-template-columns: 1fr; } .gen-fields, .gen-form.no-preview .gen-fields, .build-panel .gen-fields { grid-template-columns: 1fr; } }
+.build-back { display: inline-block; margin-bottom: 6px; color: var(--muted); text-decoration: none; }
+.build-back:hover { color: var(--fg); }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useMatch } from "react-router-dom";
 import { api, buildsApi, type BuildSummary, type Chat, type LlmEntry, type OlderChat } from "./api";
 import { AppContext, type ViewerTarget } from "./context";
 import KeyBanner from "./components/KeyBanner";
@@ -96,10 +96,12 @@ export default function App() {
     [chats, chatsLoaded, refreshChats, builds, olderChats, buildsLoaded, refreshBuilds, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer],
   );
 
+  const focus = !!useMatch("/build/:id");   // a build page is a workspace of its own: no sidebar
+
   return (
     <AppContext.Provider value={state}>
-      <div className={`app ${menuOpen ? "menu-open" : ""} ${collapsed ? "sidebar-collapsed" : ""}`}>
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} onClose={() => setMenuOpen(false)} />
+      <div className={`app ${menuOpen ? "menu-open" : ""} ${collapsed ? "sidebar-collapsed" : ""} ${focus ? "focus-mode" : ""}`}>
+        {!focus && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} onClose={() => setMenuOpen(false)} />}
         <div className="scrim" onClick={() => setMenuOpen(false)} />
         <main className="main">
           <button className="menu-button" aria-label="Open menu" title="Menu" onClick={() => setMenuOpen(true)}>

@@ -126,6 +126,7 @@ export default function BuildPage() {
     <div className="build-split">
       <div className="build-side">
         <header className="build-head">
+          <Link to="/" className="build-back small">← All builds</Link>
           {renaming == null
             ? <h1 className="ellipsis" title="Click to rename" onClick={() => setRenaming(build.title)} tabIndex={0}
                 onKeyDown={(e) => { if (e.key === "Enter") setRenaming(build.title); }}>{build.title}</h1>

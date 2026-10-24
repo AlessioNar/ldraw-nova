@@ -116,3 +116,7 @@
 .older-chats > summary::-webkit-details-marker { display: none; }
 .older-chats > summary::before { content: "▸ "; }
 .older-chats[open] > summary::before { content: "▾ "; }
+
+/* --- focus mode: a build page fills the window, no sidebar --- */
+.app.focus-mode { grid-template-columns: 1fr; }
+.focus-mode .menu-button, .focus-mode .scrim { display: none; }
