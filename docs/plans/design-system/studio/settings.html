@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings - Open Brick Designer (Studio)</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="studio.css">
+<script>/* mockup only: ?theme=dark|light forces a theme, ?rail=1 collapses the sidebar */
+const q=new URLSearchParams(location.search);if(q.get('theme'))document.documentElement.dataset.theme=q.get('theme');
+addEventListener('DOMContentLoaded',()=>{if(q.get('rail')){const a=document.querySelector('.app');a&&a.classList.add('rail')}});</script>
+</head><body>
+<div class="app">
+  
+<aside class="sidebar">
+  <div class="brand"><svg viewBox="3 7 26 19" fill="none" aria-hidden="true"><path fill="var(--brand)" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/><path stroke="var(--brand)" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/></svg><b>Open Brick Designer</b><span class="spacer"></span><button class="ghost icon" title="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M6 3v10"/></svg></button></div>
+  <a class="btn new-chat" href="home.html" title="New chat"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 3v10M3 8h10"/></svg><span class="label">New chat</span><kbd>Ctrl K</kbd></a>
+  <nav class="nav">
+    <a href="#" class="" title="My Models"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="m2.5 5.5 5.5 3 5.5-3M8 8.5v5"/></svg><span class="label">My Models</span></a>
+    <a href="#" class="" title="My Parts"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2" y="6" width="12" height="7" rx="1.5"/><path d="M4.5 6V4.2h2V6M9.5 6V4.2h2V6"/></svg><span class="label">My Parts</span></a>
+  </nav>
+  <div class="section-label">History</div>
+  <div class="chat-list">
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Red car with black wheels</span></span><span class="when">2 min ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">6 x 8 cottage</span></span><span class="when">1 h ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Harbour crane</span></span><span class="when">Yesterday</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Spiral stone tower</span></span><span class="when">Yesterday</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Starfighter, white and blue</span></span><span class="when">3 days ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Technic service platform</span></span><span class="when">Last week</span></a>
+  </div>
+  <nav class="sidebar-foot"><a href="settings.html" class="on" title="Settings"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><circle cx="8" cy="8" r="2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg><span class="label">Settings</span></a></nav>
+</aside>
+  <main class="main"><div class="page">
+    <div class="page-head"><h1>Settings</h1><p class="muted">Add a provider key, pick your models, then choose who builds.</p></div>
+    <div class="section" style="margin-top:0"><header><h2>Providers</h2><p class="muted small">Paste one API key per provider. It is saved once and never shown again. Test uses the provider's free models list, so it costs nothing.</p></header>
+      <div class="cards">
+<form class="card" onsubmit="return false" aria-label="Anthropic key">
+  <header><strong>Anthropic</strong><span class="badge ok">Key set</span></header>
+  <label><span class="muted small">API key · <a href="#">get one</a></span>
+    <input type="password" style="margin-top:4px" aria-label="Anthropic API key" placeholder="Key saved · type to replace"></label>
+  <div class="actions"><button class="primary" disabled>Save key</button><button type="button">Test</button><span class="spacer"></span><button type="button" class="ghost danger-text">Remove key</button></div>
+  <p class="small" role="status" style="color:var(--ok)">Key works: 14 models available.</p>
+  <p class="muted small">Stored as <code>ANTHROPIC_API_KEY</code></p>
+</form>
+<form class="card" onsubmit="return false" aria-label="OpenAI key">
+  <header><strong>OpenAI</strong><span class="badge ">No key</span></header>
+  <label><span class="muted small">API key · <a href="#">get one</a></span>
+    <input type="password" style="margin-top:4px" aria-label="OpenAI API key" placeholder="Paste your API key"></label>
+  <div class="actions"><button class="primary" >Save key</button><button type="button">Test</button><span class="spacer"></span></div>
+  
+  <p class="muted small">Stored as <code>OPENAI_API_KEY</code></p>
+</form>
+<form class="card" onsubmit="return false" aria-label="Mistral key">
+  <header><strong>Mistral</strong><span class="badge warn">Key rejected</span></header>
+  <label><span class="muted small">API key · <a href="#">get one</a></span>
+    <input type="password" style="margin-top:4px" aria-label="Mistral API key" placeholder="Key saved · type to replace"></label>
+  <div class="actions"><button class="primary" disabled>Save key</button><button type="button">Test</button><span class="spacer"></span><button type="button" class="ghost danger-text">Remove key</button></div>
+  <p class="small" role="status" style="color:var(--warn)">Mistral rejected this key. Paste a new one.</p>
+  <p class="muted small">Stored as <code>MISTRAL_API_KEY</code></p>
+</form>
+<form class="card" onsubmit="return false" aria-label="OpenRouter key">
+  <header><strong>OpenRouter</strong><span class="badge ok">Key set</span></header>
+  <label><span class="muted small">API key · <a href="#">get one</a></span>
+    <input type="password" style="margin-top:4px" aria-label="OpenRouter API key" placeholder="Key saved · type to replace"></label>
+  <div class="actions"><button class="primary" disabled>Save key</button><button type="button">Test</button><span class="spacer"></span><button type="button" class="ghost danger-text">Remove key</button></div>
+  
+  <p class="muted small">Stored as <code>OPENROUTER_API_KEY</code></p>
+</form></div></div>
+    <div class="section"><header><h2>Models</h2><p class="muted small">Add the models you want to pick from in a chat. They all use the provider key above.</p></header>
+      <div class="list"><div class="row-item"><div class="info"><div class="t">Claude Sonnet 4.5<span class="badge brand">Default</span></div><div class="muted small">€2.80 / €14 per 1M tokens in / out</div></div><button>Remove</button></div><div class="row-item"><div class="info"><div class="t">Claude Haiku 4.5<span class="badge">Worker</span></div><div class="muted small">€0.93 / €4.65 per 1M tokens in / out</div></div><button>Remove</button></div><div class="row-item"><div class="info"><div class="t">GPT-5 mini</div><div class="muted small">€0.23 / €1.86 per 1M tokens in / out</div></div><button class="primary">Add</button></div><div class="row-item"><div class="info"><div class="t">Mistral Large<span class="badge warn" title="This entry stores its own key and keeps working as is.">own key</span></div><div class="muted small">€1.86 / €5.58 per 1M tokens in / out</div></div><button>Remove</button></div></div></div>
+    <div class="section"><header><h2>Roles</h2><p class="muted small">Pick which of your models does which job.</p></header>
+      <div class="cards"><div class="card"><strong>Main model (builds)</strong><span class="muted small">The default for new chats. It plans and builds the model.</span><input value="Claude Sonnet 4.5" aria-label="Main model"></div>
+      <div class="card"><strong>Worker model (cheap jobs, optional)</strong><span class="muted small">Needs Full access in the chat. “No workers” turns delegation off.</span><input value="Claude Haiku 4.5" aria-label="Worker model"></div></div></div>
+  </div></main>
+</div><script>const m=document.querySelector('.messages');if(m)m.scrollTop=m.scrollHeight</script></body></html>

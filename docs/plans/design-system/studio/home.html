@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>New chat - Open Brick Designer (Studio)</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="studio.css">
+<script>/* mockup only: ?theme=dark|light forces a theme, ?rail=1 collapses the sidebar */
+const q=new URLSearchParams(location.search);if(q.get('theme'))document.documentElement.dataset.theme=q.get('theme');
+addEventListener('DOMContentLoaded',()=>{if(q.get('rail')){const a=document.querySelector('.app');a&&a.classList.add('rail')}});</script>
+</head><body>
+<div class="app">
+  
+<aside class="sidebar">
+  <div class="brand"><svg viewBox="3 7 26 19" fill="none" aria-hidden="true"><path fill="var(--brand)" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/><path stroke="var(--brand)" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/></svg><b>Open Brick Designer</b><span class="spacer"></span><button class="ghost icon" title="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M6 3v10"/></svg></button></div>
+  <a class="btn new-chat" href="home.html" title="New chat"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 3v10M3 8h10"/></svg><span class="label">New chat</span><kbd>Ctrl K</kbd></a>
+  <nav class="nav">
+    <a href="#" class="" title="My Models"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="m2.5 5.5 5.5 3 5.5-3M8 8.5v5"/></svg><span class="label">My Models</span></a>
+    <a href="#" class="" title="My Parts"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2" y="6" width="12" height="7" rx="1.5"/><path d="M4.5 6V4.2h2V6M9.5 6V4.2h2V6"/></svg><span class="label">My Parts</span></a>
+  </nav>
+  <div class="section-label">History</div>
+  <div class="chat-list">
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Red car with black wheels</span></span><span class="when">2 min ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">6 x 8 cottage</span></span><span class="when">1 h ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Harbour crane</span></span><span class="when">Yesterday</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Spiral stone tower</span></span><span class="when">Yesterday</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Starfighter, white and blue</span></span><span class="when">3 days ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Technic service platform</span></span><span class="when">Last week</span></a>
+  </div>
+  <nav class="sidebar-foot"><a href="settings.html" class="" title="Settings"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><circle cx="8" cy="8" r="2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg><span class="label">Settings</span></a></nav>
+</aside>
+  <main class="main">
+    <div class="mobile-top"><svg width="26" height="20" viewBox="3 7 26 19" fill="none" aria-hidden="true"><path fill="var(--brand)" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/><path stroke="var(--brand)" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/></svg><b>Open Brick Designer</b><span class="spacer"></span><button class="ghost icon" aria-label="Menu"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/></svg></button></div>
+    <div class="home"><div class="inner">
+      <h1>What should we build?</h1>
+      <p class="lede">Turn your ideas into LEGO models you can explore in 3D. Start building with an agent, or use Plan mode to work out your design.</p>
+      
+<form class="composer" onsubmit="return false">
+  
+  <textarea rows="2" placeholder="Describe a model, or attach a picture or a plan…" aria-label="Message"></textarea>
+  <div class="row">
+    <button type="button" class="ghost icon" aria-label="Attach" title="Attach images or documents (up to 4 each)"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="m6 8.5 4-4a1.8 1.8 0 0 1 2.5 2.5l-5.5 5.5a3 3 0 0 1-4.2-4.2L9 3"/></svg></button>
+    <button type="button" class="chip" title="Model">Claude Sonnet 4.5 <svg class="i" viewBox="0 0 16 16" aria-hidden="true" style="width:12px;height:12px;transform:rotate(90deg)"><path d="m6 4 4 4-4 4"/></svg></button>
+    <button type="button" class="chip " title="Budget per request">Budget €2 per request</button>
+    <button type="button" class="chip" title="Mode and permissions">Agent · Ask first</button>
+    <span class="spacer"></span>
+    <button class="send" aria-label="Send"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg></button>
+  </div>
+</form>
+      <div class="examples"><button class="example"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 2v3M8 11v3M2 8h3M11 8h3"/></svg><span>Build a small red car with four black wheels</span></button><button class="example"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 2v3M8 11v3M2 8h3M11 8h3"/></svg><span>A 6 x 8 cottage with a door, two windows and a sloped roof</span></button><button class="example"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 2v3M8 11v3M2 8h3M11 8h3"/></svg><span>Build a spiral staircase around a tall stone tower</span></button><button class="example"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 2v3M8 11v3M2 8h3M11 8h3"/></svg><span>Design a harbour crane with a long boom and a cargo dock</span></button></div>
+    </div></div>
+  </main>
+</div><script>const m=document.querySelector('.messages');if(m)m.scrollTop=m.scrollHeight</script></body></html>

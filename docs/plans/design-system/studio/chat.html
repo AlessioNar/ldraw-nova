@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Red car with black wheels - Open Brick Designer (Studio)</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="studio.css">
+<script>/* mockup only: ?theme=dark|light forces a theme, ?rail=1 collapses the sidebar */
+const q=new URLSearchParams(location.search);if(q.get('theme'))document.documentElement.dataset.theme=q.get('theme');
+addEventListener('DOMContentLoaded',()=>{if(q.get('rail')){const a=document.querySelector('.app');a&&a.classList.add('rail')}});</script>
+</head><body>
+<div class="app rail">
+  
+<aside class="sidebar">
+  <div class="brand"><svg viewBox="3 7 26 19" fill="none" aria-hidden="true"><path fill="var(--brand)" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/><path stroke="var(--brand)" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/></svg><b>Open Brick Designer</b><span class="spacer"></span><button class="ghost icon" title="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M6 3v10"/></svg></button></div>
+  <a class="btn new-chat" href="home.html" title="New chat"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 3v10M3 8h10"/></svg><span class="label">New chat</span><kbd>Ctrl K</kbd></a>
+  <nav class="nav">
+    <a href="#" class="" title="My Models"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="m2.5 5.5 5.5 3 5.5-3M8 8.5v5"/></svg><span class="label">My Models</span></a>
+    <a href="#" class="" title="My Parts"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><rect x="2" y="6" width="12" height="7" rx="1.5"/><path d="M4.5 6V4.2h2V6M9.5 6V4.2h2V6"/></svg><span class="label">My Parts</span></a>
+  </nav>
+  <div class="section-label">History</div>
+  <div class="chat-list">
+    <a href="chat.html" class="chat-item on"><span class="t"><span class="live-dot" title="Working…"></span><span class="ellipsis">Red car with black wheels</span></span><span class="when">2 min ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">6 x 8 cottage</span></span><span class="when">1 h ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Harbour crane</span></span><span class="when">Yesterday</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Spiral stone tower</span></span><span class="when">Yesterday</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Starfighter, white and blue</span></span><span class="when">3 days ago</span></a>
+    <a href="chat.html" class="chat-item "><span class="t"><span class="ellipsis">Technic service platform</span></span><span class="when">Last week</span></a>
+  </div>
+  <nav class="sidebar-foot"><a href="settings.html" class="" title="Settings"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><circle cx="8" cy="8" r="2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg><span class="label">Settings</span></a></nav>
+</aside>
+  <main class="main" style="overflow:hidden">
+    <div class="topbar"><span class="title ellipsis">Red car with black wheels</span><span class="badge">Claude Sonnet 4.5</span><span class="spacer"></span><span class="muted small">€0.84 this chat</span><button class="ghost icon" title="Delete chat" aria-label="Delete chat"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"/></svg></button></div>
+    <div class="workspace">
+      <section class="chatcol">
+        <div class="messages">
+          <div class="msg user">Build a small red car with four black wheels</div>
+          <div class="msg agent"><p>I'll start with a 6 x 10 plate chassis, add the cabin and mount four wheels on 2 x 2 axle bricks.</p></div>
+          <details class="step"><summary><svg class="i" viewBox="0 0 16 16" aria-hidden="true" class="i tick"><path d="m3 8.5 3.2 3L13 4.5"/></svg><span class="name">Searched parts</span><span class="arg">wheel 18 x 14</span><span class="dur">1.2 s</span></summary>
+            <div class="body">query: wheel 18 x 14
+3 matches: 55981 Wheel 18 x 14, 30648 Tyre 18 x 14, 4624 Wheel 8 x 11</div></details>
+          <details class="step"><summary><svg class="i" viewBox="0 0 16 16" aria-hidden="true" class="i tick"><path d="m3 8.5 3.2 3L13 4.5"/></svg><span class="name">Rendered</span><span class="arg">red-car-v2.mpd</span><span class="dur">4.8 s</span></summary></details>
+          <div class="msg agent"><p>Here is version 2 with four black wheels and a red roof.</p></div>
+          
+<div class="model-card">
+  <div class="thumb"><img src="../../deterministic-first/screenshots/car-red.png" alt="Red car"><span class="thumb-hint">View in 3D</span></div>
+  <div class="meta">
+    <div class="titleline"><span class="badge brand">v2 · latest</span><span class="badge">edited by you</span><strong class="ellipsis">Red car with black wheels</strong></div>
+    <p class="changes small"><strong>Changed since v1:</strong> +4 Brick 2 x 2 (black), 2 Wheel 18 x 14 more, roof plate recoloured red</p>
+    <div class="muted small ellipsis">64 parts · red-car-v2.mpd · 2 min ago</div>
+    <div class="actions">
+      <button>3D View</button><button>3D Player</button>
+      <span class="grp"><button class="ghost" title="Download .mpd"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 2v8m-3-3 3 3 3-3M3 11v3h10v-3"/></svg> .mpd</button><button class="ghost"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 2v8m-3-3 3 3 3-3M3 11v3h10v-3"/></svg> .glb</button><button class="ghost"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 2v8m-3-3 3 3 3-3M3 11v3h10v-3"/></svg> BOM</button></span>
+    </div>
+  </div>
+</div>
+          <div class="budget-stop" role="alert"><strong>Stopped: budget reached</strong>
+            <p class="small muted">This request used its €2 budget. Everything done so far is kept. Continue to carry on from here.</p>
+            <div class="actions"><button class="primary">Continue with +€2</button><button>Raise budget to €4</button></div></div>
+        </div>
+        <div class="composer-wrap">
+          
+<form class="composer" onsubmit="return false">
+  <div class="chips" style="display:flex;gap:6px;margin-bottom:6px"><span class="chip continuing" title="A follow-up continues from this model, not from scratch">Continuing from v2: Red car with black wheels</span></div>
+  <textarea rows="2" placeholder="Ask for a change, e.g. “make the roof flatter”" aria-label="Message"></textarea>
+  <div class="row">
+    <button type="button" class="ghost icon" aria-label="Attach" title="Attach images or documents (up to 4 each)"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="m6 8.5 4-4a1.8 1.8 0 0 1 2.5 2.5l-5.5 5.5a3 3 0 0 1-4.2-4.2L9 3"/></svg></button>
+    <button type="button" class="chip" title="Model">Sonnet 4.5 <svg class="i" viewBox="0 0 16 16" aria-hidden="true" style="width:12px;height:12px;transform:rotate(90deg)"><path d="m6 4 4 4-4 4"/></svg></button>
+    <button type="button" class="chip budget-hit" title="Budget per request">Budget €2 per request</button>
+    <button type="button" class="chip" title="Mode and permissions">Agent</button>
+    <span class="spacer"></span>
+    <button class="send" aria-label="Send"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg></button>
+  </div>
+</form>
+        </div>
+      </section>
+      <section class="stage" aria-label="3D view">
+        <div class="art"><img src="../../deterministic-first/screenshots/car-red.png" alt="Red car, v2"></div>
+        <div class="float tl"><strong>Red car with black wheels</strong><span class="badge brand">v2 · latest</span><span class="muted small">64 parts</span></div>
+        <div class="float tr"><button class="ghost icon" title="Reset view"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M2.5 8 8 3l5.5 5M4 7v6h8V7"/></svg></button><button class="ghost icon" title="Edit in 3D editor"><svg class="i" viewBox="0 0 16 16" aria-hidden="true" ><path d="M8 1.8 13.5 5v6L8 14.2 2.5 11V5zM2.5 5 8 8.2 13.5 5M8 8.2v6"/></svg></button></div>
+        <div class="float bc"><div class="seg" role="group"><button aria-pressed="true">3D View</button><button aria-pressed="false">3D Player</button></div><button class="ghost">Open editor</button></div>
+      </section>
+    </div>
+  </main>
+</div><script>const m=document.querySelector('.messages');if(m)m.scrollTop=m.scrollHeight</script></body></html>

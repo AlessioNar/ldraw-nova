@@ -1,0 +1,119 @@
+/* Studio design tokens for Open Brick Designer.
+   Light first; dark via prefers-color-scheme or [data-theme="dark"]
+   (an explicit [data-theme="light"] wins over the OS setting).
+
+   Font: Inter (Google Fonts) with a system-ui fallback. Inter is a screen-first neutral
+   grotesque with tabular figures (useful for EUR amounts, part counts, versions) and is
+   the de-facto face of Linear/Figma-style tools. For zero network requests, drop the
+   @import: the system stack below still looks right.
+
+   Mapping from today's variables (styles/theme.css) -> Studio:
+     --bg            -> --bg            (warm off-white canvas)
+     --surface       -> --surface
+     --surface-2     -> --surface-2     (hover / inset wells)
+     --border        -> --line          (alias --border kept)
+     --fg            -> --ink           (alias --fg kept)
+     --muted         -> --ink-2         (alias --muted kept)
+     --accent        -> --brand         (alias --accent kept)
+     --accent-fg     -> --brand-ink
+     --accent-soft   -> --brand-soft
+     --info*, --ok, --warn*, --danger* -> same names, retuned (+ --ok-soft)
+     --user-bubble   -> --bubble
+     --shadow        -> --shadow-1
+     --radius        -> --r-3 (alias --radius kept)
+     --sidebar-w / --rail-w -> same names
+*/
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  /* colour: light */
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ed;
+  --surface-3: #eae7e2;
+  --line: #e6e2dc;
+  --line-strong: #d3cec6;
+  --field: #8f8981;          /* input borders: 3:1 against surface (WCAG 1.4.11) */
+  --ink: #1f1d1a;
+  --ink-2: #66615a;
+  --ink-3: #8a847c;          /* decorative / disabled only, never body text */
+  --brand: #d3342a;          /* tuned from #d9382e so white text passes AA */
+  --brand-hover: #bd2c23;
+  --brand-ink: #ffffff;
+  --brand-soft: #fbece9;
+  --brand-text: #b8281f;     /* brand red as text/link on light surfaces */
+  --info: #25589a;   --info-border: #b5cbe6; --info-soft: #edf3fb;
+  --ok: #17703a;     --ok-soft: #e6f4ec;
+  --warn: #99480a;   --warn-soft: #fbf0d9;
+  --danger: #b42318; --danger-soft: #fde8e6;
+  --bubble: #f1eee9;
+  --stage: #f1efeb;          /* 3D canvas backdrop */
+  --stage-grid: #e2ded8;
+  --focus: color-mix(in srgb, var(--brand) 45%, transparent);
+  --shadow-1: 0 1px 2px rgb(31 29 26 / 0.05);
+  --shadow-2: 0 1px 2px rgb(31 29 26 / 0.05), 0 6px 20px rgb(31 29 26 / 0.07);
+  --shadow-3: 0 12px 40px rgb(31 29 26 / 0.14);
+
+  /* legacy aliases so existing CSS keeps working during migration */
+  --border: var(--line); --fg: var(--ink); --muted: var(--ink-2);
+  --accent: var(--brand); --accent-fg: var(--brand-ink); --accent-soft: var(--brand-soft);
+  --user-bubble: var(--bubble); --shadow: var(--shadow-1); --radius: var(--r-3);
+
+  /* type */
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --t-xs: 11.5px;  --t-sm: 12.5px;  --t-base: 14px;  --t-md: 15px;
+  --t-lg: 18px;    --t-xl: 24px;    --t-2xl: 34px;
+  --lh-tight: 1.2; --lh-base: 1.5;
+  --track-tight: -0.02em;
+
+  /* space (4px base) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 72px;
+
+  /* radii */
+  --r-1: 4px; --r-2: 6px; --r-3: 8px; --r-4: 12px; --r-5: 16px; --r-pill: 999px;
+
+  /* motion */
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --dur-1: 90ms; --dur-2: 160ms; --dur-3: 260ms;
+
+  /* layout */
+  --sidebar-w: 264px; --rail-w: 52px; --content-w: 720px;
+  color-scheme: light;
+}
+
+/* Dark values are declared twice (OS preference and explicit toggle); keep in sync. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131211; --surface: #1a1918; --surface-2: #222120; --surface-3: #2b2a28;
+    --line: #2e2c2a; --line-strong: #403d3a; --field: #77726b;
+    --ink: #f1eee9; --ink-2: #aaa49b; --ink-3: #7b766f;
+    --brand: #ec5a4e; --brand-hover: #f26f64; --brand-ink: #1a0604; --brand-soft: #34201e; --brand-text: #f4857b;
+    --info: #9fc3f5; --info-border: #3d5778; --info-soft: #1c2938;
+    --ok: #6fd596; --ok-soft: #14291c;
+    --warn: #f0b95a; --warn-soft: #33270f;
+    --danger: #f58a80; --danger-soft: #3a1815;
+    --bubble: #24231f;
+    --stage: #181716; --stage-grid: #262523;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.35);
+    --shadow-3: 0 12px 40px rgb(0 0 0 / 0.55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131211; --surface: #1a1918; --surface-2: #222120; --surface-3: #2b2a28;
+  --line: #2e2c2a; --line-strong: #403d3a; --field: #77726b;
+  --ink: #f1eee9; --ink-2: #aaa49b; --ink-3: #7b766f;
+  --brand: #ec5a4e; --brand-hover: #f26f64; --brand-ink: #1a0604; --brand-soft: #34201e; --brand-text: #f4857b;
+  --info: #9fc3f5; --info-border: #3d5778; --info-soft: #1c2938;
+  --ok: #6fd596; --ok-soft: #14291c;
+  --warn: #f0b95a; --warn-soft: #33270f;
+  --danger: #f58a80; --danger-soft: #3a1815;
+  --bubble: #24231f;
+  --stage: #181716; --stage-grid: #262523;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.35);
+  --shadow-3: 0 12px 40px rgb(0 0 0 / 0.55);
+  color-scheme: dark;
+}
