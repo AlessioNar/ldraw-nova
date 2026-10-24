@@ -72,6 +72,7 @@ export type Message = {
   _label?: string; // text shown for an app-recorded user message (the editor publish) instead of its content
   _editor_publish?: boolean; // the person published from the 3D editor; its card follows this message
   _error?: boolean;
+  _fast_path?: FastPathTurn; // the free fast path answered this turn (saved by POST /api/builds/{id}/draft/describe)
   _notice?: boolean;
   _budget_reached?: { spent_eur: number; limit_eur: number }; // the turn stopped at the per-request budget
   _reasoning?: string;
@@ -463,10 +464,14 @@ export type GeneratorList = { generators: GeneratorEntry[]; colours: { name: str
  *  engine is not installed: the Describe box then offers only the AI. */
 export type DescribeEstimate = { eur_low?: number; eur_high?: number; minutes_low?: number; minutes_high?: number; basis?: string };
 export type Describe = {
-  route: "generator" | "edit" | "needs_ai" | "clarify";
+  route: "generator" | "edit" | "needs_ai" | "clarify" | "agent";
   generator?: string; title?: string; params?: Record<string, unknown>; notes?: string[];
   changes?: { param: string; label: string; from: unknown; to: unknown }[]; history?: "undo" | "revert";
   question?: string; reason?: string; estimate?: DescribeEstimate; understanding_cost_eur?: number | null;
+};
+export type FastPathTurn = {
+  route: Describe["route"]; title?: string; generator?: string; changes?: Describe["changes"]; notes?: string[]; history?: string;
+  question?: string; choices?: string[]; reason?: string; estimate?: DescribeEstimate; cost_eur: number; took_ms: number;
 };
 export type DescribeHint = { route: Describe["route"]; hint: string; confidence: number; estimate?: DescribeEstimate };
 

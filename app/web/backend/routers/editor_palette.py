@@ -169,7 +169,8 @@ async def editor_palette(space: str, chat_id: str, query: str = "", colour: Opti
         _known_colour(colour)
     hits: list[dict] = []
     if inventory_only:
-        report = await _cli(store, chat_id, ["inventory", "search", ids, "--limit", "500",
+        # 100 rows: the sandbox keeps 20k characters of output, more would be cut mid-JSON
+        report = await _cli(store, chat_id, ["inventory", "search", ids, "--limit", "100",
                                              "--json", "--store", str(settings.INVENTORIES_DIR),
                                              *(["--colour", str(colour)] if colour is not None else []),
                                              *(["--", query] if query else [])])

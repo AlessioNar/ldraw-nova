@@ -315,10 +315,10 @@
     const type = loader.getPartType(id.toLowerCase());
     if (!type || depth > 8) return null;
     const own = type.geometry && type.geometry.boundingBox;
-    // ldbi keeps a part's geometry already flipped into three.js axes (y and z negated); the picking boxes and the
-    // placements are in LDraw's, where a brick's studs point to -y. Without this flip the box sits upside down.
+    // ldbi's part geometry is in the frame the scene's part groups transform with sceneMatrix (rows negated), and outline()
+    // negates the same rows: the box must stay unflipped or the outline sits one brick height off the part.
     if (own && !own.isEmpty()) {
-      return new THREE.Box3(new THREE.Vector3(own.min.x, -own.max.y, -own.max.z), new THREE.Vector3(own.max.x, -own.min.y, -own.min.z));
+      return own.clone();
     }
     const box = new THREE.Box3();
     for (const step of type.steps || []) {

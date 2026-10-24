@@ -294,7 +294,7 @@ async def builds_edit(build_id: str):
     if files:
         return await edit_model_file(store, files[-1]["path"].name)
     key = store.build_key(build_id)
-    view = (await open_session(store, key, name=build_id)) if _session(store, key) is None else _view(store, key)
+    view = (await open_session(store, key, name=build_id, empty=True)) if _session(store, key) is None else _view(store, key)
     return {**view, "build": build_id, "file": None, "editor_url": f"/build/{build_id}/edit"}
 
 
@@ -303,16 +303,21 @@ class BuildChat(BaseModel):
     new: bool = False
 
 
+def attached_chat(store, build_id: str, llm_model_id: Optional[str] = None, new: bool = False) -> dict:
+    """The build's latest attached chat, created on first use (one saved history per build)."""
+    record = builds.ensure(store, build_id)
+    if not new:
+        attached = [c for c in (store.get_chat(i) for i in record["chats"]) if c and c.get("build_id") == build_id]
+        if attached:
+            return max(attached, key=lambda c: c["updated_at"])
+    chat = store.create_chat(llm_model_id=llm_model_id, build_id=build_id)
+    builds.attach_chat(store, build_id, chat["id"])
+    return chat
+
+
 @router.post("/api/builds/{build_id}/chat")
 async def builds_chat(build_id: str, body: BuildChat):
     """Start a chat attached to the build, or reopen its latest attached chat."""
     store = get_store()
     _check(store, build_id)
-    record = builds.ensure(store, build_id)
-    if not body.new:
-        attached = [c for c in (store.get_chat(i) for i in record["chats"]) if c and c.get("build_id") == build_id]
-        if attached:
-            return max(attached, key=lambda c: c["updated_at"])
-    chat = store.create_chat(llm_model_id=body.llm_model_id, build_id=build_id)
-    builds.attach_chat(store, build_id, chat["id"])
-    return chat
+    return attached_chat(store, build_id, body.llm_model_id, body.new)

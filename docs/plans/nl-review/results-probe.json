@@ -1,0 +1,535 @@
+{
+ "kind:lighthouse": {
+  "route": "generator",
+  "generator": "house",
+  "reason": ""
+ },
+ "kind:treehouse": {
+  "route": "generator",
+  "generator": "house",
+  "reason": ""
+ },
+ "kind:doghouse": {
+  "route": "generator",
+  "generator": "house",
+  "reason": ""
+ },
+ "kind:warehouse": {
+  "route": "generator",
+  "generator": "house",
+  "reason": ""
+ },
+ "kind:scarecrow": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "reason": ""
+ },
+ "kind:caravan": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "reason": ""
+ },
+ "kind:jetty": {
+  "route": "generator",
+  "generator": "courier-jet",
+  "reason": ""
+ },
+ "kind:carriage": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "reason": ""
+ },
+ "kind:cargo ship": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "reason": ""
+ },
+ "kind:spaceship": {
+  "route": "generator",
+  "generator": "starfighter",
+  "reason": ""
+ },
+ "kind:shipyard": {
+  "route": "generator",
+  "generator": "harbour-launch",
+  "reason": ""
+ },
+ "kind:bus stop": {
+  "route": "generator",
+  "generator": "delivery-van",
+  "reason": ""
+ },
+ "kind:cart": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "reason": ""
+ },
+ "kind:tank": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a tank"
+ },
+ "kind:ambulance": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a ambulance"
+ },
+ "kind:digger": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a digger"
+ },
+ "kind:hut": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a hut"
+ },
+ "kind:skyscraper": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a skyscraper"
+ },
+ "kind:farm": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a farm"
+ },
+ "kind:church": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a church"
+ },
+ "kind:bridge": {
+  "route": "needs_ai",
+  "generator": null,
+  "reason": "no generator builds a bridge"
+ },
+ "multi: red car + 'longer' as edit": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "params": {
+   "body": "red"
+  },
+  "notes": []
+ },
+ "multi: replace_model + set_colour": {
+  "route": "generator",
+  "generator": "tipper-truck",
+  "params": {},
+  "notes": []
+ },
+ "multi: edit house roof blue + wheels bigger": {
+  "route": "edit",
+  "generator": "house",
+  "params": {
+   "width": 8,
+   "depth": 6,
+   "courses": 6,
+   "door_side": "left",
+   "door_style": "traditional",
+   "windows": 2,
+   "window_sides": [
+    "front",
+    "left",
+    "right",
+    "back"
+   ],
+   "roof_style": "gable",
+   "roof_tiers": 0,
+   "porch": false,
+   "chimney": "none",
+   "dormer": false,
+   "wall_colour": "tan",
+   "trim_colour": "white",
+   "roof_colour": "blue",
+   "door_colour": "reddish brown",
+   "glass_colour": "clear",
+   "chimney_colour": "dark grey"
+  },
+  "changes": [
+   {
+    "param": "roof_colour",
+    "label": "roof colour",
+    "from": "dark red",
+    "to": "blue"
+   }
+  ],
+  "notes": [
+   "cannot change the wheels of this design"
+  ]
+ },
+ "clamp: house 40 x 40": {
+  "route": "generator",
+  "generator": "house",
+  "params": {
+   "width": 24,
+   "depth": 20
+  },
+  "notes": [
+   "width 40 adjusted to 24 (6-24, even)",
+   "depth 40 adjusted to 20 (6-20, even)"
+  ]
+ },
+ "clamp: house 7 wide": {
+  "route": "generator",
+  "generator": "house",
+  "params": {},
+  "notes": [
+   "width 7 adjusted to 8 (6-24, even)"
+  ]
+ },
+ "ambiguous 6x8 (studs vs bricks)": {
+  "route": "generator",
+  "generator": "house",
+  "params": {
+   "width": 6,
+   "depth": 8
+  },
+  "notes": [
+   "read the size as studs (not bricks)"
+  ]
+ },
+ "size big car (scale only)": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "params": {
+   "length": 28
+  },
+  "notes": []
+ },
+ "size big house": {
+  "route": "generator",
+  "generator": "house",
+  "params": {
+   "width": 20,
+   "depth": 16
+  },
+  "notes": [
+   "width 19 adjusted to 20 (6-24, even)"
+  ]
+ },
+ "size tiny house": {
+  "route": "generator",
+  "generator": "house",
+  "params": {
+   "width": 6
+  },
+  "notes": []
+ },
+ "blue house (body only)": {
+  "route": "generator",
+  "generator": "house",
+  "params": {
+   "wall_colour": "blue"
+  },
+  "notes": []
+ },
+ "red house with roof colour same": {
+  "route": "generator",
+  "generator": "house",
+  "params": {
+   "wall_colour": "dark red"
+  },
+  "notes": []
+ },
+ "pink car (colour not in palette?)": {
+  "route": "generator",
+  "generator": "grand-tourer",
+  "params": {
+   "body": "pink"
+  },
+  "notes": [
+   "unknown colour 'Light Nougat' for wheels; ignored"
+  ]
+ },
+ "house + tree + garden features": {
+  "route": "generator",
+  "generator": "house",
+  "params": {},
+  "notes": [
+   "tree is not supported by the house design; left out",
+   "garden fence is not supported by the house design; left out"
+  ]
+ },
+ "house + required balcony": {
+  "route": "needs_ai",
+  "reason": "a required feature (balcony) is beyond the generators"
+ },
+ "two storeys (coverage claims it)": {
+  "route": "generator",
+  "generator": "house",
+  "params": {},
+  "notes": [
+   "two storeys is not supported by the house design; left out"
+  ]
+ },
+ "car: make roof blue": {
+  "route": "edit",
+  "generator": "grand-tourer",
+  "params": {
+   "length": 18,
+   "wheelbase": 10,
+   "palette": "heritage-racing",
+   "roof": "blue"
+  },
+  "changes": [
+   {
+    "param": "roof",
+    "label": "roof",
+    "from": null,
+    "to": "blue"
+   }
+  ],
+  "notes": []
+ },
+ "jet: bigger wheels": {
+  "route": "needs_ai",
+  "reason": "cannot change the wheels of this design"
+ },
+ "house: remove the garage (unknown)": {
+  "route": "needs_ai",
+  "reason": "cannot remove garage on this design"
+ },
+ "edit with no current (non-generator build)": {
+  "route": "clarify",
+  "question": "There is nothing to change yet. What would you like to build?"
+ },
+ "roles": {
+  "house": [
+   "wall",
+   "trim",
+   "roof",
+   "door",
+   "window",
+   "porch",
+   "chimney",
+   "base"
+  ],
+  "grand-tourer": [
+   "body",
+   "roof",
+   "glass",
+   "wood",
+   "metal",
+   "trim",
+   "chassis",
+   "headlamp",
+   "tail_lamp",
+   "wheel",
+   "tyre"
+  ],
+  "delivery-van": [
+   "body",
+   "roof",
+   "glass",
+   "wood",
+   "metal",
+   "trim",
+   "chassis",
+   "headlamp",
+   "tail_lamp",
+   "wheel",
+   "tyre"
+  ],
+  "pickup": [
+   "body",
+   "roof",
+   "glass",
+   "wood",
+   "metal",
+   "trim",
+   "chassis",
+   "headlamp",
+   "tail_lamp",
+   "wheel",
+   "tyre"
+  ],
+  "tipper-truck": [
+   "body",
+   "roof",
+   "glass",
+   "wood",
+   "metal",
+   "trim",
+   "chassis",
+   "headlamp",
+   "tail_lamp",
+   "wheel",
+   "tyre"
+  ],
+  "touring-motorcycle": [
+   "body",
+   "roof",
+   "glass",
+   "wood",
+   "metal",
+   "trim",
+   "chassis",
+   "headlamp",
+   "tail_lamp",
+   "wheel",
+   "tyre"
+  ],
+  "harbour-launch": [
+   "body",
+   "roof",
+   "glass",
+   "wood",
+   "metal",
+   "trim",
+   "chassis",
+   "headlamp",
+   "tail_lamp",
+   "wheel",
+   "tyre"
+  ],
+  "courier-jet": [
+   "body",
+   "roof",
+   "glass",
+   "wood",
+   "metal",
+   "trim",
+   "chassis",
+   "headlamp",
+   "tail_lamp",
+   "wheel",
+   "tyre"
+  ],
+  "starfighter": [
+   "hull",
+   "wing",
+   "accent",
+   "canopy",
+   "engine"
+  ],
+  "arcade-bay": [
+   "body",
+   "accent",
+   "light"
+  ],
+  "street-lantern": [
+   "body",
+   "accent",
+   "light"
+  ]
+ },
+ "colour_params": {
+  "house": [
+   "wall_colour",
+   "trim_colour",
+   "roof_colour",
+   "door_colour",
+   "glass_colour",
+   "chimney_colour"
+  ],
+  "grand-tourer": [
+   "body",
+   "roof",
+   "trim",
+   "wheels",
+   "glass",
+   "accent"
+  ],
+  "delivery-van": [
+   "body",
+   "roof",
+   "trim",
+   "wheels",
+   "glass",
+   "accent"
+  ],
+  "pickup": [
+   "body",
+   "roof",
+   "trim",
+   "wheels",
+   "glass",
+   "accent"
+  ],
+  "tipper-truck": [
+   "body",
+   "roof",
+   "trim",
+   "wheels",
+   "glass",
+   "accent"
+  ],
+  "touring-motorcycle": [
+   "body",
+   "roof",
+   "trim",
+   "wheels",
+   "glass",
+   "accent"
+  ],
+  "harbour-launch": [
+   "body",
+   "roof",
+   "trim",
+   "glass",
+   "accent"
+  ],
+  "courier-jet": [
+   "body",
+   "roof",
+   "trim",
+   "glass",
+   "accent"
+  ],
+  "starfighter": [
+   "hull_colour",
+   "wing_colour",
+   "accent_colour",
+   "canopy_colour",
+   "engine_colour",
+   "engine_core"
+  ],
+  "arcade-bay": [
+   "colour",
+   "accent"
+  ],
+  "street-lantern": [
+   "colour",
+   "accent"
+  ]
+ },
+ "size_params": {
+  "house": [
+   "width",
+   "depth",
+   "courses",
+   "windows",
+   "roof_tiers"
+  ],
+  "grand-tourer": [
+   "length",
+   "wheelbase"
+  ],
+  "delivery-van": [
+   "length",
+   "wheelbase"
+  ],
+  "pickup": [
+   "length",
+   "wheelbase"
+  ],
+  "tipper-truck": [
+   "length",
+   "wheelbase"
+  ],
+  "touring-motorcycle": [],
+  "harbour-launch": [],
+  "courier-jet": [],
+  "starfighter": [
+   "length",
+   "wingspan"
+  ],
+  "arcade-bay": [
+   "height"
+  ],
+  "street-lantern": [
+   "height"
+  ]
+ }
+}

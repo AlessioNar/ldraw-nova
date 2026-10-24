@@ -31,18 +31,12 @@ const remainingBar = (left: number, owned: number) => `${owned > 0 ? Math.max(0,
 export default function PartsPanel({ ws }: { ws: Workspace }) {
   const [query, setQuery] = useState("");
   const colours = useColours();
-  const owned = useOwned(ws.id, ws.editTick);
+  const owned = useOwned(ws.id, query, ws.editTick);
   const library = useLibrary(ws.id, query);
   const disabled = ws.mode !== "edit" || !!ws.viewing;
   const colourName = colours.find((c) => c.code === ws.colour)?.name ?? `Colour ${ws.colour}`;
 
-  const q = query.trim().toLowerCase();
-  const rows = useMemo(() => {
-    const all = (owned.lines ?? []).filter((l) => !q || l.part.includes(q) || l.description.toLowerCase().includes(q) || l.colourName.toLowerCase().includes(q))
-      .map((l) => ({ ...l, used: owned.used.get(`${l.part}|${l.colour}`) ?? 0 }));
-    return all.sort((a, b) => Number(b.used > 0) - Number(a.used > 0));
-  }, [owned.lines, owned.used, q]);
-  const ownedParts = useMemo(() => new Set((owned.lines ?? []).map((l) => l.part)), [owned.lines]);
+  const rows = useMemo(() => [...(owned.lines ?? [])].sort((x, y) => Number(y.used > 0) - Number(x.used > 0)), [owned.lines]);
 
   return (
     <section className="ws-panel" role="tabpanel" aria-label="Parts">
@@ -51,7 +45,7 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
       <ColourPicker value={ws.colour} onPick={ws.setColour} label="Colour for new bricks" />
 
       <div className="ws-row-label"><span className="label">Your parts</span><span className="muted small">left after this draft, live</span></div>
-            <ul className="ws-parts">
+      <ul className="ws-parts">
         {rows.slice(0, SHOWN).map((r) => {
           const left = r.owned - r.used;
           return (
@@ -66,9 +60,9 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
             </li>
           );
         })}
-        {rows.length > SHOWN && <li className="ws-none muted small">{rows.length - SHOWN} more: refine the search.</li>}
+        {owned.more && <li className="ws-none muted small">More of your parts match: refine the search.</li>}
         {owned.lines && rows.length === 0 && (
-          <li className="ws-none muted small">{query ? "None of your parts match." : <>No parts list yet. <Link to="/parts">Add one in My Parts</Link> and its parts show up here.</>}</li>
+          <li className="ws-none muted small">{owned.none ? <>No parts list yet. <Link to="/parts">Add one in My Parts</Link> and its parts show up here.</> : "None of your parts match."}</li>
         )}
       </ul>
 
@@ -80,7 +74,7 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
             <button className="ws-part" disabled={disabled} onClick={() => ws.addPart(it.part, ws.colour)} title={disabled ? "Switch to Edit mode to add parts" : `Add ${it.description} in ${colourName}`}>
               <span className="ws-pic" style={{ background: colourHex(ws.colour) }} />
               <span className="ws-nm">{it.description || it.part}<small>{it.part}</small></span>
-              {!ownedParts.has(it.part.toLowerCase().replace(/\.dat$/, "")) && <span className="ws-tag">not owned</span>}
+              {!it.in_inventory && <span className="ws-tag">not owned</span>}
             </button>
           </li>
         ))}

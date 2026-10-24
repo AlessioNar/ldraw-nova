@@ -13,8 +13,9 @@ export type Proposal = { id: string; created_at: number; summary: { added: numbe
 export type WorkspaceData = {
   build?: unknown; versions: WsVersion[]; draft: DraftInfo | null;
   generator: { id: string; params: Record<string, unknown> } | null; proposals: Proposal[]; chat_id: string | null;
+  chat_mode?: "ai" | "quick"; agent_chat?: boolean;
 };
-export type DescribeResult = Partial<Describe> & { route: Describe["route"]; draft?: DraftInfo | null };
+export type DescribeResult = Partial<Describe> & { route: Describe["route"]; draft?: DraftInfo | null; chat_id?: string; took_ms?: number; choices?: string[]; chat_mode?: "ai" | "quick" };
 export type RegenerateResult = { replaced_manual_edits: boolean; draft?: DraftInfo | null };
 
 // ---- canvas messages (window.postMessage, type prefixed "obd:") ----
@@ -26,7 +27,10 @@ export type CanvasEvent =
   | { type: "obd:selection"; pieces: CanvasPiece[] }
   | { type: "obd:changed"; revision: number; undo_depth: number; redo_depth: number }
   | { type: "obd:error"; message: string }
-  | { type: "obd:mode"; mode: CanvasMode };
+  | { type: "obd:mode"; mode: CanvasMode }
+  | { type: "obd:tool"; tool: Tool }
+  | { type: "obd:steps"; total: number; current: number }
+  | { type: "obd:shortcut"; action: "save" };
 export type CanvasCommand =
   | { cmd: "undo" } | { cmd: "redo" } | { cmd: "delete" } | { cmd: "reload" } | { cmd: "focus" } | { cmd: "back-to-draft" }
   | { cmd: "set-tool"; tool: Tool } | { cmd: "set-colour"; colour: number } | { cmd: "add-part"; part: string; colour: number }

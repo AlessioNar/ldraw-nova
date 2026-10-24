@@ -500,13 +500,14 @@ test('overlapping parts: another click on the same spot steps to the next part; 
   await page.locator('#plans button').first().click();
   await waitStatus(page, /^Revision 1/);
 
-  // The picking box of a brick is in LDraw's frame: it rises to -y (24 LDU tall, a little below 0 for the stud
-  // cavities), not the other way up as ldbi's flipped geometry would give.
+  // The picking box of a brick is in LDraw's frame, which is ldbi's part geometry as it is: the origin is the top of
+  // the body, so the body goes down to +24 LDU and the studs rise a little above 0. It must not be flipped, or the
+  // selection outline would sit one brick height off the part (the canvas browser test compares both).
   const brick = await page.evaluate(() => editorState.shown.boxes['3001.dat']);
-  assert.ok(brick.min[1] <= -24 && brick.max[1] <= 8 && brick.max[1] >= 0, `3001 box ${JSON.stringify(brick)}`);
+  assert.ok(brick.min[1] >= -8 && brick.min[1] <= 0 && brick.max[1] >= 20 && brick.max[1] <= 28, `3001 box ${JSON.stringify(brick)}`);
 
-  // The cap sits on the brick: the middle of the seam between them is under both boxes.
-  const spot = await spotAt(page, [0, -24, 0]);
+  // The cap sits on the brick: the pod's studs (y -4 to 0) are inside the cap's boxes, so that spot is under both.
+  const spot = await spotAt(page, [0, -2, 0]);
   const seen = [];
   for (let i = 0; i < 3; i++) {
     await page.mouse.click(...spot);

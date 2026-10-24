@@ -48,8 +48,10 @@ async def describe(body: DescribeBody):
 
 
 @router.get("/api/describe/estimate")
-def describe_estimate(text: str = Query(default="", max_length=understand.MAX_REQUEST_CHARS * 2),
+async def describe_estimate(text: str = Query(default="", max_length=understand.MAX_REQUEST_CHARS * 2),
                       generator: Optional[str] = Query(default=None, max_length=60)):
     """Rules-only guess for the composer hint: no model call, no toolkit call, milliseconds. Same route names."""
+    if generator and generator_bridge.cached() is None:
+        await generator_bridge.ensure()       # cold start only: without the registry no edit rule can name its generator
     current = {"generator": generator, "params": {}} if generator else None
     return fast_path.rules_guess(text, current)
