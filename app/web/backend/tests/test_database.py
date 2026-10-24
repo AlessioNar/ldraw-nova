@@ -9,7 +9,6 @@ import json
 import threading
 from decimal import Decimal
 from pathlib import Path
-from types import SimpleNamespace
 
 import litellm
 import pytest
@@ -29,7 +28,7 @@ from db import migrate
 from db.models import AppSetting, RequestLog, UsageEvent, metadata
 from main import app
 from test_agent import chunk, scripted
-from test_fast_path import ENTRIES, HAIKU, HOUSE, REGISTRY, reply
+from test_fast_path import HAIKU, HOUSE, REGISTRY, reply
 
 REFERENCE_SQL = next((p for p in (Path(__file__).resolve().parents[i] / "docs/plans/postgres/sql/0001_init.sql" for i in (3, 4))
                       if p.exists()), Path("/opt/ldraw-nova/docs/plans/postgres/sql/0001_init.sql"))
