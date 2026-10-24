@@ -155,7 +155,10 @@ def _load(inventory_id: str) -> dict:
 
 def summary(data: dict) -> dict:
     rows = data.get("rows", [])
+    review = data.get("review", [])         # colour-family pieces not counted as owned (Pileometer); keys only when present
+    extra = {"review_items": len(review), "review_pieces": sum(r["qty"] for r in review)} if review else {}
     return {
+        **extra,
         "id": data["id"], "name": data.get("name", data["id"]), "created_at": data.get("created_at", 0.0),
         "source_filename": data.get("source_filename") or None,
         "distinct_parts": len({r["part"] for r in rows}), "distinct_colours": len({r["colour"] for r in rows}),
@@ -277,18 +280,42 @@ def detail(inventory_id: str, query: str = "", colour: int | None = None, limit:
 
 # --- import ------------------------------------------------------------------
 
-async def import_csv(name: str, csv_text: str, include_spares: bool = False) -> dict:
-    """Parses and stores an upload with the toolkit CLI; returns {"inventory": summary, "report": {...}}."""
+def clean_family_colours(value: Any) -> dict[str, int]:
+    if value in (None, {}):
+        return {}
+    if not isinstance(value, dict) or len(value) > 20 or not all(isinstance(k, str) and re.fullmatch(r"[A-Za-z]{1,20}", k) for k in value):
+        raise InventoryError(400, "family_colours must map colour family names to LDraw colour codes")
+    if not all(isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 9999 for v in value.values()):
+        raise InventoryError(400, "family_colours must map colour family names to LDraw colour codes")
+    return dict(value)
+
+
+def remap_families(inventory_id: str) -> tuple[str, str]:
+    """(name, stored CSV text) of an inventory whose colour families are being mapped again."""
+    data = _load(inventory_id)
+    path = _path(inventory_id, "csv")
+    if (data.get("import") or {}).get("dialect") != "pileometer" or not path.is_file():
+        raise InventoryError(400, "Only a Pileometer import has colour families")
+    return data.get("name", inventory_id), path.read_text(encoding="utf-8")
+
+
+async def import_csv(name: str, csv_text: str, include_spares: bool = False, family_colours: dict | None = None,
+                     replace: str = "") -> dict:
+    """Parses and stores an upload with the toolkit CLI; returns {"inventory": summary, "report": {...}}.
+
+    `replace` is the id of an inventory to overwrite in place (same name), used to map colour families again.
+    """
     name = clean_name(name)
+    family_colours = clean_family_colours(family_colours)
     if not isinstance(csv_text, str):
         raise InventoryError(400, "csv must be text")
     raw = csv_text.encode("utf-8")
     if len(raw) > MAX_CSV_BYTES:
         raise InventoryError(413, f"File exceeds the {MAX_CSV_BYTES // (1024 * 1024)} MB limit")
-    inventory_id = slugify(name)
+    inventory_id = replace or slugify(name)      # a replaced inventory keeps its id even after a rename
     if inventory_id in RESERVED_IDS:
         raise InventoryError(400, f"The name {name!r} is reserved; choose another one")
-    if _name_taken(name):
+    if not replace and _name_taken(name):
         raise InventoryError(409, f"An inventory called {name!r} already exists")
     folder = settings.INVENTORIES_DIR
     folder.mkdir(parents=True, exist_ok=True)
@@ -301,8 +328,9 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False) -> 
         # The report is the CLI's stdout, redirected to a file: it carries every row, far past the
         # sandbox's output cap. Arguments follow the script as positional parameters, never the shell text.
         argv = ["bash", "-c", 'exec "$@" > report.json', "import", str(settings.TOOLKIT_PYTHON), "-m", "ldraw_tools.cli",
-                "inventory", "import", "upload.csv", f"--name={name}", "--store", "store", "--json",
-                *(["--include-spares"] if include_spares else [])]
+                "inventory", "import", "upload.csv", f"--name={replace or name}", "--store", "store", "--json",
+                *(["--include-spares"] if include_spares else []),
+                *(f"--family-colour={family}={code}" for family, code in family_colours.items())]
         result = await sandbox.run(argv, work, timeout=IMPORT_TIMEOUT, env_extra=toolkit.environment())
         if result.timed_out:
             raise InventoryError(504, "Importing the file took too long")
@@ -320,14 +348,17 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False) -> 
             log.error("inventory import failed (exit %s): %s %s", result.exit_code, report.get("error"), result.stderr[-2000:])
             raise InventoryError(500, "The toolkit could not import the file")
         data = report["inventory"]
+        data["name"] = name
         if data.get("id") != inventory_id:
             log.error("toolkit named the inventory %r, expected %r", data.get("id"), inventory_id)
             raise InventoryError(500, "The toolkit could not import the file")
         data["source_filename"] = f"{inventory_id}.csv"
         data["import"] = {key: report.get(key, 0 if key != "dialect" else "")
                           for key in ("dialect", "total_rows", "total_pieces", "spare_pieces")}
+        if report.get("pileometer"):
+            data["import"]["pileometer"] = report["pileometer"]
         with _lock:
-            if _name_taken(name):
+            if not replace and _name_taken(name):
                 raise InventoryError(409, f"An inventory called {name!r} already exists")
             atomic_write(_path(inventory_id, "csv"), raw)
             atomic_write(_path(inventory_id), (json.dumps(data, indent=2) + "\n").encode())
@@ -336,6 +367,7 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False) -> 
             "total_pieces": report.get("total_pieces", 0), "spare_pieces": report.get("spare_pieces", 0),
             "unmapped_parts": data.get("unmapped_parts", []), "unmapped_colours": data.get("unmapped_colours", []),
             "warnings": report.get("warnings", []),
+            **({"pileometer": report["pileometer"]} if report.get("pileometer") else {}),
         }}
     finally:
         await asyncio.to_thread(shutil.rmtree, work, True)

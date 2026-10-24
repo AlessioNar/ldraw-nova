@@ -505,3 +505,46 @@ def test_turn_after_inventory_deleted_is_rejected_cleanly(stocked, model_id, sto
     with pytest.raises(ValueError, match="'box' no longer exists"):
         asyncio.run(go())
     assert store.messages(chat["id"]) == []
+
+
+# --- Brickit Pileometer exports ---------------------------------------------------
+
+PILE = 'Scan,Part,PartName,Color,Quantity\n1,3001,"Brick 2 x 4",Grays,2\n2,3001,"Brick 2 x 4",Grays,1\n1,3003,"Brick 2 x 2",Reds,4\n1,Unknown,"",Reds,2\n'
+
+
+def stored(inventory_id="pile"):
+    return json.loads((settings.INVENTORIES_DIR / f"{inventory_id}.json").read_text())
+
+
+def test_pileometer_upload_keeps_families_for_review_and_lists_unmatched_parts(client, toolkit_cli):
+    r = client.post("/api/inventories", json={"name": "Pile", "csv": PILE})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    report = body["report"]
+    assert report["dialect"] == "pileometer"
+    assert (report["pileometer"]["scans"], report["pileometer"]["rows"], report["pileometer"]["pieces"]) == (2, 4, 9)
+    assert {f["family"]: f["colour"] for f in report["pileometer"]["families"]} == {"Grays": None, "Reds": None}
+    assert [(u["rb_part"], u["qty"]) for u in report["unmapped_parts"]] == [("Unknown", 2)]
+    data = stored()
+    assert data["rows"] == [] and {(i["part"], i["family"], i["qty"]) for i in data["review"]} == {("3001", "Grays", 3), ("3003", "Reds", 4)}
+    assert (body["inventory"]["total_pieces"], body["inventory"]["review_pieces"], body["inventory"]["review_items"]) == (0, 7, 2)
+
+
+def test_pileometer_assign_on_upload_and_again_later(client, toolkit_cli):
+    r = client.post("/api/inventories", json={"name": "Pile", "csv": PILE, "family_colours": {"Grays": 72}}).json()
+    assert {f["family"]: f["colour"] for f in r["report"]["pileometer"]["families"]} == {"Grays": 72, "Reds": None}
+    row = stored()["rows"][0]
+    assert (row["part"], row["colour"], row["qty"], row["colour_approximate"]) == ("3001", 72, 3, True)
+    again = client.put("/api/inventories/pile/family-colours", json={"family_colours": {"Grays": 0, "Reds": 14}})
+    assert again.status_code == 200, again.text
+    data = stored()
+    assert {(r["part"], r["colour"]) for r in data["rows"]} == {("3001", 0), ("3003", 14)} and not data.get("review")
+    assert data["name"] == "Pile" and len(client.get("/api/inventories").json()["inventories"]) == 1
+    assert client.put("/api/inventories/pile/family-colours", json={"family_colours": {"Purples": 4}}).status_code == 400
+    assert client.put("/api/inventories/pile/family-colours", json={"family_colours": {"Reds": "x"}}).status_code == 400
+
+
+def test_family_assignment_refused_for_other_formats(client, toolkit_cli):
+    client.post("/api/inventories", json={"name": "plain", "csv": "Part,Color,Quantity\n3001,4,1\n"})
+    assert client.put("/api/inventories/plain/family-colours", json={"family_colours": {"Reds": 4}}).status_code == 400
+    assert client.put("/api/inventories/missing/family-colours", json={"family_colours": {}}).status_code == 404
