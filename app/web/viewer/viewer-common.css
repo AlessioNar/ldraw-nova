@@ -1,22 +1,18 @@
-/* Styles shared by viewer.html and player.html. */
+/* Styles shared by viewer.html, player.html and editor.html. Tokens come from tokens.css (same as the app). */
+@import url("tokens.css");
 :root {
-  --bg: #f2f2f2; --bar: rgba(255,255,255,.92); --fg: #1d1d1f; --muted: #6b6b70;
-  --btn: #fff; --btn-border: #d4d4d8; --danger: #b42318;
+  /* the 3D scene itself is drawn on a light backdrop (set in glb-view.js / player.js), in both themes */
+  --stage: #f2f2f2;
+  --bar: var(--surface);
+  --btn: var(--surface);
+  --btn-border: var(--border-strong);
+  --btn-active: var(--accent-solid); --btn-active-fg: var(--accent-fg);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bar: rgba(28,28,30,.92); --fg: #f4f4f5; --muted: #a1a1aa;
-    --btn: #2c2c2e; --btn-border: #3f3f46; --danger: #f97066;
-  }
-}
-:root[data-theme="dark"] {
-  --bar: rgba(28,28,30,.92); --fg: #f4f4f5; --muted: #a1a1aa;
-  --btn: #2c2c2e; --btn-border: #3f3f46; --danger: #f97066;
-}
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
-             font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+html, body { margin: 0; height: 100%; background: var(--stage); color: var(--fg);
+             font: 13px/1.4 var(--font-text); }
 #stage { position: fixed; inset: 0; }
 #title strong { font-weight: 600; }
-#parts { color: var(--muted); }
+#parts { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
 #status.error { color: var(--danger); }
 .segmented { display: inline-flex; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }

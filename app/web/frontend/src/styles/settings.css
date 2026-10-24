@@ -39,7 +39,7 @@
 .agent-test-row { display: flex; align-items: center; gap: 10px; }
 .llm-form label { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .llm-form label > span { font-weight: 500; font-size: 13px; }
-.llm-form fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.llm-form fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .llm-form fieldset.agent-fields { border: 0; padding: 0; margin: 0; gap: 12px; min-width: 0; align-items: stretch; }
 .llm-form legend { font-weight: 500; font-size: 13px; padding: 0 4px; }
 .row { display: flex; gap: 12px; width: 100%; }
@@ -57,13 +57,13 @@
 .agent-details { display: flex; flex-direction: column; gap: 5px; padding: 10px 0 4px; }
 .agent-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; }
 .agent-facts dt { font-size: 11px; color: var(--muted); }
-.agent-facts dd { font-size: 13px; font-weight: 600; margin: 1px 0 0; }
+.agent-facts dd { font-family: var(--font-mono); font-size: 13px; font-weight: 600; margin: 1px 0 0; }
 .agent-source { font-size: 11px; }
 .environment-value { display: flex; align-items: center; gap: 8px; min-width: 0; width: 100%; }
 .required-environment-row > .environment-value { font-weight: normal; white-space: normal; }
 .environment-value input { min-width: 0; flex: 1; }
 .environment-warning { position: relative; color: var(--warn); display: inline-flex; flex-shrink: 0; cursor: help; }
-.environment-tooltip { display: none; position: absolute; right: 0; bottom: calc(100% + 8px); width: 240px; max-width: 65vw; padding: 8px 10px; font-size: 12px; font-weight: normal; color: var(--fg); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 6px; z-index: 3; }
+.environment-tooltip { display: none; position: absolute; right: 0; bottom: calc(100% + 8px); width: 240px; max-width: 65vw; padding: 8px 10px; font-size: 12px; font-weight: normal; color: var(--fg); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: var(--radius-sm); z-index: 3; }
 .environment-warning:hover .environment-tooltip, .environment-warning:focus .environment-tooltip { display: block; }
 .settings-workers { margin-bottom: 28px; }
 .provider-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 24px; }
