@@ -23,7 +23,18 @@ export type ModelFile = {
 };
 
 /** A model a chat produced: a reference into data/generated. */
-export type ChatModel = ModelFile & { id: string; warnings: string[]; created_at: number };
+export type ModelChanges = {
+  delta: number; total: number; summary: string;
+  added: { part: string; name: string; colour: string; qty: number }[];
+  removed: { part: string; name: string; colour: string; qty: number }[];
+  recoloured: { part: string; name: string; from: string; to: string; qty: number }[];
+};
+export type ChatModel = ModelFile & {
+  id: string; warnings: string[]; created_at: number;
+  version?: number; latest?: boolean; title?: string; // per-chat version (v1, v2, ...) and a human title
+  origin?: string | null; // "editor": published by the person from the 3D editor
+  changes?: ModelChanges | null; // from the previous version's BOM
+};
 
 export type Chat = {
   id: string;
@@ -55,6 +66,8 @@ export type Message = {
   _documents?: { name: string; size: number; url: string | null }[];
   _hidden?: boolean;
   _ui_only?: boolean;
+  _label?: string; // text shown for an app-recorded user message (the editor publish) instead of its content
+  _editor_publish?: boolean; // the person published from the 3D editor; its card follows this message
   _error?: boolean;
   _notice?: boolean;
   _reasoning?: string;

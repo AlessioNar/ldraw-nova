@@ -17,6 +17,13 @@ export function placeChatModels(messages: Message[], models: Record<string, Chat
     lastAssistant = undefined;
   }
   for (const message of messages) {
+    if (message.role === "user" && message._editor_publish) {            // the person's own publish: its card follows its message
+      finishTurn();
+      const cards = (message._models ?? []).filter(id => models[id] && !assigned.has(id)).map(id => models[id]);
+      if (cards.length) byMessage.set(message.id, cards);
+      cards.forEach(m => assigned.add(m.id));
+      continue;
+    }
     if (message.role === "user" && !message._hidden && !message._ui_only) finishTurn();
     if (message.role === "assistant" && !message._hidden && !message._ui_only) lastAssistant = message.id;
     (message._models ?? []).forEach(id => turnModels.add(id));

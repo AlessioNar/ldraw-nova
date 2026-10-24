@@ -13,3 +13,5 @@
                 background: var(--bar); border: 1px solid var(--btn-border); }
 #desktop-note[hidden] { display: none; }
 body.readonly .editing { display: none; }
+
+#chat-link { font-size: 13px; white-space: nowrap; }

@@ -80,7 +80,7 @@ export default function MessageList({ detail, running, draft, persisting, tools,
       flush();
       nodes.push(
         <div key={m.id} className="msg user">
-          <div className="bubble">{text(m)}
+          <div className="bubble">{m._editor_publish ? m._label ?? text(m) : text(m)}
             {Array.isArray(m.content) && <div className="attachments">{(m.content as ContentBlock[]).filter(b => b.type === "image_url").map((b, i) => <img key={i} src={b.image_url?.url} alt={`Attached image ${i + 1}`} />)}</div>}
             {!!m._documents?.length && <div className="document-attachments">{m._documents.map((d, i) =>
               <a className="document-chip" key={i} href={d.url ?? undefined} download={d.name}><DocumentIcon /><span>{d.name}</span></a>
@@ -88,6 +88,10 @@ export default function MessageList({ detail, running, draft, persisting, tools,
           </div>
         </div>
       );
+      const published = cards.byMessage.get(m.id) ?? [];
+      if (m._editor_publish && (published.length || m.parts_check)) {
+        nodes.push(<div key={`cards-${m.id}`} className="msg assistant">{published.map(modelCard)}{m.parts_check && <PartsCheckCard check={m.parts_check} />}</div>);
+      }
       continue;
     }
     if (text(m)) {

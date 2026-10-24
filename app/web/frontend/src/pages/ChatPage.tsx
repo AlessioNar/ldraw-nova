@@ -92,6 +92,7 @@ export default function ChatPage() {
   if (notFound) return <div className="page"><p className="muted">This chat doesn't exist (any more).</p></div>;
   if (!detail) return <div className="page"><p className="muted">Loading…</p></div>;
 
+  const latest = Object.values(detail.models).filter(m => m.version != null).sort((a, b) => b.version! - a.version!)[0];
   return (
     <div className="chat-page">
       <header className="chat-head">
@@ -107,6 +108,7 @@ export default function ChatPage() {
         <Composer
           key={id}
           initialOptions={detail.chat.options}
+          continuingFrom={latest ? `v${latest.version}${latest.title ? `: ${latest.title}` : ""}` : undefined}
           llmId={llmId}
           onLlmChange={setLlmId}
           onSend={send}

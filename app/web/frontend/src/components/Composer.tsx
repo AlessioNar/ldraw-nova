@@ -10,7 +10,7 @@ import DocumentIcon from "./DocumentIcon";
 
 const DOCUMENT_TYPES = ".pdf,.txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.rtf,.docx,.xlsx,.pptx,.mpd,.ldr,.dat";
 
-export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions }: {
+export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions, continuingFrom }: {
   llmId: string | null;
   onLlmChange: (id: string) => void;
   onSend: (text: string, options: TurnOptions, images: string[], documents: DocumentUpload[]) => Promise<void> | void;
@@ -19,6 +19,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   autoFocus?: boolean;
   initialText?: string;
   initialOptions?: TurnOptions;
+  continuingFrom?: string; // "v2: Red car" once the chat has a model: follow-ups continue from it
 }) {
   const { llms, defaultWorkerId } = useApp();
   const [text, setText] = useState(initialText);
@@ -137,6 +138,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     || (!!profile?.context_budgets.length && options.context_tokens !== profile.context_window);
 
   return <form className="composer" onSubmit={submit}>
+    {continuingFrom && <div className="continuing-chip" title="A follow-up continues from this model, not from scratch">Continuing from {continuingFrom}</div>}
     {!llms.length && <div className="composer-notice">No model configured yet. <Link to="/settings">Add a model in Settings</Link> to start building.</div>}
     <div className="composer-input">
       <div className="attach-wrap">
@@ -157,7 +159,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
       <input ref={upload} hidden type="file" aria-label="Image files" accept="image/png,image/jpeg,image/webp" multiple disabled={disabled} onChange={e => {
         const files = Array.from(e.target.files ?? []); e.target.value = ""; void attach(files);
       }} />
-      <textarea ref={ref} rows={2} value={text} autoFocus={autoFocus} aria-label="Message" placeholder="Describe a model to build…"
+      <textarea ref={ref} rows={2} value={text} autoFocus={autoFocus} aria-label="Message" placeholder={continuingFrom ? "Describe a change to this model, or ask for a new one…" : "Describe a model to build…"}
         onChange={e => setText(e.target.value)} onKeyDown={onKeyDown} />
     </div>
     {!!images.length && <div className="attachments">{images.map((img, index) => <div key={index}>

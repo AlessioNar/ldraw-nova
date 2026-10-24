@@ -238,6 +238,9 @@ def check_note(check: dict, ids: str, shown: int = 8) -> str:
 
 def attach_parts_checks(messages: list[dict]) -> None:
     """Chat history for the UI: move a tool message's `_parts_check` onto the assistant message that called the tool."""
+    for m in messages:                         # the person's editor publish carries its own check
+        if m.get("_editor_publish") and m.get("_parts_check"):
+            m["parts_check"] = m.pop("_parts_check")
     checks = {m.get("tool_call_id"): m.pop("_parts_check") for m in messages if m.get("role") == "tool" and m.get("_parts_check")}
     if not checks:
         return

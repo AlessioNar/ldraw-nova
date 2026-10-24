@@ -91,6 +91,7 @@ def usage_totals(messages: list[dict]) -> dict:
 
 def turn_stats(messages: list[dict]) -> dict:
     """Steps and wall-clock duration of a chat's latest turn (everything after the last user message)."""
+    messages = [m for m in messages if not m.get("_editor_publish")]       # the person's editor publish starts no turn
     start = max((i for i, m in enumerate(messages) if m.get("role") == "user"), default=-1)
     turn = messages[start + 1:]
     steps = sum(isinstance(m.get("_usage"), dict) for m in turn)
