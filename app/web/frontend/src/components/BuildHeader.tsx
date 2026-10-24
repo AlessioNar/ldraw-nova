@@ -13,6 +13,9 @@ const TOOL_WORDS: Record<string, string> = {
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 const minutes = (s: number) => (s < 60 ? `${s} s` : `${Math.round(s / 60)} min`);
 
+/** True when the last visible message is the notice that the turn stopped at its per-request budget. */
+export const budgetStopped = (messages: ChatDetail["messages"]) => !!messages.filter(m => !m._hidden).slice(-1)[0]?._budget_reached;
+
 /** First line of a report_progress summary, stripped of markdown marks. */
 const plain = (md: string) => (md.split("\n").find(l => l.trim()) ?? "").replace(/[*_`#>]/g, "").replace(/^\s*[-\d.]+\s+/, "").trim();
 
@@ -34,8 +37,10 @@ export default function BuildHeader({ detail, chats, running, connected, activit
   const doneSteps = usage?.turn_steps ?? 0;
   if (!running && !doneSteps) return null;
 
-  const cost = usage?.cost_eur ?? 0;
-  const priced = !!usage && (cost > 0 || !usage.unpriced_steps);
+  const chatCost = usage?.cost_eur ?? 0;
+  const cost = usage?.request_cost_eur ?? chatCost;            // the budget is per request; the chat total is shown apart
+  const stopped = !running && budgetStopped(detail.messages);
+  const priced = !!usage && (chatCost > 0 || !usage.unpriced_steps);
   const budget = detail.chat.options?.budget_eur;
   const ratio = budget ? cost / budget : 0;
   const level = ratio >= 1 ? "over" : ratio >= 0.8 ? "near" : "";
@@ -49,6 +54,7 @@ export default function BuildHeader({ detail, chats, running, connected, activit
   const costButton = <button type="button" className={`bh-cost ${level}`} aria-expanded={open} onClick={() => setOpen(o => !o)}
     title="Show where the cost goes">
     <strong>{euro}</strong>{budget ? <span> / €{budget.toFixed(2)}</span> : null}
+    <small className="bh-scope">this request</small>
     {budget ? <i className="bh-bar" aria-hidden><b style={{ width: `${Math.min(100, ratio * 100)}%` }} /></i> : null}
   </button>;
 
@@ -56,11 +62,12 @@ export default function BuildHeader({ detail, chats, running, connected, activit
     const jump = () => [...document.querySelectorAll('[id^="model-"]')].pop()?.scrollIntoView({ block: "center", behavior: "smooth" });
     const hasModel = Object.keys(detail.models).length > 0;
     return (
-      <div className="build-header done" role="status">
+      <div className={`build-header done${stopped ? " stopped" : ""}`} role="status">
         <div className="bh-line">
-          <span className="bh-state">Done</span>
+          <span className={`bh-state${stopped ? " stopped" : ""}`}>{stopped ? "Stopped: budget reached" : "Done"}</span>
           {usage?.duration_s != null && <span>{minutes(usage.duration_s)}</span>}
           {costButton}
+          {priced && cost !== chatCost && <span className="bh-total" title="Everything this chat has cost, all requests">chat total €{chatCost.toFixed(2)}</span>}
           <span>{doneSteps} step{doneSteps === 1 ? "" : "s"}</span>
           {hasModel && <button type="button" className="bh-jump" onClick={jump}>Jump to result</button>}
         </div>
@@ -85,6 +92,7 @@ export default function BuildHeader({ detail, chats, running, connected, activit
       </div>
       <div className="bh-line">
         {costButton}
+        {priced && cost !== chatCost && <span className="bh-total" title="Everything this chat has cost, all requests">chat total €{chatCost.toFixed(2)}</span>}
         {workers.length > 0 && <span className="bh-workers">{workers.length} worker{workers.length === 1 ? "" : "s"}{active ? ` (${active} running)` : ""}</span>}
         <button type="button" className="bh-stop" onClick={onStop}>Stop</button>
       </div>

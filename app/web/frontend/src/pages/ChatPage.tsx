@@ -4,7 +4,8 @@ import { api, isPending, type ChatDetail, type TurnOptions, type DocumentUpload 
 import Composer from "../components/Composer";
 import MessageList from "../components/MessageList";
 import TurnStatus from "../components/TurnStatus";
-import BuildHeader from "../components/BuildHeader";
+import BuildHeader, { budgetStopped } from "../components/BuildHeader";
+import BudgetStop, { CONTINUE_TEXT } from "../components/BudgetStop";
 import { useApp } from "../context";
 import { useChatStream } from "../hooks/useChatStream";
 
@@ -89,6 +90,11 @@ export default function ChatPage() {
     refreshChats();
   }
 
+  const budget = detail?.chat.options?.budget_eur ?? null;
+  const reached = !running && !!detail && budgetStopped(detail.messages);
+  // "Continue" buttons: same work, a fresh request with a short fixed message and (optionally) a higher budget.
+  const continueWith = (next: number) => send(CONTINUE_TEXT, { ...detail!.chat.options, budget_eur: next } as TurnOptions, [], []).catch(() => {});
+
   if (notFound) return <div className="page"><p className="muted">This chat doesn't exist (any more).</p></div>;
   if (!detail) return <div className="page"><p className="muted">Loading…</p></div>;
 
@@ -103,6 +109,7 @@ export default function ChatPage() {
       <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} workers={workers} now={now} error={error}
         scrollerRef={scrollerRef} bottomRef={bottomRef} onScroll={onScroll} />
       <div className="composer-wrap">
+        {reached && budget ? <BudgetStop budget={budget} onContinue={continueWith} /> : null}
         <TurnStatus chatId={id} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer
           key={id}
@@ -112,6 +119,7 @@ export default function ChatPage() {
           onSend={send}
           onStop={() => api.cancel(id)}
           running={running}
+          budgetReached={reached}
         />
       </div>
     </div>

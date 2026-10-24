@@ -57,12 +57,13 @@ export type Message = {
   _ui_only?: boolean;
   _error?: boolean;
   _notice?: boolean;
+  _budget_reached?: { spent_eur: number; limit_eur: number }; // the turn stopped at the per-request budget
   _reasoning?: string;
   parts_check?: PartsCheck; // set by the backend once a model is published under a parts steering mode
 };
 
 export type Usage = { prompt: number; completion: number; cache_read: number; cache_write: number; cost_usd?: number };
-export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number; worker_cost_eur?: number; turn_steps?: number; duration_s?: number | null };
+export type UsageTotals = Usage & { steps: number; cost_usd: number; cost_eur: number; eur_per_usd: number; unpriced_steps: number; worker_cost_eur?: number; turn_steps?: number; request_cost_eur?: number; duration_s?: number | null };
 export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<string, ChatModel>; usage?: UsageTotals };
 
 type Capability = boolean | "auto";

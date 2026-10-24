@@ -37,8 +37,16 @@ def saved_workers(stored: list[dict]) -> set[str]:
 class BudgetLedger:
     def __init__(self, limit_eur: float | None = None) -> None:
         self.limit_eur = limit_eur
+        self.baseline_eur = 0.0     # chat cost before this request: the limit applies to what is spent after it
         self._workers: dict[str, _Worker] = {}
         self._lock = threading.Lock()
+
+    def begin_request(self, stored: list[dict]) -> None:
+        """Start a request (one user message): the budget counts only what is spent from here on."""
+        self.baseline_eur = usage.usage_totals(stored)["cost_eur"]
+
+    def _request_stored_eur(self, stored: list[dict]) -> float:
+        return max(usage.usage_totals(stored)["cost_eur"] - self.baseline_eur, 0.0)
 
     @staticmethod
     def _usd(eur: float) -> float:
@@ -55,7 +63,7 @@ class BudgetLedger:
         if not self.limit_eur:
             return None
         rate = settings.eur_per_usd()
-        spent = usage.usage_totals(stored)["cost_eur"] + (self._unsaved_usd(stored) + self._outstanding_usd(skip)) * rate
+        spent = self._request_stored_eur(stored) + (self._unsaved_usd(stored) + self._outstanding_usd(skip)) * rate
         return self.limit_eur - spent
 
     @property
@@ -93,9 +101,9 @@ class BudgetLedger:
             return self._workers[worker_id].spent * settings.eur_per_usd()
 
     def planner_spent_eur(self, stored: list[dict]) -> float:
-        """What the planner's budget check compares with the limit: stored cost plus unsaved worker cost."""
+        """What the planner's budget check compares with the limit: this request's stored cost plus unsaved worker cost."""
         with self._lock:
-            return usage.usage_totals(stored)["cost_eur"] + self._unsaved_usd(stored) * settings.eur_per_usd()
+            return self._request_stored_eur(stored) + self._unsaved_usd(stored) * settings.eur_per_usd()
 
     def chat_exhausted(self, worker_id: str, stored: list[dict]) -> bool:
         """True when stored + worker spending + the other running workers' reservations reach the limit."""

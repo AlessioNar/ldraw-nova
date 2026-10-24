@@ -73,6 +73,6 @@ def test_turn_stats_cover_only_the_latest_turn():
         {"role": "user", "created_at": 100}, {**step, "created_at": 110},
         {"role": "user", "created_at": 1000}, {**step, "created_at": 1030}, {**step, "created_at": 1090},
     ]
-    assert usage.turn_stats(messages) == {"turn_steps": 2, "duration_s": 90}
-    assert usage.turn_stats([]) == {"turn_steps": 0, "duration_s": None}
+    assert usage.turn_stats(messages) == {"turn_steps": 2, "duration_s": 90, "request_cost_eur": 0.0}
+    assert usage.turn_stats([]) == {"turn_steps": 0, "duration_s": None, "request_cost_eur": 0.0}
     assert usage.turn_stats([{"role": "user", "created_at": 5}])["duration_s"] is None
