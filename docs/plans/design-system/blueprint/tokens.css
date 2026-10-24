@@ -1,0 +1,139 @@
+/* Blueprint design tokens for Open Brick Designer.
+   Dark ("blueprint") is the default; light ("paper print") follows prefers-color-scheme,
+   and either can be forced with <html data-theme="dark|light">.
+   Fonts: Hanken Grotesk (text) + JetBrains Mono (numbers, part codes, costs). Both are on Google Fonts;
+   the stacks fall back to system fonts, so the app still looks right offline. */
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* ---------- type ---------- */
+  --font-text: "Hanken Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --fs-2xs: 10.5px;  /* small-caps labels, tracked +0.08em */
+  --fs-xs: 12px;     /* meta, badges */
+  --fs-sm: 13px;     /* secondary UI */
+  --fs-md: 14.5px;   /* body */
+  --fs-lg: 17px;     /* card titles */
+  --fs-xl: 24px;     /* page titles */
+  --fs-2xl: 34px;    /* home hero */
+  --lh-tight: 1.2; --lh-body: 1.5;
+  --track-label: 0.08em;
+
+  /* ---------- space (4px base) ---------- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  /* ---------- shape: thin, precise, barely rounded ---------- */
+  --radius-sm: 3px; --radius: 5px; --radius-lg: 8px; --radius-pill: 99px;
+
+  /* ---------- motion ---------- */
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --t-fast: 100ms; --t: 160ms; --t-slow: 280ms;
+
+  /* ---------- layout ---------- */
+  --sidebar-w: 272px; --rail-w: 52px;
+  --grid-minor: 24px; --grid-major: 120px;
+}
+
+/* ---------- DARK: blueprint (default) ---------- */
+:root, :root[data-theme="dark"] {
+  --bg: #0b1424;            /* drafting-table slate blue */
+  --surface: #101b2f;       /* cards, sidebar */
+  --surface-2: #162439;     /* inputs, hover */
+  --surface-3: #1d2e49;     /* pressed, user bubble */
+  --border: #26395a;        /* hairlines */
+  --border-strong: #4a6791;
+  --fg: #e8eef8;
+  --fg-2: #b6c4dc;
+  --muted: #8da0be;
+  --accent: #ff5f52;        /* signal red for text and lines on dark */
+  --accent-solid: #d9382e;  /* fills: primary buttons, logo (white text on it) */
+  --accent-fg: #ffffff;
+  --accent-soft: #3a1a22;
+  --info: #7fb4ff;  --info-soft: #14284a;  --info-border: #2f568f;
+  --ok: #4fd9a0;    --ok-soft: #0f2f2a;
+  --warn: #f5b942;  --warn-soft: #33290f;
+  --danger: #ff7a70; --danger-soft: #3b1a20;
+  --grid-minor-c: rgb(120 160 230 / 0.055);
+  --grid-major-c: rgb(120 160 230 / 0.11);
+  --shadow: 0 0 0 1px rgb(0 0 0 / 0.25), 0 6px 20px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 0 0 1px var(--border-strong), 0 12px 32px rgb(0 0 0 / 0.5);
+  --canvas: #0a1220;
+  color-scheme: dark;
+}
+
+/* ---------- LIGHT: paper print ---------- */
+:root[data-theme="light"] {
+  --bg: #f2f0e9;            /* warm drafting paper */
+  --surface: #fbfaf6;
+  --surface-2: #ebe8df;
+  --surface-3: #e0ddd2;
+  --border: #cdc9bb;
+  --border-strong: #7d889e;
+  --fg: #15233b;            /* blue ink */
+  --fg-2: #33456a;
+  --muted: #5a6985;
+  --accent: #c42d23;
+  --accent-solid: #c42d23;
+  --accent-fg: #ffffff;
+  --accent-soft: #fbe3df;
+  --info: #1d4f9a;  --info-soft: #e1ebf8;  --info-border: #9db9de;
+  --ok: #0b6e49;    --ok-soft: #dcf0e6;
+  --warn: #8f5a00;  --warn-soft: #f8ecc8;
+  --danger: #b0261c; --danger-soft: #fbe0dc;
+  --grid-minor-c: rgb(40 80 150 / 0.05);
+  --grid-major-c: rgb(40 80 150 / 0.10);
+  --shadow: 0 1px 0 rgb(21 35 59 / 0.06), 0 4px 14px rgb(21 35 59 / 0.07);
+  --shadow-pop: 0 0 0 1px var(--border-strong), 0 12px 28px rgb(21 35 59 / 0.18);
+  --canvas: #e9e6dc;
+  color-scheme: light;
+}
+/* Same light values for users whose OS prefers light and who have not picked a theme. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f2f0e9; --surface: #fbfaf6; --surface-2: #ebe8df; --surface-3: #e0ddd2;
+    --border: #cdc9bb; --border-strong: #7d889e; --fg: #15233b; --fg-2: #33456a; --muted: #5a6985;
+    --accent: #c42d23; --accent-solid: #c42d23; --accent-fg: #fff; --accent-soft: #fbe3df;
+    --info: #1d4f9a; --info-soft: #e1ebf8; --info-border: #9db9de;
+    --ok: #0b6e49; --ok-soft: #dcf0e6; --warn: #8f5a00; --warn-soft: #f8ecc8;
+    --danger: #b0261c; --danger-soft: #fbe0dc;
+    --grid-minor-c: rgb(40 80 150 / 0.05); --grid-major-c: rgb(40 80 150 / 0.10);
+    --shadow: 0 1px 0 rgb(21 35 59 / 0.06), 0 4px 14px rgb(21 35 59 / 0.07);
+    --shadow-pop: 0 0 0 1px var(--border-strong), 0 12px 28px rgb(21 35 59 / 0.18);
+    --canvas: #e9e6dc; color-scheme: light;
+  }
+}
+
+/* ---------- compatibility: today's variable names -> Blueprint ----------
+   Drop this file's values into styles/theme.css and the existing CSS keeps working unchanged.
+     --bg, --surface, --surface-2, --border, --fg, --muted   same name, new value
+     --accent            same name (text/lines); solid buttons switch to --accent-solid
+     --accent-soft, --accent-fg, --info*, --ok, --warn*, --danger*, --shadow   same names
+     --user-bubble       -> --surface-3 (alias below)
+     --radius (10px)     -> --radius (5px)
+     --sidebar-w 288 -> 272, --rail-w 48 -> 52
+   New names: --surface-3, --border-strong, --fg-2, --accent-solid, --canvas, --font-*, --fs-*, --sp-*, grid tokens. */
+:root { --user-bubble: var(--surface-3); }
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: var(--fs-md)/var(--lh-body) var(--font-text);
+  -webkit-font-smoothing: antialiased;
+}
+code, kbd, .mono { font-family: var(--font-mono); font-size: 0.92em; font-feature-settings: "zero", "tnum"; }
+.label { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* faint measurement grid: minor every 24px, major every 120px */
+.grid-bg {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-major-c) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major-c) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor-c) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor-c) 1px, transparent 1px);
+  background-size: var(--grid-major) var(--grid-major), var(--grid-major) var(--grid-major), var(--grid-minor) var(--grid-minor), var(--grid-minor) var(--grid-minor);
+  background-position: -1px -1px;
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
