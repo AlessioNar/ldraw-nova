@@ -68,9 +68,9 @@ export default function DescribeBox({ initialText = "", examples = [], busy, llm
       return onOutcome({ kind: "generator", generator, params: answer.params ?? {}, summary }, value);
     }
     if (answer.route === "clarify") {
-      return setState({ step: "clarify", question: answer.question ?? answer.message ?? "Can you say a little more?", options: answer.options ?? [] });
+      return setState({ step: "clarify", question: answer.question ?? "Can you say a little more?", options: [] });
     }
-    return askAi(answer.reason ?? answer.message ?? "A generator cannot do this one.", answer.estimate);
+    return askAi(answer.reason ?? "A generator cannot do this one.", answer.estimate);
   }
 
   const working = busy || state.step === "thinking";
