@@ -325,7 +325,7 @@ Questions only the owner can answer:
 ## Owner decisions (2026-10-24)
 
 1. Marking a model or owned set as built reserves its parts by default.
-2. Storage locations: undecided (asked for clarification); the first stage ships without the locations tree.
+2. Storage: a free-text note per part (e.g. "blue tub") now; the bins-and-drawers locations tree with "gather by location" lists and bin labels is wanted later. Notes must be convertible into locations then.
 3. Colour-family pieces (e.g. Brickit "Grays") count as a separate "maybe" in buildable and shortage answers, never as exact colours, until assigned.
 4. Quick add is rule-based only: no LLM fallback.
 5. Brickit stays an occasional import source; this app is the home of the collection. Own part detection from photos is a later goal, not planned now.
