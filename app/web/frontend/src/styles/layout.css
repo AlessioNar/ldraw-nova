@@ -120,3 +120,6 @@
 /* --- focus mode: a build page fills the window, no sidebar --- */
 .app.focus-mode { grid-template-columns: 1fr; }
 .focus-mode .menu-button, .focus-mode .scrim { display: none; }
+.brand-home { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; color: inherit; text-decoration: none; }
+.brand-home:hover .brand-name { color: var(--accent); }
+.sidebar-collapsed .brand-home { flex: none; }
