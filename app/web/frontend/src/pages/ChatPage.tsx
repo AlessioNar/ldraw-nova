@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { api, isPending, type ChatDetail, type TurnOptions, type DocumentUpload } from "../api";
 import Composer from "../components/Composer";
@@ -6,20 +6,27 @@ import MessageList from "../components/MessageList";
 import TurnStatus from "../components/TurnStatus";
 import BuildHeader, { budgetStopped } from "../components/BuildHeader";
 import BudgetStop, { CONTINUE_TEXT } from "../components/BudgetStop";
-import { useApp } from "../context";
+import { useApp, type ViewerTarget } from "../context";
 import { useChatStream } from "../hooks/useChatStream";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+
+// The 3D stage (an embedded viewer) is only fetched on wide screens, where it sits beside the conversation.
+const ViewerStage = lazy(() => import("../components/ViewerStage"));
+const WIDE = "(min-width: 1100px)";
 
 export default function ChatPage() {
   const { id = "" } = useParams();
   const { hash } = useLocation();
   const anchored = useRef("");
-  const { chats, llms, defaultLlmId, refreshChats } = useApp();
+  const { chats, llms, defaultLlmId, refreshChats, stageRef } = useApp();
   const [detail, setDetail] = useState<ChatDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [llmId, setLlmId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
+  const wide = useMediaQuery(WIDE);
+  const [picked, setPicked] = useState<ViewerTarget | null>(null); // a version chosen with "View in 3D"; otherwise the stage follows the latest
 
   const reload = useCallback(async () => {
     const d = await api.chat(id);
@@ -43,6 +50,23 @@ export default function ChatPage() {
       })
       .catch(() => setNotFound(true));
   }, [id, reload, subscribe, reset, setRunning]);
+
+  const latest = detail
+    ? Object.values(detail.models).filter(m => m.version != null).sort((a, b) => b.version! - a.version!)[0]
+    : undefined;
+  const latestId = latest?.id;
+  useEffect(() => setPicked(null), [id, latestId]);
+  // While the stage is on screen, "View in 3D" / "3D Player" anywhere in the app shows the model there.
+  useEffect(() => {
+    if (!wide) return;
+    stageRef.current = setPicked;
+    return () => { if (stageRef.current === setPicked) stageRef.current = null; };
+  }, [wide, stageRef]);
+  const latestUrl = latest?.model_url, latestTitle = latest ? latest.description || latest.file : "", latestParts = latest?.parts, latestVersion = latest?.version;
+  const stageTarget = useMemo<ViewerTarget | null>(
+    () => picked ?? (latestUrl ? { modelUrl: latestUrl, title: latestTitle, parts: latestParts, version: latestVersion } : null),
+    [picked, latestUrl, latestTitle, latestParts, latestVersion],
+  );
 
   // Snapshots/BOMs of this chat's models still being made (e.g. a deleted .png): refetch until done.
   const snapshotsPending = !running && !!detail && Object.values(detail.models).some(isPending);
@@ -98,8 +122,8 @@ export default function ChatPage() {
   if (notFound) return <div className="page"><p className="muted">This chat doesn't exist (any more).</p></div>;
   if (!detail) return <div className="page"><p className="muted">Loading…</p></div>;
 
-  const latest = Object.values(detail.models).filter(m => m.version != null).sort((a, b) => b.version! - a.version!)[0];
   return (
+    <div className={`chat-split${wide ? " with-stage" : ""}`}>
     <div className="chat-page">
       <header className="chat-head">
         <h2 className="ellipsis">{detail.chat.title}</h2>
@@ -124,6 +148,8 @@ export default function ChatPage() {
           budgetReached={reached}
         />
       </div>
+    </div>
+    {wide && (<Suspense fallback={<section className="chat-stage" aria-busy="true" />}><ViewerStage chatId={id} target={stageTarget} /></Suspense>)}
     </div>
   );
 }

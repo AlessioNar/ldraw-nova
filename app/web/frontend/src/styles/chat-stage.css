@@ -1,0 +1,41 @@
+/* --- chat page: conversation column + 3D stage (wide screens) ---
+   Below 1100px nothing changes: the stage is not rendered and "View in 3D" opens the modal as before. */
+.chat-split { display: flex; height: 100%; min-height: 0; }
+.chat-split > .chat-page { flex: 1; min-width: 0; }
+
+.chat-stage { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--canvas); border-left: 1px solid var(--border-strong); }
+.stage-head { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; background: var(--surface); border-bottom: 1px solid var(--border); flex: none; }
+.stage-head > strong { flex: 1; min-width: 0; font-size: 15px; letter-spacing: -0.01em; }
+.stage-head > .label { flex: 1; }
+.stage-head .version-badge { margin-right: 0; }
+.stage-head .stage-link { font-size: 12px; padding: 4px 10px; }
+.stage-head a.stage-link:not(.button) { color: var(--muted); }
+.stage-head a.stage-link:not(.button):hover { color: var(--accent); }
+.stage-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #f2f2f2; }
+.stage-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 4px; padding: 24px;
+  background-color: var(--canvas);
+  background-image:
+    linear-gradient(var(--grid-major-c) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major-c) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor-c) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor-c) 1px, transparent 1px);
+  background-size: var(--grid-major) var(--grid-major), var(--grid-major) var(--grid-major), var(--grid-minor) var(--grid-minor), var(--grid-minor) var(--grid-minor);
+}
+.stage-empty .brick-row { margin-bottom: 14px; }
+.stage-empty p { margin: 0; max-width: 36ch; }
+
+@media (min-width: 1100px) {
+  .chat-split.with-stage > .chat-page { flex: 0 0 clamp(380px, 40%, 560px); }
+  /* the conversation column is narrow: tighter gutters, full-width content */
+  .chat-split.with-stage .chat-head { padding: 12px 20px; }
+  .chat-split.with-stage .chat-edit-link { display: none; }   /* the stage has "Open editor" */
+  .chat-split.with-stage .build-header { padding: 8px 20px; }
+  .chat-split.with-stage .messages { padding: 18px 20px 12px; }
+  .chat-split.with-stage .composer-wrap { padding: 8px 16px 16px; }
+  .chat-split.with-stage .composer-toolbar { flex-wrap: wrap; row-gap: 6px; }
+  .chat-split.with-stage .composer .turn-options { flex-wrap: wrap; }
+  .chat-split.with-stage .composer .turn-options .model-picker-trigger { flex: 1 1 150px; max-width: none; }
+  .chat-split.with-stage .bh-line.top { flex-wrap: wrap; }
+  .chat-split.with-stage .bh-bar { width: 60px; }
+  .chat-split.with-stage .model-card { max-width: none; }
+  .chat-split.with-stage .model-thumb { aspect-ratio: 16 / 10; }
+}

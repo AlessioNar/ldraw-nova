@@ -7,6 +7,7 @@
 @import "./styles/responsive.css";
 @import "./styles/providers.css";
 @import "./styles/parts.css";
+@import "./styles/chat-stage.css";
 
 /* Manual editor palette */
 .editor-palette { display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow-y: auto; }

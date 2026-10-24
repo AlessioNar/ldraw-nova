@@ -22,7 +22,7 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
   const { openViewer } = useApp();
   const open = (mode: ViewerMode = "viewer") =>
     model.model_url &&
-    openViewer({ modelUrl: model.model_url, title: model.description || model.file, parts: model.parts, mode });
+    openViewer({ modelUrl: model.model_url, title: model.description || model.file, parts: model.parts, mode, version: model.version });
   const warnings = model.warnings ?? [];
   const extension = "." + (model.file.split(".").pop() ?? "mpd").toLowerCase();
   const bomBusy = model.bom_status === "queued" || model.bom_status === "rendering";
