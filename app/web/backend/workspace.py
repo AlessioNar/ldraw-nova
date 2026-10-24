@@ -50,18 +50,37 @@ def write_draft(store, key: str, record: dict) -> dict:
     return record
 
 
-def touch_draft(store, key: str) -> None:
-    """An edit, undo or redo happened: remember when (only for a build that has a draft)."""
+def base_fields(view: dict) -> dict:
+    """The draft's starting point: the revision and undo depth of the session when it was opened, saved or discarded."""
+    return {"base_revision": view["revision"], "saved_revision": view["revision"],
+            "base_undo_depth": view.get("undo_depth", 0), "forked": False, "drift": 0}
+
+
+def touch_draft(store, key: str, kind: str = "edit", view: Optional[dict] = None) -> None:
+    """An edit, undo or redo happened: remember when, and keep the net change count (only for a build with a draft).
+
+    changes is the distance in undo steps from the base. While the session only walks along the history it started
+    with that is |undo_depth - base|; a new edit made below the base forks it, after which the steps undone below
+    the fork are added (`drift`), so edit + undo is clean and a forked state is never reported clean."""
     record = read_draft(store, key)
-    if record is not None:
-        write_draft(store, key, record)
+    if record is None:
+        return
+    if view is not None:
+        depth, base = view.get("undo_depth", 0), record.get("base_undo_depth", 0)
+        if not record.get("forked"):
+            if kind == "edit" and depth - 1 < base:
+                record.update(forked=True, drift=base - (depth - 1), base_undo_depth=depth - 1)
+        elif depth < base:
+            record.update(drift=record.get("drift", 0) + base - depth, base_undo_depth=depth)
+    write_draft(store, key, record)
 
 
 def draft_summary(record: dict, view: dict) -> dict:
     """The `draft` object of the API: how far the session is from the version it started on."""
-    revision = view.get("revision", 0)
-    return {"base_version": record.get("base_version"),
-            "changes": max(revision - record.get("base_revision", revision), 0),
+    revision, depth = view.get("revision", 0), view.get("undo_depth", 0)
+    base = record.get("base_undo_depth", depth)
+    changes = record.get("drift", 0) + max(depth - base, 0) if record.get("forked") else abs(depth - base)
+    return {"base_version": record.get("base_version"), "changes": changes,
             "revision": revision, "undo_depth": view.get("undo_depth", 0), "redo_depth": view.get("redo_depth", 0),
             "updated_at": record.get("updated_at")}
 

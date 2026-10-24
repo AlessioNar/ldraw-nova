@@ -71,7 +71,7 @@ def test_open_latest_resume_and_changes_count(client):
     assert again["revision"] == moved["revision"] and again["draft"]["changes"] == 1 and "1 4 100 0 0" in again["mpd"]
     assert client.post(f"/api/builds/{slug}/draft/open", json={"version": 2}).json()["draft"]["changes"] == 1
     undone = undo(client, slug, moved)
-    assert client.get(f"/api/builds/{slug}/workspace").json()["draft"]["changes"] == 2 and undone["undo_depth"] == 0
+    assert client.get(f"/api/builds/{slug}/workspace").json()["draft"]["changes"] == 0 and undone["undo_depth"] == 0
     assert client.post("/api/builds/nope/draft/open", json={}).status_code == 404
 
 
@@ -209,6 +209,8 @@ def test_describe_by_rules_needs_no_model(client, monkeypatch):
 def parts_lists():
     folder = settings.INVENTORIES_DIR
     folder.mkdir(parents=True, exist_ok=True)
+    for path in (folder, *folder.parents[:3]):         # the sandboxed toolkit user reads them for the palette search
+        os.chmod(path, 0o755)
     made = []
     for name, rows, review in (("ws-first", [{"part": "3001", "colour": 4, "qty": 3}], [{"part": "3003", "colour": 1, "qty": 9}]),
                                ("ws-second", [{"part": "3001", "colour": 4, "qty": 1}, {"part": "3003", "colour": 1, "qty": 0}], [])):
@@ -307,3 +309,67 @@ def test_workspace_get_shape(client):
     assert version["parts"] == 2 and set(version["parts_check"]) == {"owned", "needed", "missing"}
     assert client.get("/api/builds/ws-ghost/workspace").status_code == 404
     assert builds.exists(get_store(), slug)
+
+
+def changes_of(client, slug):
+    return client.get(f"/api/builds/{slug}/workspace").json()["draft"]["changes"]
+
+
+def redo(client, slug, view):
+    r = client.post(f"/api/builds/{slug}/editor/redo", json={"base_revision": view["revision"]})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_changes_are_the_net_number_of_edits(client):
+    slug = make_build(client, "ws net", TINY)
+    view = client.post(f"/api/builds/{slug}/draft/open", json={}).json()
+    one = edit(client, slug, view, MOVE)
+    assert changes_of(client, slug) == 1
+    two = edit(client, slug, one, {"op": "move", "id": "p1", "position": [160, 0, 0]})
+    assert changes_of(client, slug) == 2
+    back = undo(client, slug, two)
+    assert changes_of(client, slug) == 1
+    clean = undo(client, slug, back)
+    assert changes_of(client, slug) == 0 and client.post(f"/api/builds/{slug}/draft/save").status_code == 409
+    again = redo(client, slug, clean)
+    assert changes_of(client, slug) == 1
+    redo(client, slug, again)
+    assert changes_of(client, slug) == 2
+
+
+def test_undo_below_the_base_and_a_new_edit_are_never_clean(client):
+    slug = make_build(client, "ws below", TINY)
+    view = client.post(f"/api/builds/{slug}/draft/open", json={}).json()
+    edit_one = edit(client, slug, view, MOVE)
+    saved = client.post(f"/api/builds/{slug}/draft/save")
+    assert saved.status_code == 200 and changes_of(client, slug) == 0
+    view = client.get(f"/api/builds/{slug}/editor").json()
+    below = undo(client, slug, view)                              # undoes the saved edit: differs from v2
+    assert changes_of(client, slug) == 1 and edit_one["undo_depth"] == 1
+    forked = edit(client, slug, below, {"op": "move", "id": "p1", "position": [160, 0, 0]})
+    assert changes_of(client, slug) == 2                          # one step below plus the new edit
+    undo(client, slug, forked)
+    assert changes_of(client, slug) == 1
+
+
+def test_the_palette_of_a_build_uses_the_whole_collection(client, parts_lists):
+    slug = make_build(client, "ws palette", THREE)
+    assert client.post(f"/api/builds/{slug}/draft/open", json={}).status_code == 200
+    found = client.get(f"/api/builds/{slug}/editor/palette?query=3001&inventory_only=true")
+    assert found.status_code == 200, found.text
+    body = found.json()
+    assert body["mode"] == "prefer"
+    item = next(i for i in body["items"] if i["part"] == "3001")
+    blue = next(c for c in item["colours"] if c["colour"] == 4)
+    assert blue["owned"] == 4 and blue["used"] == 1 and blue["available"] == 3          # 3 + 1 from two lists, 1 used in the draft
+    assert not any(c["colour"] == 2 for c in item["colours"])                           # the red 3001 is not owned
+    check = client.post(f"/api/builds/{slug}/editor/palette/check", json={"part": "3001", "colour": 2}).json()
+    assert check["allowed"] is True and check["warning"] == "Not in your inventory"
+
+
+def test_the_palette_of_a_build_without_parts_lists_refuses_inventory_search(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "INVENTORIES_DIR", tmp_path / "none")
+    slug = make_build(client, "ws palette none", TINY)
+    client.post(f"/api/builds/{slug}/draft/open", json={})
+    assert client.get(f"/api/builds/{slug}/editor/palette?query=3001&inventory_only=true").status_code == 400

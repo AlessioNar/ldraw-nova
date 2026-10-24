@@ -62,7 +62,8 @@ def _record(store, slug: str) -> Optional[dict]:
     meta = _build_meta(store, key)
     match = builds.VERSION_RE.match(Path(meta.get("file") or "").stem)
     return {"base_version": int(match["n"]) if match else None, "base_file": meta.get("file"),
-            "base_revision": session[1].get("revision", 0), "saved_revision": session[1].get("revision", 0),
+            **workspace.base_fields({"revision": session[1].get("revision", 0),
+                                     "undo_depth": len(session[1].get("undo") or [])}),
             "updated_at": None}
 
 
@@ -91,8 +92,7 @@ async def _start(store, slug: str, version: Optional[int]) -> dict:
         view = await open_session(store, key, name=slug, replace=replace, mpd=copy)
         _write_build_meta(store, key, model)
         base_file = model.name
-    workspace.write_draft(store, key, {"base_version": version, "base_file": base_file,
-                                       "base_revision": view["revision"], "saved_revision": view["revision"]})
+    workspace.write_draft(store, key, {"base_version": version, "base_file": base_file, **workspace.base_fields(view)})
     return view
 
 
@@ -188,7 +188,7 @@ async def draft_save(build_id: str):
     view = _view(store, key)
     record = _record(store, build_id) or {}
     workspace.write_draft(store, key, {**record, "base_version": saved["version"], "base_file": saved["file"],
-                                       "base_revision": view["revision"], "saved_revision": view["revision"]})
+                                       **workspace.base_fields(view)})
     return {"version": saved["version"], "file": saved["file"], "message": saved["message"],
             "draft": _draft(store, build_id)}
 

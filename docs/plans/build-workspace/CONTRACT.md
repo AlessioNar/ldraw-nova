@@ -66,8 +66,10 @@ that follow this contract exactly.
 - `draft.json` lives in `data/builds/<slug>/` (next to `edit.json`); proposals in `data/builds/<slug>/proposals/<id>.mpd|json`.
 - Every chat attached to a build publishes a proposal, never a version. The tool result tells the AI to say the change is waiting for review in the build.
 - Regenerate, describe (generator/edit), accept and the toolkit's new `replace` action are each ONE undo step (`replace_plan` history op).
-- `changes` = revision - base_revision, so undo counts as a change too (every undo/redo bumps the revision).
+- `changes` is the NET number of edits since the base, from the undo stack (`base_undo_depth` in draft.json, reset at open, save and discard): edit then undo = 0, redo counts again, and a new edit made after undoing below the base is counted as a fork (never reported clean), so Save answers 409 only when truly clean. This replaces the contract formula `revision - base_revision`.
 - `workspace.versions[].changes` is the existing BOM diff against the previous version (object or null); `parts_check.missing` there is a piece count, while `draft/parts-check` returns the list of missing pairs.
 - `draft/save` with 0 changes answers 409 `{changes: 0}`. 409 on open is `{detail, changes}`.
 - An empty build opens the editor's one-brick skeleton plan (the plan schema has no empty section), `base_version` null.
 - Proposal accept returns `{accepted, replaced_manual_edits, draft, proposals}`; regenerate returns `{replaced_manual_edits, generator, notes, draft}`; describe returns the fast-path answer plus `draft` (and `replaced_manual_edits` when it regenerated).
+- `parts_check` shapes: per version in `GET /workspace` `{owned, needed, missing}` with `missing` an integer; `GET /draft/parts-check` has `missing` as the list `[{part, colour, need, have}]`.
+- `GET /api/builds/{id}/editor/palette` (and `palette/check`) work for builds: mode `prefer`, owned = all parts lists added together (exact rows), used from the draft's rows. With no parts lists the mode is `off` and `inventory_only` is 400.

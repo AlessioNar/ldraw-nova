@@ -273,9 +273,9 @@ async def apply_edits(store, chat_id: str, edits: list, base_revision: int) -> d
         return _view(store, chat_id)
 
 
-def _touch(store, chat_id: str) -> None:
+def _touch(store, chat_id: str, kind: str = "edit") -> None:
     if store.is_build(chat_id):
-        workspace.touch_draft(store, chat_id)
+        workspace.touch_draft(store, chat_id, kind, _view(store, chat_id))
 
 
 async def replace_plan(store, chat_id: str, mpd: Path, base_revision: Optional[int] = None) -> dict:
@@ -378,7 +378,7 @@ async def editor_undo(space: str, chat_id: str, body: EditorRevision):
     async with _lock(chat_id):
         report = await _run(store, chat_id, _arguments(store, chat_id, "undo", body.base_revision))
         _outcome(report, 0)
-        _touch(store, chat_id)
+        _touch(store, chat_id, "undo")
         return _view(store, chat_id)
 
 
@@ -392,7 +392,7 @@ async def editor_redo(space: str, chat_id: str, body: EditorRevision):
     async with _lock(chat_id):
         report = await _run(store, chat_id, _arguments(store, chat_id, "redo", body.base_revision))
         _outcome(report, 0)
-        _touch(store, chat_id)
+        _touch(store, chat_id, "redo")
         return _view(store, chat_id)
 
 
