@@ -1,6 +1,6 @@
 # Data and storage
 
-There is **no application database**. Everything is files on two Docker volumes, plus read-only data baked into the image.
+Chats, builds, models and parts lists are **files** on two Docker volumes, plus read-only data baked into the image. A PostgreSQL database (a third volume) holds only the request log and the cost history so far; see [database.md](database.md). More moves there in later phases.
 
 ## Volumes
 
@@ -8,10 +8,12 @@ There is **no application database**. Everything is files on two Docker volumes,
 |---|---|---|---|
 | `ldraw-nova-docker_data` | `/data` | Builds, versions, chats, parts lists, agent work folders | Writable by the agent user only in its work folders |
 | `ldraw-nova-docker_config` | `/config` | `models.json` (LLM entries), `environment.json` (keys and env vars), `generators.json` (registry cache) | root-only (0700); agent code cannot read it |
+| `ldraw-nova-docker_db` | `/var/lib/postgresql` in the `db` container | PostgreSQL data: request log, cost history | Not mounted in the app. Back up with `scripts/backup.sh` |
+| `ldraw-nova-docker_secrets` | `/run/secrets` (read-only in the app) | The generated database passwords | root-owned, 0440 |
 
 - Defined in `app/docker-compose.yml:20-25, 72-78`.
 - They are named volumes, not bind mounts, because bind-mount file access is slow on Windows and macOS.
-- **`docker compose down -v` deletes them.**
+- **`docker compose down -v` deletes them** (and the database volumes). Back up first: `bash scripts/backup.sh` writes a database dump and an archive of the data volume.
 - To copy models out: `docker cp ldraw-nova-app:/data/generated ./my-models`.
 
 ## Layout of `/data`
@@ -43,7 +45,7 @@ There is **no application database**. Everything is files on two Docker volumes,
 
 ## Where SQLite appears
 
-SQLite is used only as read-only reference data and as caches. It is never used for user data:
+SQLite is used only as read-only reference data and as caches. It is never used for user data (that is PostgreSQL or files):
 
 - `data/ldraw-info.db`: the `*_DESCRIPTIONS` tables, plus the `*_DESCRIPTIONS_JEV` views used by search;
 - the discovery `catalog.sqlite` (FTS5);

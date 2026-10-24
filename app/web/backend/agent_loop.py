@@ -18,6 +18,7 @@ import llm_config
 import model_catalog
 import providers
 import settings
+import usage_log
 from usage import step_cost_usd, usage_record
 
 
@@ -56,6 +57,14 @@ class FileSink:
         return record["id"]
 
 
+async def _record_usage(context: dict | None, step_usage: dict | None, model: str, message_id: int | None) -> None:
+    if context and step_usage:
+        # A worker's side file numbers its own steps: only the chat's messages carry a message id.
+        await asyncio.to_thread(usage_log.record, context.get("kind", "agent"), step_usage, model, chat_id=context.get("chat_id"),
+                                message_id=message_id if context.get("kind", "agent") == "agent" else None,
+                                worker_id=context.get("worker_id"))
+
+
 async def run_steps(*, entry: dict, params: dict, sink, tools: list[dict] | None, max_steps: int,
                     build_messages: Callable[[list[dict]], list[dict]],
                     run_tool: Callable[[dict], Awaitable],
@@ -63,13 +72,14 @@ async def run_steps(*, entry: dict, params: dict, sink, tools: list[dict] | None
                     before_step: Callable[[list[dict]], bool] | None = None,
                     after_message: Callable[[dict], None] | None = None,
                     parallel_tools: frozenset[str] = frozenset(),
-                    run=None) -> str:
+                    run=None, usage_context: dict | None = None) -> str:
     """Run up to `max_steps` model calls. Returns why it ended: "done" (the model answered without tool calls,
     or produced nothing), "stopped" (before_step asked to stop) or "cap" (the step cap was reached).
 
     `tools` None sends no tool list. Consecutive calls to a tool named in `parallel_tools` run concurrently, every
     other call runs alone and in order, and results are saved in call order. `run` (the planner's Run) receives live events, the streaming draft and
-    running-tool state; workers pass None and stay silent.
+    running-tool state; workers pass None and stay silent. `usage_context` ({"kind": "agent" | "worker", "chat_id", "worker_id"})
+    makes every step's tokens and cost land in the cost history (usage_log); without it nothing is recorded there.
     """
     model = entry["litellm_params"]["model"]
     vision = llm_config.capabilities(entry)["vision"] is True
@@ -131,10 +141,12 @@ async def run_steps(*, entry: dict, params: dict, sink, tools: list[dict] | None
             if details:
                 message["_reasoning_details"] = details
         if not message["content"] and not tool_calls:
+            await _record_usage(usage_context, step_usage, model, None)    # paid for, though nothing is saved
             return "done"                                          # nothing to save or do
         if after_message is not None:
             after_message(message)
-        sink.add(message)
+        saved_id = sink.add(message)
+        await _record_usage(usage_context, step_usage, model, saved_id)
         if run is not None:
             run.draft = ""
         if not tool_calls:
