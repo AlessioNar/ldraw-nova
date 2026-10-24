@@ -278,6 +278,7 @@ def summary(store: ChatStore, slug: str, record: dict, index: Index, groups: dic
     return {"id": slug, "key": store.build_key(slug), "title": record["title"], "created_at": record["created_at"],
             "updated_at": updated, "source": record.get("source") or {"kind": "empty"}, "versions": len(files),
             "latest": latest, "chats": len(index.chats_of(slug)),
+            "latest_origin": origin_of(store, slug, files[-1]["path"], index) if files else None,
             "pending": bool(latest) and is_pending(latest)}
 
 

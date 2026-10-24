@@ -81,6 +81,8 @@ def test_import_a_model_file_makes_versions(client):
     detail = client.get(f"/api/builds/{slug}").json()
     assert [(v["version"], v["origin"]) for v in detail["versions"]] == [(1, "import"), (2, "import")]
     assert detail["build"]["latest"]["version"] == 2 and detail["build"]["source"]["filename"] == "again.mpd"
+    listed = {b["id"]: b for b in client.get("/api/builds").json()["builds"]}
+    assert listed[slug]["latest_origin"] == "import"
     for path in settings.GENERATED_DIR.glob(f"{slug}-v*"):
         path.unlink()
 
