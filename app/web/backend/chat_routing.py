@@ -45,14 +45,14 @@ def state(messages: list[dict], running: bool = False) -> dict:
     agent = agent_messages(messages)
     out = {"mode": "quick", "has_agent": bool(agent), "agent_text": next((_text(m) for m in reversed(agent) if _text(m)), ""),
            "asks": False}
+    # Quick changes made in between (fast-path turns, both sides) don't end an agent conversation: skip them.
+    real = [m for m in real if not m.get("_fast_path")]
     turns = [m for m in real if m["role"] in ("user", "assistant")]
     if not turns:
         return out
     last = turns[-1]
-    if running or (last["role"] == "user" and not (last.get("_fast_path"))):     # a turn is in flight (or died): the agent's
+    if running or last["role"] == "user":     # a turn is in flight (or died): the agent's
         out["mode"] = "ai" if (agent or running) else "quick"
-        return out
-    if last["role"] != "assistant" or last.get("_fast_path"):
         return out
     out["asks"] = bool(_ASKS.search(_text(last)[-300:]))
     last_user = max((i for i, m in enumerate(real) if m["role"] == "user"), default=-1)
