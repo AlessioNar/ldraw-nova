@@ -4,7 +4,7 @@ from __future__ import annotations
 from ..details import palettes
 from ..vehicle_details import vehicle_colours
 from ..vehicles import DESIGNS, vehicle_plan
-from .base import Generator, colour_param, tag_roles
+from .base import Generator, colour_param, inherit_roles, tag_roles
 from .colours import custom_palette
 
 PALETTES = [k for k, v in palettes().items() if v.get('family') == 'vehicle']
@@ -12,6 +12,11 @@ PALETTES = [k for k, v in palettes().items() if v.get('family') == 'vehicle']
 ROLE_ORDER = ['body', 'roof', 'glass', 'wood', 'metal', 'trim', 'chassis', 'headlamp', 'tail_lamp']
 TYRES = {'6015.dat', '3641.dat', '50861.dat'}
 RIMS = {'6014b.dat', '4624.dat', '50862.dat'}
+HOLDERS = {'4600.dat', '6157.dat'}
+# Parts whose job is unambiguous whatever palette colour they carry (a wing in the roof colour is still a wing).
+WINGS = {'30355.dat', '30356.dat', '3936.dat', '3935.dat', '4867.dat'}
+ENGINES = {'4868b.dat', '4869.dat'}
+GLAZING = {'2377.dat', '87612.dat', '4176.dat', '2437.dat', '3823.dat'}
 
 # name: (families, kinds, road range (length lo, hi, wheelbase lo, hi) or None)
 INFO = {
@@ -56,18 +61,25 @@ def make(name):
                 notes.append(f'length/wheelbase adjusted to {fixed_l}/{fixed_w} (valid range for {name})')
             kwargs = dict(length=fixed_l, wheelbase=fixed_w)
         plan = vehicle_plan(name, palette, **kwargs)
-        by_colour = {}
-        for role in reversed(ROLE_ORDER):
-            by_colour[roles[role]] = role
-
+        # The palette role of each placement was stamped when it was built (vehicle_details.RoleInt/RoleStr), so two
+        # roles that share a colour stay apart. Wheel parts are told by their part, which no palette colour covers.
         def role_of(placement):
             ref = placement['ref']
             if ref in TYRES:
                 return 'tyre'
-            if ref in RIMS and wheels is not None:
+            if ref in RIMS:
                 return 'wheel'
-            return by_colour.get(placement['colour'])
+            if ref in HOLDERS:
+                return 'chassis'
+            if ref in WINGS:
+                return 'wing'
+            if ref in ENGINES:
+                return 'engine'
+            if ref in GLAZING:
+                return 'glass'
+            return None
         tag_roles(plan, [('', role_of)])
+        inherit_roles(plan)
         return plan, notes
 
     params = {
@@ -89,7 +101,7 @@ def make(name):
     families, kinds = INFO[name]
     return Generator(
         id=name, title=design['title'], families=families, kinds=kinds, description=design['lesson'],
-        params=params, roles=(*ROLE_ORDER, 'wheel', 'tyre'),
+        params=params, roles=(*ROLE_ORDER, 'wheel', 'tyre', *(('wing', 'engine') if name == 'courier-jet' else ())),
         build=build, coverage=('colours', 'length', 'wheelbase') if road else ('colours',),
         quality='Recognisable vehicle; fixed-size six-stud body' if road else 'Recognisable, fixed size')
 

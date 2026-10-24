@@ -27,12 +27,31 @@ DETAILS = {
 CUSTOM_PALETTES={}  # name -> roles; filled by ldraw_tools.generators.colours for colour-from-name palettes
 
 
+class RoleInt(int):
+    """A colour code that remembers the palette role it was picked for; Module.add stamps it on the placement."""
+    role=None
+
+
+class RoleStr(str):
+    """A symbolic colour (@colours.Name) that remembers its palette role."""
+    role=None
+
+
+def _tagged(roles):
+    out={}
+    for role,value in roles.items():
+        tagged=RoleInt(value) if isinstance(value,int) else RoleStr(value)
+        tagged.role=role
+        out[role]=tagged
+    return out
+
+
 def vehicle_colours(palette):
-    if palette in CUSTOM_PALETTES:return CUSTOM_PALETTES[palette]
+    if palette in CUSTOM_PALETTES:return _tagged(CUSTOM_PALETTES[palette])
     available=palettes()
     if palette not in available or available[palette].get('family')!='vehicle':
         raise ValueError('Choose a vehicle palette: '+', '.join(k for k,v in available.items() if v.get('family')=='vehicle'))
-    return available[palette]['roles']
+    return _tagged(available[palette]['roles'])
 
 
 def detail_module(name, palette='heritage-racing'):

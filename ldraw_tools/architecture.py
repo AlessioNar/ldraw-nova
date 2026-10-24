@@ -24,6 +24,7 @@ class Module:
     children: dict = field(default_factory=dict)
     notes: list = field(default_factory=list)
     serial: int = 0
+    role: str | None = None   # default `role` stamped on placements added while it is set (helpers such as line/slab inherit it)
 
     def step(self):
         if self.steps[-1]: self.steps.append([])
@@ -33,7 +34,7 @@ class Module:
         self.anchors[name] = {'at':[20*x,-h,20*z]}
         return self
 
-    def add(self, ref, colour, x=0, h=0, z=0, *, yaw=0, id=None, purpose=None, matrix=None, attach=None):
+    def add(self, ref, colour, x=0, h=0, z=0, *, yaw=0, id=None, purpose=None, matrix=None, attach=None, role=None):
         if isinstance(ref, Module):
             # Keep distinct objects until plan() checks the entire namespace;
             # indexing by name here would silently replace an earlier definition.
@@ -49,6 +50,8 @@ class Module:
             if matrix is not None: p['matrix']=matrix
             elif yaw: p['yaw']=yaw
         if purpose: p['purpose']=purpose
+        role = role or getattr(colour, 'role', None) or self.role   # per-placement role: explicit, from a role-tagged colour, or the module default
+        if role: p['role']=role
         self.steps[-1].append(p)
         return p['id']
 
@@ -122,6 +125,7 @@ def ring(m,w,d,h,c,*,plate=True):
 
 def window4(trim=15,glass=47):
     m=Module(f'window4-{trim}-{glass}','Four-stud glazed bay; bottom Y=0, body height 72 LDU, front -Z')
+    m.role='window'
     m.add('@windows.Window1X4X3WithoutShutterTabs',trim,h=72)
     m.add('@windows.Window1X2X3PaneWithThickCornerTabs',glass,-1.6,68,.2,yaw=-90)
     m.add('@windows.Window1X2X3PaneWithThickCornerTabs',glass,1.6,68,.2,yaw=90)
@@ -130,6 +134,7 @@ def window4(trim=15,glass=47):
 
 def door4(trim=15,leaf=70,style='traditional'):
     m=Module(f'door4-{trim}-{leaf}-{style}','Four-stud closed hinged entrance; bottom Y=0, height 144 LDU; front -Z')
+    m.role='door'
     m.add('@doors.Door1X4X6Frame',trim,h=144)
     ref={'traditional':'60623','glazed':'60797c04','hatch':'60616a'}[style]
     m.add(ref,leaf if style=='traditional' else trim,-1.6,144,.25)
@@ -153,7 +158,9 @@ def room(name,w=14,d=12,*,body=19,trim=15,door=0,windows=(-4,4),sides=True,rows=
     the top of a plate ring, not the shell's full stud-inclusive bounds.
     """
     m=Module(name,f'{w} by {d} stud shell with reserved door/window openings and removable roof interface')
+    m.role='base'
     slab(m,-w/2,-d/2,w,d,8,70)
+    m.role='wall'
     openings={s:[] for s in ['front','back','left','right']}
     for bottom in range(1,rows-2,6):
         for x in windows:openings['front'].append((x,4,bottom,bottom+2,'window'))
@@ -207,11 +214,13 @@ def room(name,w=14,d=12,*,body=19,trim=15,door=0,windows=(-4,4),sides=True,rows=
         for centre,width,r0,_,kind in holes:
             if kind=='slit':continue
             module=door4(trim,door_colour,door_style) if kind=='door' else window4(trim,glass)
+            m.role=kind
             x=centre if side in ['front','back'] else (-w/2+.5 if side=='left' else w/2-.5)
             z=(-d/2+.5 if side=='front' else d/2-.5) if side in ['front','back'] else centre
             for dx in ([-2,2] if kind=='door' and width==8 else [0]):
                 m.add(module,trim,x+dx,8+24*r0,z,yaw={'front':0,'back':180,'left':90,'right':-90}[side])
     top=8+rows*24
+    m.role='trim'
     m.step();ring(m,w,d,top+8,trim)
     m.anchor('roof',h=top+8).anchor('doorstep',door or 0,8,-d/2)
     return m
@@ -221,17 +230,19 @@ def gable(name,w=16,d=14,*,roof=72,gable_colour=19,tiers=None,dormer=False,chimn
     """Supported slope courses; the shrinking core remains under every tier."""
     if w%2 or d%2 or min(w,d)<4:raise ValueError('Gable needs even dimensions >=4')
     m=Module(name,'Removable gabled roof: supported slope courses, contrasting gable core and tiled ridge')
+    m.role='wall'
     slab(m,-w/2,-d/2,w,d,8,gable_colour)
     tiers=tiers or d//2-1
     for level in range(tiers):
         m.step();h=8+24*(level+1)
         for x in range(-w//2+1,w//2,2):
-            if not (dormer and level==0 and abs(x)<4):m.add('3039',roof,x,h,-d/2+1.5+level)
-            m.add('3039',roof,x,h,d/2-1.5-level,yaw=180)
+            if not (dormer and level==0 and abs(x)<4):m.add('3039',roof,x,h,-d/2+1.5+level,role='roof')
+            m.add('3039',roof,x,h,d/2-1.5-level,yaw=180,role='roof')
         depth=d-4-2*level
         for z in range(int(-depth/2),int(depth/2)):
             line(m,-w/2,z+.5,w,h,gable_colour,bond=bool(level%2))
     m.step();ridge_depth=d-2*tiers;top=8+24*tiers+8
+    m.role='roof'
     if chimney:
         # chimney=(x, colour): a 2x2 plate window in the tiled ridge carries a brick stack.
         cx,chimney_colour=chimney
@@ -239,18 +250,18 @@ def gable(name,w=16,d=14,*,roof=72,gable_colour=19,tiers=None,dormer=False,chimn
         slab(m,-w/2,-ridge_depth/2,cx-1+w/2,ridge_depth,top,roof,tile=True)
         slab(m,cx-1,-ridge_depth/2,2,ridge_depth,top,roof)
         slab(m,cx+1,-ridge_depth/2,w/2-cx-1,ridge_depth,top,roof,tile=True)
-        for i in range(3):m.add('3003',chimney_colour,cx,top+24*i+24,-ridge_depth/2+1,id=f'chimney-{i}')
-        m.add('3022',72,cx,top+80,-ridge_depth/2+1,id='chimney-cap')
+        for i in range(3):m.add('3003',chimney_colour,cx,top+24*i+24,-ridge_depth/2+1,id=f'chimney-{i}',role='chimney')
+        m.add('3022',72,cx,top+80,-ridge_depth/2+1,id='chimney-cap',role='chimney')
     else:
         slab(m,-w/2,-ridge_depth/2,w,ridge_depth,top,roof,tile=True)
     if dormer:
         m.step()
         for x in [-3.5,3.5]:m.add('3040b',roof,x,32,-d/2+1.5)
         for x in [-1,1]:
-            m.add('60592',15,x,56,-d/2+.5);m.add('60601',47,x,56,-d/2+.5)
+            m.add('60592',15,x,56,-d/2+.5,role='window');m.add('60601',47,x,56,-d/2+.5,role='window')
         for x in [-2.5,2.5]:
-            for h in [32,56]:m.add('3005',15,x,h,-d/2+.5)
-        m.add('3795',15,0,64,-d/2+1)
+            for h in [32,56]:m.add('3005',15,x,h,-d/2+.5,role='trim')
+        m.add('3795',15,0,64,-d/2+1,role='trim')
         m.add('3039',roof,-1.5,88,-d/2+1,yaw=90)
         m.add('3039',roof,1.5,88,-d/2+1,yaw=-90)
         m.add('3003',roof,0,88,-d/2+1);m.add('3068b',roof,0,96,-d/2+1)
@@ -260,9 +271,12 @@ def gable(name,w=16,d=14,*,roof=72,gable_colour=19,tiers=None,dormer=False,chimn
 
 def flat_roof(name,w,d,c=15,accent=72):
     m=Module(name,'Flat lift-off roof with a low parapet and recessed quiet roof surface')
+    m.role='trim'
     slab(m,-w/2,-d/2,w,d,8,c)
     ring(m,w,d,32,c,plate=False)
+    m.role='roof'
     slab(m,-w/2+1,-d/2+1,w-2,d-2,16,accent,tile=True)
+    m.role='trim'
     ring(m,w,d,40,c)
     return m
 
@@ -274,12 +288,13 @@ def attach_roof(scene,shell,roof,x=0,h=0,z=0,*,id='building',colour=19):
 
 def porch(name='porch',*,trim=15,roof=72,w=8,d=4,height=144):
     m=Module(f'{name}-{trim}-{roof}-{w}-{d}-{height}', 'Supported porch: base underside Y=0, entry at rear +Z; keep middle four studs clear')
+    m.role='porch'
     slab(m,-w/2,-d/2,w,d,8,trim)
     for x in [-w/2+.5,w/2-.5]:
         for z in [-d/2+.5,d/2-.5]:
             for row in range(height//24):m.add('3005',trim,x,8+24*(row+1),z)
-    m.step();slab(m,-w/2,-d/2,w,d,8+height+8,roof)
-    slab(m,-w/2,-d/2,w,d,8+height+16,roof,tile=True)
+    m.step();m.role='roof';slab(m,-w/2,-d/2,w,d,8+height+8,roof)
+    slab(m,-w/2,-d/2,w,d,8+height+16,roof,tile=True);m.role=None
     m.anchor('entry',h=8,z=d/2).anchor('canopy',h=8+height+16)
     m.notes=['Centre on a real entrance; rear edge abuts the wall, not its centre plane.',
              'Match column trim to the building and keep the approach four studs wide.']
