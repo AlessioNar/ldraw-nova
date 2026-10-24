@@ -60,3 +60,14 @@ In (parent → canvas): `{type: "obd:command", cmd, ...args}` with `cmd`:
 iframe, right tabs Parts / Piece / AI / Settings, Describe bar, version strip, parts check.
 It talks only to the W1 endpoints and the W2 messages above; until those land it uses stubs
 that follow this contract exactly.
+
+## Backend notes (W1, as built)
+
+- `draft.json` lives in `data/builds/<slug>/` (next to `edit.json`); proposals in `data/builds/<slug>/proposals/<id>.mpd|json`.
+- Every chat attached to a build publishes a proposal, never a version. The tool result tells the AI to say the change is waiting for review in the build.
+- Regenerate, describe (generator/edit), accept and the toolkit's new `replace` action are each ONE undo step (`replace_plan` history op).
+- `changes` = revision - base_revision, so undo counts as a change too (every undo/redo bumps the revision).
+- `workspace.versions[].changes` is the existing BOM diff against the previous version (object or null); `parts_check.missing` there is a piece count, while `draft/parts-check` returns the list of missing pairs.
+- `draft/save` with 0 changes answers 409 `{changes: 0}`. 409 on open is `{detail, changes}`.
+- An empty build opens the editor's one-brick skeleton plan (the plan schema has no empty section), `base_version` null.
+- Proposal accept returns `{accepted, replaced_manual_edits, draft, proposals}`; regenerate returns `{replaced_manual_edits, generator, notes, draft}`; describe returns the fast-path answer plus `draft` (and `replaced_manual_edits` when it regenerated).

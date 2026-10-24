@@ -23,7 +23,7 @@ from .common import jsonable, normalized
 from .validation import validate_text
 
 PUBLIC_OPS = ("add", "move", "rotate", "recolour", "delete", "snap")
-HISTORY_OPS = ("set_entry", "insert")
+HISTORY_OPS = ("set_entry", "insert", "replace_plan")
 OPS = (*PUBLIC_OPS, *HISTORY_OPS)
 POSITIONAL_KEYS = ("at", "on", "offset_studs", "attach", "snap")
 
@@ -177,6 +177,8 @@ def _validate(plan, edit, parts):
         entry = edit.get("entry")
         if not isinstance(entry, dict) or not entry.get("id"):
             _fail("insert needs the full entry to restore")
+    elif op == "replace_plan":
+        _check_plan(edit.get("plan"))
 
 
 def _rotation_fields(axis, degrees):
@@ -275,6 +277,10 @@ def _apply_op(plan, edit, parts):
             steps[edit["step"]].insert(min(edit["index"], len(steps[edit["step"]])), entry)
     elif op == "snap":
         _apply_snap(plan, edit, parts)
+    elif op == "replace_plan":
+        # The whole plan swapped in one step (regenerate, accepting a proposal); its inverse swaps the old one back.
+        plan.clear()
+        plan.update(_copy(edit["plan"]))
     else:
         _fail(f"Unknown operation {op!r}")
 
@@ -448,6 +454,8 @@ def inverse(plan, edits, parts=None):
 
 def _inverse_op(plan, edit, parts):
     op = edit["op"]
+    if op == "replace_plan":
+        return {"op": "replace_plan", "plan": _copy(plan)}
     if op == "add":
         section = plan["sections"][_section(plan, edit["section"])]
         return {"op": "delete", "id": _added_entry(plan, edit, parts)["id"], "section": section["name"]}

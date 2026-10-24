@@ -193,7 +193,9 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
         warnings.append("Toolkit validation failed. This revision is for inspection and needs repair.")
     chat = None if ctx.store.is_build(ctx.chat_id) else ctx.store.get_chat(ctx.chat_id)
     attached = (chat or {}).get("build_id")          # a chat attached to a build publishes into that build
-    slug = attached or _slug(name or source.stem)
+    if attached:
+        return _propose(ctx, attached, source_bytes, name or source.stem, warnings, validation.exit_code == 0)
+    slug = _slug(name or source.stem)
     settings.GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     # Reserve synchronously before the next await, including concurrent chats.
     target = settings.GENERATED_DIR / f"{slug}-v{_next_version(slug)}.mpd"
@@ -213,9 +215,7 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
         warnings.append("Preview/BOM rendering failed; the model can still be opened in 3D.")
     ref = ctx.store.add_model(ctx.chat_id, name or source.stem, target, warnings, origin=ctx.origin,
                               source=source.relative_to(ctx.work_dir).as_posix() if ctx.work_dir in source.parents else None)
-    if attached:
-        builds.record_version(ctx.store, slug, name or source.stem, target, ctx.origin or "ai", warnings)
-    elif ctx.store.is_build(ctx.chat_id):
+    if ctx.store.is_build(ctx.chat_id):
         builds.touch(ctx.store, ctx.chat_id[len(store_module.BUILD_PREFIX):])
     ctx.emit("model", {"id": ref["id"], "name": ref["name"]})
     model_url = "/files/generated/" + quote(target.name)
@@ -237,6 +237,30 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
     content = json.dumps(result, indent=2)
     check, note = await parts_check(ctx, revision)
     return ToolResult(f"{content}\n\n{note}" if note else content, models=[ref], parts_check=check)
+
+
+def _propose(ctx: ToolContext, slug: str, model: bytes, name: str, warnings: list, checks_passed: bool) -> ToolResult:
+    """A model published by a chat attached to a build is not a version: it waits in the build as a proposal
+    the person keeps in the draft, previews or discards (docs/plans/build-workspace/CONTRACT.md)."""
+    import usage
+    import workspace
+    from routers import editor
+    builds.ensure(ctx.store, slug)
+    key = ctx.store.build_key(slug)
+    session = editor._session(ctx.store, key)
+    files = builds.versions(slug)
+    base = session[2] if session else (files[-1]["path"].read_text(encoding="utf-8", errors="replace") if files else "")
+    cost = usage.usage_totals(ctx.store.messages(ctx.chat_id))["cost_eur"]
+    record = workspace.create_proposal(ctx.store, slug, model.decode("utf-8", errors="replace"), ctx.chat_id, base, cost,
+                                       warnings)
+    s = record["summary"]
+    message = (f"The change is waiting for review in the build (proposal {record['id']}: {s['added']} added, "
+               f"{s['removed']} removed, {s['moved']} moved). It is NOT a new version: the person keeps it in their draft, "
+               "previews it or discards it. Say in your final message that the change is waiting for review in the build.")
+    ctx.emit("proposal", {"id": record["id"], "build": slug})
+    result = {"proposal": record["id"], "build": slug, "summary": s, "checks_passed": checks_passed,
+              "warnings": warnings, "message": message}
+    return ToolResult(json.dumps(result, indent=2))
 
 
 async def parts_check(ctx: ToolContext, model: Path) -> tuple[dict | None, str]:

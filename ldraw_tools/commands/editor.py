@@ -173,6 +173,21 @@ def run_editor(args, library, parts):
     if args.base_revision is not None and args.base_revision != state["revision"]:
         return _report(False, state, conflict=True, error="The plan changed elsewhere; reload and retry")
 
+    if args.action == "replace":
+        # The whole plan swapped for another (a regenerated model, an accepted proposal) as ONE undoable step.
+        if args.from_mpd:
+            candidate, warnings = import_mpd(Path(args.from_mpd).read_text(encoding="utf-8", errors="replace"), parts)
+        else:
+            candidate, warnings = _read(args.source), []
+        check_schema(candidate)
+        rows = _rows(candidate, parts)
+        mpd_text = rebuild(candidate, parts)
+        batch = {"forward": [{"op": "replace_plan", "plan": candidate}], "inverse": [{"op": "replace_plan", "plan": plan}]}
+        state = {**state, "undo": [*state["undo"], batch], "redo": [], "revision": state["revision"] + 1,
+                 "warnings": warnings or None}
+        _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
+        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, warnings=warnings)
+
     if args.action == "apply":
         edits = _read(args.edits)
         inverses = list(reversed(inverse(plan, edits, parts)))      # undo runs them last-first: a later edit may need an earlier one's part
@@ -232,7 +247,7 @@ def prewarm_jobs(parts, plan):
 def run_request(request, library, parts, idle=None):
     """One editor action for a resident worker: `run_editor` with the CLI's arguments as a JSON object.
 
-    The request has `action` (open|apply|undo|redo), the `plan`/`state`/`mpd` paths and the options the CLI
+    The request has `action` (open|replace|apply|undo|redo), the `plan`/`state`/`mpd` paths and the options the CLI
     takes (`base_revision`, `edits`, `owned`, `mode`, `source`, `from_mpd`, `name`). The reply is the CLI's
     report plus `exit_code` (0 done, 1 refused, 2 failed); the plan and the preview are on disk, so unless
     `full` is set they are left out of the reply. Failures the CLI turns into exit code 2 come back the same way.
@@ -256,12 +271,15 @@ def register(commands):
     c = commands.add_parser("editor", help="Manual editor sessions: open, apply, undo and redo a chat's plan")
     c.add_argument("--report", help="Also write the JSON report to this file")
     sub = c.add_subparsers(dest="action", required=True)
-    for action in ("open", "apply", "undo", "redo"):
+    for action in ("open", "replace", "apply", "undo", "redo"):
         s = sub.add_parser(action)
         s.add_argument("--plan", required=True, help="The chat's plan file (output/editor/plan.json)")
         s.add_argument("--state", required=True, help="The session state file beside it")
         s.add_argument("--mpd", required=True, help="The preview MPD file beside it")
         s.add_argument("--base-revision", type=int, help="Refuse the change when the session moved on")
+        if action == "replace":
+            s.add_argument("--from", dest="source", help="A plan file that replaces the plan")
+            s.add_argument("--from-mpd", help="An MPD/LDR model file imported as the new plan (instead of --from)")
         if action == "open":
             s.add_argument("--from", dest="source", help="An existing plan file to open (else a one-brick skeleton)")
             s.add_argument("--from-mpd", help="An MPD/LDR model file to import as the plan (instead of --from)")

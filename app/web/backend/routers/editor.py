@@ -35,6 +35,7 @@ import sandbox
 import settings
 import toolkit
 import tools
+import workspace
 from paths import safe_join
 from store import get_store
 from .common import not_found
@@ -268,6 +269,29 @@ async def apply_edits(store, chat_id: str, edits: list, base_revision: int) -> d
             arguments += ["--owned", str(owned_path), "--mode", mode]
         report = await _run(store, chat_id, arguments)
         _outcome(report, 0)
+        _touch(store, chat_id)
+        return _view(store, chat_id)
+
+
+def _touch(store, chat_id: str) -> None:
+    if store.is_build(chat_id):
+        workspace.touch_draft(store, chat_id)
+
+
+async def replace_plan(store, chat_id: str, mpd: Path, base_revision: Optional[int] = None) -> dict:
+    """Swap the whole plan for the model in `mpd` as ONE undoable step (regenerate, accepting a proposal)."""
+    if _session(store, chat_id) is None:
+        not_found("no editor plan for this chat")
+    async with _lock(chat_id):
+        work = store.work_dir(chat_id)
+        work.mkdir(parents=True, exist_ok=True)
+        sandbox.give_to_agent(work)
+        copy = work / "replace.mpd"
+        shutil.copyfile(mpd, copy)
+        sandbox.give_to_agent(copy)
+        report = await _run(store, chat_id, _arguments(store, chat_id, "replace", base_revision) + ["--from-mpd", str(copy)])
+        _outcome(report, 0)
+        _touch(store, chat_id)
         return _view(store, chat_id)
 
 
@@ -354,6 +378,7 @@ async def editor_undo(space: str, chat_id: str, body: EditorRevision):
     async with _lock(chat_id):
         report = await _run(store, chat_id, _arguments(store, chat_id, "undo", body.base_revision))
         _outcome(report, 0)
+        _touch(store, chat_id)
         return _view(store, chat_id)
 
 
@@ -367,6 +392,7 @@ async def editor_redo(space: str, chat_id: str, body: EditorRevision):
     async with _lock(chat_id):
         report = await _run(store, chat_id, _arguments(store, chat_id, "redo", body.base_revision))
         _outcome(report, 0)
+        _touch(store, chat_id)
         return _view(store, chat_id)
 
 
