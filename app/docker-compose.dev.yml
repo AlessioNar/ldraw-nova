@@ -12,8 +12,8 @@
 #   COMPOSE_FILE=docker-compose.yml,docker-compose.dev.yml
 #
 # (The image still needs to be built once; rebuild after changing requirements.txt.)
-# Toolkit (ldraw_tools) edits apply to new toolkit commands at once; the resident
-# build worker keeps the old code until `docker restart ldraw-nova-app`.
+# The toolkit (ldraw_tools) stays baked into the image: read from a Windows bind
+# mount each toolkit command took ~4.5 s instead of ~2.4 s. Rebuild after toolkit changes.
 # Only directories are mounted: Docker Desktop keeps serving a stale copy of a
 # single-file mount once an editor replaces that file.
 services:
@@ -49,7 +49,6 @@ services:
       - ./web/viewer:/opt/web/viewer    # viewer.html, player.html
       - ./scripts:/opt/scripts          # command-line helpers (on the PATH)
       - ./web/frontend/dist:/opt/web/static   # the UI from `npm run build`
-      - ../ldraw_tools:/opt/ldraw-nova/ldraw_tools:ro
       # Iterating on the 3D player (ldraw.rs-nova, tools/player/build.sh): use
       # your local build instead of the release zip baked into the image.
       # - ../ldraw.rs-nova/tools/player/dist/ldraw-player-<version>:/opt/web/player-vendor
