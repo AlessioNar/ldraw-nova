@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import { api, isPending, type ChatDetail, type TurnOptions, type DocumentUpload } from "../api";
 import Composer from "../components/Composer";
 import MessageList from "../components/MessageList";
@@ -123,6 +123,9 @@ export default function ChatPage() {
   const continueWith = (next: number) => send(CONTINUE_TEXT, { ...detail!.chat.options, budget_eur: next } as TurnOptions, [], []).catch(() => {});
 
   if (notFound) return <div className="page"><p className="muted">This chat doesn't exist (any more).</p></div>;
+  // A build's chat lives in its workspace: the build page is the only place to talk about a build.
+  const buildId = detail?.chat.build_id ?? detail?.build?.id;
+  if (buildId) return <Navigate to={`/build/${encodeURIComponent(buildId)}?tab=chat`} replace />;
   if (!detail) return <div className="page"><p className="muted">Loading…</p></div>;
 
   return (

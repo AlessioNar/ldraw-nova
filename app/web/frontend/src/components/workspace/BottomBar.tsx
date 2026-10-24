@@ -1,64 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { buildsApi, estimateLabel, ORIGIN_LABEL, timeAgo, type DescribeHint } from "../../api";
+import { ORIGIN_LABEL, timeAgo } from "../../api";
 import { useColours } from "../../workspace/colours";
-import { missingCount, type DescribeResult, type PartsCheckData } from "../../workspace/types";
+import { missingCount, type PartsCheckData } from "../../workspace/types";
 import type { Workspace } from "../../workspace/useWorkspace";
+import { STRIP, type Layout } from "../../workspace/useLayout";
 import Icon from "./Icon";
-
-type Ask = { note: string; estimate: string | null } | { question: string };
-
-/** One line: type a change, see the free rule-based hint while typing, Apply puts it in the draft. Nothing is spent here. */
-function DescribeBar({ ws }: { ws: Workspace }) {
-  const [text, setText] = useState("");
-  const [hint, setHint] = useState<DescribeHint | null>(null);
-  const [ask, setAsk] = useState<Ask | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const generator = ws.ws?.generator?.id;
-  useEffect(() => { setAsk(null); setError(null); }, [text]);
-  useEffect(() => {      // rules only, a millisecond: no AI call while typing
-    setHint(null);
-    if (text.trim().length < 3) return;
-    const t = setTimeout(() => buildsApi.hint(text, generator).then(setHint).catch(() => {}), 350);
-    return () => clearTimeout(t);
-  }, [text, generator]);
-
-  async function apply() {
-    const value = text.trim();
-    if (!value || busy) return;
-    setBusy(true); setError(null);
-    try {
-      const r: DescribeResult = await ws.describe(value);
-      if (r.route === "generator" || r.route === "edit") setText("");
-      else if (r.route === "clarify") setAsk({ question: r.question ?? "Can you say a little more?" });
-      else setAsk({ note: r.reason ?? "No rule fits this.", estimate: estimateLabel(r.estimate) });
-    } catch (e) { setError((e as Error).message); }
-    finally { setBusy(false); }
-  }
-  const moveToAi = () => { ws.askAi(text.trim()); setText(""); };
-
-  let line: React.ReactNode = null;
-  if (error) line = <span className="ws-warn">{error}</span>;
-  else if (ask && "question" in ask) line = <b className="cost">{ask.question}</b>;
-  else if (ask) line = <><b className="cost">{ask.note.replace(/[.\s]+$/, "")}.</b> The AI can try{ask.estimate ? `: ${ask.estimate}` : ""}. Nothing is spent until you send it there.</>;
-  else if (hint?.route === "needs_ai") line = <>No rule fits this. The AI can try{estimateLabel(hint.estimate) ? `: ${estimateLabel(hint.estimate)}` : ""}. It asks before it spends.</>;
-  else if (hint?.hint) line = <><b>{hint.confidence >= 0.7 ? "Fast path" : "Probably"}:</b> {hint.hint.replace(/^Fast path:\s*/, "")}. About 1 s.</>;
-
-  const toAi = !!ask && !("question" in ask);
-  return (
-    <div className="ws-describe">
-      <Icon name="pencil" />
-      <input id="ws-describe-input" type="text" value={text} placeholder="Describe a change, e.g. make the roof blue" aria-label="Describe a change"
-        onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") (toAi ? moveToAi : apply)(); }} />
-      <span className="ws-hint muted small" aria-live="polite">{line}</span>
-      {toAi
-        ? <button className="primary" onClick={moveToAi}>Ask the AI</button>
-        : <button className="primary" disabled={!text.trim() || busy || !!ws.viewing} onClick={apply} title={ws.viewing ? "Go back to the draft first" : "Apply to the draft (free)"}>
-            {busy && <span className="spinner" aria-hidden />} Apply
-          </button>}
-    </div>
-  );
-}
+import Splitter from "./Splitter";
 
 const Check = ({ ok }: { ok: boolean }) => <span className={`ws-ck ${ok ? "ok" : "warn"}`} aria-label={ok ? "all parts owned" : "parts missing"}><Icon name={ok ? "check" : "warn"} size={9} /></span>;
 
@@ -126,14 +73,17 @@ function PartsCheck({ ws }: { ws: Workspace }) {
   );
 }
 
-/** Describe bar, version strip and parts check: global to the build, whatever tab is open. */
-export default function BottomBar({ ws }: { ws: Workspace }) {
+/** Version strip and parts check: global to the build, whatever tab is open. Resizable, and collapsible to a thin bar. */
+export default function BottomBar({ ws, layout }: { ws: Workspace; layout: Layout }) {
+  const { stripThin, stripH } = layout;
   return (
-    <footer className="ws-bottom">
-      <DescribeBar ws={ws} />
-      <div className="ws-versions">
+    <footer className={`ws-bottom${stripThin ? " thin" : ""}`}>
+      <Splitter edge="strip" label="Version strip height" value={stripH ?? 76} min={STRIP.min} max={STRIP.max} step={STRIP.step} collapsed={stripThin}
+        onChange={layout.setStripH} onReset={layout.resetStrip} onToggle={layout.toggleStrip} hidden={ws.phone} />
+      <div className={`ws-versions${stripH ? " sized" : ""}`} style={!stripThin && stripH ? { height: stripH } : undefined}>
         <span className="label ws-vlabel">Versions</span>
-        <VersionStrip ws={ws} />
+        {!stripThin && <VersionStrip ws={ws} />}
+        {stripThin && <button className="ws-vthin" onClick={layout.toggleStrip} title="Show the versions">{ws.versions.length} version{ws.versions.length === 1 ? "" : "s"}</button>}
         <span className="ws-spacer" />
         <PartsCheck ws={ws} />
       </div>

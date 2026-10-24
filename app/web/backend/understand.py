@@ -209,7 +209,7 @@ ROLES = {"body": "body", "roof": "roof", "wheels": "wheels", "wheel": "wheels", 
          "windows": "glass", "window": "glass", "door": "door", "cab": "cab", "bed": "bed", "chimney": "chimney",
          "hull": "hull", "wings": "wing", "wing": "wing", "accent": "accent", "walls": "body", "wall": "body"}
 _ROLE_RE = "|".join(sorted(ROLES, key=len, reverse=True))
-_RECOLOUR = re.compile(rf"^(?:please )?(?:make|paint|colou?r|turn|change)\s+(?:the\s+)?({_ROLE_RE})\s+(?:to\s+|into\s+)?({_COLOUR_RE})(?:\s+please)?$")
+_RECOLOUR = re.compile(rf"^(?:(?:please|can you|could you|would you|just) )*(?:make|paint|colou?r|turn|change)\s+(?:the\s+)?({_ROLE_RE})\s+(?:to\s+|into\s+)?({_COLOUR_RE})(?:\s+please)?$")
 _UNDO = re.compile(r"^(?:please )?(?:undo|undo that|undo the last change|undo last change|go back)$")
 _REVERT = re.compile(r"^(?:please )?revert(?: to (?:the )?(?:original|first|previous|initial)(?: version| model| design)?)?$")
 _AGAIN = {"again", "do it again", "once more", "repeat", "repeat that"}

@@ -10,7 +10,7 @@ import DocumentIcon from "./DocumentIcon";
 
 const DOCUMENT_TYPES = ".pdf,.txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.rtf,.docx,.xlsx,.pptx,.mpd,.ldr,.dat";
 
-export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions, budgetReached, continuingFrom }: {
+export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions, budgetReached, continuingFrom, onTextChange, onOptions, allowNoModel, hint, placeholder }: {
   llmId: string | null;
   onLlmChange: (id: string) => void;
   onSend: (text: string, options: TurnOptions, images: string[], documents: DocumentUpload[]) => Promise<void> | void;
@@ -21,6 +21,11 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   budgetReached?: boolean; // the last request stopped at its budget: the chip turns red
   initialOptions?: TurnOptions;
   continuingFrom?: string; // "v2: Red car" once the chat has a model: follow-ups continue from it
+  onTextChange?: (text: string) => void; // the workspace chat shows a live cost hint while typing
+  onOptions?: (options: TurnOptions) => void; // the options a send would use right now
+  allowNoModel?: boolean; // the free fast path needs no model
+  hint?: React.ReactNode; // replaces the keyboard hint line
+  placeholder?: string;
 }) {
   const { llms, defaultWorkerId } = useApp();
   const [text, setText] = useState(initialText);
@@ -63,6 +68,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     onLlmChange(id);
   }
   useEffect(() => setText(initialText), [initialText]);
+  useEffect(() => onTextChange?.(text), [text, onTextChange]);
   // The chat's saved budget changed (a "Continue with more budget" button raised it): show it in the chip.
   const savedBudget = initialOptions?.budget_eur;
   useEffect(() => {
@@ -87,6 +93,8 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   const partsOptions: Partial<TurnOptions> = !inventories.length ? { parts_mode: undefined, inventory_ids: undefined }
     : effective.mode === "off" ? { parts_mode: "off", inventory_ids: undefined }
     : { parts_mode: effective.mode, inventory_ids: effective.ids };
+  const current: TurnOptions = { ...options, ...partsOptions };
+  useEffect(() => onOptions?.(current));   // eslint-disable-line react-hooks/exhaustive-deps
   function changeSteering(next: PartsSteering) { setSteering(next); saveSteering(next); }
   useEffect(() => {
     const el = ref.current;
@@ -98,12 +106,12 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   async function submit(e?: FormEvent) {
     e?.preventDefault();
     const value = text.trim();
-    if (!value || disabled || !model) return;
+    if (!value || disabled || (!model && !allowNoModel)) return;
     setBusy(true);
     try {
       setError("");
       await onSend(value, { ...options, ...partsOptions }, images.map(i => i.url), documents.map(({ name, data }) => ({ name, data })));
-      rememberModel(model.id);
+      if (model) rememberModel(model.id);
       setText(""); setImages([]); setDocuments([]);
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
@@ -145,7 +153,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
 
   return <form className="composer" onSubmit={submit}>
     {continuingFrom && <div className="continuing-chip" title="A follow-up continues from this model, not from scratch">Continuing from {continuingFrom}</div>}
-    {!llms.length && <div className="composer-notice">No model configured yet. <Link to="/settings">Add a model in Settings</Link> to start building.</div>}
+    {!llms.length && <div className="composer-notice">{allowNoModel ? "No model configured yet, so only the free edits work. " : "No model configured yet. "} <Link to="/settings">Add a model in Settings</Link> to start building.</div>}
     <div className="composer-input">
       <div className="attach-wrap">
         <button type="button" className="attach-button" ref={attachButton} aria-label="Attach" aria-haspopup="menu" aria-expanded={attachOpen} title="Attach images or documents (up to 4 each)"
@@ -165,7 +173,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
       <input ref={upload} hidden type="file" aria-label="Image files" accept="image/png,image/jpeg,image/webp" multiple disabled={disabled} onChange={e => {
         const files = Array.from(e.target.files ?? []); e.target.value = ""; void attach(files);
       }} />
-      <textarea ref={ref} rows={2} value={text} autoFocus={autoFocus} aria-label="Message" placeholder={continuingFrom ? "Describe a change to this model, or ask for a new one…" : "Describe a model to build…"}
+      <textarea ref={ref} rows={2} value={text} autoFocus={autoFocus} aria-label="Message" placeholder={placeholder ?? (continuingFrom ? "Describe a change to this model, or ask for a new one…" : "Describe a model to build…")}
         onChange={e => setText(e.target.value)} onKeyDown={onKeyDown} />
     </div>
     {!!images.length && <div className="attachments">{images.map((img, index) => <div key={index}>
@@ -192,10 +200,10 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
         </button>
       </div>
       {running ? <button type="button" className="danger send-button" onClick={onStop}>Stop</button> :
-        <button type="submit" className="primary send-button" disabled={!text.trim() || busy || !model}>Send <span aria-hidden>↑</span></button>}
+        <button type="submit" className="primary send-button" disabled={!text.trim() || busy || (!model && !allowNoModel)}>Send <span aria-hidden>↑</span></button>}
     </div>
     {panel && <ChatSettings options={options} onChange={setOptions} profile={profile} defaultWorkerId={defaultWorkerId ?? null} inventories={inventories}
       steering={effective} onSteering={changeSteering} disabled={disabled} focus={panel} onClose={closePanel} />}
-    <div className="composer-hint muted">Enter to send · Shift+Enter for a new line</div>
+    <div className="composer-hint muted">{hint ?? "Enter to send · Shift+Enter for a new line"}</div>
   </form>;
 }

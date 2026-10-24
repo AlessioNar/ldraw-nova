@@ -64,7 +64,7 @@ export default function NewBuild() {
     return run({ kind: "ai" }, text.slice(0, 60), async (id) => {
       const chat = await buildsApi.chat(id, defaultLlmId, true);
       await api.send(chat.id, text, defaultLlmId, { mode: "agent", permissions: "ask" });
-      return `/chat/${chat.id}`;
+      return `/build/${id}?tab=chat`;
     });
   }
 
