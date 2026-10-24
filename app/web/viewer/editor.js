@@ -14,7 +14,9 @@
   const { params, statusSetter } = ViewerCommon;
   const Core = EditorCore;
   const LIB = '/ldraw';
-  const chatId = params.get('chat');
+  const buildId = params.get('build');          // a build in My Builds (no chat), else a chat
+  const chatId = buildId || params.get('chat');
+  const apiBase = buildId ? `/api/builds/${encodeURIComponent(buildId)}` : `/api/chats/${encodeURIComponent(chatId)}`;
   const stage = document.getElementById('stage');
   const status = document.getElementById('status');
   const setStatus = statusSetter(status);
@@ -24,7 +26,9 @@
 
   if (!chatId) { setStatus('No chat given: add ?chat=<chat id>', true); return; }
   const chatLink = $('chat-link');
-  chatLink.href = `/chat/${encodeURIComponent(chatId)}`;
+  chatLink.href = buildId ? '/models' : `/chat/${encodeURIComponent(chatId)}`;
+  if (buildId) chatLink.textContent = 'Back to My Builds';
+  if (buildId) $('open-other').hidden = true;
   chatLink.hidden = false;
   if (!WEBGL.isWebGLAvailable()) { setStatus('WebGL is not available in this browser.', true); return; }
 
@@ -40,7 +44,7 @@
   // ---- API ----------------------------------------------------------------
 
   async function call(path, body, method) {
-    const response = await fetch(`/api/chats/${encodeURIComponent(chatId)}/editor${path}`, {
+    const response = await fetch(`${apiBase}/editor${path}`, {
       method: method || (body === undefined ? 'GET' : 'POST'),
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -625,6 +629,11 @@
       // The chat now has a message and a card for this publish; say what was published and link to it.
       const check = result.parts_check;
       const checkText = check ? ` Parts check: ${check.complete ? 'all parts owned' : check.summary}` : '';
+      if (buildId) {
+        setStatus(`${result.message || `Saved as v${result.version || '?'} in My Builds`}, ${result.pieces || '?'} piece${result.pieces === 1 ? '' : 's'} (${result.file}). It is marked "edited by you".`, false);
+        chatLink.textContent = `View v${result.version || ''} in My Builds`;
+        return;
+      }
       setStatus(`Published as v${result.version || '?'}, ${result.pieces || '?'} piece${result.pieces === 1 ? '' : 's'}.${checkText} It is in the chat as "edited by you".`, false);
       if (result.chat_url) { chatLink.href = result.chat_url; chatLink.textContent = `View v${result.version || ''} in the chat`; }
     } catch (e) { setStatus(`Could not publish: ${e.message}`, true); }
@@ -731,8 +740,12 @@
 
   async function begin() {
     try {
-      await show(await call(''));
+      const opened = await call('');
+      await show(opened);
       $('open-other').disabled = false;
+      if (opened.warnings && opened.warnings.length) {
+        setStatus(`${opened.warnings.length} line${opened.warnings.length === 1 ? '' : 's'} of the model could not be imported and are left out: ${opened.warnings.slice(0, 3).join('; ')}`, true);
+      }
     } catch (e) {
       if (e.status === 404 && /no editor plan/i.test(e.message)) {
         await showStart(false);

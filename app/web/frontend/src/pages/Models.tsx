@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api, type ModelFile } from "../api";
 import ModelCard from "../components/ModelCard";
 
@@ -12,6 +13,7 @@ export default function Models() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const deleted = useRef(new Set<string>());
+  const navigate = useNavigate();
 
   useEffect(() => {
     let alive = true;
@@ -79,7 +81,10 @@ export default function Models() {
       {models && models.length > 0 && shown.length === 0 && <p className="muted">No models match your search.</p>}
       <div className="card-grid">
         {shown.map((m) => (
-          <ModelCard key={m.file} model={m} showChats onDelete={async () => {
+          <ModelCard key={m.file} model={m} showChats onEdit={async () => {
+            const opened = await api.editModel(m.file);
+            navigate(`/build/${encodeURIComponent(opened.build)}/edit`);
+          }} onDelete={async () => {
             await api.deleteModel(m.file);
             deleted.current.add(m.file);
             setModels(current => current?.filter(model => model.file !== m.file) ?? null);

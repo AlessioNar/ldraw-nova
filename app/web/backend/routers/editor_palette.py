@@ -20,7 +20,7 @@ import sandbox
 import settings
 import toolkit
 from store import get_store
-from .editor import MAX_ROWS, _chat, _session
+from .editor import MAX_ROWS, _chat, _key, _session
 
 router = APIRouter()
 
@@ -139,11 +139,12 @@ def editor_colours():
     return {"colours": colours()}
 
 
-@router.get("/api/chats/{chat_id}/editor/palette")
-async def editor_palette(chat_id: str, query: str = "", colour: Optional[int] = None,
+@router.get("/api/{space}/{chat_id}/editor/palette")
+async def editor_palette(space: str, chat_id: str, query: str = "", colour: Optional[int] = None,
                          inventory_only: bool = False, limit: int = 20):
     """Search parts by number or name. `inventory_only` searches the chat's selected inventories only."""
     store = get_store()
+    chat_id = _key(space, chat_id)
     chat = _chat(store, chat_id)
     limit = max(1, min(limit, MAX_RESULTS))
     query = query.strip()[:200]
@@ -181,10 +182,11 @@ async def editor_palette(chat_id: str, query: str = "", colour: Optional[int] = 
     return {"mode": mode, "items": items, "more": len(hits) > limit}
 
 
-@router.post("/api/chats/{chat_id}/editor/palette/check")
-def editor_palette_check(chat_id: str, body: PaletteCheck):
+@router.post("/api/{space}/{chat_id}/editor/palette/check")
+def editor_palette_check(space: str, chat_id: str, body: PaletteCheck):
     """Would adding this part in this colour be allowed, and is it covered? Same rules the edit gate applies."""
     store = get_store()
+    chat_id = _key(space, chat_id)
     chat = _chat(store, chat_id)
     _known_colour(body.colour)
     if not PART_RE.fullmatch(body.part.strip()) or not 1 <= body.quantity <= 1000:

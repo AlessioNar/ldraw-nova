@@ -8,6 +8,7 @@ type Props = {
   model: ModelFile & Partial<Pick<ChatModel, "warnings" | "created_at" | "version" | "latest" | "title" | "origin" | "changes">>;
   showChats?: boolean;
   onDelete?: () => Promise<void>;
+  onEdit?: () => Promise<void>;      // My Builds: open the model in the 3D editor
 };
 
 function DownloadIcon() {
@@ -18,7 +19,7 @@ function DownloadIcon() {
   );
 }
 
-export default function ModelCard({ model, showChats = false, onDelete }: Props) {
+export default function ModelCard({ model, showChats = false, onDelete, onEdit }: Props) {
   const { openViewer } = useApp();
   const open = (mode: ViewerMode = "viewer") =>
     model.model_url &&
@@ -31,6 +32,13 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
   const [showWarnings, setShowWarnings] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [editing, setEditing] = useState(false);
+  async function edit() {
+    if (!onEdit) return;
+    setEditing(true); setDeleteError("");
+    try { await onEdit(); }
+    catch (e) { setDeleteError((e as Error).message); setEditing(false); }
+  }
   async function remove() {
     if (!onDelete || !confirm(`Delete “${model.file}” and its preview, parts list and notes from My Builds? This cannot be undone. Original chat work files are kept.`)) return;
     setDeleting(true); setDeleteError("");
@@ -127,6 +135,11 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
             <button onClick={() => open()} disabled={!model.model_url}>
               3D View
             </button>
+            {onEdit && (
+              <button onClick={edit} disabled={!model.model_url || editing} title="Move, add or remove bricks by hand, then save the result as a new version">
+                {editing ? <span className="spinner" aria-hidden /> : null} Edit in 3D
+              </button>
+            )}
             <button onClick={() => open("player")} disabled={!model.model_url} title="Watch the model being built, step by step">
               3D Player
             </button>

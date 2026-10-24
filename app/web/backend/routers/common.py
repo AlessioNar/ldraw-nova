@@ -82,6 +82,19 @@ def chat_models(store: ChatStore, chat_id: str) -> dict[str, dict]:
     return result
 
 
+def model_origins(store: ChatStore) -> dict[Path, str]:
+    """model path -> "editor" for versions saved from the 3D editor (by chat or from My Builds)."""
+    origins: dict[Path, str] = {}
+    keys = [c["id"] for c in store.list_chats()]
+    if store.builds_dir.is_dir():
+        keys += [store.build_key(p.name) for p in store.builds_dir.iterdir() if p.is_dir() and store.valid_id(store.build_key(p.name))]
+    for key in keys:
+        for ref in store.models(key):
+            if ref.get("origin"):
+                origins[store.resolve(key, ref["model"])] = ref["origin"]
+    return origins
+
+
 def model_chat_index(store: ChatStore) -> dict[Path, list[dict]]:
     """model path -> the chats that produced it."""
     index: dict[Path, list[dict]] = {}

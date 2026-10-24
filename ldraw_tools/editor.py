@@ -470,3 +470,138 @@ def usage(plan, parts=None):
 
     walk(plan["sections"][0], 16)
     return result
+
+
+# ------------------------------------------------------------------ MPD import
+
+_ID = re.compile(r"[A-Za-z0-9_-]+")
+_SECTION = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _-]*\.ldr")
+_REF = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _-]*\.(dat|ldr)")
+
+
+def _section_name(raw, taken):
+    """A schema-valid, unique section name for an MPD file name (the references are remapped by the caller)."""
+    name = raw.strip().replace("\\", "/").rsplit("/", 1)[-1]
+    if not _SECTION.fullmatch(name):
+        stem = re.sub(r"[^A-Za-z0-9 _-]", "_", name.rsplit(".", 1)[0]).strip(" _-") or "model"
+        name = f"{stem}.ldr"[:200]
+    base, count = name, 2
+    while normalized(name) in taken:
+        name, count = f"{base[:-4]}-{count}.ldr", count + 1
+    return name
+
+
+def import_mpd(text, parts=None, name="model.ldr"):
+    """Turn MPD/LDR text into an editable plan: `(plan, warnings)`.
+
+    The model's structure is kept, not flattened: each `0 FILE` becomes a section, each `0 STEP` a step,
+    and each type-1 line a placement with its exact position and rotation matrix (`// id: purpose` comments
+    from the builder restore the entry ids). Anything that cannot be edited is skipped with a warning:
+    lines of other types (primitives, 2-5), direct RGB colours, references the library does not know,
+    and empty submodels. The first FILE is the root model.
+    """
+    files, current, lines = [], None, text.splitlines()
+    for line in lines:
+        words = line.split()
+        if len(words) >= 3 and words[0] == "0" and words[1] == "FILE":
+            current = {"raw": line.split(None, 2)[2].strip(), "lines": []}
+            files.append(current)
+        elif words[:2] == ["0", "NOFILE"]:
+            current = None
+        elif current is None and files == [] and words:
+            current = {"raw": name, "lines": []}
+            files.append(current)
+            current["lines"].append(line)
+        elif current is not None:
+            current["lines"].append(line)
+    if not files:
+        raise ValueError("The file has no model in it")
+    taken, names = set(), {}
+    for item in files:
+        item["name"] = _section_name(item["raw"], taken)
+        taken.add(normalized(item["name"]))
+        names.setdefault(normalized(item["raw"].replace("\\", "/").rsplit("/", 1)[-1]), item["name"])
+    warnings, author, sections = [], None, []
+    for item in files:
+        steps, step, description, pending, ids = [], [], None, None, set()
+        for line in item["lines"]:
+            words = line.split()
+            if not words:
+                continue
+            kind = words[0]
+            if kind == "0":
+                body = line.split(None, 1)[1].strip() if len(words) > 1 else ""
+                if body == "STEP" or body.startswith("STEP "):
+                    if step:
+                        steps.append(step)
+                    step = []
+                elif body.startswith("// "):
+                    pending = body[3:]
+                elif body.startswith("Author:"):
+                    author = author or body[7:].strip()
+                elif description is None and body and not step and not steps and not body.startswith(("Name:", "!", "//")):
+                    description = body
+                continue
+            where = f"{item['name']}: "
+            if kind != "1":
+                warnings.append(f"{where}skipped a type {kind} line ({line.strip()[:60]})")
+                pending = None
+                continue
+            try:
+                if len(words) < 15:
+                    raise ValueError("too few fields")
+                colour = int(words[1])
+                numbers = [float(v) for v in words[2:14]]
+                ref = " ".join(words[14:]).replace("\\", "/").lower()
+            except ValueError:
+                warnings.append(f"{where}skipped an unreadable line ({line.strip()[:60]})")
+                pending = None
+                continue
+            target = names.get(normalized(ref))
+            ref = target or ref
+            if not target and (not _REF.fullmatch(ref) or (
+                    parts is not None and parts.find_part(code=ref.removesuffix(".dat")) is None)):
+                warnings.append(f"{where}skipped {ref}: not a part in the library")
+                pending = None
+                continue
+            if colour < 0 or colour == 24 or (parts is not None and colour not in parts.colours_by_code):
+                warnings.append(f"{where}skipped {ref}: colour {colour} is not an editable library colour")
+                pending = None
+                continue
+            entry_id, _, purpose = (pending or "").partition(": ")
+            if not _ID.fullmatch(entry_id) or entry_id in ids:
+                entry_id, purpose = f"p{len(ids) + 1}", ""
+                while entry_id in ids:
+                    entry_id = f"p{int(entry_id[1:]) + 1}"
+            ids.add(entry_id)
+            entry = {"id": entry_id, "ref": ref, "colour": colour, "at": [_clean(v) for v in numbers[:3]]}
+            if purpose and purpose != ref and len(purpose) <= 500:
+                entry["purpose"] = purpose
+            matrix = [numbers[3:6], numbers[6:9], numbers[9:12]]
+            if not np.allclose(matrix, np.eye(3), atol=1e-9):
+                entry["matrix"] = _clean(matrix)
+            step.append(entry)
+            pending = None
+        if step:
+            steps.append(step)
+        sections.append({"name": item["name"], "description": (description or item["name"])[:500],
+                         "steps": steps})
+    while True:   # an empty submodel cannot be a section; drop it and the placements that used it
+        empty = {normalized(s["name"]) for s in sections if not s["steps"]}
+        if not empty or sections[0]["name"] and normalized(sections[0]["name"]) in empty:
+            break
+        for section in sections:
+            kept = []
+            for step in section["steps"]:
+                step[:] = [e for e in step if normalized(e["ref"]) not in empty]
+                if step:
+                    kept.append(step)
+            section["steps"] = kept
+        for gone in [s["name"] for s in sections if not s["steps"]]:
+            warnings.append(f"dropped {gone}: no placements left")
+        sections = [s for s in sections if s["steps"]]
+    if not sections or not sections[0]["steps"]:
+        raise ValueError("The model has no editable parts in it")
+    plan = {"version": 1, "author": (author or "imported")[:500], "sections": sections}
+    check_schema(plan)
+    return plan, warnings
