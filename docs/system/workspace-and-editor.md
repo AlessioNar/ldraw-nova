@@ -37,22 +37,20 @@ A model in `/data/generated` without a `build.json` is still listed, as a "legac
 | Route | Page | Notes |
 |---|---|---|
 | `/` | Home | A menu of four tiles (New build, My Builds, My Parts, Settings), each with one live line: build count and the latest build, pieces and colour families to review |
-| `/new` | New build | Four ways, described below |
-| `/build/:id` | **Workspace** (`components/workspace/Workspace`) | Full-screen, with its own top bar (← Builds, logo home, build name, actions) instead of the app bar |
-| `/build/:id/edit`, `/chat/:id/edit` | Legacy editor page (`EditorPage.tsx`) | Still used by "Empty" and by My Builds → Edit |
-| `/builds` | My Builds (`pages/Builds.tsx`) | Every build as a card, newest first, with a name filter and a New build card; "Older chats" (chats without a build) and "All model files" (every file in `/data/generated`, with zip download, edit and delete) fold away below. `/models` redirects here |
+| `/new` | New build | No screen: creates an empty build and opens it in the workspace |
+| `/build/:id` | **Workspace** (`components/workspace/Workspace`) | Fills the window under the app bar, with the build's own bar (build name, status, downloads, undo/redo, save) |
+| `/build/:id/edit`, `/chat/:id/edit` | Legacy editor page (`EditorPage.tsx`) | Still used by My Builds → All model files → Edit |
+| `/builds` | My Builds (`pages/Builds.tsx`) | Every build as a card, newest first, with a name filter, a New build card and "Import a model file"; "Older chats" (chats without a build) and "All model files" (every file in `/data/generated`, with zip download, edit and delete) fold away below. `/models` redirects here |
 | `/chat/:id` | Chat | The agent conversation |
 | `/parts` | My Parts | See [parts-and-collection.md](parts-and-collection.md) |
 | `/settings` | Settings | See [settings-and-providers.md](settings-and-providers.md) |
 
-Every page except the workspace sits under the app bar (`components/AppBar.tsx`): the logo and name link Home, and My Builds, My Parts and Settings sit on the right (a menu button below 820 px). There is no sidebar. The standalone viewer, player and editor pages carry the same logo as a link Home, hidden when they are embedded (`?embed=1` or inside an iframe).
+Every page, the workspace included, sits under the app bar (`components/AppBar.tsx`): the logo and name link Home, and My Builds, My Parts and Settings sit on the right (a menu button below 820 px). There is no sidebar. The standalone viewer, player and editor pages carry the same logo as a link Home, hidden when they are embedded (`?embed=1` or inside an iframe).
 
-The four ways to start a new build (`pages/NewBuild.tsx`):
+Starting a build:
 
-1. **Describe it.** The fast path decides. A generator build opens the workspace. Otherwise the person is offered "Build with AI".
-2. **Start from a type.** The person picks a generator and fills its form, with a live preview (`GeneratorForm`, `POST /api/generators/preview`).
-3. **Import a model file.** An `.mpd` or `.ldr` file becomes v1 (`POST /api/builds/{id}/import`).
-4. **Empty.** This opens the **legacy** editor page; saving creates v1.
+- **New build** (Home, My Builds, `/new`) creates an empty build and opens the workspace on it. Its empty canvas offers "Describe it" (the workspace chat: fast path first, the AI agent if needed) and "Pick a part". A generator type is reached by describing it.
+- **Import a model file** (My Builds) makes an `.mpd` or `.ldr` file v1 of a new build (`POST /api/builds/{id}/import`) and opens it.
 
 ## The workspace
 

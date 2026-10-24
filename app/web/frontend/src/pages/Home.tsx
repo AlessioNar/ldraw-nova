@@ -17,7 +17,7 @@ export default function Home() {
   const partsLine = lists === null ? "" : lists.length === 0 ? "No parts lists yet" : `${pieces.toLocaleString()} pieces${review > 0 ? ` · ${review} to review` : ""}`;
 
   const tiles = [
-    { to: "/new", title: "New build", line: "Describe it, pick a type, import or start empty", icon: "+", primary: true },
+    { to: "/new", title: "New build", line: "Open the 3D editor on an empty build", icon: "+", primary: true },
     { to: "/builds", title: "My Builds", line: buildsLine, icon: "▣" },
     { to: "/parts", title: "My Parts", line: partsLine, icon: "▤" },
     { to: "/settings", title: "Settings", line: "Models, keys and budget", icon: "⚙" },
