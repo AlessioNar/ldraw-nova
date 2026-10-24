@@ -172,7 +172,40 @@ def get(entry_id: str) -> Optional[dict]:
     return next((m for m in _load()["models"] if m["id"] == entry_id), None)
 
 
+ENDPOINT_KEYS = ("api_base", "base_url", "api_url")
+DEFAULT_KEY_ENV = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "openrouter": "OPENROUTER_API_KEY"}
+
+
+def _endpoint(params: dict) -> tuple:
+    return tuple(str(params.get(k) or "").strip().rstrip("/") for k in ENDPOINT_KEYS)
+
+
+def _carries_credential(params: dict) -> bool:
+    """A key of its own, a reference to a saved variable, or a provider default key that is set in the environment."""
+    if any(is_secret(k) and v for k, v in params.items()):
+        return True
+    provider = str(params.get("model", "")).split("/")[0]
+    names = {DEFAULT_KEY_ENV.get(provider), provider.upper() + "_API_KEY"} - {None}
+    environment = environment_config.snapshot()
+    return any(environment.get(n) for n in names)
+
+
+def _guard_endpoint_change(raw: dict, previous: Optional[dict]) -> None:
+    """A changed endpoint must not inherit a stored key: the request has to supply a key itself.
+
+    Otherwise anything able to call this API could point an entry that references a saved key at its own server
+    and let the connection test send the key there."""
+    old = (previous or {}).get("litellm_params")
+    if not old or _endpoint(raw) == _endpoint(old) or not any(_endpoint(raw)):
+        return
+    key = raw.get("api_key")
+    fresh = isinstance(key, str) and key.strip() and not key.startswith((MASK_PREFIX, "os.environ/"))
+    if not fresh and _carries_credential(old):
+        raise ValueError("Changing the endpoint of a model that uses a saved key requires entering the key again")
+
+
 def _clean(entry: dict, previous: Optional[dict]) -> dict:
+    _guard_endpoint_change(entry.get("litellm_params") or {}, previous)
     params = restore_secrets(dict(entry.get("litellm_params") or {}), (previous or {}).get("litellm_params"))
     if not str(params.get("model", "")).strip():
         raise ValueError("litellm_params.model is required, e.g. 'anthropic/claude-sonnet-5'")

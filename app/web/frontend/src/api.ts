@@ -85,6 +85,8 @@ export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<strin
 
 type Capability = boolean | "auto";
 export type EnvironmentVariable = { id: string; name: string; value: null; has_value: boolean; fixed: boolean };
+export type SandboxIsolation = { state: "on" | "off" | "n/a"; detail: string };
+export type EnvironmentState = { variables: EnvironmentVariable[]; jev_source?: "typesafe" | "jev_openrouter" | "openrouter" | "none"; sandbox_isolation?: SandboxIsolation };
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
 export type ConnectionStatus = "not_tested" | "connected" | "not_connected";
@@ -141,7 +143,7 @@ const json = (body: unknown) => JSON.stringify(body);
 export type ProviderInfo = { provider: string; label: string; effort: boolean; prompt_caching: boolean; discovery: boolean };
 
 export const api = {
-  environment: () => request<{ variables: EnvironmentVariable[] }>("/api/environment"),
+  environment: () => request<EnvironmentState>("/api/environment"),
   checkEnvironment: (name: string, id?: string) => request<{ preconfigured: boolean; saved: boolean }>(`/api/environment/check?name=${encodeURIComponent(name)}&exclude_id=${encodeURIComponent(id ?? "")}`),
   saveEnvironment: (variables: EnvironmentUpdate[]) => request<{ variables: EnvironmentVariable[] }>("/api/environment", { method: "PUT", body: json({ variables }) }),
   chats: () => request<{ chats: Chat[] }>("/api/chats"),

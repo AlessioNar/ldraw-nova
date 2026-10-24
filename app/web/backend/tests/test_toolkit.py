@@ -52,6 +52,20 @@ def test_jev_uses_typesafe_key_else_routes_the_openrouter_key(monkeypatch):
     assert toolkit.jev_environment() == {"TYPESAFE_API_KEY": "ts-key"}
 
 
+def test_jev_key_order_typesafe_then_separate_jev_key_then_main_key(monkeypatch):
+    saved = {"OPENROUTER_API_KEY": "main-key", "JEV_OPENROUTER_API_KEY": "jev-key", "TYPESAFE_API_KEY": "ts-key"}
+    monkeypatch.setattr(environment_config, "snapshot", lambda: saved)
+    assert toolkit.jev_environment() == {"TYPESAFE_API_KEY": "ts-key"} and toolkit.jev_source() == "typesafe"
+    del saved["TYPESAFE_API_KEY"]
+    assert toolkit.jev_environment() == {"TYPESAFE_API_KEY": "jev-key", **toolkit.OPENROUTER_JEV}
+    assert toolkit.jev_source() == "jev_openrouter"
+    saved["JEV_OPENROUTER_API_KEY"] = "  "
+    assert toolkit.jev_environment() == {"TYPESAFE_API_KEY": "main-key", **toolkit.OPENROUTER_JEV}
+    assert toolkit.jev_source() == "openrouter"
+    del saved["OPENROUTER_API_KEY"]
+    assert toolkit.jev_environment() == {} and toolkit.jev_source() == "none"
+
+
 def test_real_doctor_build_publish_review_bom_and_download(ctx):
     events = []
     ctx.emit = lambda event, data: events.append((event, data))

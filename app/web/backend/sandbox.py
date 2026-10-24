@@ -47,6 +47,20 @@ class RunResult:
         return "\n".join(parts)
 
 
+ISOLATION_FILE = Path(os.environ.get("LDRAW_NOVA_ISOLATION_FILE", "/run/ldraw-nova-isolation"))
+
+
+def isolation_status() -> dict:
+    """Whether the entrypoint's firewall rule keeps agent code away from this API ("on", "off", or "n/a" off the image)."""
+    if os.geteuid() != 0 or _agent_account() is None:
+        return {"state": "n/a", "detail": "Not running as root in the container image; there is no separate agent user."}
+    try:
+        state, _, detail = ISOLATION_FILE.read_text().strip().partition(" ")
+    except OSError:
+        return {"state": "off", "detail": "The container entrypoint did not report the firewall rule."}
+    return {"state": "on" if state == "on" else "off", "detail": detail}
+
+
 def _agent_account():
     if os.geteuid() != 0:
         return None                         # dev on a host: run as ourselves

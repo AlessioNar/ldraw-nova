@@ -248,3 +248,14 @@ def test_root_license_does_not_relicense_included_modules(parts,tmp_path):
     assert model.license=='CC0'
     assert model.submodels['child.ldr'].author=='Independent author'
     assert model.submodels['child.ldr'].license is None
+
+
+def test_bom_cells_that_look_like_formulas_are_escaped(tmp_path):
+    import csv
+    from ldraw_tools.external import restore_bom_names
+    path = tmp_path / "bom.csv"
+    path.write_text('Part Name,Color,Quantity,Part ID,Color Code\n"=cmd|x",Red,-1,@evil,4\nBrick,Blue,2,3001,1\n', encoding='utf-8')
+    restore_bom_names(path, {})                      # also runs when nothing was renamed
+    rows = list(csv.DictReader(path.open(newline='', encoding='utf-8')))
+    assert rows[0]['Part Name'] == "'=cmd|x" and rows[0]['Part ID'] == "'@evil" and rows[0]['Quantity'] == '-1'
+    assert rows[1] == {'Part Name': 'Brick', 'Color': 'Blue', 'Quantity': '2', 'Part ID': '3001', 'Color Code': '1'}

@@ -2,10 +2,14 @@
 # The Dockerfile installs ONLY from this file with --require-hashes --no-deps, so a rebuild can never
 # pull a newer or re-uploaded release (see docs/security/2026-10-24-security-pass.md, LiteLLM).
 #
-# Regenerate after deliberately changing requirements.txt (inside the app image, as a throwaway container):
+# Regenerate after deliberately changing requirements.txt (inside the app image, as a throwaway container,
+# with the current requirements.lock next to it: uv keeps the pins already in the output file, so only the
+# packages you changed move):
 #   uv pip compile requirements.txt --generate-hashes --python-version 3.12 \
-#       --python-platform x86_64-manylinux_2_39 --no-header -o requirements.lock
-# then review the diff (new packages, new hashes) before committing.
+#       --python-platform x86_64-manylinux_2_39 --no-header --no-annotate -o requirements.lock
+# then re-add the "# via requirements.txt closure" line after each package, and review the diff (new
+# packages, new hashes) before committing.
+# Last change: litellm 1.102.1 -> 1.102.2 (2026-10-24).
 aiohappyeyeballs==2.7.1 \
     --hash=sha256:065665c041c42a5938ed220bdcd7230f22527fbec085e1853d2402c8a3615d9d \
     --hash=sha256:9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472
@@ -919,15 +923,15 @@ jsonschema-specifications==2025.9.1 \
     --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe \
     --hash=sha256:b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d
     # via requirements.txt closure
-litellm==1.102.1 \
-    --hash=sha256:01550e79e052249dc5df53631ed9bdff030ca7c2a22107c5ce482d53ecf5c8d8 \
-    --hash=sha256:296c49171d7b80e6298fdf1bb18c7b69a826b82ae2b917bc6f5a80f153ee8b29 \
-    --hash=sha256:7216f46e6a1eba50f4dbb6000afdb1f5b77360eb498a4f341fc655191108cfd4 \
-    --hash=sha256:b2c24cad24c637b20e91f6dd7b812971a5fa64ad2330213e517ff8f38d25c0d8 \
-    --hash=sha256:b36c46e89e2fc50f42848120ed03a31c7347103cbaa733421f8843915b6f3355 \
-    --hash=sha256:c5fcfbe322e3052f96fa92409fc61ec9712a7b2b567e7760e057b17b7587d021 \
-    --hash=sha256:da73fe3f6a1bf70232d752f7e1fe49f5d4d9473c02972553e0d0f7b514b280c7 \
-    --hash=sha256:f7c4ffead69cf010fe3f551d2941bd6190bdaa816b98d5ebc85df67096724180
+litellm==1.102.2 \
+    --hash=sha256:03ddbc43262ad94fde5f12400547e8824cf4fa9d824831336fad3af6238c4d75 \
+    --hash=sha256:1f8346cba7efb789fdc4fb2f9b79af16c2806cbe680b526756b4b6169f718cef \
+    --hash=sha256:2286499567521a0d76db79ee49f7da63ea787a17fcde55af1e1e563ee3619f79 \
+    --hash=sha256:7c5fdbb175cb712baaf13a0ab3fec5d95641af34cd85d206a104c2821450a675 \
+    --hash=sha256:a9a2b63408e423c71b73a61a54919cafe3da2eddcf3fcdea442e43c4ddf73f76 \
+    --hash=sha256:aa55e642a95830a4fe2cb5b3d7abfe9b3547c8e65dc19790d19822b263814b90 \
+    --hash=sha256:bb0533bd815bf233bf36dde2c9c2c45a8c8f85a3e9cc979f0192ed89f3acb6e2 \
+    --hash=sha256:e10690073b05c87b3194477e41ad085ea065f8b056a59bc119bb7e6ec00e0dbb
     # via requirements.txt closure
 markupsafe==3.0.4 \
     --hash=sha256:007e1ffd9bf65bb6ee96df7b258fc632a4868dd5566037986c64781f35a36e98 \

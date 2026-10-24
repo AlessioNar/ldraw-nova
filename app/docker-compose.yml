@@ -35,6 +35,31 @@ services:
     # LM Studio on the host (Docker Desktop has this built in; Linux needs it).
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Hardening. The server runs as root (it switches to the `agent` user for agent-written code), so everything
+    # the container does not need is removed:
+    #   CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER  give agent code its work folders and switch the user
+    #   KILL                                          stop a timed-out agent process (another user's)
+    #   SETPCAP, NET_ADMIN                            the entrypoint adds a firewall rule that keeps agent code
+    #                                                 away from this app's own API, then removes NET_ADMIN from the
+    #                                                 server's capability set (without NET_ADMIN the app still starts
+    #                                                 and Settings says "Sandbox isolation: off").
+    # NET_ADMIN lets root in the container change the container's own network rules (not the host's), only
+    # reachable through `docker exec`; the server and agent code never hold it.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - FOWNER
+      - KILL
+      - SETPCAP
+      - NET_ADMIN
+    mem_limit: 4g
+    pids_limit: 512
     # The container's main process is the web server, so it stays up and you can
     # log in any time:
     #   docker compose up -d --build

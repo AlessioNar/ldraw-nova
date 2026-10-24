@@ -18,6 +18,9 @@ _inherited: dict[str, str | None] = {}
 _initialized = False
 REQUIRED_NAME = "TYPESAFE_API_KEY"
 REQUIRED_ID = "typesafe-api-key"
+# Optional fixed row: a separate, spend-capped OpenRouter key for Jev search only.
+JEV_NAME = "JEV_OPENROUTER_API_KEY"
+JEV_ID = "jev-openrouter-api-key"
 
 
 # Applied to the server's own os.environ (root, in the image): a variable like these would change how every
@@ -58,6 +61,12 @@ def _clean(rows: list, previous: list) -> list[dict]:
             raise ValueError("TYPESAFE_API_KEY cannot be renamed")
         if name == REQUIRED_NAME and not row_id:
             row_id = required_id
+        if row_id == JEV_ID and name != JEV_NAME:
+            raise ValueError(f"{JEV_NAME} cannot be renamed")
+        if name == JEV_NAME and row_id == JEV_ID and JEV_ID not in old:
+            if row.get("value") is None:
+                continue  # untouched fixed row that has no saved value
+            row_id = None
         if name == REQUIRED_NAME and row_id == required_id and required is None:
             if row.get("value") is None:
                 continue  # untouched fixed row: retain the inherited environment
@@ -138,7 +147,13 @@ def public() -> list[dict]:
         if not any(row["fixed"] for row in rows):
             rows.insert(0, {"id": REQUIRED_ID, "name": REQUIRED_NAME, "value": None,
                             "has_value": bool(os.environ.get(REQUIRED_NAME)), "fixed": True})
-        return sorted(rows, key=lambda row: not row["fixed"])
+        if not any(row["name"] == JEV_NAME for row in rows):
+            rows.append({"id": JEV_ID, "name": JEV_NAME, "value": None,
+                         "has_value": bool(os.environ.get(JEV_NAME)), "fixed": True})
+        for row in rows:
+            if row["name"] == JEV_NAME:
+                row["fixed"] = True
+        return sorted(rows, key=lambda row: (not row["fixed"], row["name"] == JEV_NAME))
 
 
 def save(rows: list) -> list[dict]:

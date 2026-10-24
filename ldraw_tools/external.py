@@ -148,12 +148,24 @@ def cad_source(path, library, temp):
     return prepared,mini,{new:table[old].name for old,new in renames.items()}
 
 
+FORMULA_START=('=','+','-','@',chr(9),chr(13))
+PLAIN_NUMBER=re.compile(r'[+-]?\d+(\.\d+)?')
+
+
+def csv_safe(value):
+    """Neutralise a cell a spreadsheet would run as a formula (leading = + - @ tab CR) with a leading apostrophe."""
+    if isinstance(value,str) and value.startswith(FORMULA_START) and not PLAIN_NUMBER.fullmatch(value):
+        return "'"+value
+    return value
+
+
 def restore_bom_names(path, names):
-    if not names:return
+    # Always rewritten: part names and descriptions can come from imported models and must not run as formulas.
     with Path(path).open(newline='',encoding='utf-8-sig') as f:
         reader=csv.DictReader(f);fields=reader.fieldnames;rows=list(reader)
     for row in rows:
-        row['Part ID']=names.get(row['Part ID'],row['Part ID'])
+        if 'Part ID' in row:row['Part ID']=names.get(row['Part ID'],row['Part ID'])
+        for key,value in row.items():row[key]=csv_safe(value)
     with Path(path).open('w',newline='',encoding='utf-8') as f:
         writer=csv.DictWriter(f,fieldnames=fields);writer.writeheader();writer.writerows(rows)
 
