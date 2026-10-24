@@ -1,0 +1,1683 @@
+{
+ "version": 1,
+ "prompts": [
+  {
+   "id": "owner-car",
+   "prompt": "Build a small red car with four black wheels",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "car"
+    },
+    "size": {
+     "scale": "small"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    },
+    "features": [
+     {
+      "name": "wheels",
+      "count": 4
+     }
+    ]
+   },
+   "rules": true,
+   "source": "owner"
+  },
+  {
+   "id": "owner-cottage",
+   "prompt": "A 6 x 8 cottage with a door, two windows and a sloped roof",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 6,
+      "depth": 8
+     },
+     "unit_ambiguous": true
+    },
+    "features": [
+     {
+      "name": "door",
+      "count": 1
+     },
+     {
+      "name": "window",
+      "count": 2
+     },
+     {
+      "name": "sloped roof"
+     }
+    ],
+    "ambiguities": [
+     {
+      "field": "size",
+      "question": "Is 6 x 8 in studs or in bricks?",
+      "options": [
+       "6x8 studs",
+       "6x8 bricks"
+      ]
+     }
+    ]
+   },
+   "rules": true,
+   "source": "owner"
+  },
+  {
+   "id": "owner-starship",
+   "prompt": "Build a small white and blue starship",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "spaceship",
+     "kind": "starship"
+    },
+    "size": {
+     "scale": "small"
+    },
+    "colours": {
+     "hull": "White",
+     "accent": "Blue"
+    }
+   },
+   "source": "owner"
+  },
+  {
+   "id": "home-tower",
+   "prompt": "Build a spiral staircase around a tall stone tower",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "tower",
+     "kind": "stone tower"
+    },
+    "colours": {
+     "body": "Light Bluish Gray"
+    },
+    "features": [
+     {
+      "name": "spiral staircase",
+      "required": true
+     }
+    ]
+   },
+   "rules": true,
+   "source": "home"
+  },
+  {
+   "id": "home-crane",
+   "prompt": "Design a harbour crane with a long boom and a cargo dock",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "other",
+     "kind": "harbour crane"
+    },
+    "features": [
+     {
+      "name": "long boom"
+     },
+     {
+      "name": "cargo dock"
+     }
+    ]
+   },
+   "rules": true,
+   "source": "home"
+  },
+  {
+   "id": "new-truck",
+   "prompt": "a truck",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "truck"
+    }
+   }
+  },
+  {
+   "id": "new-tipper",
+   "prompt": "I want a yellow tipper truck with black wheels",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "tipper truck"
+    },
+    "colours": {
+     "body": "Yellow",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "new-pickup",
+   "prompt": "build a green pickup",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "pickup"
+    },
+    "colours": {
+     "body": "Green"
+    }
+   }
+  },
+  {
+   "id": "new-van",
+   "prompt": "yellow delivery van please",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "van",
+     "kind": "delivery van"
+    },
+    "colours": {
+     "body": "Yellow"
+    }
+   }
+  },
+  {
+   "id": "new-bus",
+   "prompt": "a blue double decker bus",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "van",
+     "kind": "double decker bus"
+    },
+    "colours": {
+     "body": "Blue"
+    }
+   }
+  },
+  {
+   "id": "new-moto",
+   "prompt": "a black touring motorbike",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "motorcycle",
+     "kind": "touring motorcycle"
+    },
+    "colours": {
+     "body": "Black"
+    }
+   }
+  },
+  {
+   "id": "new-boat",
+   "prompt": "a small blue harbour launch",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "boat",
+     "kind": "harbour launch"
+    },
+    "size": {
+     "scale": "small"
+    },
+    "colours": {
+     "body": "Blue"
+    }
+   }
+  },
+  {
+   "id": "new-boat-len",
+   "prompt": "a boat 10 studs long",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "boat",
+     "kind": "boat"
+    },
+    "size": {
+     "studs": {
+      "length": 10
+     }
+    }
+   }
+  },
+  {
+   "id": "new-jet",
+   "prompt": "white courier jet with red accents",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "aircraft",
+     "kind": "courier jet"
+    },
+    "colours": {
+     "body": "White",
+     "accent": "Red"
+    }
+   }
+  },
+  {
+   "id": "new-heli",
+   "prompt": "a helicopter",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "aircraft",
+     "kind": "helicopter"
+    }
+   }
+  },
+  {
+   "id": "new-freighter",
+   "prompt": "a big grey space freighter",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "spaceship",
+     "kind": "freighter"
+    },
+    "size": {
+     "scale": "large"
+    },
+    "colours": {
+     "body": "Light Bluish Gray"
+    }
+   }
+  },
+  {
+   "id": "new-falcon",
+   "prompt": "Build the Millennium Falcon",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "spaceship",
+     "kind": "starship"
+    },
+    "reference_hint": "Millennium Falcon"
+   }
+  },
+  {
+   "id": "new-house-chim",
+   "prompt": "a house with a red roof and a chimney",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "house"
+    },
+    "colours": {
+     "roof": "Red"
+    },
+    "features": [
+     {
+      "name": "chimney"
+     }
+    ]
+   }
+  },
+  {
+   "id": "new-house-size",
+   "prompt": "a house 12 studs wide and 10 deep, 8 courses tall",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "house"
+    },
+    "size": {
+     "studs": {
+      "width": 12,
+      "depth": 10,
+      "height_courses": 8
+     }
+    }
+   }
+  },
+  {
+   "id": "new-shop",
+   "prompt": "a small corner shop with a green awning",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "building",
+     "kind": "shop"
+    },
+    "size": {
+     "scale": "small"
+    },
+    "features": [
+     {
+      "name": "awning"
+     }
+    ],
+    "colours": {
+     "accent": "Green"
+    }
+   }
+  },
+  {
+   "id": "new-station",
+   "prompt": "lego city fire station",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "building",
+     "kind": "fire station"
+    }
+   }
+  },
+  {
+   "id": "new-castle",
+   "prompt": "a huge castle with four towers",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "tower",
+     "kind": "castle"
+    },
+    "size": {
+     "scale": "large"
+    },
+    "features": [
+     {
+      "name": "tower",
+      "count": 4
+     }
+    ]
+   }
+  },
+  {
+   "id": "new-lighthouse",
+   "prompt": "a red and white lighthouse",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "tower",
+     "kind": "lighthouse"
+    },
+    "colours": {
+     "body": "Red",
+     "accent": "White"
+    }
+   }
+  },
+  {
+   "id": "new-garden",
+   "prompt": "a garden with a fence, a tree and a bench",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "garden",
+     "kind": "garden"
+    },
+    "features": [
+     {
+      "name": "fence"
+     },
+     {
+      "name": "tree"
+     },
+     {
+      "name": "bench"
+     }
+    ]
+   }
+  },
+  {
+   "id": "new-technic",
+   "prompt": "technic gearbox",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "mechanism",
+     "kind": "gearbox"
+    }
+   }
+  },
+  {
+   "id": "new-technic2",
+   "prompt": "a technic crane with a motor",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "technic",
+     "kind": "crane"
+    },
+    "features": [
+     {
+      "name": "motor"
+     }
+    ]
+   }
+  },
+  {
+   "id": "new-worm",
+   "prompt": "show me a worm drive",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "mechanism",
+     "kind": "worm drive"
+    }
+   }
+  },
+  {
+   "id": "new-tiny-pickup",
+   "prompt": "a tiny pickup truck",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "pickup"
+    },
+    "size": {
+     "scale": "micro"
+    }
+   }
+  },
+  {
+   "id": "new-mini-car",
+   "prompt": "mini sports car in orange",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "sports car"
+    },
+    "size": {
+     "scale": "mini"
+    },
+    "colours": {
+     "body": "Orange"
+    }
+   }
+  },
+  {
+   "id": "new-police",
+   "prompt": "a police car with a blue light",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "police car"
+    },
+    "features": [
+     {
+      "name": "blue light"
+     }
+    ]
+   }
+  },
+  {
+   "id": "new-racing",
+   "prompt": "red and white racing car, no spoiler",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "racing car"
+    },
+    "colours": {
+     "body": "Red",
+     "accent": "White"
+    },
+    "constraints": {
+     "avoid": [
+      "spoiler"
+     ]
+    }
+   }
+  },
+  {
+   "id": "new-glass",
+   "prompt": "a car with clear windows and a dark blue body",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "car"
+    },
+    "colours": {
+     "body": "Dark Blue",
+     "glass": "Trans-Clear"
+    }
+   }
+  },
+  {
+   "id": "new-train",
+   "prompt": "a steam train",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "other",
+     "kind": "train"
+    }
+   }
+  },
+  {
+   "id": "new-robot",
+   "prompt": "a friendly robot",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "other",
+     "kind": "robot",
+     "style": [
+      "friendly"
+     ]
+    }
+   }
+  },
+  {
+   "id": "new-scene",
+   "prompt": "a street with a house and a tree",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "scene",
+     "kind": "street"
+    },
+    "features": [
+     {
+      "name": "house"
+     },
+     {
+      "name": "tree"
+     }
+    ]
+   }
+  },
+  {
+   "id": "new-parts-only",
+   "prompt": "build a red car using only parts I own",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "car"
+    },
+    "colours": {
+     "body": "Red"
+    },
+    "constraints": {
+     "parts_mode": "only"
+    }
+   }
+  },
+  {
+   "id": "new-max-parts",
+   "prompt": "a tower under 200 parts",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "tower",
+     "kind": "tower"
+    },
+    "constraints": {
+     "max_parts": 200
+    }
+   }
+  },
+  {
+   "id": "new-budget",
+   "prompt": "a spaceship that costs less than 30 euros",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "spaceship",
+     "kind": "spaceship"
+    },
+    "constraints": {
+     "budget_eur": 30
+    }
+   }
+  },
+  {
+   "id": "new-must",
+   "prompt": "a house that must use the tan bricks and avoid slopes",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "house"
+    },
+    "colours": {
+     "body": "Tan"
+    },
+    "constraints": {
+     "avoid": [
+      "slopes"
+     ]
+    }
+   }
+  },
+  {
+   "id": "new-ambig",
+   "prompt": "build something cool",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "other"
+    },
+    "confidence": 0.2,
+    "ambiguities": [
+     {
+      "field": "subject",
+      "question": "What would you like to build?",
+      "options": [
+       "car",
+       "house",
+       "spaceship"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "new-bricks",
+   "prompt": "a 4 x 6 shed, 4 x 6 studs",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "shed"
+    },
+    "size": {
+     "studs": {
+      "width": 4,
+      "depth": 6
+     }
+    }
+   }
+  },
+  {
+   "id": "q-parts",
+   "prompt": "what parts does a small car need?",
+   "expected": {
+    "intent": "question",
+    "subject": {
+     "family": "car"
+    }
+   }
+  },
+  {
+   "id": "q-buildable",
+   "prompt": "is this buildable with real bricks?",
+   "expected": {
+    "intent": "question",
+    "subject": {
+     "family": "other"
+    }
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "other-hello",
+   "prompt": "hello",
+   "expected": {
+    "intent": "other",
+    "subject": {
+     "family": "other"
+    }
+   }
+  },
+  {
+   "id": "fu-roof-blue",
+   "prompt": "make the roof blue",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "set_colour",
+      "target": "roof",
+      "value": "Blue"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   },
+   "rules": true
+  },
+  {
+   "id": "fu-body-green",
+   "prompt": "paint the body green",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "set_colour",
+      "target": "body",
+      "value": "Green"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   },
+   "rules": true
+  },
+  {
+   "id": "fu-wheels-black",
+   "prompt": "Colour the wheels dark gray please",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "set_colour",
+      "target": "wheels",
+      "value": "Dark Gray"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   },
+   "rules": true
+  },
+  {
+   "id": "fu-undo",
+   "prompt": "undo",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "undo",
+      "target": "whole"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   },
+   "rules": true
+  },
+  {
+   "id": "fu-revert",
+   "prompt": "revert to the original version",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "revert",
+      "target": "whole"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   },
+   "rules": true
+  },
+  {
+   "id": "fu-again",
+   "prompt": "again",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "set_colour",
+      "target": "roof",
+      "value": "Blue"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   },
+   "previous_text": "make the roof blue",
+   "rules": true
+  },
+  {
+   "id": "fu-car-yellow",
+   "prompt": "make the car yellow",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "set_colour",
+      "target": "body",
+      "value": "Yellow"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-roof-red-door-white",
+   "prompt": "make the roof red and the door white",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "set_colour",
+      "target": "roof",
+      "value": "Red"
+     },
+     {
+      "op": "set_colour",
+      "target": "door",
+      "value": "White"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-wheels-bigger",
+   "prompt": "bigger wheels",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "wheels",
+      "delta": "bigger"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-wheels-chimney",
+   "prompt": "bigger wheels, and add a chimney",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "wheels",
+      "delta": "bigger"
+     },
+     {
+      "op": "add_feature",
+      "target": "chimney"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-longer",
+   "prompt": "make it longer",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "truck"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "whole",
+      "delta": "longer"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "tipper truck"
+    },
+    "colours": {
+     "body": "Orange",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-wider2",
+   "prompt": "make it 2 studs wider",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "whole",
+      "delta": "wider",
+      "amount": 2,
+      "unit": "studs"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-longer-pct",
+   "prompt": "10 percent longer",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "truck"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "whole",
+      "delta": "longer",
+      "amount": 10,
+      "unit": "percent"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "tipper truck"
+    },
+    "colours": {
+     "body": "Orange",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-taller",
+   "prompt": "taller please",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "whole",
+      "delta": "taller"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-smaller",
+   "prompt": "make it smaller",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "whole",
+      "delta": "smaller"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-lower-roof",
+   "prompt": "lower the roof",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "roof",
+      "delta": "lower"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-add-chimney",
+   "prompt": "add a chimney",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "add_feature",
+      "target": "chimney"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-remove-porch",
+   "prompt": "remove the porch",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "remove_feature",
+      "target": "porch"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-two-windows",
+   "prompt": "add two windows on the left side",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "add_feature",
+      "target": "window",
+      "count": 2,
+      "where": "left"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-tree",
+   "prompt": "add a tree",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "add_feature",
+      "target": "tree"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-fence",
+   "prompt": "put a fence around it",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "add_feature",
+      "target": "fence",
+      "where": "around"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-flatbed",
+   "prompt": "swap the cab for a flatbed",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "truck"
+    },
+    "edits": [
+     {
+      "op": "swap_part",
+      "target": "cab",
+      "value": "flatbed"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "tipper truck"
+    },
+    "colours": {
+     "body": "Orange",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-design",
+   "prompt": "use a different design",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "replace_model",
+      "target": "whole"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-truck-instead",
+   "prompt": "make it a truck instead",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "replace_model",
+      "target": "whole",
+      "value": "truck"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-windows-clear",
+   "prompt": "the windows should be clear",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "car"
+    },
+    "edits": [
+     {
+      "op": "set_colour",
+      "target": "glass",
+      "value": "Trans-Clear"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-wheels-paint-body",
+   "prompt": "bigger wheels and paint the body red",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "truck"
+    },
+    "edits": [
+     {
+      "op": "scale_param",
+      "target": "wheels",
+      "delta": "bigger"
+     },
+     {
+      "op": "set_colour",
+      "target": "body",
+      "value": "Red"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "truck",
+     "kind": "tipper truck"
+    },
+    "colours": {
+     "body": "Orange",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-question",
+   "prompt": "why is the roof blue?",
+   "expected": {
+    "intent": "question",
+    "subject": {
+     "family": "house"
+    }
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-new-ship",
+   "prompt": "build me a spaceship instead",
+   "expected": {
+    "intent": "new_model",
+    "subject": {
+     "family": "spaceship",
+     "kind": "spaceship"
+    }
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "car",
+     "kind": "coupe"
+    },
+    "colours": {
+     "body": "Red",
+     "wheels": "Black"
+    }
+   }
+  },
+  {
+   "id": "fu-remove-chimney",
+   "prompt": "remove the chimney",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "remove_feature",
+      "target": "chimney"
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  },
+  {
+   "id": "fu-more-windows",
+   "prompt": "two more windows",
+   "expected": {
+    "intent": "edit",
+    "subject": {
+     "family": "house"
+    },
+    "edits": [
+     {
+      "op": "add_feature",
+      "target": "window",
+      "count": 2
+     }
+    ]
+   },
+   "current_spec": {
+    "intent": "new_model",
+    "subject": {
+     "family": "house",
+     "kind": "cottage"
+    },
+    "size": {
+     "studs": {
+      "width": 8,
+      "depth": 6
+     }
+    },
+    "colours": {
+     "body": "Tan",
+     "roof": "Red"
+    }
+   }
+  }
+ ]
+}
