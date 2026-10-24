@@ -80,7 +80,7 @@ async def _start(store, slug: str, version: Optional[int]) -> dict:
     work.mkdir(parents=True, exist_ok=True)
     sandbox.give_to_agent(work)
     if version is None:
-        view = await open_session(store, key, name=slug, replace=replace)
+        view = await open_session(store, key, name=slug, replace=replace, empty=True)
         base_file = None
     else:
         model = _version_file(slug, version)
