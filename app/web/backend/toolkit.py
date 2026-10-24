@@ -20,8 +20,21 @@ BUILDER_GUIDES = (
 )
 
 
-# Without a TypeSafe key the Jev procedure is dead weight in every prompt.
+# Without a Jev key the Jev procedure is dead weight in every prompt.
 KEYWORD_GUIDE = {"docs/agent/reference-discovery.md": "docs/agent/reference-discovery-fts.md"}
+
+# OpenRouter serves TypeSafe's System One API, so jev-rerank's SDK only needs a new base URL and model id.
+OPENROUTER_JEV = {"TYPESAFE_BASE_URL": "https://openrouter.ai/api", "TYPESAFE_DEFAULT_MODEL": "typesafe/jev-1.13"}
+
+
+def jev_environment() -> dict[str, str]:
+    """Variables jev-rerank needs: a TypeSafe key, else the OpenRouter key routed to OpenRouter; {} means keyword search."""
+    saved = environment_config.snapshot()
+    if key := saved.get("TYPESAFE_API_KEY", "").strip():
+        return {"TYPESAFE_API_KEY": key}
+    if key := saved.get("OPENROUTER_API_KEY", "").strip():
+        return {"TYPESAFE_API_KEY": key, **OPENROUTER_JEV}
+    return {}
 
 
 def root() -> Path:
@@ -78,7 +91,7 @@ def instructions() -> str:
 def guide_paths() -> list[str]:
     # Chosen by the configured key alone, so it is stable within a chat and
     # changes only when the owner adds or removes the key.
-    keyword_only = not environment_config.snapshot().get("TYPESAFE_API_KEY", "").strip()
+    keyword_only = not jev_environment()
     return [KEYWORD_GUIDE.get(path, path) if keyword_only else path for path in BUILDER_GUIDES]
 
 

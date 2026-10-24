@@ -316,7 +316,7 @@ def search(index, kind, query, *, engine='auto', limit=10, candidates=500, pool=
                     temp.unlink(missing_ok=True)
             command = ['jev-rerank','--db',str(snapshot),'--table-field','candidates.full_description',
                        '--query',json.dumps(dict(query=query,yes=yes,no=no)) if yes is not None else query,
-                       '--top',str(pool),'--candidates',str(candidates),'--model','jev-1.13.0','--json','--show']
+                       '--top',str(pool),'--candidates',str(candidates),'--model',os.environ.get('TYPESAFE_DEFAULT_MODEL') or 'jev-1.13.0','--json','--show']
             result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
             if result.returncode:
                 raise ValueError('Jev search failed; use --engine fts for explicit offline search. '+result.stderr[-1500:])

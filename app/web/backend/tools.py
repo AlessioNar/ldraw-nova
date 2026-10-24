@@ -23,7 +23,6 @@ from urllib.parse import quote
 import sandbox
 import settings
 import toolkit
-import environment_config
 import gallery
 import parts_steering
 from budget import BudgetLedger, WorkerLimits
@@ -117,9 +116,9 @@ async def _run_and_collect(ctx: ToolContext, argv: list[str], timeout: int, cwd:
 
 async def run_command(ctx: ToolContext, argv: list[str], timeout: int, cwd: Path | None = None) -> sandbox.RunResult:
     env = toolkit.environment()
-    key = environment_config.snapshot().get("TYPESAFE_API_KEY", "")
-    if key:
-        env["TYPESAFE_API_KEY"] = key
+    jev = toolkit.jev_environment()
+    env.update(jev)
+    key = jev.get("TYPESAFE_API_KEY", "")
     workspace = toolkit.workspace(ctx.store, ctx.chat_id)       # also links output/ and the toolkit
     return await sandbox.run(argv, cwd or workspace, timeout=max(1, min(timeout, 1800)),
                              env_extra=env, secrets=(key,),

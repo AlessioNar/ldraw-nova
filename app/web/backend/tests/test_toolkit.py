@@ -40,6 +40,18 @@ def test_workspace_is_standalone_layout_with_chat_local_output(ctx):
     assert "save_model" not in {s["function"]["name"] for s in tools.TOOL_SCHEMAS}
 
 
+def test_jev_uses_typesafe_key_else_routes_the_openrouter_key(monkeypatch):
+    saved = {}
+    monkeypatch.setattr(environment_config, "snapshot", lambda: saved)
+    assert toolkit.jev_environment() == {}
+    assert "docs/agent/reference-discovery-fts.md" in toolkit.guide_paths()
+    saved["OPENROUTER_API_KEY"] = "or-key"
+    assert toolkit.jev_environment() == {"TYPESAFE_API_KEY": "or-key", **toolkit.OPENROUTER_JEV}
+    assert "docs/agent/reference-discovery.md" in toolkit.guide_paths()
+    saved["TYPESAFE_API_KEY"] = "ts-key"
+    assert toolkit.jev_environment() == {"TYPESAFE_API_KEY": "ts-key"}
+
+
 def test_real_doctor_build_publish_review_bom_and_download(ctx):
     events = []
     ctx.emit = lambda event, data: events.append((event, data))
