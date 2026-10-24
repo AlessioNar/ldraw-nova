@@ -1,6 +1,4 @@
 """Templates from builds: derived params, pure generate(), validity of every offered variant (docs/plans/build-templates)."""
-import copy
-import json
 
 import jsonschema
 import pytest

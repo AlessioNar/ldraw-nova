@@ -1,62 +1,76 @@
 """Before/after renders of template variants and of role edits on imported models.
 
-    python render_variants.py OUTDIR SPEC.json
+    python render_variants.py OUTDIR SPEC.json [--no-render]
 
 SPEC.json is a list of
-  {"name": "truck-long", "template": "flatbed-truck", "params": {"z_delta": 8}}
-  {"name": "house-blue-roof", "src": "544-1_House.mpd", "edits": [["recolour_role", "roof", "blue"], ["remove_role", "chimney"]]}
-Each item is built, checked for validation errors and rendered to OUTDIR/<name>.png (LeoCAD, home view).
+  {"name": "truck-long", "template": "flatbed-truck", "params": {"z_delta": 4}}
+  {"name": "house-blue-roof", "src": "4956-1_House-with-Arch.mpd", "edits": [["recolour_role", "roof", "blue"]]}
+Each item is built, checked (validation errors, and for templates the same geometry check the derivation used) and
+rendered to OUTDIR/<name>.png (LeoCAD, home view, snap.py). OUTDIR/summary.json lists parts, errors, connected
+components, the role edit's notes and timings.
 """
+import argparse
 import json
-import sys
 import time
 from pathlib import Path
+
+from snap import snap
 
 from ldraw_tools import editor, role_edits, roles, templates
 from ldraw_tools.builder import build_plan
 from ldraw_tools.common import get_parts, library_path, models_path
-from ldraw_tools.external import render
+from ldraw_tools.templates import derive
 
 
 def plan_for(item, parts, facts):
     if 'template' in item:
-        return templates.generate(item['template'], item.get('params')).get('plan'), []
+        return templates.generate(item['template'], item.get('params'))['plan'], []
     path = Path(item['src'])
     path = path if path.exists() else models_path() / item['src']
     plan, _ = editor.import_mpd(path.read_text(encoding='utf-8', errors='ignore'), parts, name=path.name)
-    plan, _ = roles.tag_plan(plan, parts, hints=plan['sections'][0]['description'], facts=facts)
+    plan, _ = roles.tag_plan(plan, parts, hints=plan['sections'][0].get('description', ''), facts=facts)
     notes = []
-    for edit in item.get('edits', []):
-        ops = getattr(role_edits, edit[0])(plan, *edit[1:], parts=parts) if edit[0].startswith('recolour') else getattr(role_edits, edit[0])(plan, *edit[1:])
-        notes.append(f'{edit[0]} {edit[1:]}: {len(ops)} ops {ops.notes}')
+    for name, *args in item.get('edits', []):
+        function = getattr(role_edits, name)
+        ops = function(plan, *args, parts=parts) if name.startswith('recolour') else function(plan, *args)
+        notes.append(f'{name} {args}: {len(ops)} ops, {len(ops.matched)} matched; {"; ".join(ops.notes)}')
         plan = editor.apply(plan, list(ops), parts)
     return plan, notes
 
 
-def main(outdir, spec):
-    out = Path(outdir)
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument('outdir')
+    ap.add_argument('spec')
+    ap.add_argument('--no-render', action='store_true')
+    args = ap.parse_args(argv)
+    out = Path(args.outdir)
     out.mkdir(parents=True, exist_ok=True)
     parts = get_parts()
     facts = roles.PartFacts(parts)
     summary = {}
-    for item in json.loads(Path(spec).read_text()):
+    for item in json.loads(Path(args.spec).read_text(encoding='utf-8')):
         t0 = time.time()
         try:
             plan, notes = plan_for(item, parts, facts)
             text, _, diagnostics = build_plan(plan, parts)
             errors = [d['message'] for d in diagnostics if d['severity'] == 'error']
-            mpd = out / f"{item['name']}.mpd"
-            mpd.write_text(text)
-            render(mpd, library_path(), out / item['name'], views=['home'], timeout=300)
-            (out / item['name'] / 'home.png').replace(out / f"{item['name']}.png")
-            mpd.unlink()
-            summary[item['name']] = dict(parts=sum(len(s) for sec in plan['sections'] for s in sec['steps']), errors=errors[:3],
-                                         notes=notes, seconds=round(time.time() - t0, 1))
+            row = dict(parts=sum(len(s) for sec in plan['sections'] for s in sec['steps']), errors=errors[:3], notes=notes)
+            if 'template' in item:
+                geometry_errors, components = derive.check_plan(plan, parts)
+                row.update(geometry_errors=len(geometry_errors), components=components)
+            if not args.no_render:
+                mpd = out / f"{item['name']}.mpd"
+                mpd.write_text(text, encoding='utf-8')
+                snap(mpd, out / f"{item['name']}.png", library_path())
+                mpd.unlink()
+            row['seconds'] = round(time.time() - t0, 1)
+            summary[item['name']] = row
         except Exception as exc:  # noqa: BLE001
             summary[item['name']] = dict(error=str(exc)[:300])
         print(item['name'], summary[item['name']], flush=True)
-    (out / 'summary.json').write_text(json.dumps(summary, indent=1))
+    (out / 'summary.json').write_text(json.dumps(summary, indent=1), encoding='utf-8')
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:3])
+    main()

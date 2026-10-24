@@ -15,7 +15,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..generators.base import digest_line
-from . import core
 from .core import Template, from_data, load  # noqa: F401
 
 BUNDLED = Path(__file__).resolve().parents[1] / 'data' / 'templates'
@@ -26,6 +25,8 @@ def load_dir(directory):
     """Add every *.json template found in a directory to the registry; returns the ids added."""
     added = []
     for path in sorted(Path(directory).glob('*.json')):
+        if path.name.endswith('.report.json'):
+            continue
         template = load(path)
         REGISTRY[template.id] = template
         added.append(template.id)

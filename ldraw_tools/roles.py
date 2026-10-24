@@ -56,10 +56,10 @@ KINDS = [   # first match wins; matched against the lower-cased library descript
     ('baseplate', r'^(baseplate|road plate|plate .*baseplate)|^baseplate'),
     ('detail', r'^(minifig|figure|animal|plant|flower|tree|flag|sticker|cloth|belville|scala|hose|string|rubber|chain|label|'
                r'sheet|fabric|duplo|bionicle|hero factory|windscreen wiper|tool|cup|cutlery|food|bottle|helmet|hair|torso|'
-               r'head|hips|legs?|arm|hand|neckwear|headwear|hipwear|footwear|stud|display|tag|ring|electric|train (track|wheel)|'
+               r'head|hips|legs?|arm|hand|neckwear|headwear|hipwear|footwear|stud|display|tag|ring|electric|train track|'
                r'antenna|crane hook|barrel|bucket|chest|treasure|sword|spear|shield|weapon|gun|ladder|balloon|belt|backpack)'),
     ('tyre', r'^(tyre|tire)'),
-    ('wheel', r'^wheel(?!.*\barch\b)|wheel rim|\brim\b'),
+    ('wheel', r'^wheel(?!.*\barch\b)|wheel rim|\brim\b|^train wheel'),
     ('glass_window', r'^glass for|^pane|^window pane|^door glass'),
     ('windscreen', r'windscreen|windshield|canopy|cockpit|^glass'),
     ('window', r'window|shutter'),
@@ -80,6 +80,7 @@ KINDS = [   # first match wins; matched against the lower-cased library descript
 _KINDS = [(k, re.compile(p)) for k, p in KINDS]
 _ANGLE = re.compile(r'(?:slope|roof|wedge)[^0-9]*?(\d{2})\b')
 _BAD_DESC = re.compile(r'^[~=_|]')
+_MOVED = re.compile(r'^~moved to\s+(\S+)', re.IGNORECASE)
 
 NAME_ROLES = [   # words in section names/descriptions -> role (prior for generic parts only)
     ('roof', r'roof|gable|chimney|dormer|eave|attic|dome|ridge'),
@@ -129,6 +130,11 @@ class PartFacts:
         if hit is None:
             try:
                 desc = (self.parts.description_for(code) or '').strip()
+                for _ in range(3):      # a "~Moved to 3023b" stub describes nothing: follow it to the real part
+                    moved = _MOVED.match(desc)
+                    if not moved:
+                        break
+                    desc = (self.parts.description_for(moved.group(1)) or '').strip()
             except Exception:  # noqa: BLE001 - an unreadable part just has no description
                 desc = ''
             try:
@@ -143,7 +149,8 @@ class PartFacts:
 def part_kind(description):
     """Semantic kind of a part from its description ('slope', 'window', 'wheel', 'plate', ...); 'other' when unknown."""
     text = ' '.join(description.casefold().split())
-    if not text or _BAD_DESC.match(text):
+    text = text.lstrip('=_~| ') if not text.startswith('~moved') else ''    # aliases and physical-colour parts
+    if not text:
         return 'other'
     for kind, pattern in _KINDS:
         if pattern.search(text):
@@ -255,22 +262,109 @@ def classify(plan, parts, *, hints='', use_names=True, facts=None):
     sections = {s['name']: s for s in plan['sections']}
     root = plan['sections'][0]
     hint_text = ' '.join([hints or '', root.get('description', ''), root['name']])
+    transparent = [_transparent(parts, leaf['colour']) for leaf in leaves]
+
+    # A scene (a house with a car in front of it, a cabin with a boat) is several objects: when the root's own
+    # sub-assemblies are confidently of different domains, each one is scored in its own domain and frame.
+    groups = collections.defaultdict(list)
+    for i, leaf in enumerate(leaves):
+        groups[leaf['chain'][0] if len(leaf['chain']) > 1 else None].append(i)
+    big = [(link, idx) for link, idx in groups.items() if link is not None and len(idx) >= 12]
+    objects = []
+    for cluster in _clusters(leaves, [idx for _, idx in big]):     # sub-assemblies that touch form one object
+        idx = [i for k in cluster for i in big[k][1]]
+        text = ' '.join(re.sub(r'\.(ldr|mpd|dat)$', '', leaves[big[k][1][0]]['chain'][1][0].casefold()) + ' ' +
+                        sections.get(leaves[big[k][1][0]]['chain'][1][0], {}).get('description', '') for k in cluster)
+        found_domain, found_score = _domain([leaves[i] for i in idx], text)
+        if found_score >= 3:
+            objects.append((found_domain, idx))
+    if len({d for d, _ in objects}) >= 2:
+        taken = {i for _, idx in objects for i in idx}
+        rest = [i for i in range(len(leaves)) if i not in taken]
+        plan_groups = list(objects)
+        if rest:
+            plan_groups.append((_domain([leaves[i] for i in rest], hint_text)[0], rest))
+    else:
+        plan_groups = [(_domain(leaves, hint_text)[0], list(range(len(leaves))))]
+    domain = max(plan_groups, key=lambda g: len(g[1]))[0]
+
+    votes = collections.defaultdict(list)
+    for group_domain, idx in plan_groups:
+        found = _score_group([leaves[i] for i in idx], [transparent[i] for i in idx], group_domain, sections, root['name'],
+                             use_names)
+        for i, role in zip(idx, found, strict=True):
+            votes[leaves[i]['key']].append(role)
+    result = {}
+    for key, found in votes.items():     # a part inside a submodel used several times is voted on by every instance
+        ballot = collections.defaultdict(float)
+        for r in found:
+            ballot[r.role] += r.confidence
+        best = max(ballot, key=ballot.get)
+        voters = [r for r in found if r.role == best]
+        top = max(voters, key=lambda r: r.confidence)
+        result[key] = Role(best, round(sum(r.confidence for r in voters) / len(found), 3), top.reason)
+
+    # Submodel instances: the dominant role of the leaves below (confidence-weighted), bottom-up over the chains.
+    below = collections.defaultdict(lambda: collections.defaultdict(float))
+    for leaf in leaves:
+        role = result[leaf['key']]
+        for link in leaf['chain'][:-1]:
+            below[link][role.role] += role.confidence
+    for link, ballot in below.items():
+        best = max(ballot, key=ballot.get)
+        result[link] = Role(best, round(ballot[best] / sum(ballot.values()), 3), 'submodel majority')
+    result = {_entry_key(plan, k): v for k, v in result.items()}
+    result['_domain'] = domain
+    return result
+
+
+def _clusters(leaves, groups):
+    """Groups of parts (index lists) merged when their x/z boxes overlap by more than a fifth of the smaller one: a roof
+    on its house or a cab on its chassis is one object; a car parked beside the house is another. Returns index lists
+    into `groups`."""
+    boxes = []
+    for idx in groups:
+        lo = np.min([leaves[i]['bounds'][0] for i in idx], axis=0)
+        hi = np.max([leaves[i]['bounds'][1] for i in idx], axis=0)
+        boxes.append((lo[[0, 2]], hi[[0, 2]]))
+    parent = list(range(len(groups)))
+
+    def find(k):
+        while parent[k] != k:
+            k = parent[k]
+        return k
+    for a in range(len(boxes)):
+        for b in range(a + 1, len(boxes)):
+            (alo, ahi), (blo, bhi) = boxes[a], boxes[b]
+            inter = np.clip(np.minimum(ahi, bhi) - np.maximum(alo, blo), 0, None).prod()
+            smaller = min((ahi - alo).prod(), (bhi - blo).prod())
+            if smaller <= 0 or inter > 0.2 * smaller:
+                parent[find(b)] = find(a)
+    out = collections.defaultdict(list)
+    for k in range(len(groups)):
+        out[find(k)].append(k)
+    return list(out.values())
+
+
+def _domain(leaves, hint_text):
+    """(domain, score) of a set of parts: building, vehicle, aircraft or generic, from part kinds and the hint text."""
     kinds = collections.Counter(leaf['facts']['kind'] for leaf in leaves)
     n = len(leaves)
-    transparent = {i: _transparent(parts, leaf['colour']) for i, leaf in enumerate(leaves)}
     hinted = _hint_domain(hint_text)
-
     wheels = kinds['wheel'] + kinds['tyre']
     score = dict(
         aircraft=2 * (kinds['wing'] >= 2) + (kinds['wing'] >= 1) + (kinds['engine'] > 0) + 3 * ('aircraft' in hinted),
-        vehicle=2 * (wheels >= 2) + (wheels >= 1) + 3 * ('vehicle' in hinted) + (kinds['vehicle'] >= 2),
+        vehicle=2 * (wheels >= 2) + (wheels >= 1) + 3 * ('vehicle' in hinted) + (kinds['vehicle'] >= 2)
+        + 3 * any(leaf['facts']['desc'].casefold().startswith(('boat', 'hull')) for leaf in leaves),
         building=2 * (kinds['window'] + kinds['door'] + kinds['glass_window'] > 0) + 3 * ('building' in hinted)
         + (kinds['slope'] > 0.05 * n and not wheels))
     # Ties go to the vehicle (a car has wings), then the building (a plane has windows).
     domain = max(('vehicle', 'building', 'aircraft'), key=lambda d: score[d])
-    if score[domain] < 2:
-        domain = 'generic'
+    return (domain if score[domain] >= 2 else 'generic'), score[domain]
 
+
+def _score_group(leaves, transparent, domain, sections, root, use_names):
+    """Role of each part of one object (the whole model, or one object of a scene), in the object's own frame."""
     # Model frame. Loose details (figures, plants, lamps) must not stretch the height band.
     solid = [lf for lf in leaves if lf['facts']['kind'] not in ('detail', 'light', 'baseplate')] or leaves
     lows = np.array([lf['bounds'][0] for lf in solid])
@@ -304,33 +398,23 @@ def classify(plan, parts, *, hints='', use_names=True, facts=None):
     if domain == 'building' and slopes:
         roof_start = min(rel(lf)[0] for lf in slopes)
     wheel_top = max((rel(lf)[1] for lf in leaves if lf['facts']['kind'] in ('wheel', 'tyre')), default=None)
+    wheel_mid = (min(rel(lf)[0] for lf in leaves if lf['facts']['kind'] in ('wheel', 'tyre')) + wheel_top) / 2 \
+        if wheel_top is not None else None
+    # The top of the glazing (a vehicle's roof sits on it) and the half width of an aircraft's fuselage: the width of
+    # its bricks and slopes near the centre line; a plate reaching well beyond it is a wing.
+    glass_top = max((rel(lf)[1] for i, lf in enumerate(leaves)
+                     if lf['facts']['kind'] in ('windscreen', 'glass_window') or (transparent[i] and share(lf) >= .01)), default=None)
 
-    votes = collections.defaultdict(list)
-    for i, leaf in enumerate(leaves):
-        votes[leaf['key']].append(_score(leaf, transparent[i], domain, rel(leaf), share(leaf), lateral(leaf), roof_start,
-                                         wheel_top, sections, root['name'], use_names))
-    result = {}
-    for key, found in votes.items():     # a part inside a submodel used several times is voted on by every instance
-        ballot = collections.defaultdict(float)
-        for r in found:
-            ballot[r.role] += r.confidence
-        best = max(ballot, key=ballot.get)
-        voters = [r for r in found if r.role == best]
-        top = max(voters, key=lambda r: r.confidence)
-        result[key] = Role(best, round(sum(r.confidence for r in voters) / len(found), 3), top.reason)
+    def edge(leaf):
+        lo, hi = leaf['bounds']
+        a = [0, 2][span_axis]
+        return max(abs(lo[a] - centre_xz[span_axis]), abs(hi[a] - centre_xz[span_axis]))
+    bulky = [edge(lf) for lf in leaves if lf['facts']['kind'] in ('brick', 'slope', 'vehicle', 'windscreen')]
+    body_half = float(np.percentile(bulky, 40)) if bulky else None    # most bricks and slopes sit in the fuselage
+    ctx = dict(roof_start=roof_start, wheel_top=wheel_top, wheel_mid=wheel_mid, glass_top=glass_top, body_half=body_half)
 
-    # Submodel instances: the dominant role of the leaves below (confidence-weighted), bottom-up over the chains.
-    below = collections.defaultdict(lambda: collections.defaultdict(float))
-    for leaf in leaves:
-        role = result[leaf['key']]
-        for link in leaf['chain'][:-1]:
-            below[link][role.role] += role.confidence
-    for link, ballot in below.items():
-        best = max(ballot, key=ballot.get)
-        result[link] = Role(best, round(ballot[best] / sum(ballot.values()), 3), 'submodel majority')
-    result = {_entry_key(plan, k): v for k, v in result.items()}
-    result['_domain'] = domain
-    return result
+    return [_score(leaf, transparent[i], domain, rel(leaf), share(leaf), lateral(leaf), ctx, edge(leaf), sections, root,
+                   use_names) for i, leaf in enumerate(leaves)]
 
 
 def _entry_key(plan, key):
@@ -344,7 +428,7 @@ def _entry_key(plan, key):
     return key
 
 
-def _score(leaf, glassy, domain, rel_h, share, lateral, roof_start, wheel_top, sections, root, use_names):
+def _score(leaf, glassy, domain, rel_h, share, lateral, ctx, edge, sections, root, use_names):
     info = leaf['facts']
     kind, desc = info['kind'], info['desc'].casefold()
     bottom, top, mid = rel_h
@@ -364,7 +448,7 @@ def _score(leaf, glassy, domain, rel_h, share, lateral, roof_start, wheel_top, s
     if kind == 'window':
         return Role('window' if domain != 'aircraft' else 'glass', .9, 'window part')
     if kind == 'door':
-        return Role('door' if domain == 'building' or domain == 'generic' else 'body', .9, 'door part')
+        return Role('door', .9, 'door part')
     if kind == 'wing':
         return Role('wing' if domain == 'aircraft' else 'trim', .9, 'wing part')
     if kind == 'engine':
@@ -378,11 +462,11 @@ def _score(leaf, glassy, domain, rel_h, share, lateral, roof_start, wheel_top, s
         return Role('window' if domain == 'building' else 'glass', .75, 'transparent colour')
     # 2. what the part's place in the model says, and 3. what the submodel it sits in is called; the surer one wins
     if domain == 'building':
-        geo = _building(kind, desc, bottom, top, mid, share, roof_start)
+        geo = _building(kind, desc, bottom, top, mid, share, ctx['roof_start'])
     elif domain == 'vehicle':
-        geo = _vehicle(kind, desc, bottom, top, mid, share, wheel_top)
+        geo = _vehicle(kind, desc, bottom, top, mid, share, ctx['wheel_top'], ctx['glass_top'], ctx['wheel_mid'])
     elif domain == 'aircraft':
-        geo = _aircraft(kind, desc, bottom, top, mid, share, lateral)
+        geo = _aircraft(kind, desc, bottom, top, mid, share, lateral, edge, ctx['body_half'])
     elif kind == 'technic':
         geo = Role('structure', .5, 'technic part')
     elif kind in ('slope', 'tile') and bottom > 0.6:
@@ -411,7 +495,9 @@ def _building(kind, desc, bottom, top, mid, share, roof_start):
     if kind in ('plate', 'tile', 'wedgeplate'):
         if bottom < .12 and share > .08:
             return Role('base', .7, 'wide plate at the bottom')
-        if top > .9 and share > .05 and roof_start is None:
+        if bottom < .02 and kind == 'plate':
+            return Role('base', .55, 'plate in the bottom layer')
+        if roof_start is None and top > .9 and (share > .05 or kind == 'tile'):
             return Role('roof', .6, 'flat top layer')
         return Role('trim', .5, 'plate or tile between courses')
     if kind == 'arch':
@@ -423,24 +509,34 @@ def _building(kind, desc, bottom, top, mid, share, roof_start):
     return Role('structure', .35, 'no context')
 
 
-def _vehicle(kind, desc, bottom, top, mid, share, wheel_top):
+def _vehicle(kind, desc, bottom, top, mid, share, wheel_top, glass_top=None, wheel_mid=None):
     if kind == 'vehicle':
+        if re.search(r'bogie|buffer|coupling|chassis|axle|suspension|steering', desc):
+            return Role('chassis', .7, 'running gear part')
         return Role('body', .8, 'vehicle body part')
     if kind == 'technic':
         return Role('chassis', .6, 'technic part')
     inside_wheels = wheel_top is not None and top <= wheel_top + 0.02
-    if inside_wheels and kind in ('plate', 'tile', 'brick', 'wedgeplate', 'other', 'fence'):
+    flat = kind in ('plate', 'tile', 'wedgeplate', 'fence')
+    # big wheels reach up the cab: only flat parts, or parts starting below the axles, are the chassis there
+    if inside_wheels and (flat or (kind in ('brick', 'other') and (wheel_mid is None or bottom < wheel_mid))):
         return Role('chassis', .6, 'low, level with the wheels')
     if kind in ('slope', 'tile', 'plate', 'wedgeplate') and bottom > .62:
         return Role('roof', .55, 'top surface of the cabin')
+    if glass_top is not None and glass_top < .97 and bottom >= glass_top - .02 and kind in ('brick', 'other'):
+        return Role('roof', .5, 'above the glazing')
     if kind == 'fence':
         return Role('trim', .5, 'fitting')
     return Role('body', .55, 'above the wheels')
 
 
-def _aircraft(kind, desc, bottom, top, mid, share, lateral):
+def _aircraft(kind, desc, bottom, top, mid, share, lateral, edge=0.0, body_half=None):
     if kind in ('wedgeplate',):
         return Role('wing', .6, 'wedge plate')
+    if kind in ('plate', 'tile') and body_half is not None:
+        if edge > body_half + 15:
+            return Role('wing', .6, 'flat part reaching beyond the fuselage')
+        return Role('body', .5, 'flat part within the fuselage width')
     if kind in ('plate', 'tile') and (lateral > .35 or mid < .4):
         return Role('wing', .55, 'flat part low in the model or far from the centre line')
     if kind == 'technic':

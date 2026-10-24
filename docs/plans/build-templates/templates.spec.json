@@ -1,0 +1,8 @@
+[
+ {"id": "small-house", "src": "5891-1_Small-House.mpd", "title": "Small house (5891)", "family": "house", "kind": "small house",
+  "description": "A small two-storey house with a pitched roof, garden, swing and lamp, after LEGO set 5891"},
+ {"id": "flatbed-truck", "src": "4915-1_Flat-Bed.mpd", "title": "Flatbed truck (4915)", "family": "truck", "kind": "flatbed truck",
+  "description": "A small construction truck: a cab with grille hitched to a flat-bed trailer, after LEGO set 4915"},
+ {"id": "willowbank-cottage", "src": "app/data/generated/willowbank-cottage-v1.mpd", "title": "Willowbank Cottage", "family": "house", "kind": "cottage",
+  "description": "Two-storey cottage hall with dormer and chimney, kitchen wing, porch and a fenced vegetable field"}
+]

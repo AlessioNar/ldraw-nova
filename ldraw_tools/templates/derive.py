@@ -15,7 +15,7 @@ import re
 
 import numpy as np
 
-from .. import role_edits, roles
+from .. import roles
 from ..builder import build_plan
 from ..editor import import_mpd
 from ..geometry import analyze_geometry
@@ -26,6 +26,11 @@ COURSE_RANGE = (-1, 6)
 MAX_CANDIDATES = 5
 OPTIONAL_ROLES = ('detail', 'engine', 'porch', 'chimney')
 SLICE_ROLES = {'wall', 'body', 'structure'}
+NO_SLICE_ROLES = {'roof', 'base', 'wheel', 'tyre', 'detail', 'engine', 'wing'}
+KEEP_ROLES = {'roof', 'wall', 'base'}     # a sub-assembly that is mostly roof or wall is not offered as optional...
+OPTIONAL_NAMES = re.compile(r'chimney|porch|dormer|garden|field|fence|tree|plant|bush|lamp|stair|step|trailer|swing|'
+                            r'chair|bench|antenna|mirror|spoiler|ladder|crane|flag|sign')   # ...unless its name says it is
+KEEP_NAMES = re.compile(r'roof|wall|shell|floor|base|foundation|storey|story|main|body|chassis|cab\b|hull|fuselage')
 CLEAN_CODE = re.compile(r'^\d+[a-z]?$')
 
 # Equivalent sets: same footprint and height, different surface. Each pair is verified against the library's boxes.
@@ -43,7 +48,7 @@ _FAMILY = re.compile(r'(\d+) x (\d+)')
 
 def family_key(description):
     """'Brick  2 x  4' -> 'Brick N x M' (None for 3-dimension parts and parts without a stud footprint)."""
-    text = ' '.join(description.split())
+    text = ' '.join(description.split()).removesuffix(' with Groove')    # every modern tile has a groove
     if re.search(r'\d+ x \d+ x \d+', text) or text[:1] in '~_=|':
         return None
     found = _FAMILY.search(text)
@@ -74,27 +79,52 @@ def _same(a, b, tol=0.6):
     return abs(a - b) <= tol
 
 
+# A quarter turn about the vertical axis, as a local transform: a 2 x 3 brick turned this way fills the place of a 2 x 2
+# brick lengthened along its local z. Boxes below are expressed in the original part's local frame.
+QUARTER = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]])
+
+
+def _turned(box):
+    """Box of a part placed with QUARTER, in the frame it is placed in (x' = z, z' = -x)."""
+    lo, hi = box
+    return np.array([[lo[2], lo[1], -hi[0]], [hi[2], hi[1], -lo[0]]])
+
+
 def candidate_for(fam, facts, leaf_code, axis_j, delta_studs):
-    """Library part equal to leaf_code but `delta_studs` longer along local axis j (0 = x, 2 = z): code and new box."""
+    """Library part equal to leaf_code but `delta_studs` longer along local axis j (0 = x, 2 = z).
+
+    Returns (code, box in the leaf's local frame, turned) or None; `turned` means the new part is placed with a
+    quarter turn (QUARTER) because the library models it with its long side on the other axis.
+    """
     desc = facts.get(leaf_code + '.dat')['desc']
     base = _box(facts, leaf_code)
+    other = [i for i in range(3) if i != axis_j]
     options = []
     for code in fam.members(desc):
         if not CLEAN_CODE.match(code) and code != leaf_code:
             continue
-        box = _box(facts, code)
-        other = [i for i in range(3) if i != axis_j]
-        if not all(_same(box[0][i], base[0][i]) and _same(box[1][i], base[1][i]) for i in other):
-            continue
-        if _same((box[1][axis_j] - box[0][axis_j]) - (base[1][axis_j] - base[0][axis_j]), delta_studs * STUD):
-            options.append((code != leaf_code, len(code), code, box))
+        for turned in (False, True):
+            box = _turned(_box(facts, code)) if turned else _box(facts, code)
+            if not all(_same(box[0][i], base[0][i]) and _same(box[1][i], base[1][i]) for i in other):
+                continue
+            if _same((box[1][axis_j] - box[0][axis_j]) - (base[1][axis_j] - base[0][axis_j]), delta_studs * STUD):
+                options.append((turned, code != leaf_code, len(code), code, box))
+                break
     if not options:
         return None
-    options.sort()
-    return options[0][2], options[0][3]
+    options.sort(key=lambda o: o[:4])
+    return options[0][3], options[0][4], options[0][0]
 
 
 # ------------------------------------------------------------------------------------------------ flattening
+
+def _group_name(entry_id, section):
+    if not re.fullmatch(r'p\d+', entry_id):
+        return entry_id
+    stem = re.sub(r'\.(ldr|mpd|dat)$', '', section, flags=re.IGNORECASE).split(' - ')[-1]
+    slug = re.sub(r'[^a-z0-9]+', '_', stem.casefold()).strip('_')
+    return f'{slug}_{entry_id}' if slug else entry_id
+
 
 def leaves_of(plan, parts, facts):
     """Physical parts of a role-tagged plan as template leaves (stable ids l0001..)."""
@@ -107,11 +137,11 @@ def leaves_of(plan, parts, facts):
         base = (key[0], key[1].rsplit('-', 1)[0] if key not in stored and '-' in key[1] else key[1])
         role = stored.get(key) or stored.get(base) or 'structure'
         lo, hi = leaf['bounds']
-        group = None
-        if len(leaf['chain']) > 1:
-            group = f"{leaf['chain'][0][1]}"
+        # every submodel instance above the part, outermost first: (path key, readable name)
+        groups = [('/'.join(i for _, i in leaf['chain'][:k + 1]), _group_name(leaf['chain'][k][1], leaf['chain'][k + 1][0]))
+                  for k in range(len(leaf['chain']) - 1)]
         counter[role] += 1
-        out.append(dict(id=f'l{n:04d}', ref=leaf['ref'], colour=int(leaf['colour']), role=role, group=group,
+        out.append(dict(id=f'l{n:04d}', ref=leaf['ref'], colour=int(leaf['colour']), role=role, groups=groups,
                         at=[round(float(v), 6) for v in leaf['origin']], matrix=[[round(float(v), 6) for v in row] for row in leaf['mat']],
                         box=[[round(float(v), 3) for v in lo], [round(float(v), 3) for v in hi]],
                         ub=round(float(-hi[1]), 3), ut=round(float(-lo[1]), 3), kind=leaf['facts']['kind']))
@@ -125,6 +155,18 @@ def _local_axis(leaf, world_axis):
     m = np.array(leaf['matrix'])
     j = int(np.argmax(np.abs(m[world_axis])))
     return j if abs(abs(m[world_axis, j]) - 1) < 1e-3 and j in (0, 2) else None
+
+
+FLOAT_ROLES = {'detail', 'trim'}
+
+
+def _floats(leaf, axis):
+    """A small detail or trim part a cut crosses but cannot lengthen: it moves with the side its centre is on.
+
+    Whether that keeps it attached is not assumed here; every offered stretch is built and checked afterwards.
+    """
+    lo, hi = leaf['box'][0][axis], leaf['box'][1][axis]
+    return (leaf['role'] in FLOAT_ROLES or leaf['kind'] in ('detail', 'light')) and hi - lo <= 2 * STUD + 0.5
 
 
 def _classify_cut(leaves, axis, cut, fam, facts, skip=()):
@@ -146,7 +188,13 @@ def _classify_cut(leaves, axis, cut, fam, facts, skip=()):
         j = _local_axis(leaf, axis)
         code = leaf['ref'].casefold().removesuffix('.dat')
         if j is None or not family_key(facts.get(leaf['ref'])['desc']):
-            return None
+            if not _floats(leaf, axis):
+                return None
+            if (lo + hi) / 2 >= cut:
+                shift.append(leaf['id'])
+            else:
+                left += 1
+            continue
         sign = 1 if leaf['matrix'][axis][j] > 0 else -1
         options = {}
         base = _box(facts, code)
@@ -156,10 +204,16 @@ def _classify_cut(leaves, axis, cut, fam, facts, skip=()):
             found = candidate_for(fam, facts, code, j, d)
             if found is None:
                 continue
-            new_code, box = found
+            new_code, box, turned = found
             # keep the min edge of the part fixed in world space, whatever the part's local origin is
             dpos = (base[0][j] - box[0][j]) if sign > 0 else (box[1][j] - base[1][j])
-            options[d] = (new_code, round(float(dpos), 4))
+            options[d] = (new_code, round(float(dpos), 4), 1) if turned else (new_code, round(float(dpos), 4))
+        if not set(options) & (allowed or set(options)) and _floats(leaf, axis):
+            if (lo + hi) / 2 >= cut:
+                shift.append(leaf['id'])
+            else:
+                left += 1
+            continue
         allowed = set(options) if allowed is None else allowed & set(options)
         if not allowed:
             return None
@@ -202,24 +256,50 @@ def _spec(cuts):
                 plans={str(t): list(combo) for t, combo in sorted(best.items())})
 
 
+FOOTPRINT_ROLES = {'wall', 'window', 'door', 'roof', 'body', 'glass', 'structure'}
+
+
+def _footprint(leaves):
+    """World x/z rectangle of the model's main mass (under the roof, else walls and body), so a garden or scenery
+    around it is left alone."""
+    core = ([l for l in leaves if l['role'] == 'roof'] or
+            [l for l in leaves if l['role'] in FOOTPRINT_ROLES and l['kind'] != 'baseplate'] or leaves)
+    return (min(l['box'][0][0] for l in core), max(l['box'][1][0] for l in core),
+            min(l['box'][0][2] for l in core), max(l['box'][1][2] for l in core))
+
+
+def _inside(leaf, rect, margin=1.0):
+    x0, x1, z0, z1 = rect
+    lo, hi = leaf['box']
+    return min(hi[0], x1) - max(lo[0], x0) > margin and min(hi[2], z1) - max(lo[2], z0) > margin
+
+
 def course_candidates(leaves):
-    """Cut heights (up coordinates) where one 24-LDU slice of wall can be repeated: nothing crosses either plane."""
+    """Cut heights (up coordinates) where one 24-LDU slice of wall can be repeated: nothing crosses either plane.
+
+    Only the model's main mass counts (its footprint rectangle): a lamp post or a tree in the garden that crosses
+    the plane stays where it is, and only what stands inside the footprint moves up. Returns
+    [(slice size, cut, slice ids, ids that move)].
+    """
     tol = 6.0
-    ups = sorted({round(l['ub']) for l in leaves})
+    rect = _footprint(leaves)
+    mass = [l for l in leaves if _inside(l, rect) and l['kind'] != 'baseplate']
+    ups = sorted({round(l['ub']) for l in mass})
     out = []
     for cut in ups:
-        if any(l['ub'] < cut - tol and l['ut'] > cut + tol for l in leaves):
+        if any(l['ub'] < cut - tol and l['ut'] > cut + tol for l in mass):
             continue
-        if any(l['ub'] < cut - COURSE - tol and l['ut'] > cut - COURSE + tol for l in leaves):
+        if any(l['ub'] < cut - COURSE - tol and l['ut'] > cut - COURSE + tol for l in mass):
             continue
-        slice_ = [l for l in leaves if l['ub'] >= cut - COURSE - tol and l['ut'] <= cut + tol and l['ub'] <= cut - COURSE + tol]
-        above = [l for l in leaves if l['ub'] >= cut - tol]
-        if len(slice_) < 4 or not above or any(l['role'] not in SLICE_ROLES for l in slice_):
+        slice_ = [l for l in mass if l['ub'] >= cut - COURSE - tol and l['ut'] <= cut + tol and l['ub'] <= cut - COURSE + tol]
+        above = [l for l in mass if l['ub'] >= cut - tol and l not in slice_]
+        main = sum(l['role'] in SLICE_ROLES for l in slice_)
+        if len(slice_) < 4 or not above or main < 0.6 * len(slice_) or any(l['role'] in NO_SLICE_ROLES for l in slice_):
             continue
-        out.append((len(slice_), cut, [l['id'] for l in slice_]))
+        out.append((len(slice_), cut, [l['id'] for l in slice_], [l['id'] for l in above]))
     if not out:
         return []
-    mid = np.median([l['ub'] for l in leaves])
+    mid = np.median([l['ub'] for l in mass])
     out.sort(key=lambda r: (abs(r[1] - mid), -r[0]))
     return out[:MAX_CANDIDATES]
 
@@ -242,13 +322,24 @@ def optional_groups(leaves):
         return False
     total = len(leaves)
     found = {}
-    by_group = collections.defaultdict(list)
+    by_group, names = collections.defaultdict(list), {}
     for l in leaves:
-        if l['group']:
-            by_group[l['group']].append(l['id'])
-    for name, ids in by_group.items():
-        if 3 <= len(ids) <= 0.4 * total:
-            found[f'part_{name}'.replace('-', '_').lower()] = dict(label=f'sub-assembly {name}', leaves=ids)
+        for key, name in l.get('groups', ()):        # submodel instances at every depth: a garden lamp inside the house
+            by_group[key].append(l['id'])
+            names[key] = name
+    role_of = {l['id']: l['role'] for l in leaves}
+    seen = set()
+    for key, ids in sorted(by_group.items(), key=lambda kv: (kv[0].count('/'), kv[0])):
+        name = names[key]
+        main = collections.Counter(role_of[i] for i in ids).most_common(1)[0][0]
+        named = name.casefold()
+        keep = bool(KEEP_NAMES.search(named)) or (main in KEEP_ROLES and not OPTIONAL_NAMES.search(named))
+        if 3 <= len(ids) <= 0.4 * total and not keep and frozenset(ids) not in seen:
+            seen.add(frozenset(ids))
+            slug = re.sub(r'[^a-z0-9]+', '_', f'part_{name}'.casefold()).strip('_')
+            while slug in found:
+                slug += '_b'
+            found[slug] = dict(label=f'sub-assembly {name}', leaves=ids)
     for role in OPTIONAL_ROLES:
         ids = [l['id'] for l in leaves if l['role'] == role]
         if 2 <= len(ids) <= 0.4 * total:
@@ -281,6 +372,20 @@ def check_plan(plan, parts):
     geometry = analyze_geometry(model, parts, detail='summary', contacts='all')
     errors += [d['message'] for d in geometry['diagnostics'] if d['severity'] == 'error']
     return errors, geometry['optimistic_component_count']
+
+
+def _progressive(check, deltas, verdicts):
+    """The deltas that pass `check`, walking out from zero both ways and stopping at the first failure each way:
+    the offered range is contiguous and every value in it was built and checked."""
+    passed = []
+    for side in (sorted(d for d in deltas if d > 0), sorted((d for d in deltas if d < 0), reverse=True)):
+        for d in side:
+            ok, info = check(d)
+            verdicts[d] = info
+            if not ok:
+                break
+            passed.append(d)
+    return sorted(passed)
 
 
 def _ok(data, params, parts, baseline):
@@ -322,26 +427,27 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
             cand = dict(cut=cut, extend=extend, shift=shift, delta=allowed)
             verdicts, ok_all = {}, True
             if verify:
-                for d in sorted({allowed[0], allowed[-1], *(x for x in allowed if x in (-2, 2))}):
-                    ok, info = _ok(dict(data, stretch={axis: _spec([cand])}), {param_name[axis]: d}, parts, baseline)
-                    verdicts[d] = info
-                    if not ok:
-                        ok_all = False
-                        break
+                passed = _progressive(lambda d, a=axis, c=cand: _ok(dict(data, stretch={a: _spec([c])}), {param_name[a]: d},
+                                                                    parts, baseline), allowed, verdicts)
+                ok_all = bool(passed)
+                cand['delta'] = passed
+                cand['extend'] = {k: {d: v for d, v in o.items() if int(d) in passed} for k, o in extend.items()}
             tried.append(dict(cut=cut, deltas=allowed, ok=ok_all, checks={str(k): v for k, v in verdicts.items()}))
             if ok_all:
                 accepted.append(cand)
-            if len(accepted) == 3:
+            if len(accepted) == 2:
                 break
         while accepted:
             spec = _spec(accepted)
             totals = [int(t) for t in spec['plans'] if int(t)]
             ok_all, verdicts = True, {}
             if verify and len(accepted) > 1:
-                for d in sorted({min(totals), max(totals)}):
+                for d in sorted(totals, key=abs):                          # every size the combination offers
                     ok, info = _ok(dict(data, stretch={axis: spec}), {param_name[axis]: d}, parts, baseline)
                     verdicts[d] = info
                     ok_all = ok_all and ok
+                    if not ok:
+                        break
             if ok_all:
                 data['stretch'][axis] = spec
                 straddled |= {i for c in accepted for i in c['extend']} if axis == 'x' else set()
@@ -351,16 +457,14 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
             accepted.pop()                                   # the combination failed: fall back to fewer cuts
         report['rejected'][axis] = [t for t in tried if not t['ok']]
         log('stretch', axis, report['verified'].get(axis))
-    for count, cut, ids in course_candidates(leaves):
-        spec = dict(cut=cut, height=COURSE, slice=ids, delta=list(range(COURSE_RANGE[0], COURSE_RANGE[1] + 1)))
-        trial = dict(data, courses=spec)
-        verdicts, ok_all = {}, True
-        for d in ((-1, 1, COURSE_RANGE[1]) if verify else ()):
-            ok, info = _ok(trial, {'courses_delta': d}, parts, baseline)
-            verdicts[d] = info
-            if not ok:
-                ok_all = False
-                break
+    for _count, cut, ids, moving in course_candidates(leaves):
+        spec = dict(cut=cut, height=COURSE, slice=ids, above=moving, delta=list(range(COURSE_RANGE[0], COURSE_RANGE[1] + 1)))
+        verdicts = {}
+        if verify:
+            passed = _progressive(lambda d, c=spec: _ok(dict(data, courses=c), {'courses_delta': d}, parts, baseline),
+                                  spec['delta'], verdicts)
+            spec['delta'] = passed
+        ok_all = any(d > 0 for d in spec['delta'])
         if ok_all:
             data['courses'] = spec
             report['verified']['courses'] = dict(cut=cut, slice=len(ids), checks={str(k): v for k, v in verdicts.items()})
@@ -391,7 +495,7 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
 def compact(data):
     """The template JSON as stored: derivation-only fields (world boxes, kinds) dropped; `generate` never reads them."""
     out = dict(data)
-    out['leaves'] = [{k: v for k, v in l.items() if k not in ('box', 'ut', 'kind')} for l in data['leaves']]
+    out['leaves'] = [{k: v for k, v in l.items() if k not in ('box', 'ut', 'kind', 'groups')} for l in data['leaves']]
     return out
 
 

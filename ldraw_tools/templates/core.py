@@ -93,6 +93,12 @@ def _identity(matrix):
     return all(abs(matrix[i][j] - (i == j)) < 1e-9 for i in range(3) for j in range(3))
 
 
+def _turn(matrix):
+    """World matrix of a part given a quarter turn about its own vertical axis (see derive.QUARTER)."""
+    m = matrix
+    return [[-row[2], row[1], row[0]] for row in m]
+
+
 def build(data, params):
     """(plan, notes) of the template at these parameters; pure function of (data, params)."""
     leaves = {l['id']: copy.deepcopy(l) for l in data['leaves']}
@@ -122,15 +128,20 @@ def build(data, params):
             for lid, leaf in leaves.items():
                 move = step * STUD if lid in shift else 0.0
                 if lid in extend:
-                    code, move = extend[lid][str(step)]         # the longer/shorter part, and where its origin goes
+                    code, move, *turned = extend[lid][str(step)]   # the longer/shorter part, and where its origin goes
                     leaf['ref'] = code + '.dat'
+                    if turned and turned[0]:                       # the library models it with its long side across
+                        leaf['matrix'] = _turn(leaf['matrix'])
                 leaf['at'][index] += move - step * STUD / 2      # re-centre: the model grows evenly both ways
     # 4. courses: repeat (or drop) the slice between two bricks courses
     delta = int(params.get('courses_delta', 0))
     spec = data.get('courses')
     if delta and spec:
         cut, height, slice_ids = spec['cut'], spec['height'], [i for i in spec['slice'] if i in leaves]
-        above = [i for i, l in leaves.items() if i not in set(slice_ids) and l['ub'] >= cut - 0.5]
+        if 'above' in spec:                       # only the model's main mass moves; scenery around it stays
+            above = [i for i in spec['above'] if i in leaves]
+        else:
+            above = [i for i, l in leaves.items() if i not in set(slice_ids) and l['ub'] >= cut - 0.5]
         for lid in above:
             leaves[lid]['at'][1] -= height * delta
         if delta < 0:
