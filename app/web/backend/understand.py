@@ -92,13 +92,11 @@ def make_digest(text: str) -> Digest:
 
 def load_digest() -> Digest:
     """The registry digest (interface in the module docstring), or the built-in one when the registry is missing."""
-    try:
-        from ldraw_tools import generators
-        text = generators.registry_digest()
-        if isinstance(text, str) and text.strip():
-            return make_digest(text)
-    except Exception:  # noqa: BLE001 - registry absent or broken: the built-in digest keeps the step working
-        pass
+    import generator_bridge
+    registry = generator_bridge.cached()
+    text = (registry or {}).get("digest")
+    if isinstance(text, str) and text.strip():
+        return make_digest(text)
     return make_digest(FALLBACK_DIGEST)
 
 
@@ -429,18 +427,21 @@ async def understand(text: str, *, current_spec: Optional[dict] = None, previous
 async def model_params(llm_id: Optional[str] = None) -> Optional[dict]:
     """Resolved litellm parameters of the model that reads requests, or None when none is configured.
 
-    Order: the given entry id, LDRAW_NOVA_UNDERSTAND_LLM_ID, the Settings worker model, then a configured entry
-    that runs DEFAULT_MODEL (Haiku 5.5). Any model that handles a forced tool call works (Mistral Small 4 included).
+    Order: the given entry id, LDRAW_NOVA_UNDERSTAND_LLM_ID, the Settings "Understanding model", a configured entry
+    that runs DEFAULT_MODEL (Haiku 5.5), then the main model. Any model that handles a forced tool call works
+    (Mistral Small 4 included).
     """
     import os
 
     import inference
     import llm_config
-    wanted = llm_id or os.environ.get("LDRAW_NOVA_UNDERSTAND_LLM_ID", "").strip() or llm_config.worker_default()
+    wanted = llm_id or os.environ.get("LDRAW_NOVA_UNDERSTAND_LLM_ID", "").strip() or llm_config.understanding_default()
     entry = llm_config.get(wanted) if wanted else None
     if entry is None:
-        entries, _ = llm_config.builder_entries()
-        entry = next((e for e in entries if e["litellm_params"].get("model") == DEFAULT_MODEL), None)
+        entries, main_id = llm_config.builder_entries()
+        usable = [e for e in entries if not llm_config.unsupported(e)]
+        entry = (next((e for e in usable if e["litellm_params"].get("model") == DEFAULT_MODEL), None)
+                 or next((e for e in usable if e["id"] == main_id), None))
     if entry is None or llm_config.unsupported(entry):
         return None
     return await inference.params_for(entry, {})

@@ -158,8 +158,9 @@ export const api = {
   editModel: (filename: string) => request<{ build: string; file: string; editor_url: string; warnings: string[] }>(`/api/models/${encodeURIComponent(filename)}/edit`, { method: "POST" }),
   deleteModel: (filename: string) => request<{ deleted: string[] }>(`/api/models/${encodeURIComponent(filename)}`, { method: "DELETE" }),
 
-  llmModels: () => request<{ models: LlmEntry[]; default_id: string | null; worker_id?: string | null }>("/api/llm-models"),
+  llmModels: () => request<{ models: LlmEntry[]; default_id: string | null; worker_id?: string | null; understanding_id?: string | null }>("/api/llm-models"),
   setWorkerDefault: (id: string | null) => request<{ worker_id: string | null }>("/api/llm-workers/default", { method: "PUT", body: json({ id }) }),
+  setUnderstandingDefault: (id: string | null) => request<{ understanding_id: string | null }>("/api/llm-understanding/default", { method: "PUT", body: json({ id }) }),
   editLlm: (id: string) => request<LlmEntry>(`/api/llm-models/${id}/edit`),
   createLlm: (entry: Partial<LlmEntry>) => request<LlmEntry>("/api/llm-models", { method: "POST", body: json(entry) }),
   updateLlm: (id: string, entry: Partial<LlmEntry>) =>
