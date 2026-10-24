@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D editor · Open Brick Designer (Blueprint mockup)</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<script>
+(function(){var q=new URLSearchParams(location.search),t=q.get("theme");if(t)document.documentElement.setAttribute("data-theme",t);
+if(q.get("rail"))document.documentElement.classList.add("rail");})();
+</script>
+
+</head>
+<body class="">
+<div class="ed">
+  <div class="ed-bar">
+    <div class="brand" style="padding:0;gap:8px"><svg viewBox="3 7 26 19" fill="none" aria-hidden="true"><path fill="currentColor" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/><path stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/></svg></div>
+    <span class="title"><strong>Red car</strong><span class="badge">47 parts</span><span class="badge accent">v2 draft</span></span>
+    <span class="sep"></span>
+    <span class="segmented" role="group" aria-label="Tool"><button aria-pressed="false" title="Click a part to select it, Shift-click to add more">Select</button><button aria-pressed="true" title="Drag an arrow to move the selection (snaps to studs and plates, hold Alt for free)">Move</button><button aria-pressed="false" title="Drag a ring to turn the selection (15 degree steps, hold Alt for free)">Rotate</button></span>
+    <span class="sep"></span>
+    <button title="Undo (Ctrl+Z)">Undo</button><button title="Redo (Ctrl+Shift+Z)" disabled>Redo</button><button title="Delete the selected parts (Delete)">Delete</button><button title="Select the sub-model this part belongs to (G)">Group</button>
+    <span style="flex:1"></span>
+    <button>Open plan…</button><a href="#" class="btn">Back to the chat</a><button class="primary" title="Publish the model as it is now">Publish</button>
+  </div>
+  <div class="ed-body">
+    <aside class="palette" aria-label="Parts palette">
+      <div class="label">Parts</div>
+      <input type="search" placeholder="Search 3001, brick, wheel…" aria-label="Search parts">
+      <div class="part-grid">
+        <div class="part"><div class="pic"><i style="width:38px;height:16px;background:#c91a09"></i></div><span class="code">3001</span><span class="name">Brick 2 x 4</span></div><div class="part"><div class="pic"><i style="width:38px;height:9px;background:#c91a09"></i></div><span class="code">3010</span><span class="name">Brick 1 x 4</span></div><div class="part"><div class="pic"><i style="width:38px;height:8px;background:#c91a09"></i></div><span class="code">3020</span><span class="name">Plate 2 x 4</span></div><div class="part"><div class="pic"><i style="width:18px;height:8px;background:#05131d"></i></div><span class="code">3023</span><span class="name">Plate 1 x 2</span></div>
+        <div class="part"><div class="pic"><i style="width:20px;height:16px;background:#a0a5a9"></i></div><span class="code">4600</span><span class="name">Axle holder 2 x 2</span></div><div class="part"><div class="pic"><i style="width:20px;height:8px;background:#f2f3f2"></i></div><span class="code">3068b</span><span class="name">Tile 2 x 2</span></div>
+      </div>
+      <div class="label" style="margin-top:6px">Colour</div>
+      <div class="swatches"><span class="swatch sel" style="background:#c91a09" title="4 Red"></span><span class="swatch" style="background:#0055bf" title="1 Blue"></span><span class="swatch" style="background:#f2cd37" title="14 Yellow"></span><span class="swatch" style="background:#237841" title="2 Green"></span><span class="swatch" style="background:#05131d" title="0 Black"></span><span class="swatch" style="background:#f2f3f2" title="15 White"></span><span class="swatch" style="background:#a0a5a9" title="7 Light Grey"></span><span class="swatch" style="background:#6c6e68" title="8 Dark Grey"></span></div>
+    </aside>
+    <div class="canvas grid-bg" role="img" aria-label="3D canvas placeholder">
+      <div class="ruler-x"><span>0</span><span>4</span><span>8</span><span>12</span><span>16</span><span>20</span></div>
+      <div class="ruler-y"><span>0</span><span>4</span><span>8</span><span>12</span></div>
+      <svg viewBox="0 0 520 360" style="position:absolute;inset:40px 60px 30px 40px;width:calc(100% - 100px);height:calc(100% - 70px)" aria-label="placeholder model">
+ <g stroke-linejoin="round" stroke-width="1.2">
+  <g transform="translate(150 150)">
+   <path d="M0 40 L110 0 L220 40 L110 80Z" fill="#e0543f" stroke="#0b1424"/><path d="M0 40 L110 80 L110 130 L0 90Z" fill="#a8281a" stroke="#0b1424"/><path d="M220 40 L110 80 L110 130 L220 90Z" fill="#c43a28" stroke="#0b1424"/>
+   <g transform="translate(40 -26)"><path d="M0 40 L60 18 L120 40 L60 62Z" fill="#e0543f" stroke="#0b1424"/><path d="M0 40 L60 62 L60 92 L0 70Z" fill="#a8281a" stroke="#0b1424"/><path d="M120 40 L60 62 L60 92 L120 70Z" fill="#c43a28" stroke="#0b1424"/></g>
+  </g>
+  <ellipse cx="190" cy="305" rx="30" ry="14" fill="#1a1a1a" stroke="#000"/><ellipse cx="330" cy="318" rx="30" ry="14" fill="#1a1a1a" stroke="#000"/>
+ </g></svg>
+      <svg class="gizmo" viewBox="0 0 54 54" fill="none" stroke-width="2" stroke-linecap="round"><path d="M27 27 47 37" stroke="#ff5f52"/><path d="M27 27V6" stroke="#4fd9a0"/><path d="M27 27 7 37" stroke="#7fb4ff"/><text x="44" y="50" font-family="monospace" font-size="9" fill="#ff5f52" stroke="none">X</text><text x="31" y="9" font-family="monospace" font-size="9" fill="#4fd9a0" stroke="none">Y</text><text x="4" y="50" font-family="monospace" font-size="9" fill="#7fb4ff" stroke="none">Z</text></svg>
+      <div class="hud"><span>grid 1 stud</span><span>snap 15&deg;</span><span>zoom 100%</span></div>
+    </div>
+    <aside class="inspector" aria-label="Inspector">
+      <div class="label">Selection</div>
+      <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:18px;font-weight:600">3001</span><span>Brick 2 &times; 4</span><span class="badge ok" style="margin-left:auto">1 part</span></div>
+      <div class="label" style="margin-top:6px">Position (studs)</div>
+      <div class="prop"><span class="label axis-x">X</span><input value="4" aria-label="X"><span></span><span></span></div>
+      <div class="prop"><span class="label axis-y">Y</span><input value="-3" aria-label="Y"><span></span><span></span></div>
+      <div class="prop"><span class="label axis-z">Z</span><input value="2" aria-label="Z"><span></span><span></span></div>
+      <div class="label" style="margin-top:6px">Rotation</div>
+      <div class="prop"><span class="label">Yaw</span><input value="90&deg;" aria-label="Yaw"><span></span><span></span></div>
+      <div class="label" style="margin-top:6px">Properties</div>
+      <div class="kv"><span>Colour</span><b>4 &middot; Red</b></div><div class="kv"><span>Part</span><b>3001.dat</b></div><div class="kv"><span>Dimensions</span><b>2&times;4&times;1 brick</b></div><div class="kv"><span>Cost</span><b>&euro;0.09</b></div>
+      <div class="label" style="margin-top:6px">Model</div>
+      <div class="kv"><span>Parts</span><b>47</b></div><div class="kv"><span>Est. cost</span><b>&euro;4.12</b></div>
+    </aside>
+  </div>
+  <div class="status-bar"><span>Ready</span><span>1 selected</span><span>x 4 &middot; y -3 &middot; z 2</span><span style="margin-left:auto">3 edits since v2</span></div>
+</div>
+</body>
+</html>

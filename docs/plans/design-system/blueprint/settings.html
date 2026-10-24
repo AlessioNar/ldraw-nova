@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · Open Brick Designer (Blueprint mockup)</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<script>
+(function(){var q=new URLSearchParams(location.search),t=q.get("theme");if(t)document.documentElement.setAttribute("data-theme",t);
+if(q.get("rail"))document.documentElement.classList.add("rail");})();
+</script>
+
+</head>
+<body class="">
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><svg viewBox="3 7 26 19" fill="none" aria-hidden="true"><path fill="currentColor" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/><path stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/></svg><span class="brand-name">Open Brick Designer<small>v0.9 · LDraw</small></span>
+    <button class="ghost toggle" title="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar"><span class="mono">&laquo;</span></button></div>
+  <a class="btn new-chat" href="home.html" title="New chat"><span class="plus">+</span><span class="label-text">New chat</span></a>
+  <nav class="nav"><a href="#" class="" title="My Models"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 14 4.8v6.4L8 14.5 2 11.2V4.8zM2 4.8l6 3.3 6-3.3M8 8.1v6.4"/></svg><span class="label-text">My Models</span></a><a href="#" class="" title="My Parts"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="7" width="12" height="6.5" rx="1"/><path d="M4.5 7V5h2.2v2M9.3 7V5h2.2v2"/></svg><span class="label-text">My Parts</span></a></nav>
+  <div class="section-label label">History</div>
+  <div class="chat-list"><div class="chat-item"><a href="#"><span class="chat-title"><span class="live-dot" title="Working"></span>Red car with four wheels</span><span class="chat-time">now</span></a><div class="chat-thumbs"><i style="background-color:#c91a09"></i><i style="background-color:#c91a09"></i></div></div><div class="chat-item"><a href="#"><span class="chat-title">Starfighter, white and blue</span><span class="chat-time">2h</span></a><div class="chat-thumbs"><i style="background-color:#e8e8e8"></i><i style="background-color:#0055bf"></i><i style="background-color:#e8e8e8"></i></div></div><div class="chat-item"><a href="#"><span class="chat-title">6 x 8 cottage</span><span class="chat-time">yesterday</span></a><div class="chat-thumbs"><i style="background-color:#a0a5a9"></i></div></div><div class="chat-item"><a href="#"><span class="chat-title">Harbour crane</span><span class="chat-time">3d</span></a></div><div class="chat-item"><a href="#"><span class="chat-title">Spiral staircase tower</span><span class="chat-time">1w</span></a></div></div>
+  <div class="rail-spacer"></div>
+  <nav class="sidebar-footer"><a href="settings.html" class="active" title="Settings"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg><span class="label-text">Settings</span></a>
+    <div class="sidebar-foot-meta"><span>session</span><span>&euro;0.43</span></div></nav>
+</aside>
+<main class="main grid-bg">
+<div class="mobile-bar"><div class="brand"><svg viewBox="3 7 26 19" fill="none" aria-hidden="true"><path fill="currentColor" d="M15.2 11.5H12.5v-2.3a.7.7 0 0 0-.7-.7H6.2a.7.7 0 0 0-.7.7v2.3H4.5A1.5 1.5 0 0 0 3 13v10.5A1.5 1.5 0 0 0 4.5 25h10.7z"/><path stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.6 1.9" stroke-linecap="round" d="M17.6 12.3h2.7V9.3h5.4v3h1.8a.9.9 0 0 1 .9.9v10.1a.9.9 0 0 1-.9.9h-9.9"/></svg><span class="brand-name">Open Brick Designer</span></div><button class="ghost menu-btn" aria-label="Open menu"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg></button></div>
+<div class="page">
+  <div class="dim-line">Sheet 04 &middot; Configuration</div>
+  <h1>Settings</h1><p class="muted" style="margin:0">Add a provider key, pick your models, then choose who builds.</p>
+  <div class="sec-head"><span class="idx">01</span><div><h2>Providers</h2><p class="muted small">Paste one API key per provider. It is saved once and never shown again.</p></div></div>
+  <div class="provider-cards"><form class="panel provider-card" onsubmit="return false" aria-label="Anthropic key">
+  <header><strong>Anthropic</strong><span class="badge ok">Key set</span></header>
+  <label><span class="muted small">API key &middot; <a href="#">get one</a></span><input type="password" placeholder="Key saved · type to replace" aria-label="Anthropic API key"></label>
+  <div class="actions"><button class="primary" type="submit">Save key</button><button type="button">Test</button><button type="button" class="danger-text">Remove key</button></div>
+  <p class="status-msg ok">&#10003; Key works. 12 models available.</p>
+  <p class="note">Test uses the provider's free models list, so it costs nothing. Stored as <code>ANTHROPIC_API_KEY</code>.</p>
+</form><form class="panel provider-card" onsubmit="return false" aria-label="OpenAI key">
+  <header><strong>OpenAI</strong><span class="badge ">No key</span></header>
+  <label><span class="muted small">API key &middot; <a href="#">get one</a></span><input type="password" placeholder="Paste your API key" aria-label="OpenAI API key"></label>
+  <div class="actions"><button class="primary" type="submit">Save key</button><button type="button" disabled>Test</button></div>
+  
+  <p class="note">Test uses the provider's free models list, so it costs nothing. Stored as <code>OPENAI_API_KEY</code>.</p>
+</form><form class="panel provider-card" onsubmit="return false" aria-label="Mistral key">
+  <header><strong>Mistral</strong><span class="badge warn">Key rejected</span></header>
+  <label><span class="muted small">API key &middot; <a href="#">get one</a></span><input type="password" placeholder="Key saved · type to replace" aria-label="Mistral API key"></label>
+  <div class="actions"><button class="primary" type="submit">Save key</button><button type="button">Test</button><button type="button" class="danger-text">Remove key</button></div>
+  <p class="status-msg warn">! Mistral rejected this key (401).</p>
+  <p class="note">Test uses the provider's free models list, so it costs nothing. Stored as <code>MISTRAL_API_KEY</code>.</p>
+</form><form class="panel provider-card" onsubmit="return false" aria-label="OpenRouter key">
+  <header><strong>OpenRouter</strong><span class="badge ">No key</span></header>
+  <label><span class="muted small">API key &middot; <a href="#">get one</a></span><input type="password" placeholder="Paste your API key" aria-label="OpenRouter API key"></label>
+  <div class="actions"><button class="primary" type="submit">Save key</button><button type="button" disabled>Test</button></div>
+  
+  <p class="note">Test uses the provider's free models list, so it costs nothing. Stored as <code>OPENROUTER_API_KEY</code>.</p>
+</form></div>
+  <div class="sec-head"><span class="idx">02</span><div><h2>Roles</h2><p class="muted small">Pick which of your models does which job.</p></div></div>
+  <div class="role-pickers">
+    <div class="panel role-picker"><strong>Main model (builds)</strong><small class="muted">The default for new chats. It plans and builds the model.</small><div class="select"><span>Claude Sonnet 4.5</span><span class="mono muted">&#9662;</span></div></div>
+    <div class="panel role-picker"><strong>Worker model (cheap jobs, optional)</strong><small class="muted">Needs Full access in the chat. "No workers" turns delegation off.</small><div class="select"><span>Claude Haiku 4.5</span><span class="mono muted">&#9662;</span></div></div>
+  </div>
+  <div class="sec-head"><span class="idx">03</span><div><h2>Models</h2><p class="muted small">Add the models you want to pick from in a chat. They all use the provider key above.</p></div></div>
+  <section class="agent-provider"><header><span class="chevron mono">&#8964;</span><strong>Anthropic</strong><span class="badge">2 added</span></header><ul style="margin:0;padding:0">
+<li class="model-row" style="list-style:none"><div><strong>Claude Sonnet 4.5</strong> <span class="price">$3.00 in / $15.00 out per 1M tokens &middot; 200k ctx</span></div><div class="llm-actions"><button type="button" aria-pressed="true">Remove</button></div></li>
+<li class="model-row" style="list-style:none"><div><strong>Claude Opus 4.1</strong> <span class="badge warn" title="This entry stores its own key and keeps working as is.">own key</span><span class="price">$15.00 in / $75.00 out per 1M tokens &middot; 200k ctx</span></div><div class="llm-actions"><button type="button">Use the provider key</button><button type="button" aria-pressed="true">Remove</button></div></li>
+<li class="model-row" style="list-style:none"><div><strong>Claude Haiku 4.5</strong> <span class="price">$1.00 in / $5.00 out per 1M tokens &middot; 200k ctx</span></div><div class="llm-actions"><button type="button" class="primary">Add</button></div></li></ul></section>
+<section class="agent-provider"><header><span class="chevron mono">&rsaquo;</span><strong>OpenAI</strong><span class="badge">0 added</span></header><ul style="margin:0;padding:0"><li class="model-row" style="list-style:none"><span class="muted small">Add your OpenAI key above to choose models.</span></li></ul></section>
+</div>
+</main></div>
+</body>
+</html>
