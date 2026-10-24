@@ -9,6 +9,7 @@ from ldraw import Parts
 
 from ldraw_tools.builder import build_plan, load_plan
 from ldraw_tools.common import ROOT, dumps
+from ldraw_tools.validation import validate_text
 from ldraw_tools.editor import apply, inverse, placements, rebuild, snap, usage
 
 
@@ -123,11 +124,45 @@ def test_invalid_operations_are_rejected_with_messages(parts):
         with pytest.raises(ValueError, match=message):
             apply(pre, [edit], parts)
     assert same(pre, plan()), "rejected edits must leave the input untouched"
-    solo = {"version": 1, "author": "Tests", "sections": [
-        {"name": "solo.ldr", "description": "one entry", "steps": [
-            [{"id": "only", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0]}]]}]}
-    with pytest.raises(ValueError, match="would have no steps left"):
-        apply(solo, [{"op": "delete", "id": "only"}], parts)
+
+
+SOLO = {"version": 1, "author": "Tests", "sections": [
+    {"name": "solo.ldr", "description": "one entry", "steps": [
+        [{"id": "only", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0]}]]}]}
+
+
+def test_deleting_the_last_entry_leaves_an_empty_plan_and_undo_restores_it(parts):
+    post = roundtrip(copy.deepcopy(SOLO), [{"op": "delete", "id": "only"}], parts)
+    assert post["sections"][0]["steps"] == [[]]
+    text = rebuild(post, parts)
+    assert "0 FILE solo.ldr" in text and not [l for l in text.splitlines() if l.startswith("1 ")]
+    _, problems = validate_text(text, parts)
+    assert [p["severity"] for p in problems if p["code"] == "assembly.empty"] == ["info"]
+    assert not [p for p in problems if p["severity"] == "error"]
+    assert usage(post, parts) == {}
+
+
+def test_deleting_the_last_entry_of_a_non_last_step_drops_that_step(parts):
+    pre = {"version": 1, "author": "Tests", "sections": [{"name": "m.ldr", "description": "d", "steps": [
+        [{"id": "a", "ref": "3001.dat", "colour": 4, "at": [0, 0, 0]}],
+        [{"id": "b", "ref": "3003.dat", "colour": 1, "at": [0, -24, 0]}]]}]}
+    post = roundtrip(pre, [{"op": "delete", "id": "a"}], parts)
+    assert [[e["id"] for e in step] for step in post["sections"][0]["steps"]] == [["b"]]
+    post = roundtrip(copy.deepcopy(pre), [{"op": "delete", "id": "b"}, {"op": "delete", "id": "a"}], parts)
+    assert post["sections"][0]["steps"] == [[]]
+
+
+def test_adding_into_an_empty_plan_works_with_and_without_snap(connected):
+    empty = apply(copy.deepcopy(SOLO), [{"op": "delete", "id": "only"}], connected)
+    post = roundtrip(empty, [{"op": "add", "section": "solo.ldr", "part": "3001.dat", "colour": 4,
+                              "position": [0, 0, 0]}], connected)
+    assert len(post["sections"][0]["steps"][0]) == 1
+    from ldraw_tools.editor import _next_id
+    edits = [{"op": "add", "section": "solo.ldr", "part": "3001.dat", "colour": 4, "position": [0, 0, 0]},
+             {"op": "snap", "id": _next_id(empty)}]
+    with pytest.raises(ValueError, match="nothing to snap to"):    # a clean refusal; the editor retries without the snap
+        apply(empty, edits, connected)
+    rebuild(apply(empty, edits[:1], connected), connected)
 
 
 def test_a_batch_can_add_a_part_and_snap_it(connected):

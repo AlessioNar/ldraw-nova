@@ -96,8 +96,28 @@ def test_empty_build_opens_an_editable_plan(client):
     opened = client.post(f"/api/builds/{slug}/draft/open", json={})
     assert opened.status_code == 200, opened.text
     assert opened.json()["draft"]["base_version"] is None and opened.json()["draft"]["changes"] == 0
+    assert opened.json()["plan"]["sections"][0]["steps"] == [[]]            # truly empty, no skeleton brick
     ws = client.get(f"/api/builds/{slug}/workspace").json()
     assert ws["versions"] == [] and ws["generator"] is None and ws["proposals"] == [] and ws["chat_id"] is None
+
+
+def test_a_draft_can_be_emptied_but_an_empty_model_is_not_saved_as_a_version(client):
+    slug = make_build(client, "ws emptied", TINY)
+    view = client.post(f"/api/builds/{slug}/draft/open", json={}).json()
+    gone = edit(client, slug, view, {"op": "delete", "id": "p1"}, {"op": "delete", "id": "p2"})
+    assert gone["plan"]["sections"][0]["steps"] == [[]] and not any(l.startswith("1 ") for l in gone["mpd"].splitlines())
+    assert client.get(f"/api/builds/{slug}/workspace").json()["draft"]["changes"] == 1
+    refused = client.post(f"/api/builds/{slug}/draft/save")
+    assert refused.status_code == 400 and refused.json()["detail"] == "Add at least one brick before saving a version"
+    assert len(client.get(f"/api/builds/{slug}/workspace").json()["versions"]) == 1
+    added = edit(client, slug, gone, {"op": "add", "section": "tiny.ldr", "part": "3001.dat", "colour": 4,
+                                      "position": [0, 0, 0]})
+    saved = client.post(f"/api/builds/{slug}/draft/save")
+    assert saved.status_code == 200, saved.text and added["revision"]
+    assert saved.json()["version"] == 2
+    again = client.post(f"/api/builds/{slug}/draft/open", json={}).json()
+    back = undo(client, slug, edit(client, slug, again, {"op": "delete", "id": added["plan"]["sections"][0]["steps"][0][0]["id"]}))
+    assert len(back["plan"]["sections"][0]["steps"][0]) == 1           # undo restores the brick exactly
 
 
 def test_save_makes_the_next_version_and_discard_goes_back(client):

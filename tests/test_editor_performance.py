@@ -267,7 +267,7 @@ def test_check_schema_keeps_rejecting_what_the_schema_rejects(parts):
                    lambda p: p["sections"][0]["steps"][0][0].__setitem__("colour", -1),
                    lambda p: p["sections"][0]["steps"][0][0].__setitem__("ref", "not a part"),
                    lambda p: p["sections"][0]["steps"][0][0].update(on="p0"),
-                   lambda p: p["sections"][0]["steps"][1].clear(),
+                   lambda p: p["sections"][0]["steps"].clear(),
                    lambda p: p["sections"][0].__setitem__("name", "bad name"),
                    lambda p: p.__setitem__("version", 2)):
         broken = copy.deepcopy(plan)

@@ -259,9 +259,7 @@ def _apply_op(plan, edit, parts):
         si, ti, ei = _locate(plan, edit)
         section = plan["sections"][si]
         del section["steps"][ti][ei]
-        if not section["steps"][ti]:
-            if len(section["steps"]) == 1:
-                _fail(f"Cannot delete {edit['id']}: section {section['name']} would have no steps left")
+        if not section["steps"][ti] and len(section["steps"]) > 1:      # the section's last step may stay empty
             del section["steps"][ti]
     elif op == "set_entry":
         si, ti, ei = _locate(plan, edit)
@@ -466,7 +464,7 @@ def _inverse_op(plan, edit, parts):
     current = copy.deepcopy(section["steps"][ti][ei])
     if op == "delete":
         return {"op": "insert", "section": section["name"], "step": ti, "index": ei,
-                "entry": current, "recreate_step": len(section["steps"][ti]) == 1}
+                "entry": current, "recreate_step": len(section["steps"][ti]) == 1 and len(section["steps"]) > 1}
     return {"op": "set_entry", "id": current["id"], "section": section["name"], "entry": current}
 
 
