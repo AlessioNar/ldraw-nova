@@ -66,3 +66,29 @@ def test_validate_helper_agrees(official):
     from ldraw_tools.grammar.validate import check
     verdict = check(grammar.generate(preset='cottage')['plan'], official)
     assert verdict['ok'] and verdict['components'] == 1
+
+
+def test_catalogue_boxes_match_the_library(official):
+    """Each part's local footprint and height in catalog.py agree with the part's real bounds (infill parts excluded)."""
+    from ldraw_tools.grammar import catalog
+    infill = {catalog.PANE_4X3, catalog.PANE_ARCH, catalog.SHOP_PANE, *catalog.DOOR_LEAF.values()}
+    wrong = []
+    for code, spec in catalog.PARTS.items():
+        if code in infill:
+            continue
+        plan = dict(version=1, author='t', sections=[dict(name='t.ldr', description='t', steps=[[dict(id='a', ref=code + '.dat', colour=4, at=[0, 0, 0])]])])
+        _, model, _ = build_plan(plan, official)
+        bounds = analyze_geometry(model, official, detail='summary', contacts='none')['bounds']
+        lo, hi = bounds['min'], bounds['max']
+        x0, x1, z0, z1 = spec.box
+        got = (lo[0] / 20, hi[0] / 20, lo[2] / 20, hi[2] / 20, hi[1] / 8)
+        want = (x0, x1, z0, z1, spec.h)
+        if any(abs(a - b) > 0.06 for a, b in zip(got, want)):
+            wrong.append((code, got, want))
+    assert not wrong, wrong
+
+
+def test_exported_schema_is_current():
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[1] / 'docs/plans/build-grammar/ontology.schema.json'
+    assert json.loads(path.read_text(encoding='utf-8')) == json.loads(json.dumps(grammar.SCHEMA))

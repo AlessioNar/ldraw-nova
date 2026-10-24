@@ -90,7 +90,7 @@ def choose_lengths(ctx, n, start, avoid, colour):
 
 def place_brick(ctx, st, axis, key, pos, length, colour, role, y0, course):
     w = ctx.cfg['walls']
-    if w['style'] == 'stone' and role == 'wall' and (pos * 31 + key * 17 + st.course0 * 7 + course * 7 + length * 13) % 3 == 0:
+    if w['style'] == 'stone' and role == 'wall' and (pos * 5 + key * 11 + (st.course0 + course) * 3 + length) % 7 < 2:
         colour = ctx.code(w['alt_colour'])
     code = catalog.BRICK[length]
     if axis == 'h':
