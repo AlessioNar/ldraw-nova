@@ -21,6 +21,7 @@ the planned families) when the registry is absent or raises, so this module work
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -36,6 +37,7 @@ import litellm
 import model_catalog
 import providers
 import usage
+import usage_log
 
 log = logging.getLogger("ldraw-nova.understand")
 
@@ -332,6 +334,7 @@ class Result:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     digest_version: Optional[str] = None
+    usage_event_id: Optional[int] = None  # the cost-history row of this request's model call(s), when stored
 
     def as_dict(self) -> dict:
         return {"spec": self.spec, "source": self.source, "attempts": self.attempts, "usage": self.usage,
@@ -418,6 +421,8 @@ async def understand(text: str, *, current_spec: Optional[dict] = None, previous
             result.errors.append(note)
     if result.spec is None:
         result.spec = heuristic_spec(text, current_spec)
+    if result.usage:                                   # the call costs money: it belongs in the cost history
+        result.usage_event_id = await asyncio.to_thread(usage_log.record, "understand", result.usage, result.model)
     result.latency_s = time.monotonic() - started
     log.info("understand source=%s model=%s attempts=%d usage=%s latency=%.2fs", result.source, result.model,
              result.attempts, result.usage, result.latency_s)

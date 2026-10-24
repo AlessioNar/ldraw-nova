@@ -35,7 +35,7 @@ export default function EnvironmentSettings() {
   const { refreshLlms } = useApp();
   const [rows, setRows] = useState<Row[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [info, setInfo] = useState<Pick<EnvironmentState, "jev_source" | "sandbox_isolation">>({});
+  const [info, setInfo] = useState<Pick<EnvironmentState, "jev_source" | "sandbox_isolation" | "database">>({});
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +45,7 @@ export default function EnvironmentSettings() {
   useEffect(() => {
     let active = true;
     api.environment().then(result => {
-      if (active) { setRows(toRows(result.variables)); setInfo({ jev_source: result.jev_source, sandbox_isolation: result.sandbox_isolation }); setLoaded(true); }
+      if (active) { setRows(toRows(result.variables)); setInfo({ jev_source: result.jev_source, sandbox_isolation: result.sandbox_isolation, database: result.database }); setLoaded(true); }
     }).catch(e => { if (active) setError(e.message); });
     return () => { active = false; };
   }, []);
@@ -60,7 +60,7 @@ export default function EnvironmentSettings() {
     try {
       const result = await api.saveEnvironment(rows.map(({ id, name, value }) => ({ id, name: name.trim(), value })));
       setRows(toRows(result.variables)); setDirty(false);
-      api.environment().then(state => setInfo({ jev_source: state.jev_source, sandbox_isolation: state.sandbox_isolation })).catch(() => {});
+      api.environment().then(state => setInfo({ jev_source: state.jev_source, sandbox_isolation: state.sandbox_isolation, database: state.database })).catch(() => {});
       refreshLlms();
       setMessage("Environment variables saved. New requests use these values.");
     } catch (e) { setError((e as Error).message); }
@@ -78,6 +78,8 @@ export default function EnvironmentSettings() {
     </div>
     {info.sandbox_isolation?.state === "off" && <p className="warn-text" role="alert">Sandbox isolation: off. {info.sandbox_isolation.detail} Code the agent runs can reach this app's own API. Start the container with cap_add NET_ADMIN (see docker-compose.yml).</p>}
     {info.sandbox_isolation?.state === "on" && <p className="ok-text small">Sandbox isolation: on. Agent code cannot reach this app's API.</p>}
+    {info.database?.state === "ok" && <p className="ok-text small">Database: ok. {info.database.detail}</p>}
+    {info.database?.state === "unavailable" && <p className="warn-text" role="alert">Database: unavailable ({info.database.detail}). Builds still work; the request log and cost history are paused.</p>}
     <p className="muted small">Click Add, enter a variable name and value, then Save. If the variable is missing or empty, this supplies its value. If it is already preconfigured, the value saved here takes precedence.</p>
     <p className="muted small">Values are hidden for everyone. Leave a saved value untouched to keep it, or type a new value to replace it. An empty value saved here means “no value”.</p>
     <form onSubmit={save}>

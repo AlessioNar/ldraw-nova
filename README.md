@@ -59,7 +59,7 @@ To stop it:
 docker compose down
 ```
 
-Your builds, chats and parts lists live in the Docker volume `ldraw-nova-docker_data` (not in the repo folder), so pages stay fast on Windows and macOS. `docker compose down` keeps it; only `docker compose down -v` would delete it. To copy your models out:
+Your builds, chats and parts lists live in the Docker volume `ldraw-nova-docker_data` (not in the repo folder), so pages stay fast on Windows and macOS. `docker compose down` keeps it; only `docker compose down -v` would delete it (and the PostgreSQL volume with the request log and cost history; `bash scripts/backup.sh` backs up both, see `docs/system/database.md`). To copy your models out:
 
 ```bash
 docker cp ldraw-nova-app:/data/generated ./my-models

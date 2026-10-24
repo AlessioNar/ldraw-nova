@@ -5,3 +5,7 @@ fastapi==0.141.1
 uvicorn[standard]==0.53.0
 litellm==1.102.2
 pyyaml==6.0.3
+# Application database (docs/plans/postgres/PROPOSAL.md): SQLAlchemy 2.0 models on psycopg 3, Alembic migrations.
+sqlalchemy==2.0.49
+alembic==1.18.4
+psycopg[binary]==3.3.4
