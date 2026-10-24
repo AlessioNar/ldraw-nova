@@ -11,7 +11,7 @@ from . import building, house, recipes, spaceship, vehicles
 from .base import Generator, digest as _digest, tag_roles  # noqa: F401
 from .colours import colour_code, colour_names  # noqa: F401
 
-REGISTRY = {g.id: g for g in [house.GENERATOR, building.GENERATOR, *vehicles.GENERATORS, spaceship.GENERATOR, *recipes.GENERATORS]}
+REGISTRY = {g.id: g for g in [building.GENERATOR, house.GENERATOR, *vehicles.GENERATORS, spaceship.GENERATOR, *recipes.GENERATORS]}
 
 
 def get(generator_id):

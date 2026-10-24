@@ -38,6 +38,8 @@ def tile_course(ctx, st, course, y0, joints, override=None):
     gc = st.course0 + course
     corners = walls.corner_cells()
     cells = [c for c in sorted(walls.mass) if c not in carved and c not in st.blocked]
+    taken = technic_bricks(ctx, st, course, y0, set(cells))
+    cells = [c for c in cells if c not in taken]
     entries = {}
     for c in cells:
         axis = walls.axis(c, gc)
@@ -70,6 +72,27 @@ def tile_course(ctx, st, course, y0, joints, override=None):
                 if p is not None:
                     run = [p]
     joints['h'], joints['v'] = cur['h'], cur['v']
+
+
+def technic_bricks(ctx, st, course, y0, free):
+    """Technic bricks with a pin hole in the side walls at the standard module positions (the second course from the top of every storey)."""
+    if not ctx.cfg['details']['connectors'] or course != st.courses - 2 or st.kind != 'main':
+        return set()
+    x0, x1, z0, z1 = footprint_bbox(st)
+    depth = z1 - z0
+    taken = set()
+    for j in (z0 + depth // 4, z0 + 3 * depth // 4 - 1):
+        for i in (x0, x1 - 1):
+            pair = {(i, j), (i, j + 1)}
+            if pair <= free and all(st.walls.axis(c, st.course0 + course) == 'v' for c in pair):
+                ctx.canvas.put(catalog.TECHNIC_BRICK, ctx.code(72), 'structure', i + .5, j + 1, y0, 90, label='module connector')
+                taken |= pair
+    return taken
+
+
+def footprint_bbox(st):
+    from .footprint import bbox
+    return bbox(st.cells - st.blocked)
 
 
 def choose_lengths(ctx, n, start, avoid, colour):

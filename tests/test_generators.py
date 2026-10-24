@@ -187,7 +187,8 @@ def test_cli_generate_lists_digests_and_writes_a_plan(tmp_path, capsys):
         args = cli.parser().parse_args(['generate', *argv])
         return cli.run(args)
     listed, status = run('list', '--family', 'house')
-    assert status == 0 and listed[0]['id'] == 'house'
+    ids = [row['id'] for row in listed]
+    assert status == 0 and ids[0] == 'building' and 'house' in ids      # the grammar answers house requests; the old generator stays
     assert run('list', '--kind', 'pickup truck')[0][0]['id'] == 'pickup'
     digest, _ = run('digest')
     assert digest['approx_tokens'] < 1500

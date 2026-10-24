@@ -99,6 +99,9 @@ def band(ctx, st):
                 n = (i + a, j + b)
                 if n not in cells and n not in st.blocked and ctx.canvas.free(n[0], n[1], y):
                     ring.add(n)
+        if ctx.modular:                       # a cornice must not reach into the neighbouring module: front only
+            bx0, bx1, bz0, _ = footprint.bbox(cells)
+            ring = {c for c in ring if c[1] < bz0 and bx0 <= c[0] < bx1}
         key = ('roof', roof) if main_top and cfg['roof']['style'] == 'flat' else ('trim', trim)
         groups.setdefault(key, set()).update(ring)       # cut together with the slab so plates straddle wall and cornice
     layered = st.band_h == 2

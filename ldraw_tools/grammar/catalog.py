@@ -65,6 +65,8 @@ for n, c in TILE2.items():
 for n, c in SLOPE45.items():
     _add(c, _slope(n))
 _add('3003', _bar(2, 2))
+TECHNIC_BRICK = '3700'
+_add(TECHNIC_BRICK, _bar(2))
 _add(CORNER45, Part('', (-0.5, 1.5, -1.5, 0.5), 3, ((0.0, 0.0),)))
 _add(ROUND_BRICK_1, _bar(1))
 _add(ROUND_BRICK_4, _bar(4, 4))

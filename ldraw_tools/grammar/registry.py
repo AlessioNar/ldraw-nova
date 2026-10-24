@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from ..generators import house
 from ..generators.base import Generator
-from . import engine
+from . import compat, engine
 from .presets import PRESETS
 from .roles import ROLE_NAMES
 from .schema import SCHEMA
@@ -24,20 +24,27 @@ class GrammarGenerator(Generator):
 
 
 def _build(params):
-    result = engine.build(params)
-    return result['plan'], result['notes']
+    from .schema import deep_merge
+    config, alias = compat.split(params)
+    notes = []
+    if alias:
+        patch, notes = compat.translate(alias)
+        config = deep_merge(config, patch)      # house-dialect values win over the group defaults
+    result = engine.build(config)
+    return result['plan'], notes + result['notes']
 
 
 GENERATOR = GrammarGenerator(
     id='building', title='Building (grammar)',
-    # Routing: the old house generator keeps the words it already owns (house, cottage, shop...), so the fast path
-    # still reaches it; the grammar takes the new ones. Flipping that is a one-line change once it has earned it.
-    families=('castle', 'tower', 'building-grammar'),
-    kinds=tuple(sorted(k for k in {k for p in PRESETS.values() for k in p['keywords']} | {'manor', 'hall', 'townhall', 'fort'}
-                       if not any(k == o or k in o or o in k for o in house.GENERATOR.kinds))),
+    # Routing: `building` answers every house, cottage, shop and townhouse request (the old house generator stays
+    # registered as `house` for saved builds) and the new types (castle, tower, pagoda, barn...).
+    families=('house', 'building'),
+    kinds=tuple(sorted({k for p in PRESETS.values() for k in p['keywords']} | set(house.GENERATOR.kinds)
+                       | {'manor', 'hall', 'townhall', 'fort', 'villa', 'home'})),
     description='One grammar for buildings: footprint (rect, L, U, courtyard), storeys, wall style, openings, corner '
-                'towers, roof (gable, hip, flat, battlements), details. Presets: ' + ', '.join(PRESETS) + '.',
-    params={k: v for k, v in SCHEMA['properties'].items()},
+                'towers, roof (gable, hip, flat, battlements, eave roofs), details. Also accepts the house generator\'s '
+                'flat parameters. Presets: ' + ', '.join(PRESETS) + '.',
+    params={**{k: v for k, v in SCHEMA['properties'].items()}, **compat.ALIASES},
     roles=ROLE_NAMES,
     build=_build,
     coverage=('rect/L/U/courtyard', 'storeys', 'brick/timber/stone', 'doors', 'windows', 'arrow slits', 'towers',

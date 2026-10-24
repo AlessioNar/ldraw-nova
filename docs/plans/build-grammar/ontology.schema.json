@@ -159,6 +159,14 @@
      "x-colour": true,
      "default": "white",
      "description": "Floor bands, floors and cornice"
+    },
+    "interior": {
+     "enum": [
+      "none",
+      "partition"
+     ],
+     "default": "none",
+     "description": "Rooms: a partition wall with a doorway on every storey (rectangular footprints)"
     }
    },
    "default": {
@@ -169,7 +177,8 @@
     "floors": true,
     "band_projection": 0,
     "eaves": false,
-    "band_colour": "white"
+    "band_colour": "white",
+    "interior": "none"
    }
   },
   "walls": {
@@ -717,6 +726,11 @@
      "x-colour": true,
      "default": "red",
      "description": "Sign band colour"
+    },
+    "connectors": {
+     "type": "boolean",
+     "default": false,
+     "description": "Technic pin bricks in the side walls near the top of every storey, to bolt modules together"
     }
    },
    "default": {
@@ -728,7 +742,8 @@
     "balcony": false,
     "balcony_colour": "white",
     "sign": "none",
-    "sign_colour": "red"
+    "sign_colour": "red",
+    "connectors": false
    }
   },
   "base": {
@@ -740,10 +755,11 @@
     "kind": {
      "enum": [
       "none",
-      "plate"
+      "plate",
+      "modular"
      ],
      "default": "plate",
-     "description": "Base plate under the building"
+     "description": "none, a plate round the building, or a 32x32 modular-building plate with a sidewalk"
     },
     "margin": {
      "type": "integer",
@@ -782,6 +798,18 @@
      ],
      "default": 2,
      "description": "Path width"
+    },
+    "sidewalk": {
+     "type": "integer",
+     "minimum": 0,
+     "maximum": 8,
+     "default": 6,
+     "description": "Modular: studs of sidewalk in front of the building"
+    },
+    "lamps": {
+     "type": "boolean",
+     "default": false,
+     "description": "Modular: two street lamps on the sidewalk"
     }
    },
    "default": {
@@ -790,7 +818,9 @@
     "colour": "green",
     "path": true,
     "path_colour": "light grey",
-    "path_width": 2
+    "path_width": 2,
+    "sidewalk": 6,
+    "lamps": false
    }
   }
  }

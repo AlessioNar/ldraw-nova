@@ -18,6 +18,8 @@ def base_plate(ctx):
     x0, x1, z0, z1 = footprint.bbox(cells)
     m = cfg['margin']
     ctx.base_rect = (x0 - m, z0 - m, x1 - x0 + 2 * m, z1 - z0 + 2 * m)
+    if cfg['kind'] == 'modular':               # the 32x32 module: sidewalk in front, the building behind it
+        ctx.base_rect = (x0, z0 - cfg['sidewalk'], 32, 32)
     colour = ctx.code(cfg['colour'])
     i0, j0, w, d = ctx.base_rect
     # Two layers of plate strips laid across each other, each strip's joints staggered against the last.
@@ -38,8 +40,33 @@ def base_plate(ctx):
             prev, pos = joints, pos + depth
 
 
+def sidewalk(ctx):
+    """Modular: tiles across the whole front of the module, a kerb row, optional lamps on plain studs."""
+    cfg = ctx.cfg['base']
+    bx0, bz0, bw, bd = ctx.base_rect
+    depth = cfg['sidewalk']
+    if not depth:
+        return
+    lamps = []
+    if cfg['lamps']:
+        lamps = [(bx0 + 3, bz0 + depth - 2), (bx0 + bw - 4, bz0 + depth - 2)]
+    cells = {(i, j) for i in range(bx0, bx0 + bw) for j in range(bz0, bz0 + depth)} - set(lamps)
+    kerb = {c for c in cells if c[1] == bz0}
+    for cells_, colour in ((cells - kerb, ctx.code(cfg['path_colour'])), (kerb, ctx.code(72))):
+        free = {c for c in cells_ if ctx.canvas.free(c[0], c[1], ctx.y_ground)}
+        for (code, i, j, w, d) in tiling.rect_cover(free, 'tile'):
+            _put_cover(ctx, code, colour, 'base', i, j, w, d, ctx.y_ground, 'sidewalk')
+    for (i, j) in lamps:
+        for k in range(4):
+            ctx.canvas.put(catalog.ROUND_BRICK_1, ctx.code(0), 'detail', i + .5, j + .5, ctx.y_ground + 3 * k, 0, label='street lamp')
+        ctx.canvas.put(catalog.ROUND_BRICK_1, ctx.code('trans yellow'), 'detail', i + .5, j + .5, ctx.y_ground + 12, 0, label='street lamp')
+
+
 def path(ctx):
     cfg = ctx.cfg['base']
+    if cfg['kind'] == 'modular':
+        sidewalk(ctx)
+        return
     door = ctx.door
     if cfg['kind'] == 'none' or not cfg['path'] or door is None:
         return

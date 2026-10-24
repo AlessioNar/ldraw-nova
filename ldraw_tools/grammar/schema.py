@@ -64,7 +64,8 @@ SCHEMA = {
             floors=flag(True, 'Fill the interior with floor plates (off = ring bands only)'),
             band_projection=integer(0, 0, 1, 'Studs the floor bands project as a cornice'),
             eaves=flag(False, 'A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more'),
-            band_colour=colour('white', 'Floor bands, floors and cornice')),
+            band_colour=colour('white', 'Floor bands, floors and cornice'),
+            interior=choice('none', ['none', 'partition'], 'Rooms: a partition wall with a doorway on every storey (rectangular footprints)')),
         'walls': group('Walls', 'Wall construction',
             style=choice('brick', ['brick', 'timber', 'stone'], 'brick; half-timber (posts and infill); stone (two-tone random bricks)'),
             thickness=choice(1, [1, 2], 'Wall thickness in studs; 2 uses staggered rows'),
@@ -123,14 +124,17 @@ SCHEMA = {
             balcony=flag(False, 'Balcony over the door (needs 2+ storeys)'),
             balcony_colour=colour('white', 'Balcony floor and railing'),
             sign=choice('none', ['none', 'fascia'], 'Shop sign band above the ground floor'),
-            sign_colour=colour('red', 'Sign band colour')),
+            sign_colour=colour('red', 'Sign band colour'),
+            connectors=flag(False, 'Technic pin bricks in the side walls near the top of every storey, to bolt modules together')),
         'base': group('Base', 'Ground',
-            kind=choice('plate', ['none', 'plate'], 'Base plate under the building'),
+            kind=choice('plate', ['none', 'plate', 'modular'], 'none, a plate round the building, or a 32x32 modular-building plate with a sidewalk'),
             margin=integer(3, 0, 8, 'Studs of ground around the building'),
             colour=colour('green', 'Ground'),
             path=flag(True, 'Path from the door to the edge'),
             path_colour=colour('light grey', 'Path'),
-            path_width=choice(2, [2, 4], 'Path width')),
+            path_width=choice(2, [2, 4], 'Path width'),
+            sidewalk=integer(6, 0, 8, 'Modular: studs of sidewalk in front of the building'),
+            lamps=flag(False, 'Modular: two street lamps on the sidewalk')),
     },
 }
 
@@ -147,6 +151,8 @@ CONSTRAINTS = [
     ('porch-door', 'A porch needs a front door'),
     ('balcony-storeys', 'A balcony needs a door and at least 2 storeys'),
     ('parapet-flat', 'Parapets and battlements only exist on flat roofs and tower tops'),
+    ('modular-fits', 'A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang and lift-out floors'),
+    ('interior-rect', 'Interior partitions only go into rectangular footprints'),
     ('eaves-setback', 'Eave roofs round storeys need each upper storey to step in by 1 or more'),
     ('setback-fits', 'The top storey must stay at least 4 studs wide after all setbacks'),
     ('eaves-rect', 'Eave roofs only go round rectangular storeys'),
@@ -222,6 +228,29 @@ def normalise(config):
     if fp['shape'] != 'rect' and st['setback']:
         st['setback'] = 0
         notes.append('setback ignored: only rectangular footprints step in (setback-rect)')
+    if bs['kind'] == 'modular':
+        if fp['width'] != 32:
+            fp['width'] = 32
+            notes.append('width set to 32: a modular building fills its 32 stud module (modular-fits)')
+        if fp['depth'] > 32 - bs['sidewalk']:
+            fp['depth'] = 32 - bs['sidewalk']
+            notes.append(f"depth limited to {fp['depth']}: the module is 32 studs deep including the sidewalk (modular-fits)")
+        for group, key, value, why in ((rf, 'verge', 0, 'a roof must not overhang the neighbouring module'),
+                                       (rf, 'overhang', 0, 'a roof must not overhang the edge of the module'),
+                                       (st, 'eaves', False, 'eave roofs would reach into the neighbouring module'),
+                                       (st, 'floors', True, 'modular floors are full plates you can lift out')):
+            if group[key] != value:
+                group[key] = value
+                notes.append(f'{key} set to {value}: {why} (modular-fits)')
+        if co['style'] == 'towers':
+            co['style'] = 'pillars'
+            notes.append('towers replaced by pillars: towers would stick out of the module (modular-fits)')
+    if dt['connectors'] and bs['kind'] != 'modular':
+        notes.append('connectors are only placed for modular buildings (modular-fits)')
+        dt['connectors'] = False
+    if st['interior'] == 'partition' and fp['shape'] != 'rect':
+        st['interior'] = 'none'
+        notes.append('rooms removed: partitions only go into rectangular footprints (interior-rect)')
     if st['eaves'] and fp['shape'] != 'rect':
         st['eaves'] = False
         notes.append('eaves removed: they only go round rectangular storeys (eaves-rect)')

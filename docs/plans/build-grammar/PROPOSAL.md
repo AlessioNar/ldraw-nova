@@ -6,7 +6,7 @@ Status: prototype on branch `build-grammar`. Engine, ontology, six presets, part
 
 Today's generators are single hard-coded geometries with a few knobs. The grammar replaces that for buildings with one **ontology** ([ONTOLOGY.md](ONTOLOGY.md), [ontology.schema.json](ontology.schema.json)): Building → Footprint · Storeys · Walls · Openings · Corners · Roof · Details · Base. A configuration is a small JSON document; the engine (`ldraw_tools/grammar/`) turns it into a plan in the existing schema, deterministically, in 10-300 ms, with a `role` on every placement. The same config always gives the same plan, and it validates with the toolkit's own build and geometry analysis: no error diagnostics, one connected component.
 
-Twenty presets are twenty configurations of that one grammar, not six generators:
+Twenty-four presets are twenty-four configurations of that one grammar, not six generators:
 
 | preset | what changes | parts |
 |---|---|---|
@@ -47,10 +47,10 @@ Rendering worked in this environment: LeoCAD (`apt install leocad`) under `xvfb-
 
 ## What is verified
 
-- `tests/test_grammar.py` (215 tests, no library needed): footprints, walls and bond, tiling, openings, roofs, towers, details, base, schema rules, determinism, parameter sweeps (about 60 cases, each must be one connected piece with a valid plan), parts-aware mode, natural language, registry, maps.
-- `tests/test_grammar_validation.py` (38 tests, needs the LDraw library): every one of the 20 presets and 13 sweeps through `build_plan` + `analyze_geometry` (no errors, one optimistic component), the parts-aware plan, the registry route, and every catalogue part's footprint and height against the library's real bounds.
+- `tests/test_grammar.py` (237 tests, no library needed): footprints, walls and bond, tiling, openings, roofs, towers, details, base, schema rules, determinism, parameter sweeps (about 60 cases, each must be one connected piece with a valid plan), parts-aware mode, natural language, registry, maps.
+- `tests/test_grammar_validation.py` (42 tests, needs the LDraw library): every one of the 24 presets and 13 sweeps through `build_plan` + `analyze_geometry` (no errors, one optimistic component), the parts-aware plan, the registry route, and every catalogue part's footprint and height against the library's real bounds.
 - A 356-case internal sweep (sizes 6-22 x 6-14, 1-3 storeys, three roofs, L/U/courtyard with thin and thick walls, square and round towers, every window and door kind, wall styles, every detail) found no collision and no loose part.
-- `tests/test_generators.py -k "not parameter_range_corners"` still passes with the new entry; the old house generator is untouched and still wins the words it owns (`house`, `cottage`, `shop`, `townhouse`). `building` takes the new ones (`castle`, `tower`, `keep`, `fort`...). Flipping the routing is a one-line change in `generators/building.py`'s kinds.
+- `tests/test_generators.py -k "not parameter_range_corners"` still passes (29) after the routing change; the test that listed `house` first now expects `building` first with `house` still listed.
 
 ## Honest quality assessment against real LEGO
 
@@ -94,9 +94,24 @@ Wave 1 (about 1-2 weeks): backend integration. Route fast-path requests to `buil
 Wave 2 (about 2-3 weeks): the UI in [ui/UI.md](ui/UI.md): component tree, per-component forms, preview (the viewer fed by the regenerated plan; Regenerate is about 20 ms plus the existing geometry check), saved presets.
 Wave 3 (open-ended): quality. 33° roofs and dormers, gable windows, sills and shutters, arched gatehouses, more tower forms, per-wing roofs for L/U, interiors, harvested components, then vehicles.
 
+## Decisions
+
+1. **Routing: yes.** `building` now answers house, cottage, shop and townhouse requests. It is first in the registry and accepts the house generator's flat parameters (`compat.py`), so the fast path and the settings form keep working unchanged. The old `house` generator stays registered for saved builds. The backend test fixture (`app/web/backend/tests/generators_registry.json`) is a static dump of the old registry and was not regenerated; backend tests were not run here (no `fastapi` in this environment).
+2. **Scale: minifig scale** (as now).
+3. **Harvested components: yes**, the reference sets' windows, doors, roofs and towers may be shipped as alternative implementations of a component (see "Harvested components" above). Licences and attribution travel with each harvested section.
+4. **Next: modular buildings** (not vehicles). First slice is done (see below); the rest is the plan.
+
+## Modular buildings: what is built and what is next
+
+Built now: four presets ([gallery](renders/gallery-modular.png)): bakery, town hall, apartment block, tea house. Each is a 32 x 32 module with sidewalk, kerb and street lamps; 2-4 storeys with lift-out floors, cornices and balcony on the front only, partition walls with doorways, Technic pin bricks in both side walls, nothing past the module edge. All validate with one connected component.
+
+![Modular buildings](renders/gallery-modular.png)
+
+Next, in order of what a Creator Expert modular has and these lack: furniture and staircases in the rooms (a `Rooms` component with real-part furniture catalogue), a corner module (two facades, L-shaped module with the sidewalk on two sides), a hinged or lift-off roof as a separate submodel, richer facades (shop fronts with awnings, window sills, shutters, arches with keystones), interior lighting-free details (wall prints are out of scope), and a **street** composer that places modules side by side and checks that the Technic holes line up. Those are new components in the same ontology, not a new generator.
+
 ## Open questions
 
-1. Should `building` take over the old house generator's words in the fast path now (and the old generator retire), or stay behind it until the quality gaps above are closed?
-2. Which scale is the default: minifig scale as now (door 1x4x6) or a smaller town scale? It changes the part catalogue, not the grammar.
-3. May components harvested from the reference sets (CCAL-licensed) ship in the product catalogue, or only be derived on a person's machine?
-4. What first: roof and opening variety (33° slopes, dormers, shutters), or the vehicle ontology?
+1. For modular buildings: should the street composer (several modules along a road, a corner, a park module) be part of this generator, or a separate "layout" feature above it?
+2. Rooms need a furniture catalogue; build one from the reference sets (needs the harvesting pipeline) or hand-pick 20-30 parts?
+3. Should a modular building default to a hinged/lift-off roof and floors as separate submodels in the plan (better manual and real behaviour, more sections to validate), or stay one connected model as now?
+4. The cornice and sign band are hidden from above by the projecting plates; is a taller fascia (two courses) the right fix, or real sign tiles?

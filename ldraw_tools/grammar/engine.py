@@ -1,7 +1,7 @@
 """config -> plan. Deterministic: the same config (and inventory) always gives the same plan."""
 from __future__ import annotations
 
-from . import details, openings, schema, structure, walls
+from . import details, interior, openings, schema, structure, walls
 from .context import Ctx
 
 
@@ -28,6 +28,7 @@ def build(config, inventory=None):
         openings.plan_storey(ctx, st)
         walls.build(ctx, st, override)
         openings.emit(ctx, st)
+        interior.partition(ctx, st)
         structure.round_towers(ctx, st)
         structure.band(ctx, st)
         if cfg['storeys']['eaves'] and st.kind == 'main' and st.index < cfg['storeys']['count'] - 1:

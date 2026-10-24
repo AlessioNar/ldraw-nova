@@ -39,6 +39,7 @@ class Ctx:
         self.canvas = Canvas(inventory=inventory)
         self.notes = []
         self.t = cfg['walls']['thickness']
+        self.modular = cfg['base']['kind'] == 'modular'
         self.storeys = []
         self.y_ground = 0
         self.tower_rects = []          # [(i0, j0, w, d, shape)]

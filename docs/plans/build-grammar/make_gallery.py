@@ -5,16 +5,18 @@ from PIL import Image, ImageDraw
 HERE = Path(__file__).parent
 GROUPS = {'asian': ['pagoda', 'white-pagoda', 'temple-hall', 'minka', 'gate-tower', 'tea-room', 'siheyuan'],
           'general': ['barn', 'town-hall', 'apartment-block', 'courtyard-fort', 'lighthouse', 'warehouse', 'manor'],
+          'modular': ['modular-bakery', 'modular-town-hall', 'modular-flats', 'modular-tea-house'],
           'classic': ['house', 'cottage', 'shop', 'townhouse', 'tower', 'castle-keep']}
 TITLES = {'pagoda': 'Pagoda (4 tiers)', 'white-pagoda': 'Japanese pagoda (3 tiers)', 'temple-hall': 'Temple hall',
           'minka': 'Japanese farmhouse (minka)', 'gate-tower': 'City gate tower', 'tea-room': 'Tea room',
           'siheyuan': 'Courtyard house (siheyuan)', 'barn': 'Barn', 'town-hall': 'Town hall',
           'apartment-block': 'Apartment block', 'courtyard-fort': 'Courtyard fort', 'lighthouse': 'Lighthouse',
           'warehouse': 'Warehouse', 'manor': 'Manor house', 'house': 'House', 'cottage': 'Cottage', 'shop': 'Shop, flat roof',
-          'townhouse': 'Townhouse', 'tower': 'Tower', 'castle-keep': 'Castle keep'}
+          'townhouse': 'Townhouse', 'tower': 'Tower', 'castle-keep': 'Castle keep', 'modular-bakery': 'Modular bakery', 'modular-town-hall': 'Modular town hall',
+          'modular-flats': 'Modular apartment block', 'modular-tea-house': 'Modular tea house'}
 
 for group, names in GROUPS.items():
-    cols, w, h = 3, 520, 440
+    cols, w, h = (2, 700, 640) if group == 'modular' else (3, 520, 440)
     rows = (len(names) + cols - 1) // cols
     sheet = Image.new('RGB', (cols * w, rows * h), 'white')
     draw = ImageDraw.Draw(sheet)

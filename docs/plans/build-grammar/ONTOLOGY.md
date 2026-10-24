@@ -34,6 +34,8 @@ Studs (x right, z back; the front is the low-z side) and plates (1 brick = 3 pla
 
 **Details.** `chimney` stands on plates in the ridge; `porch` is a floor, two pillars of 1x1 bricks and a canopy of plates and tiles; `balcony` is a floor cut together with the first band (so its plates straddle wall and balcony and hold on) with a row of round 1x1 rails; `sign` turns the top ground-floor course on the front into a coloured band.
 
+**Modular buildings.** `base.kind = modular` makes the module: a 32x32 plate (two crossed layers) with a tiled sidewalk and kerb in front (`sidewalk`, optional `lamps`), the building behind it. The rules keep everything inside the module (`modular-fits`): width 32, depth at most 32 minus the sidewalk, no roof overhang, no towers or eave roofs, a cornice only on the front. Floors are full plates that lift out (each rests on the storey below by studs only), `storeys.interior = partition` builds a bonded partition wall with a 4-stud doorway on every storey, and `details.connectors` puts two Technic bricks (with pin holes) into each side wall, near the top of every storey, so neighbouring modules can be pinned together.
+
 **Base.** Two layers of plate strips laid across each other (a base of one layer would be loose plates); `path` is tiles from the door to the edge.
 
 ## Roles
@@ -56,6 +58,7 @@ Every placement carries one `role` (vocabulary in `ldraw_tools/grammar/roles.py`
 Roles are a property of the construction, not a guess from colour or part number, so "make the roof blue" selects `role == roof` whatever the roof is made of.
 
 ## Parameters
+
 #### Footprint  (`footprint`)
 
 Plan shape of the ground floor.
@@ -84,7 +87,9 @@ Storeys stacked on the footprint; each is wall courses plus a floor band.
 | `setback` | 0..3 | `0` | Studs each upper storey steps in on every side (rect footprints) |
 | `floors` | yes / no | `true` | Fill the interior with floor plates (off = ring bands only) |
 | `band_projection` | 0..1 | `0` | Studs the floor bands project as a cornice |
+| `eaves` | yes / no | `false` | A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more |
 | `band_colour` | colour name or code | `white` | Floor bands, floors and cornice |
+| `interior` | `none` / `partition` | `none` | Rooms: a partition wall with a doorway on every storey (rectangular footprints) |
 
 #### Walls  (`walls`)
 
@@ -151,6 +156,7 @@ Roof or top finish.
 | `overhang` | 0..1 | `1` | Eave overhang in studs |
 | `verge` | 0..1 | `0` | Gable-end overhang in studs |
 | `tiers` | 0..9 | `0` | Slope courses; 0 = as steep as the depth allows |
+| `finial` | yes / no | `false` | Hip roofs: a cone finial on the peak |
 | `parapet` | `none` / `plain` / `battlement` | `none` | Flat roofs: parapet or battlements |
 | `merlon` | 1..2 | `1` | Battlement merlon width |
 | `gap` | 1..2 | `1` | Battlement gap width |
@@ -172,6 +178,7 @@ Add-ons.
 | `balcony_colour` | colour name or code | `white` | Balcony floor and railing |
 | `sign` | `none` / `fascia` | `none` | Shop sign band above the ground floor |
 | `sign_colour` | colour name or code | `red` | Sign band colour |
+| `connectors` | yes / no | `false` | Technic pin bricks in the side walls near the top of every storey, to bolt modules together |
 
 #### Base  (`base`)
 
@@ -179,12 +186,14 @@ Ground.
 
 | parameter | values | default | meaning |
 |---|---|---|---|
-| `kind` | `none` / `plate` | `plate` | Base plate under the building |
+| `kind` | `none` / `plate` / `modular` | `plate` | none, a plate round the building, or a 32x32 modular-building plate with a sidewalk |
 | `margin` | 0..8 | `3` | Studs of ground around the building |
 | `colour` | colour name or code | `green` | Ground |
 | `path` | yes / no | `true` | Path from the door to the edge |
 | `path_colour` | colour name or code | `light grey` | Path |
 | `path_width` | `2` / `4` | `2` | Path width |
+| `sidewalk` | 0..8 | `6` | Modular: studs of sidewalk in front of the building |
+| `lamps` | yes / no | `false` | Modular: two street lamps on the sidewalk |
 
 #### Validity rules
 
@@ -202,6 +211,11 @@ Ground.
 | `porch-door` | A porch needs a front door |
 | `balcony-storeys` | A balcony needs a door and at least 2 storeys |
 | `parapet-flat` | Parapets and battlements only exist on flat roofs and tower tops |
+| `modular-fits` | A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang and lift-out floors |
+| `interior-rect` | Interior partitions only go into rectangular footprints |
+| `eaves-setback` | Eave roofs round storeys need each upper storey to step in by 1 or more |
+| `setback-fits` | The top storey must stay at least 4 studs wide after all setbacks |
+| `eaves-rect` | Eave roofs only go round rectangular storeys |
 | `sign-shop` | A fascia sign needs a door and a ground storey of 7 or more courses |
 
 ## LEGO-correct construction
@@ -243,6 +257,10 @@ The rules are listed in `CONSTRAINTS` and applied by `schema.normalise`; each ch
 - `prefer`: every brick tiling is ordered by what is owned (an unowned length costs more), colours are kept, and the report lists `shortages` (what is missing, by part and colour).
 - `only`: tilings are restricted to owned lengths for that colour; a colour with no owned part is replaced by the nearest owned colour by RGB distance (listed under `substitutions`); where a run cannot be tiled with owned lengths the engine falls back to unrestricted lengths and reports the shortage honestly.
 - Plates, slopes, windows and doors are counted and reported but not yet substituted (see PROPOSAL.md).
+
+## The house dialect
+
+The building generator also accepts the old house generator's flat parameters (`width`, `depth`, `courses`, `door_side`, `door_style`, `windows`, `window_sides`, `roof_style`, `roof_tiers`, `porch`, `chimney`, `dormer`, `wall_colour`, `trim_colour`, `roof_colour`, `door_colour`, `glass_colour`, `chimney_colour`; code in `compat.py`), so the fast path, the settings form and saved builds that speak it keep working. `dormer` is reported as not built; `courses` of 12 or more become two storeys. The old generator stays registered as `house`; `building` is first in the registry and answers every house, cottage, shop and townhouse request.
 
 ## Use
 

@@ -252,9 +252,63 @@ def test_eave_roofs_wrap_every_storey_but_the_top_and_need_room():
 def test_asian_presets_use_eaves_pillars_and_hip_roofs():
     for name in ('pagoda', 'white-pagoda', 'gate-tower'):
         assert PRESETS[name]['config']['storeys']['eaves'] and PRESETS[name]['config']['roof']['style'] == 'hip'
-    assert {p['group'] for p in PRESETS.values() if 'group' in p} == {'asian', 'general'}
+    assert {p['group'] for p in PRESETS.values() if 'group' in p} == {'asian', 'general', 'modular'}
     assert len([n for n, p in PRESETS.items() if p.get('group') == 'asian']) >= 5
-    assert len(PRESETS) >= 20
+    assert len(PRESETS) >= 24
+
+
+# ---------------------------------------------------------------- modular buildings
+
+def modular(config=None):
+    return build(grammar.deep_merge({'footprint': {'width': 32, 'depth': 22}, 'base': {'kind': 'modular', 'lamps': True},
+                                     'storeys': {'count': 3, 'interior': 'partition', 'band_projection': 1},
+                                     'details': {'connectors': True}, 'roof': {'overhang': 0}}, config or {}))
+
+
+def test_modular_building_fills_exactly_one_32_stud_module():
+    r = modular()
+    cells = {c for i in r['canvas'].items for c in i.cells}
+    xs, zs = [c[0] for c in cells], [c[1] for c in cells]
+    assert (min(xs), max(xs) + 1) == (0, 32) and max(zs) - min(zs) + 1 <= 32
+    base = items(r, role='base')
+    assert {c for i in base if 'base' in i.label for c in i.cells} >= {(0, -6), (31, 25)}
+    assert r['stats']['components'] == 1
+
+
+def test_modular_rules_pull_everything_inside_the_module():
+    cfg, notes = schema.normalise({'base': {'kind': 'modular'}, 'footprint': {'width': 20, 'depth': 30}, 'roof': {'overhang': 1, 'verge': 1},
+                                   'corners': {'style': 'towers'}, 'storeys': {'eaves': True, 'floors': False}})
+    assert cfg['footprint']['width'] == 32 and cfg['footprint']['depth'] == 26
+    assert cfg['roof']['overhang'] == 0 and cfg['roof']['verge'] == 0 and cfg['corners']['style'] == 'pillars'
+    assert not cfg['storeys']['eaves'] and cfg['storeys']['floors'] and len(notes) >= 5
+
+
+def test_modular_cornices_stay_on_the_front():
+    r = modular()
+    plates = [i for i in items(r, 'band s0')]
+    assert min(c[1] for i in plates for c in i.cells) == -1          # one stud in front of the wall
+    assert min(c[0] for i in plates for c in i.cells) == 0 and max(c[0] for i in plates for c in i.cells) == 31
+
+
+def test_sidewalk_lamps_and_connectors():
+    r = modular()
+    assert items(r, 'sidewalk') and len(items(r, 'street lamp')) == 10
+    tech = items(r, code=catalog.TECHNIC_BRICK)
+    assert len(tech) == 12 and {i.role for i in tech} == {'structure'}          # 2 per side, 3 storeys
+    assert {i.cells[0][0] for i in tech} == {0, 31}
+    none = build({'details': {'connectors': True}})
+    assert not items(none, code=catalog.TECHNIC_BRICK) and any('modular' in n for n in none['notes'])
+
+
+def test_partitions_have_a_doorway_and_are_bonded():
+    r = modular()
+    wall = items(r, 'partition s0')
+    assert wall and {i.y0 for i in wall} == {2 + 3 * c for c in range(6)}
+    row = {c for i in wall for c in i.cells if i.y0 == 2}
+    gap = {c for c in range(1, 31)} - {c[0] for c in row}
+    assert len(gap) == 4                                                     # a 4-stud doorway at the bottom
+    assert {c[0] for i in wall for c in i.cells if i.y0 == 2 + 3 * 5} >= gap  # closed above the door
+    assert not items(build({'storeys': {'interior': 'none'}}), 'partition')
 
 
 # ---------------------------------------------------------------- corners
@@ -497,11 +551,25 @@ def test_natural_language_reports_what_it_did_not_understand_and_edits_stack():
 
 # ---------------------------------------------------------------- registry, maps
 
+def test_building_answers_the_house_dialect():
+    r = generators.generate('building', dict(width=10, depth=8, windows=2, door_side='left', roof_colour='blue', chimney='left',
+                                             dormer=True, trim_colour='white', courses=6))
+    assert any('dormer' in n for n in r['notes'])
+    placed = [p for step in r['plan']['sections'][0]['steps'] for p in step]
+    assert {p['colour'] for p in placed if p['role'] == 'roof'} == {1}
+    flat = generators.generate('building', dict(roof_style='flat', door_side='none', windows=0, courses=12))
+    assert flat['plan']
+    for bad in (dict(width=5), dict(door_side='top'), dict(roof_colour=True)):
+        with pytest.raises(ValueError):
+            generators.get('building').resolve(bad)
+
+
 def test_registered_as_one_generator_without_disturbing_house():
     g = generators.get('building')
     entry = g.entry()
     assert entry['id'] == 'building' and set(entry['presets']) == set(PRESET_NAMES)
-    assert 'house' in generators.REGISTRY and generators.find(kind='house')[0].id == 'house'
+    assert 'house' in generators.REGISTRY and generators.find(kind='house')[0].id == 'building'
+    assert [g.id for g in generators.find('house', 'cottage')][:2] == ['building', 'house']
     assert generators.find(kind='castle')[0].id == 'building'
     plan = generators.generate('building', {'roof': {'style': 'hip'}})['plan']
     check_schema(plan)

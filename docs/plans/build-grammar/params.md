@@ -28,6 +28,7 @@ Storeys stacked on the footprint; each is wall courses plus a floor band.
 | `band_projection` | 0..1 | `0` | Studs the floor bands project as a cornice |
 | `eaves` | yes / no | `false` | A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more |
 | `band_colour` | colour name or code | `white` | Floor bands, floors and cornice |
+| `interior` | `none` / `partition` | `none` | Rooms: a partition wall with a doorway on every storey (rectangular footprints) |
 
 #### Walls  (`walls`)
 
@@ -116,6 +117,7 @@ Add-ons.
 | `balcony_colour` | colour name or code | `white` | Balcony floor and railing |
 | `sign` | `none` / `fascia` | `none` | Shop sign band above the ground floor |
 | `sign_colour` | colour name or code | `red` | Sign band colour |
+| `connectors` | yes / no | `false` | Technic pin bricks in the side walls near the top of every storey, to bolt modules together |
 
 #### Base  (`base`)
 
@@ -123,12 +125,14 @@ Ground.
 
 | parameter | values | default | meaning |
 |---|---|---|---|
-| `kind` | `none` / `plate` | `plate` | Base plate under the building |
+| `kind` | `none` / `plate` / `modular` | `plate` | none, a plate round the building, or a 32x32 modular-building plate with a sidewalk |
 | `margin` | 0..8 | `3` | Studs of ground around the building |
 | `colour` | colour name or code | `green` | Ground |
 | `path` | yes / no | `true` | Path from the door to the edge |
 | `path_colour` | colour name or code | `light grey` | Path |
 | `path_width` | `2` / `4` | `2` | Path width |
+| `sidewalk` | 0..8 | `6` | Modular: studs of sidewalk in front of the building |
+| `lamps` | yes / no | `false` | Modular: two street lamps on the sidewalk |
 
 #### Validity rules
 
@@ -146,6 +150,8 @@ Ground.
 | `porch-door` | A porch needs a front door |
 | `balcony-storeys` | A balcony needs a door and at least 2 storeys |
 | `parapet-flat` | Parapets and battlements only exist on flat roofs and tower tops |
+| `modular-fits` | A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang and lift-out floors |
+| `interior-rect` | Interior partitions only go into rectangular footprints |
 | `eaves-setback` | Eave roofs round storeys need each upper storey to step in by 1 or more |
 | `setback-fits` | The top storey must stay at least 4 studs wide after all setbacks |
 | `eaves-rect` | Eave roofs only go round rectangular storeys |
