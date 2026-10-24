@@ -233,3 +233,6 @@
   .ws-tr { display: none; }
   .ws-panel .gen-fields { grid-template-columns: 1fr; }
 }
+
+.ws-steps { position: absolute; z-index: 3; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; background: var(--surface); color: var(--fg); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 10px; font-size: var(--fs-xs); box-shadow: var(--shadow); max-width: calc(100% - 24px); }
+.ws-steps input[type="range"] { width: clamp(80px, 22vw, 220px); }

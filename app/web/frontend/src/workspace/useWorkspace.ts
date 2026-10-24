@@ -36,11 +36,13 @@ export function useWorkspace(id: string) {
   const [aiSeed, setAiSeed] = useState<{ text: string; n: number } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
+  const [steps, setSteps] = useState<{ total: number; current: number } | null>(null);
 
-  const baseRev = useRef(0);
   const sendRef = useRef<(c: CanvasCommand) => void>(() => {});
   const tabRef = useRef<Tab>("parts");
   const prevTab = useRef<Tab>("parts");
+  const draftTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const saveRef = useRef<() => unknown>(() => {});
   const checkTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -61,7 +63,6 @@ export function useWorkspace(id: string) {
 
   const setServerDraft = useCallback((d: DraftInfo | null | undefined) => {
     if (d === undefined) return;
-    baseRev.current = d ? d.revision - d.changes : 0;
     setDraftState(d);
   }, []);
 
@@ -79,7 +80,7 @@ export function useWorkspace(id: string) {
 
   useEffect(() => {
     setDetail(null); setNotFound(false); setWs(null); setDraftState(null); setCheck(null); setViewing(null); setSelection([]);
-    setToast(null); setConfirm(null); setAiSeed(null); setCanvasReady(false);
+    setToast(null); setConfirm(null); setAiSeed(null); setCanvasReady(false); setSteps(null);
     setToolState("select"); tabRef.current = "parts"; setTabState("parts");
     let live = true;
     (async () => {
@@ -110,13 +111,23 @@ export function useWorkspace(id: string) {
     return () => clearTimeout(t);
   }, [pending, detail, id, refreshBuilds]);
 
+  /** `changes` is net (undo stack based, computed by the backend), so the canvas's revision is not enough: ask for the draft. */
+  const syncDraft = useCallback(() => {
+    clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => { wsApi.workspace(id).then((w) => { setWs(w); if (w.draft) setDraftState(w.draft); }).catch(() => {}); }, 250);
+  }, [id]);
+
   // ---- canvas -> workspace ----
   const onCanvasEvent = useCallback((e: CanvasEvent) => {
     if (e.type === "obd:ready") { setCanvasReady(true); setModeState(e.mode); }
-    else if (e.type === "obd:mode") setModeState(e.mode);
+    else if (e.type === "obd:mode") { setModeState(e.mode); if (e.mode !== "player") setSteps(null); }
+    else if (e.type === "obd:tool") setToolState(e.tool);
+    else if (e.type === "obd:steps") setSteps({ total: e.total, current: e.current });
+    else if (e.type === "obd:shortcut") { if (e.action === "save") saveRef.current(); }
     else if (e.type === "obd:error") say(e.message, { error: true });
     else if (e.type === "obd:changed") {
-      setDraftState((d) => d && { ...d, revision: e.revision, undo_depth: e.undo_depth, redo_depth: e.redo_depth, changes: e.revision - baseRev.current, updated_at: Date.now() / 1000 });
+      setDraftState((d) => d && { ...d, revision: e.revision, undo_depth: e.undo_depth, redo_depth: e.redo_depth });
+      syncDraft();
       setEditTick((n) => n + 1);
       clearTimeout(checkTimer.current);
       checkTimer.current = setTimeout(refreshCheck, 800);
@@ -125,7 +136,7 @@ export function useWorkspace(id: string) {
       if (e.pieces.length) { if (tabRef.current !== "piece") prevTab.current = tabRef.current; tabRef.current = "piece"; setTabState("piece"); }
       else if (tabRef.current === "piece") { tabRef.current = prevTab.current; setTabState(prevTab.current); }
     }
-  }, [refreshCheck, say]);
+  }, [refreshCheck, say, syncDraft]);
 
   // ---- derived ----
   const versions = useMemo<VersionRow[]>(
@@ -173,7 +184,7 @@ export function useWorkspace(id: string) {
   const save = () => act("save", async () => {
     if (viewing || (changes === 0 && latest > 0)) return;
     const r = await wsApi.save(id);
-    await reloadAll(); refreshBuilds();
+    await afterBackendChange(); refreshBuilds();
     say(r.message || `Saved as v${r.version}.`);
   });
 
@@ -205,8 +216,8 @@ export function useWorkspace(id: string) {
   const describe = async (text: string): Promise<DescribeResult> => {
     const r = await wsApi.describe(id, text);
     if (r.route === "generator" || r.route === "edit") {
-      if (r.draft) setServerDraft(r.draft); else await reloadAll();
-      setViewing(null); send({ cmd: "reload" }); refreshCheck();
+      if (r.draft) setServerDraft(r.draft);
+      setViewing(null); await afterBackendChange();
       const what = [...(r.changes ?? []).map((c) => `${c.label}: ${String(c.from)} to ${String(c.to)}`), ...(r.notes ?? [])].join("; ");
       say(`Applied${what ? `: ${what}` : "."}`, { action: { label: "Undo", run: undo } });
     }
@@ -216,7 +227,7 @@ export function useWorkspace(id: string) {
   const regenerate = (generator: string, params: Record<string, unknown>) => act("regenerate", async () => {
     const r = await wsApi.regenerate(id, generator, params);
     if (r.draft) setServerDraft(r.draft);
-    await reloadAll(); setViewing(null); send({ cmd: "reload" });
+    setViewing(null); await afterBackendChange();
     say(r.replaced_manual_edits ? "Regenerated. Your manual edits were replaced." : "Regenerated into the draft.", { action: { label: "Undo", run: undo } });
   });
 
@@ -237,7 +248,6 @@ export function useWorkspace(id: string) {
   const askAi = (text: string) => { setAiSeed({ text, n: Date.now() }); setTab("ai"); };
 
   // Ctrl+S: Save as vN (the canvas owns every other shortcut)
-  const saveRef = useRef(save);
   saveRef.current = save;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -248,7 +258,7 @@ export function useWorkspace(id: string) {
   }, []);
 
   return {
-    id, phone, detail, notFound, ws, draft, check, tab, tool, mode, colour, selection, viewing, editTick, busy, toast, confirm, aiSeed, sheetOpen, canvasReady,
+    id, phone, detail, notFound, ws, draft, check, tab, tool, mode, colour, selection, viewing, editTick, busy, toast, confirm, aiSeed, sheetOpen, canvasReady, steps,
     versions, changes, latest, nextVersion, empty, baseVersion, readOnly, proposals,
     setTab, setSheetOpen, setConfirm, setToast, setColour: pickColour, recolourSelection, setTool, setMode, addPart, send, registerCanvas, onCanvasEvent,
     undo, redo, backToDraft, viewVersion, save, discard, branch, describe, regenerate, keepProposal, dropProposal, previewProposal, askAi, say,

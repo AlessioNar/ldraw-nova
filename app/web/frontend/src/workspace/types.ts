@@ -26,7 +26,10 @@ export type CanvasEvent =
   | { type: "obd:selection"; pieces: CanvasPiece[] }
   | { type: "obd:changed"; revision: number; undo_depth: number; redo_depth: number }
   | { type: "obd:error"; message: string }
-  | { type: "obd:mode"; mode: CanvasMode };
+  | { type: "obd:mode"; mode: CanvasMode }
+  | { type: "obd:tool"; tool: Tool }
+  | { type: "obd:steps"; total: number; current: number }
+  | { type: "obd:shortcut"; action: "save" };
 export type CanvasCommand =
   | { cmd: "undo" } | { cmd: "redo" } | { cmd: "delete" } | { cmd: "reload" } | { cmd: "focus" } | { cmd: "back-to-draft" }
   | { cmd: "set-tool"; tool: Tool } | { cmd: "set-colour"; colour: number } | { cmd: "add-part"; part: string; colour: number }

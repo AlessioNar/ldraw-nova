@@ -377,3 +377,18 @@ def test_registry_dump_matches_the_toolkit_when_available():
         pytest.skip("toolkit cannot be imported here")
     generator_bridge._cache_path().unlink(missing_ok=True)
     assert {e["id"]: e["params"] for e in fresh["entries"]} == {k: v["params"] for k, v in ENTRIES.items()}
+
+
+def test_estimate_with_a_generator_loads_a_cold_registry(client, provider, monkeypatch):
+    loaded = []
+
+    async def ensure():
+        loaded.append(1)
+        generator_bridge.set_registry(REGISTRY)
+        return REGISTRY
+
+    generator_bridge.set_registry(None)
+    monkeypatch.setattr(generator_bridge, "cached", lambda: REGISTRY if loaded else None)
+    monkeypatch.setattr(generator_bridge, "ensure", ensure)
+    body = client.get("/api/describe/estimate", params={"text": "make the roof blue", "generator": "house"}).json()
+    assert body["route"] == "edit" and loaded == [1]
