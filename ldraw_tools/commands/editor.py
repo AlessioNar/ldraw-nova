@@ -132,6 +132,36 @@ def _report(ok, state, **extra):
                 redo_depth=len(state["redo"]), **extra), 0 if ok else 1
 
 
+def plan_delta(old, new):
+    """The change from plan `old` to plan `new` as splices of steps, or None when its shape changed.
+
+    A splice is `{section, step, at, remove, insert}`: in step `step` of section `section` (both by index), replace
+    `remove` entries from index `at` with the entries `insert`. Entries are compared whole, so only the span
+    between the first and the last entry that differ is sent: one added brick is one entry, a move is one entry
+    twice. The plan's header, its sections (names, order, other fields) and every section's number of steps must be
+    the same, else None and the caller sends the whole plan. Applying the splices in order gives `new`.
+    """
+    head = lambda plan: {k: v for k, v in plan.items() if k != "sections"}
+    if head(old) != head(new) or len(old["sections"]) != len(new["sections"]):
+        return None
+    splices = []
+    for si, (a, b) in enumerate(zip(old["sections"], new["sections"])):
+        if len(a["steps"]) != len(b["steps"]) or {k: v for k, v in a.items() if k != "steps"} != {k: v for k, v in b.items() if k != "steps"}:
+            return None
+        for ti, (x, y) in enumerate(zip(a["steps"], b["steps"])):
+            if x == y:
+                continue
+            low = min(len(x), len(y))
+            at = 0
+            while at < low and x[at] == y[at]:
+                at += 1
+            tail = 0
+            while tail < low - at and x[-1 - tail] == y[-1 - tail]:
+                tail += 1
+            splices.append(dict(section=si, step=ti, at=at, remove=len(x) - at - tail, insert=y[at:len(y) - tail]))
+    return splices
+
+
 def _short(rows, owned):
     result = []
     for part, colour, needed in rows:
@@ -203,7 +233,7 @@ def run_editor(args, library, parts):
         state = {**state, "undo": [*state["undo"], {"forward": edits, "inverse": inverses}], "redo": [],
                  "revision": state["revision"] + 1}
         _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
-        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, short=flagged)
+        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, short=flagged, delta=plan_delta(plan, candidate))
 
     if args.action == "undo":
         if not state["undo"]:
@@ -215,7 +245,7 @@ def run_editor(args, library, parts):
         state = {**state, "undo": state["undo"][:-1], "redo": [*state["redo"], batch],
                  "revision": state["revision"] + 1}
         _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
-        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text)
+        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, delta=plan_delta(plan, candidate))
 
     if not state["redo"]:
         return _report(False, state, error="Nothing to redo")
@@ -226,7 +256,7 @@ def run_editor(args, library, parts):
     state = {**state, "undo": [*state["undo"], batch], "redo": state["redo"][:-1],
              "revision": state["revision"] + 1}
     _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
-    return _report(True, state, plan=candidate, used=rows, mpd=mpd_text)
+    return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, delta=plan_delta(plan, candidate))
 
 
 def prewarm_jobs(parts, plan):
@@ -247,7 +277,7 @@ def prewarm_jobs(parts, plan):
 def run_request(request, library, parts, idle=None):
     """One editor action for a resident worker: `run_editor` with the CLI's arguments as a JSON object.
 
-    The request has `action` (open|replace|apply|undo|redo), the `plan`/`state`/`mpd` paths and the options the CLI
+    The request has `action` (open|replace|apply|undo|redo|warm), the `plan`/`state`/`mpd` paths and the options the CLI
     takes (`base_revision`, `edits`, `owned`, `mode`, `source`, `from_mpd`, `name`). The reply is the CLI's
     report plus `exit_code` (0 done, 1 refused, 2 failed); the plan and the preview are on disk, so unless
     `full` is set they are left out of the reply. Failures the CLI turns into exit code 2 come back the same way.
@@ -255,6 +285,17 @@ def run_request(request, library, parts, idle=None):
     names = ("action", "plan", "state", "mpd", "base_revision", "edits", "owned", "mode", "source", "from_mpd", "name")
     args = types.SimpleNamespace(**{k: request.get(k) for k in names})
     args.mode = args.mode or "off"
+    if args.action == "warm":
+        # A workspace was opened on an existing session: load the library (done by the caller) and queue the geometry
+        # of the plan's part types, so the first edit and snap of the session do not pay for them.
+        try:
+            jobs = prewarm_jobs(parts, _read(args.plan))
+            if idle is not None:
+                idle.clear()
+                idle.extend(jobs)
+            return dict(ok=True, warm=True, jobs=len(jobs), exit_code=0)
+        except (OSError, ValueError, AttributeError) as exc:
+            return dict(ok=False, error=str(exc), exit_code=2)
     try:
         report, status = run_editor(args, library, parts)
     except (OSError, ValueError, PartError, RecursionError, jsonschema.ValidationError) as exc:
