@@ -19,6 +19,11 @@ class NewInventory(BaseModel):
     name: str
     csv: str
     include_spares: Optional[bool] = False
+    family_colours: Optional[dict] = None    # Pileometer: {"Grays": 72}
+
+
+class FamilyColours(BaseModel):
+    family_colours: dict
 
 
 class InventoryPatch(BaseModel):
@@ -37,7 +42,7 @@ def inventories_list():
 @router.post("/api/inventories")
 async def inventories_create(body: NewInventory):
     try:
-        return await inventories.import_csv(body.name, body.csv, bool(body.include_spares))
+        return await inventories.import_csv(body.name, body.csv, bool(body.include_spares), body.family_colours)
     except InventoryError as exc:
         raise failure(exc) from None
 
@@ -78,6 +83,16 @@ def inventories_get(inventory_id: str, query: str = "", colour: Optional[int] = 
 def inventories_rename(inventory_id: str, body: InventoryPatch):
     try:
         return {"inventory": inventories.rename(inventory_id, body.name)}
+    except InventoryError as exc:
+        raise failure(exc) from None
+
+
+@router.put("/api/inventories/{inventory_id}/family-colours")
+async def inventories_family_colours(inventory_id: str, body: FamilyColours):
+    """Maps a Pileometer import's colour families again from the stored CSV, replacing the inventory."""
+    try:
+        name, csv_text = inventories.remap_families(inventory_id)
+        return await inventories.import_csv(name, csv_text, False, body.family_colours, replace=inventory_id)
     except InventoryError as exc:
         raise failure(exc) from None
 

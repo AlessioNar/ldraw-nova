@@ -225,6 +225,7 @@ export type Inventory = {
   id: string; name: string; created_at: number; source_filename: string | null;
   distinct_parts: number; distinct_colours: number; total_pieces: number; spare_pieces: number;
   unmapped_parts: number; unmapped_colours: number;
+  review_items?: number; review_pieces?: number; // colour-family pieces waiting for a colour; not in total_pieces
 };
 type BuildableLine = { part: string; colour: number; colour_name: string; description: string; needed: number; owned: number; missing: number };
 export type BuildableModel = {
@@ -239,11 +240,18 @@ export type BuildableReport = {
   warnings: string[]; results: BuildableModel[]; status: BuildableStatus;
 };
 export type BuildableQuery = { ids: string[]; limit?: number; min_parts?: number; max_missing_share?: number | null; query?: string; substitute?: boolean };
+/** A Brickit Pileometer import: pile photos with colour families, mapped to default LDraw colours. */
+export type PileometerSummary = {
+  scans: number; rows: number; pieces: number; matched_rows: number;
+  assigned_pieces: number; review_pieces: number;
+  families: { family: string; colour: number | null; colour_name: string; candidates: { colour: number; name: string }[]; rows: number; pieces: number }[];
+};
 export type ImportReport = {
   dialect: string; total_rows: number; total_pieces: number; spare_pieces: number;
-  unmapped_parts: { rb_part: string; colour: number; qty: number }[];
-  unmapped_colours: { rb_colour: number; part: string; qty: number }[];
+  unmapped_parts: { rb_part: string; colour: number; qty: number; name?: string; family?: string }[];
+  unmapped_colours: { rb_colour: number; part: string; qty: number; family?: string }[];
   warnings: string[];
+  pileometer?: PileometerSummary;
 };
 type InventoryRow = { part: string; colour: number; colour_name: string; qty: number; description: string };
 export type InventoryDetail = {
@@ -260,6 +268,9 @@ export const inventoryApi = {
   list: () => request<{ inventories: Inventory[] }>("/api/inventories"),
   create: (name: string, csv: string, include_spares?: boolean) =>
     request<{ inventory: Inventory; report: ImportReport }>("/api/inventories", { method: "POST", body: json({ name, csv, include_spares }) }),
+  /** Pileometer: assign colour families ({family: LDraw colour}); the rest stay in the review list. Re-reads the stored file. */
+  assignFamilies: (id: string, family_colours: Record<string, number>) =>
+    request<{ inventory: Inventory; report: ImportReport }>(`/api/inventories/${encodeURIComponent(id)}/family-colours`, { method: "PUT", body: json({ family_colours }) }),
   detail: (id: string, q: { query?: string; colour?: number | null; limit?: number; offset?: number } = {}) => {
     const params = new URLSearchParams();
     if (q.query) params.set("query", q.query);

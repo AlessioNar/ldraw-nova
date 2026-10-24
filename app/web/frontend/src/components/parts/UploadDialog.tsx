@@ -68,15 +68,19 @@ export default function UploadDialog({ onClose, onImported }: { onClose: () => v
         </header>
         <div className="parts-dialog-body">
           {phase === "done" && result ? <>
-            <p><strong>{result.inventory.name}</strong> now has {result.inventory.total_pieces.toLocaleString()} pieces in {result.inventory.distinct_parts.toLocaleString()} distinct parts.</p>
-            <ImportReportView report={result.report} />
+            {!result.report.pileometer && <p><strong>{result.inventory.name}</strong> now has {result.inventory.total_pieces.toLocaleString()} pieces in {result.inventory.distinct_parts.toLocaleString()} distinct parts.</p>}
+            <ImportReportView report={result.report} onFamilies={async choice => {
+              const r = await inventoryApi.assignFamilies(result.inventory.id, choice);
+              setResult(r);
+              onImported(r.inventory);
+            }} />
             <div className="form-actions"><button type="button" className="primary" autoFocus onClick={onClose}>Done</button></div>
           </> : <form className="parts-form" onSubmit={e => { e.preventDefault(); void submit(); }}>
             <button type="button" className={`dropzone ${dragging ? "dragging" : ""}`} disabled={busy} autoFocus
               onClick={() => input.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
               {file ? <><strong>{file.name}</strong><span className="muted small">{(file.size / 1024).toLocaleString(undefined, { maximumFractionDigits: 0 })} KB · click to choose another</span></>
-                : <><strong>Drop a CSV here or click to choose one</strong><span className="muted small">Rebrickable format: Part, Color, Quantity. Up to 25 MB.</span></>}
+                : <><strong>Drop a CSV here or click to choose one</strong><span className="muted small">Rebrickable (Part, Color, Quantity) or Brickit Pileometer. Up to 25 MB.</span></>}
             </button>
             <input ref={input} hidden type="file" aria-label="Parts CSV file" accept=".csv,text/csv,text/plain" onChange={e => { choose(e.target.files?.[0]); e.target.value = ""; }} />
             <label className="field"><span>Name</span>

@@ -59,6 +59,8 @@ def register(commands):
     p.add_argument("--name", help="Inventory name (default: the file name)")
     p.add_argument("--include-spares", action="store_true", help="Count spare parts as owned")
     p.add_argument("--force", action="store_true", help="Replace an existing inventory with the same name")
+    p.add_argument("--family-colour", action="append", default=[], metavar="FAMILY=CODE",
+                   help="Pileometer: LDraw colour for a colour family, e.g. Grays=72 (repeatable)")
     common(p)
     common(sub.add_parser("list", help="List stored inventories"))
     p = sub.add_parser("show", help="Summarise one inventory")
@@ -191,7 +193,13 @@ def run(args, library, parts):
             text = path.read_bytes().decode("utf-8-sig")
         except UnicodeDecodeError as exc:
             raise ParseError(f"{path.name} is not UTF-8 text: {exc}") from exc
-        result = parse_rebrickable_csv(text, include_spares=args.include_spares, library=optional_library())
+        family_colours = {}
+        for item in args.family_colour:
+            family, _, code = item.partition("=")
+            if not code.strip().isdigit():
+                raise ValueError(f"--family-colour expects FAMILY=CODE, got {item!r}")
+            family_colours[family.strip().title()] = int(code)
+        result = parse_rebrickable_csv(text, include_spares=args.include_spares, library=optional_library(), family_colours=family_colours)
         name = args.name or path.stem
         inv = make_inventory(name, result, source_filename=path.name)
         if (store / f"{inv.id}.json").exists() and not args.force:
@@ -200,6 +208,8 @@ def run(args, library, parts):
         shutil.copyfile(path, store / f"{inv.id}.csv")
         report = dict(inventory=inv.to_json(), dialect=result.dialect, total_rows=result.total_rows, total_pieces=result.total_pieces,
                       spare_pieces=result.spare_pieces, warnings=result.warnings, stored=str(store / f"{inv.id}.json"))
+        if result.pileometer:
+            report["pileometer"] = result.pileometer
         return finish(report, lines_import(inv, result, path) + [f"  stored: {store / (inv.id + '.json')}"])
     if action == "list":
         invs = [Inventory.from_json(json.loads(p.read_text(encoding="utf-8"))) for p in sorted(store.glob("*.json"))] if store.is_dir() else []

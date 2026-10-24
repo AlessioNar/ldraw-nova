@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ImportReport } from "../../api";
+import PileometerSummary from "./PileometerSummary";
 
 const TOP = 10;
 
@@ -18,7 +19,13 @@ function Unmapped<T>({ title, hint, items, label }: { title: string; hint: strin
 }
 
 /** What an import understood, and what the agent will not see. */
-export default function ImportReportView({ report }: { report: ImportReport }) {
+export default function ImportReportView({ report, onFamilies }: { report: ImportReport; onFamilies?: (choice: Record<string, number>) => Promise<void> }) {
+  if (report.pileometer) return <div className="import-report">
+    <PileometerSummary report={report} onApply={onFamilies} />
+    {report.unmapped_parts.length > 0 && <Unmapped title="Parts not matched" items={report.unmapped_parts}
+      hint="These parts are not in the LDraw library under that number, so the agent will not see them."
+      label={(p) => `${p.rb_part}${p.name ? ` ${p.name}` : ""} · ${p.family ?? "colour " + p.colour} · ×${p.qty}`} />}
+  </div>;
   const clean = !report.unmapped_parts.length && !report.unmapped_colours.length && !report.warnings.length;
   return <div className="import-report">
     <dl className="report-facts">
