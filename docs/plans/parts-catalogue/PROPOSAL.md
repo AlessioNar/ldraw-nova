@@ -321,3 +321,11 @@ Questions only the owner can answer:
 3. **Colour families**: when a scan says "Grays", may those pieces count as "maybe" in buildable (labelled separately), or must they stay out of every number until you assign a colour?
 4. **Natural-language add**: is a Haiku-class call at roughly EUR 0.001 per use acceptable (off until a key is set), or should quick add stay strictly free and rule-based?
 5. **Brickit relationship**: one-way import (scan in Brickit, import here), or retire Brickit so this app is the only home of the collection? The second needs waves 1 and 2 to be solid first.
+
+## Owner decisions (2026-10-24)
+
+1. Marking a model or owned set as built reserves its parts by default.
+2. Storage locations: undecided (asked for clarification); the first stage ships without the locations tree.
+3. Colour-family pieces (e.g. Brickit "Grays") count as a separate "maybe" in buildable and shortage answers, never as exact colours, until assigned.
+4. Quick add is rule-based only: no LLM fallback.
+5. Brickit stays an occasional import source; this app is the home of the collection. Own part detection from photos is a later goal, not planned now.
