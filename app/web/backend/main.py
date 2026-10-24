@@ -7,7 +7,9 @@ The routes live in routers/, one module per area.
 """
 from __future__ import annotations
 
+import ipaddress
 import logging
+import os
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
@@ -50,6 +52,38 @@ async def invalid_request(_request: Request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={"detail": [
         {"loc": error["loc"], "msg": error["msg"], "type": error["type"]} for error in exc.errors()
     ]})
+
+
+# DNS rebinding: a malicious page can make its own hostname resolve to 127.0.0.1, after which the browser treats
+# our API as same-origin (Origin and Host both name the attacker's domain). Only IP literals and these names are
+# served; add a LAN name with LDRAW_NOVA_ALLOWED_HOSTS=mypc.local,nas (comma separated).
+ALLOWED_HOSTNAMES = {"localhost", "host.docker.internal"}
+
+
+def host_allowed(host_header: str | None) -> bool:
+    host = (host_header or "").strip().lower()
+    if host.startswith("["):                      # [::1]:8765
+        host = host[1:].split("]", 1)[0]
+    elif host.count(":") == 1:                    # name:port, ipv4:port
+        host = host.split(":", 1)[0]
+    host = host.rstrip(".")
+    if not host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        pass
+    extra = {h.strip().lower() for h in os.environ.get("LDRAW_NOVA_ALLOWED_HOSTS", "").split(",") if h.strip()}
+    return host in ALLOWED_HOSTNAMES or host in extra
+
+
+@app.middleware("http")
+async def reject_unknown_host(request: Request, call_next):
+    if not host_allowed(request.headers.get("host")):
+        return JSONResponse({"detail": "Unknown Host header. Open the app by localhost or its IP address, or list this "
+                                       "name in LDRAW_NOVA_ALLOWED_HOSTS."}, status_code=421)
+    return await call_next(request)
 
 
 @app.middleware("http")

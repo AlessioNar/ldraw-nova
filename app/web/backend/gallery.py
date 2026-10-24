@@ -140,7 +140,8 @@ def status_of(model: Path, kind: str = "snapshot") -> tuple[str, Optional[str]]:
 
 def collection(folder: Path) -> list[Path]:
     """The models in the collection, newest first."""
-    return sorted(list_models(folder), key=_mtime, reverse=True)
+    # Never a symlink: agent code can plant one, and this server (root) would read what it points at.
+    return sorted((p for p in list_models(folder) if not p.is_symlink()), key=_mtime, reverse=True)
 
 
 def forget(model: Path) -> None:

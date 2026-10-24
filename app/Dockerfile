@@ -276,9 +276,11 @@ RUN useradd --system --create-home --shell /bin/bash agent \
 
 # --- Python side of the app ---------------------------------------------------
 WORKDIR /app
-COPY requirements.txt /app/requirements.txt
+# Installed from the hash-locked closure only (requirements.lock, generated from requirements.txt):
+# pip refuses any file whose sha256 is not listed, so a re-uploaded or newer release cannot slip in.
+COPY requirements.txt requirements.lock /app/
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --break-system-packages -r requirements.txt
+    pip install --break-system-packages --require-hashes --no-deps -r requirements.lock
 ENV PYTHONPATH=/app
 # Keep the standalone builder intact. Only its distributable inputs enter the
 # image: never the sibling checkout's output, virtualenv, credentials or cache.

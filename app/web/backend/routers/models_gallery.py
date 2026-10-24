@@ -91,7 +91,7 @@ async def model_glb(url: str, existing_only: bool = False):
 
 def collection_zip(folder: Path, filename: str):
     """Download one collection with its snapshots, BOMs and notes."""
-    files = [p for p in sorted(folder.iterdir()) if p.is_file() and not p.name.startswith(".")] if folder.is_dir() else []
+    files = [p for p in sorted(folder.iterdir()) if p.is_file() and not p.is_symlink() and not p.name.startswith(".")] if folder.is_dir() else []
     tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in files:
