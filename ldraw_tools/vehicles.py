@@ -116,7 +116,8 @@ def fascia(name, width=6, *, body=4, trim=71, lamps=47, rear=False):
     return m
 
 
-def vehicle_plan(name, palette=None):
+def vehicle_plan(name, palette=None, *, length=None, wheelbase=None):
+    """length/wheelbase (studs, even) override a road design's constants; other profiles ignore them."""
     if name not in DESIGNS:
         raise ValueError('Unknown vehicle; use vehicle list')
     design = DESIGNS[name]
@@ -127,10 +128,12 @@ def vehicle_plan(name, palette=None):
         plan=family_model(name,palette).plan()
         plan['author']='ldraw-nova vehicle examples'
         return plan
-    length, wb = design['length'], design['wheelbase']
+    length, wb = length or design['length'], wheelbase or design['wheelbase']
+    if length%2 or wb%2:
+        raise ValueError('Vehicle length and wheelbase must be even stud counts')
     half = length//2
     root = Module(name, design['title']+'; six-stud System body, front -Z, ground Y=0')
-    running = axle(rim_colour=c['metal'])
+    running = axle(rim_colour=c.get('wheel', c['metal']))
     for sign, label in [(-1, 'front'), (1, 'rear')]:
         root.add(running, 0, z=sign*wb/2, id=label+'-axle')
 

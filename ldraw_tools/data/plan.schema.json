@@ -127,6 +127,11 @@
         "purpose": {
           "$ref": "#/$defs/text"
         },
+        "role": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 60
+        },
         "ref": {
           "oneOf": [
             {

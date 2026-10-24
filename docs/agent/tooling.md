@@ -82,6 +82,28 @@ coverage and conservative wheel-space warnings. It does not replace assembly
 validation, material clearance inspection or visual review. Full usage and
 limitations are in the [vehicle guide](vehicles.md).
 
+### Deterministic generators
+
+```sh
+./ldraw-agent generate list --family house          # id, families, kinds, parameter names
+./ldraw-agent generate show house                    # JSON-schema params, defaults, roles
+./ldraw-agent generate digest                        # compact registry text for the understanding prompt
+./ldraw-agent generate colours "dark grey" red       # colour names to LDraw codes
+./ldraw-agent generate plan house --param width=8 --param depth=6 --param windows=2 --output output/house.plan.json
+./ldraw-agent generate plan grand-tourer --params '{"body":"red","wheels":"black","length":20}' --output output/car.plan.json
+```
+
+Every generator is a pure function of its parameters (`ldraw_tools/generators/`): `generate plan` validates the
+parameters against the generator's JSON schema, writes an ordinary editable plan and checks that it builds (no LLM,
+no search). Values the generator had to adjust (odd sizes, a dormer that does not fit) are listed under `notes`.
+Registered: `house` (width, depth, courses, door side and style, window count and sides, gable or flat roof, roof
+tiers, porch, chimney, dormer, six colours), the seven vehicle designs (`grand-tourer`, `delivery-van`, `pickup`,
+`tipper-truck`, `touring-motorcycle`, `harbour-launch`, `courier-jet`; the road designs also take `length` and
+`wheelbase`; colours `body roof trim wheels glass accent` by name), `starfighter` (length, wingspan, wing style,
+engines, colours), `arcade-bay` and `street-lantern`. Colours are names (`red`, `dark grey`, `trans light blue`) or
+LDraw codes. Placements carry an optional `role` (`wall`, `roof`, `door`, `window`, `body`, `tyre`...) so edits can
+target one part of the model; the editor keeps it through move, rotate and snap.
+
 ### General discovery
 
 ```sh

@@ -144,7 +144,8 @@ def display4(trim=288):
 
 
 def room(name,w=14,d=12,*,body=19,trim=15,door=0,windows=(-4,4),sides=True,rows=6,
-         open_back=False,material=None,glass=47,timber=False,door_style='traditional',door_width=4,slits=False):
+         open_back=False,material=None,glass=47,timber=False,door_style='traditional',door_width=4,slits=False,
+         door_colour=70,side_windows=None,back_window=None):
     """A reserved-opening shell, deck, lintels and named roof/door interfaces.
 
     door/windows are front centre X values in studs; door=None closes the front.
@@ -159,9 +160,11 @@ def room(name,w=14,d=12,*,body=19,trim=15,door=0,windows=(-4,4),sides=True,rows=
     if door is not None:openings['front'].append((door,door_width,0,5,'door'))
     if slits:
         openings['front'].extend((x,1,5,7,'slit') for x in [-1.5,1.5])
-    if sides and d>=8:
-        for side in ['left','right']:openings[side].append((0,4,1,3,'window'))
-    if not open_back and w>=10:openings['back'].append((0,4,1,3,'window'))
+    # side_windows/back_window default to the original rule; pass them to choose explicitly.
+    if side_windows is None:side_windows=['left','right'] if sides and d>=8 else []
+    for side in side_windows:openings[side].append((0,4,1,3,'window'))
+    if back_window is None:back_window=not open_back and w>=10
+    if back_window:openings['back'].append((0,4,1,3,'window'))
     for side,holes in openings.items():
         width=w if side in ['front','back'] else d-2
         lower=-width/2
@@ -203,7 +206,7 @@ def room(name,w=14,d=12,*,body=19,trim=15,door=0,windows=(-4,4),sides=True,rows=
         if side=='back' and open_back:continue
         for centre,width,r0,_,kind in holes:
             if kind=='slit':continue
-            module=door4(trim,70,door_style) if kind=='door' else window4(trim,glass)
+            module=door4(trim,door_colour,door_style) if kind=='door' else window4(trim,glass)
             x=centre if side in ['front','back'] else (-w/2+.5 if side=='left' else w/2-.5)
             z=(-d/2+.5 if side=='front' else d/2-.5) if side in ['front','back'] else centre
             for dx in ([-2,2] if kind=='door' and width==8 else [0]):
@@ -214,7 +217,7 @@ def room(name,w=14,d=12,*,body=19,trim=15,door=0,windows=(-4,4),sides=True,rows=
     return m
 
 
-def gable(name,w=16,d=14,*,roof=72,gable_colour=19,tiers=None,dormer=False):
+def gable(name,w=16,d=14,*,roof=72,gable_colour=19,tiers=None,dormer=False,chimney=None):
     """Supported slope courses; the shrinking core remains under every tier."""
     if w%2 or d%2 or min(w,d)<4:raise ValueError('Gable needs even dimensions >=4')
     m=Module(name,'Removable gabled roof: supported slope courses, contrasting gable core and tiled ridge')
@@ -228,8 +231,18 @@ def gable(name,w=16,d=14,*,roof=72,gable_colour=19,tiers=None,dormer=False):
         depth=d-4-2*level
         for z in range(int(-depth/2),int(depth/2)):
             line(m,-w/2,z+.5,w,h,gable_colour,bond=bool(level%2))
-    m.step();ridge_depth=d-2*tiers
-    slab(m,-w/2,-ridge_depth/2,w,ridge_depth,8+24*tiers+8,roof,tile=True)
+    m.step();ridge_depth=d-2*tiers;top=8+24*tiers+8
+    if chimney:
+        # chimney=(x, colour): a 2x2 plate window in the tiled ridge carries a brick stack.
+        cx,chimney_colour=chimney
+        if not -w/2+1<=cx<=w/2-1 or cx!=int(cx):raise ValueError('Chimney must sit on the ridge')
+        slab(m,-w/2,-ridge_depth/2,cx-1+w/2,ridge_depth,top,roof,tile=True)
+        slab(m,cx-1,-ridge_depth/2,2,ridge_depth,top,roof)
+        slab(m,cx+1,-ridge_depth/2,w/2-cx-1,ridge_depth,top,roof,tile=True)
+        for i in range(3):m.add('3003',chimney_colour,cx,top+24*i+24,-ridge_depth/2+1,id=f'chimney-{i}')
+        m.add('3022',72,cx,top+80,-ridge_depth/2+1,id='chimney-cap')
+    else:
+        slab(m,-w/2,-ridge_depth/2,w,ridge_depth,top,roof,tile=True)
     if dormer:
         m.step()
         for x in [-3.5,3.5]:m.add('3040b',roof,x,32,-d/2+1.5)
