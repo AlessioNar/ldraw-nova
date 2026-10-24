@@ -1,0 +1,230 @@
+[
+ {
+  "case": "car",
+  "generator": "grand-tourer",
+  "text": "a small red car",
+  "describe_ms_offline": 1.44,
+  "cold_regenerate_geometry_off": {
+   "wall_s": 33.77,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 6.54,
+    "load": 6.26,
+    "build": 12.48
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "cold_wall_incl_process_start_s": 33.78,
+  "same_again_cache_hit": {
+   "wall_s": 0.03,
+   "ok": true,
+   "cached": true,
+   "timings": {
+    "build": 12.48,
+    "load": 6.26,
+    "plan": 6.54
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "warm_changed_params_geometry_off": {
+   "wall_s": 0.32,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.01,
+    "load": 6.26,
+    "build": 0.3
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "warm_new_version_geometry_on": {
+   "wall_s": 15.24,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.03,
+    "load": 6.26,
+    "build": 0.29,
+    "geometry": 14.86
+   },
+   "parts": null,
+   "diagnostics": [
+    "Connection analysis finds multiple groups. Investigate floating parts, missing connector metadata, or intentional separate objects.",
+    "Some parts lack rectangular body checks; oriented bounds refine candidates, while remaining overlaps require material review."
+   ]
+  },
+  "warm_new_version_geometry_on_glb": {
+   "wall_s": 8.32,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.01,
+    "load": 6.26,
+    "build": 0.11,
+    "geometry": 8.08,
+    "glb": 5.94
+   },
+   "parts": null,
+   "diagnostics": [
+    "Connection analysis finds multiple groups. Investigate floating parts, missing connector metadata, or intentional separate objects.",
+    "Some parts lack rectangular body checks; oriented bounds refine candidates, while remaining overlaps require material review."
+   ]
+  }
+ },
+ {
+  "case": "house",
+  "generator": "house",
+  "text": "a 10 x 8 house with a chimney and a porch",
+  "describe_ms_offline": 0.87,
+  "cold_regenerate_geometry_off": {
+   "wall_s": 66.7,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 1.62,
+    "load": 4.93,
+    "build": 53.64
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "cold_wall_incl_process_start_s": 66.7,
+  "same_again_cache_hit": {
+   "wall_s": 0.01,
+   "ok": true,
+   "cached": true,
+   "timings": {
+    "build": 53.64,
+    "load": 4.93,
+    "plan": 1.62
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "warm_changed_params_geometry_off": {
+   "wall_s": 0.45,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.0,
+    "load": 4.93,
+    "build": 0.43
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "warm_new_version_geometry_on": {
+   "wall_s": 19.52,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.01,
+    "load": 4.93,
+    "build": 0.25,
+    "geometry": 19.12
+   },
+   "parts": null,
+   "diagnostics": [
+    "Connection analysis finds multiple groups. Investigate floating parts, missing connector metadata, or intentional separate objects.",
+    "Some parts lack rectangular body checks; oriented bounds refine candidates, while remaining overlaps require material review."
+   ]
+  },
+  "warm_new_version_geometry_on_glb": {
+   "wall_s": 11.56,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.0,
+    "load": 4.93,
+    "build": 0.21,
+    "geometry": 11.22,
+    "glb": 8.54
+   },
+   "parts": null,
+   "diagnostics": [
+    "Connection analysis finds multiple groups. Investigate floating parts, missing connector metadata, or intentional separate objects.",
+    "Some parts lack rectangular body checks; oriented bounds refine candidates, while remaining overlaps require material review."
+   ]
+  }
+ },
+ {
+  "case": "starfighter",
+  "generator": "starfighter",
+  "text": "a white and blue starship",
+  "describe_ms_offline": 0.77,
+  "cold_regenerate_geometry_off": {
+   "wall_s": 17.44,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 4.05,
+    "load": 3.74,
+    "build": 0.84
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "cold_wall_incl_process_start_s": 17.44,
+  "same_again_cache_hit": {
+   "wall_s": 0.02,
+   "ok": true,
+   "cached": true,
+   "timings": {
+    "build": 0.84,
+    "load": 3.74,
+    "plan": 4.05
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "warm_changed_params_geometry_off": {
+   "wall_s": 0.5,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.06,
+    "load": 3.74,
+    "build": 0.41
+   },
+   "parts": null,
+   "diagnostics": []
+  },
+  "warm_new_version_geometry_on": {
+   "wall_s": 11.3,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.08,
+    "load": 3.74,
+    "build": 0.2,
+    "geometry": 10.95
+   },
+   "parts": null,
+   "diagnostics": [
+    "Connection analysis finds multiple groups. Investigate floating parts, missing connector metadata, or intentional separate objects.",
+    "Some parts lack rectangular body checks; oriented bounds refine candidates, while remaining overlaps require material review."
+   ]
+  },
+  "warm_new_version_geometry_on_glb": {
+   "wall_s": 3.8,
+   "ok": true,
+   "cached": false,
+   "timings": {
+    "plan": 0.02,
+    "load": 3.74,
+    "build": 0.05,
+    "geometry": 3.69,
+    "glb": 3.32
+   },
+   "parts": null,
+   "diagnostics": [
+    "Connection analysis finds multiple groups. Investigate floating parts, missing connector metadata, or intentional separate objects.",
+    "Some parts lack rectangular body checks; oriented bounds refine candidates, while remaining overlaps require material review."
+   ]
+  }
+ }
+]
