@@ -3,7 +3,6 @@
 Like test_editor_api these go through the real toolkit (the resident editor worker), so they need the container's
 LDraw library.
 """
-import json
 import os
 import time
 
