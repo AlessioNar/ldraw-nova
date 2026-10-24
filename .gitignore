@@ -12,6 +12,7 @@ Thumbs.db
 .claude/
 .vscode/
 .obsidian/
+.playwright-mcp/
 .DS_Store
 
 # Reference models: the repo stores models-packed/ (tools/models_pack.py);

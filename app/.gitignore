@@ -13,3 +13,7 @@ __pycache__/
 # Runtime state of the app: chat history and agents' work folders
 data/chats/
 data/output/
+# Your models and parts lists: the showcase models already committed stay tracked
+data/generated/*
+!data/generated/.gitkeep
+data/inventories/
