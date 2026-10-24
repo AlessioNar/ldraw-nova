@@ -10,7 +10,7 @@ import pytest
 
 from ldraw_tools import importers, sets
 from ldraw_tools import inventory as inv
-from ldraw_tools.inventory import Inventory, ParseError, Row, combine, make_inventory, parse_rebrickable_csv
+from ldraw_tools.inventory import Inventory, ParseError, Row, combine, make_inventory
 
 ROOT = Path(__file__).resolve().parent.parent
 FIX = Path(__file__).parent / "fixtures"

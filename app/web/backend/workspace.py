@@ -19,8 +19,6 @@ from pathlib import Path
 from typing import Optional
 
 import collection_store
-import inventories
-import settings
 
 PROPOSAL_RE = re.compile(r"^[0-9a-f]{12}$")
 MAX_PROPOSALS = 20

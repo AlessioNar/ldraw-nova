@@ -15,7 +15,6 @@ All of this is plain JSON in the backend: the toolkit CLI (agent sandbox) only r
 from __future__ import annotations
 
 import copy
-import json
 import re
 import secrets
 import threading

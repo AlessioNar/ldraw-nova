@@ -173,7 +173,7 @@ def test_undo_restores_the_exact_row_including_its_note_fields():
 
 def test_history_is_capped_per_source():
     put("box", [])
-    for i in range(collection.MAX_BATCHES + 5):
+    for _ in range(collection.MAX_BATCHES + 5):
         collection.apply_ops("box", [add("3001", 4, 1)])
     assert len(collection.history("box", 100)["batches"]) == 100
     lines = (settings.INVENTORIES_DIR / "box.log.jsonl").read_text().splitlines()
