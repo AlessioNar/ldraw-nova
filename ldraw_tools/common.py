@@ -106,6 +106,22 @@ def shadow_paths(sources=None):
     return result
 
 
+class CachingParts(Parts):
+    """Parts that keeps the Part objects it has loaded.
+
+    pyldraw's `Parts.part` opens a fresh `Part` (existence checks plus a header parse for every metadata read)
+    on each call; validating a model looks up every placement, so a rebuild repeated the same few hundred
+    lookups per piece. The library files never change under a Parts object, so a found part is reusable.
+    """
+
+    def _load_part(self, code):
+        cache = self.__dict__.setdefault("_loaded_parts", {})
+        found = cache.get(code)
+        if found is None:
+            found = cache[code] = super()._load_part(code)
+        return found
+
+
 def get_parts(root=None, *, refresh=False, shadows=None):
     """Supply pyldraw3's required index without writing into the source library."""
     root = library_path(root)
@@ -135,7 +151,7 @@ def get_parts(root=None, *, refresh=False, shadows=None):
             rows.append(f"{p.name} {title}")
         atomic_write(index, "\n".join(rows) + "\n")
         atomic_write(stamp, signature)
-    parts = Parts(index)
+    parts = CachingParts(index)
     for source in shadow_paths(shadows):
         parts.add_connection_shadow(source)
     return parts

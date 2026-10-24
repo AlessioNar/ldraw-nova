@@ -1,9 +1,11 @@
 """Deterministic, schema-checked assembly plans using pyldraw3's writer."""
 from __future__ import annotations
 
+import copy
+import functools
+import hashlib
 import json
 import math
-import copy
 from pathlib import Path
 
 import jsonschema
@@ -16,8 +18,63 @@ from .geometry import profiles
 from .validation import validate_text
 
 
+@functools.lru_cache(maxsize=1)
+def _validators():
+    """(whole-plan validator, plan validator with placements left open, placement validator, step length limit).
+
+    The placement is the bulk of a big plan and is checked on its own: an edit changes a few entries, so
+    entries that already passed (remembered by their JSON) are not validated again.
+    """
+    schema = json.loads((DATA / "plan.schema.json").read_text())
+    defs = schema["$defs"]
+    shell = {**schema, "$defs": {**defs, "placement": True}}
+    entry = {"$schema": schema["$schema"], "$ref": "#/$defs/placement", "$defs": defs}
+    make = jsonschema.Draft202012Validator
+    return make(schema), make(shell), make(entry), defs["section"]["properties"]["steps"]["items"]["maxItems"]
+
+
+_VALID_PLANS: set[bytes] = set()       # digests of whole plans that passed
+_VALID_ENTRIES: set[str] = set()       # JSON of placements that passed
+MAX_REMEMBERED = 100000
+
+
+def _remember(known, items):
+    if len(known) + len(items) > MAX_REMEMBERED:
+        known.clear()
+    known.update(items)
+
+
 def check_schema(plan):
-    jsonschema.Draft202012Validator(json.loads((DATA / "plan.schema.json").read_text())).validate(plan)
+    """Raise jsonschema.ValidationError unless `plan` fits plan.schema.json (same verdict as validating it whole).
+
+    Verdicts are remembered by content: a plan checked before costs one JSON encoding, and a plan that differs
+    by a few placements validates only those (the rest of the document is checked with placements left open).
+    """
+    full, shell, entry, step_limit = _validators()
+    try:
+        digest = hashlib.blake2b(json.dumps(plan, sort_keys=True).encode(), digest_size=16).digest()
+    except (TypeError, ValueError):
+        digest = None
+    if digest is not None and digest in _VALID_PLANS:
+        return
+    try:
+        sections = plan["sections"]
+        placements = [placement for section in sections for step in section["steps"] for placement in step]
+        # The shell check only needs each step's length right; a one-item stand-in keeps it independent of the size.
+        shrunk = {**plan, "sections": [{**section, "steps": [[None] if 1 <= len(step) <= step_limit else step
+                                                            for step in section["steps"]]} for section in sections]}
+        keys = [json.dumps(placement, sort_keys=True) for placement in placements]
+    except (KeyError, TypeError, ValueError):
+        digest = None
+    else:
+        if shell.is_valid(shrunk):
+            fresh = {key: placement for key, placement in zip(keys, placements) if key not in _VALID_ENTRIES}
+            if all(entry.is_valid(placement) for placement in fresh.values()):
+                _remember(_VALID_ENTRIES, fresh)
+                if digest is not None:
+                    _remember(_VALID_PLANS, [digest])
+                return
+    full.validate(plan)      # not valid, or not shaped like a plan: let jsonschema report its first error
 
 
 def load_plan(path):
@@ -122,7 +179,10 @@ def dependency_order(sections):
     return ordered
 
 
-def snap_placement(entry, model, models, placed, parts, matrix, instance_limit):
+CULL_SNAP_PREVIEW = True     # False inspects the whole model for every snap: the slow reference the tests compare with
+
+
+def snap_placement(entry, model, models, placed, parts, matrix, instance_limit, neighbourhood=None):
     from .connectivity import inspect_connections, snap_report
     from dataclasses import replace
     options = entry['snap']
@@ -131,21 +191,34 @@ def snap_placement(entry, model, models, placed, parts, matrix, instance_limit):
     support, _ = placed[options['to']]
     moving = Piece.place(entry['ref'], colour=entry['colour'],
                          position=Vector(*options.get('near', jsonable(support.position))), matrix=matrix)
-    preview = replace(model, objects=[*model.objects, moving],
-                      submodels={normalized(m.name): m for m in models.values() if m is not model})
-    inspection = inspect_connections(preview, parts, instance_limit)
-    groups = [[o.index for o in inspection.occurrences if o.occurrence.path[0].piece is piece]
-              for piece in (moving, support)]
-    try:
-        moving_index = groups[0][options.get('moving_leaf', 0)]
-        fixed_index = groups[1][options.get('fixed_leaf', 0)]
-    except IndexError as exc:
-        raise ValueError('snap leaf index is outside the selected part/submodel') from exc
+    if neighbourhood is None:
+        objects = list(model.objects)
+        submodels = {normalized(m.name): m for m in models.values() if m is not model}
+    else:   # only what is near the fixed part is inspected (see snapindex); the answer is the same, the cost local
+        objects, extra = neighbourhood.cull(model.objects, support, moving)
+        submodels = neighbourhood.needed_submodels(model, [*objects, moving], extra)
+    preview = replace(model, objects=[*objects, moving], submodels=submodels)
     candidate_index = options.get('candidate', 0)
     nearest = bool(options.get('nearest')) and 'candidate' not in options and 'near' in options
-    report = snap_report(preview, parts, moving_index, fixed_index, moving_depth=0,
-                         limit=64 if nearest else candidate_index+1, instance_limit=instance_limit,
-                         moving_feature=options.get('moving_feature'), fixed_feature=options.get('fixed_feature'))
+    report = None
+    if nearest and neighbourhood is not None:
+        # The editor's question is only "the connection nearest the drop": see fastsnap for when that can be
+        # answered from a few candidates; None sends it down the full algorithm below.
+        from .fastsnap import nearest as fast_nearest
+        report = fast_nearest(preview, parts, moving, support, options['near'], options, instance_limit, neighbourhood)
+    if report is None:
+        inspection = inspect_connections(preview, parts, instance_limit)
+        groups = [[o.index for o in inspection.occurrences if o.occurrence.path[0].piece is piece]
+                  for piece in (moving, support)]
+        try:
+            moving_index = groups[0][options.get('moving_leaf', 0)]
+            fixed_index = groups[1][options.get('fixed_leaf', 0)]
+        except IndexError as exc:
+            raise ValueError('snap leaf index is outside the selected part/submodel') from exc
+        report = snap_report(preview, parts, moving_index, fixed_index, moving_depth=0,
+                             limit=64 if nearest else candidate_index+1, instance_limit=instance_limit,
+                             moving_feature=options.get('moving_feature'), fixed_feature=options.get('fixed_feature'),
+                             inspection=inspection)
     if candidate_index >= len(report['candidates']):
         raise ValueError(f"snap {entry['id']}: no candidate {candidate_index}; inspect connector coverage/occupancy")
     candidates = report['candidates']
@@ -163,7 +236,27 @@ def snap_placement(entry, model, models, placed, parts, matrix, instance_limit):
     return Vector(*local['at']), Matrix(local['matrix'])
 
 
-def build_plan(plan, parts, *, instance_limit=100000):
+def _section_closure(sections, start):
+    """The sections `start` needs (itself and every submodel it references, however deep)."""
+    table = {normalized(s['name']): s for s in sections}
+    needed, stack = [], [normalized(start)]
+    while stack:
+        key = stack.pop()
+        if key in needed or key not in table:
+            continue
+        needed.append(key)
+        for step in table[key]['steps']:
+            stack.extend(normalized(entry['ref']) for entry in step)
+    return [table[k] for k in table if k in needed]
+
+
+def build_plan(plan, parts, *, instance_limit=100000, until=None, validate=True):
+    """Build the plan into MPD text: (text, parsed model, diagnostics).
+
+    `until=(section name, entry id)` builds only what that placement depends on and returns its resolved
+    `(position, matrix)` as soon as it is placed (the snap probe: nothing after it matters, and nothing
+    is serialised or validated). `validate=False` skips the final validation pass: (text, None, []).
+    """
     check_schema(plan)
     from .catalog import resolve_plan
     plan = resolve_plan(plan, parts)
@@ -183,7 +276,10 @@ def build_plan(plan, parts, *, instance_limit=100000):
     known = set(map(normalized, models))
     anchors = {normalized(s["name"]): {name:frame(value) for name,value in s.get("anchors",{}).items()} for s in plan["sections"]}
     regular = profiles()
-    for section in dependency_order(plan["sections"]):
+    from .snapindex import Neighbourhood
+    neighbourhood = Neighbourhood(models, parts) if CULL_SNAP_PREVIEW else None
+    sections = plan["sections"] if until is None else _section_closure(plan["sections"], until[0])
+    for section in dependency_order(sections):
         model = models[section["name"]]
         model.set_header(description=section["description"], name=model.name, author=section.get("author",plan["author"]), ldraw_org="Model")
         if section.get("license",plan.get("license")):
@@ -205,7 +301,8 @@ def build_plan(plan, parts, *, instance_limit=100000):
                     raise ValueError(f"Unknown or unsuitable placement colour {entry['colour']}")
                 matrix = Matrix(entry["matrix"]) if "matrix" in entry else rotation("y", entry.get("yaw", 0))
                 if "snap" in entry:
-                    position, matrix = snap_placement(entry, model, models, placed, parts, matrix, instance_limit)
+                    position, matrix = snap_placement(entry, model, models, placed, parts, matrix, instance_limit,
+                                                      neighbourhood)
                 elif "on" in entry:
                     support_id = entry["on"]
                     if support_id not in placed:
@@ -247,10 +344,16 @@ def build_plan(plan, parts, *, instance_limit=100000):
                 piece = Piece.place(ref, colour=entry["colour"], position=position, matrix=matrix)
                 model.add(piece)
                 placed[entry["id"]] = (piece, code)
+                if until is not None and entry["id"] == until[1] and normalized(section["name"]) == normalized(until[0]):
+                    return piece.position, piece.matrix
+    if until is not None:
+        raise ValueError(f"{until[1]} is not placed in {until[0]}")
     root = models[names[0]]
     # MPD namespace is shared across all sections; serializer emits each section once.
     root.submodels = {normalized(m.name): m for m in list(models.values())[1:]}
     text = serialize_mpd(root)
+    if not validate:
+        return text, None, []
     parsed, diagnostics = validate_text(text, parts, name=names[0], instance_limit=instance_limit)
     if any(d["severity"] == "error" for d in diagnostics):
         return text, parsed, diagnostics

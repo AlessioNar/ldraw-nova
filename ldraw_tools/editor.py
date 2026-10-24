@@ -6,16 +6,21 @@ through the same check_schema + build_plan path the agent uses.
 """
 from __future__ import annotations
 
+import collections
 import copy
+import hashlib
+import json
 import math
 import re
 
 import numpy as np
 from ldraw import Piece
 from ldraw.lines import Comment
+from ldraw.serialization import format_ldraw_number
 
 from .builder import build_plan, check_schema, repeated, rotation
 from .common import jsonable, normalized
+from .validation import validate_text
 
 PUBLIC_OPS = ("add", "move", "rotate", "recolour", "delete", "snap")
 HISTORY_OPS = ("set_entry", "insert")
@@ -25,6 +30,14 @@ POSITIONAL_KEYS = ("at", "on", "offset_studs", "attach", "snap")
 
 def _fail(message):
     raise ValueError(message)
+
+
+def _copy(plan):
+    """An independent copy of a plan (plain JSON data: a round trip through the C encoder beats deepcopy)."""
+    try:
+        return json.loads(json.dumps(plan))
+    except (TypeError, ValueError):
+        return copy.deepcopy(plan)
 
 
 def _check_plan(plan):
@@ -312,7 +325,12 @@ def _snap_target(plan, section, si, ti, ei, edit, parts):
         if match in repeated:
             _fail(f"snap target {wanted} is a repeated placement")
         return match
-    resolved = placements(plan, parts)
+    singles = [e for e in candidates if "repeat" not in e]
+    if all("at" in e and not any(key in e for key in ("on", "attach", "snap")) for e in singles):
+        # Plain placements are where they say they are (as the MPD text spells them): no build needed to know.
+        resolved = {(section["name"], e["id"]): {"at": _spelled(e["at"])} for e in singles}
+    else:
+        resolved = placements(plan, parts)
     origin = _vector(section["steps"][ti][ei]["at"], "position")
     def distance(entry):
         at = resolved.get((section["name"], entry["id"]), {}).get("at", entry.get("at"))
@@ -325,7 +343,42 @@ def _snap_target(plan, section, si, ti, ei, edit, parts):
     return min(singles, key=distance)
 
 
+def _spelled(values):
+    """Numbers as they come back from the MPD text: written with at most 12 decimals, read back, cleaned."""
+    return [_clean(float(format_ldraw_number(v))) for v in values]
+
+
+_SNAPS = collections.OrderedDict()      # (digest of plan and edit, flags) -> (parts, section, step, index, snapped entry)
+MAX_REMEMBERED_SNAPS = 16
+
+
 def _apply_snap(plan, edit, parts):
+    """Snap the entry; a snap computed a moment ago for this very plan and edit is not computed again.
+
+    `run_editor` applies a batch twice (once to derive its inverse, once for the plan), and the second snap of a
+    batch is the same question as the first.
+    """
+    from . import builder, connectivity
+    try:
+        key = (hashlib.blake2b(json.dumps([plan, edit], sort_keys=True).encode(), digest_size=16).digest(),
+               builder.CULL_SNAP_PREVIEW, connectivity.LOCAL_SNAP_CHECKS)
+    except (TypeError, ValueError):
+        key = None
+    found = _SNAPS.get(key) if key is not None else None
+    if found is not None and found[0] is parts:
+        _, si, ti, ei, baked = found
+        plan["sections"][si]["steps"][ti][ei] = copy.deepcopy(baked)
+        return
+    si, ti, ei, baked = _snapped(plan, edit, parts)
+    plan["sections"][si]["steps"][ti][ei] = baked
+    if key is not None:
+        _SNAPS[key] = (parts, si, ti, ei, copy.deepcopy(baked))
+        while len(_SNAPS) > MAX_REMEMBERED_SNAPS:
+            _SNAPS.popitem(last=False)
+
+
+def _snapped(plan, edit, parts):
+    """(section, step, index, entry) of the snapped placement; the plan itself is not changed."""
     si, ti, ei = _locate(plan, edit)
     section = plan["sections"][si]
     entry = section["steps"][ti][ei]
@@ -340,18 +393,15 @@ def _apply_snap(plan, edit, parts):
     for key in ("purpose", "role", "yaw", "matrix"):
         if key in entry:
             snapped[key] = copy.deepcopy(entry[key])
-    probe = copy.deepcopy(plan)
+    probe = {**plan, "sections": list(plan["sections"])}           # only this entry differs; nothing is mutated
+    probe["sections"][si] = {**section, "steps": [list(step) for step in section["steps"]]}
     probe["sections"][si]["steps"][ti][ei] = snapped
     try:
-        _, parsed, _ = build_plan(probe, parts)
+        position, rotation_matrix = build_plan(probe, parts, until=(section["name"], entry["id"]))
     except ValueError as exc:
         _fail(f"snap {entry['id']}: {exc}")
-    from .document import section_table
-    table = section_table(parsed)
-    resolved = {entry_id: (at, matrix) for entry_id, at, matrix in _model_placements(table.get(normalized(section["name"])))}
-    if entry["id"] not in resolved:
-        _fail(f"snap {entry['id']}: the build did not place it")
-    at, matrix = resolved[entry["id"]]
+    at = _spelled(jsonable(position))
+    matrix = [_spelled(row) for row in rotation_matrix.rows]
     baked = {"id": entry["id"], "ref": entry["ref"], "colour": entry["colour"], "at": at}
     if "purpose" in entry:
         baked["purpose"] = entry["purpose"]
@@ -359,7 +409,7 @@ def _apply_snap(plan, edit, parts):
         baked["role"] = entry["role"]
     if not np.allclose(matrix, np.eye(3), atol=1e-9):
         baked["matrix"] = matrix
-    section["steps"][ti][ei] = baked
+    return si, ti, ei, baked
 
 
 def apply(plan, edits, parts=None):
@@ -367,7 +417,7 @@ def apply(plan, edits, parts=None):
     if not isinstance(edits, (list, tuple)):
         _fail("edits must be a list of operations")
     _check_plan(plan)
-    result = copy.deepcopy(plan)
+    result = _copy(plan)
     for edit in edits:
         # Each edit is checked against the plan the earlier edits produced, so one batch can add a part and
         # snap it (or move something it just added); any invalid edit still rejects the whole batch.
@@ -388,7 +438,7 @@ def inverse(plan, edits, parts=None):
     if not isinstance(edits, (list, tuple)):
         _fail("edits must be a list of operations")
     _check_plan(plan)
-    working, result = copy.deepcopy(plan), []
+    working, result = _copy(plan), []
     for edit in edits:
         _validate(working, edit, parts)
         result.append(_inverse_op(working, edit, parts))
@@ -426,15 +476,31 @@ def _attribute(plan, message):
 
 
 def rebuild(plan, parts):
-    """Schema-check the plan, build it, and return its MPD text."""
-    check_schema(plan)
+    """Schema-check the plan, build it, and return its MPD text.
+
+    A plan this process has already built and validated is answered from memory, and an edit of one is
+    validated by what changed (see `incremental`); anything unusual validates the whole text, as always.
+    """
+    from . import incremental
+    from .catalog import resolve_plan
     try:
-        text, _, diagnostics = build_plan(plan, parts)
+        shape = incremental.fingerprint(plan)     # a plan known from before has passed the schema; build_plan checks the rest
+    except (KeyError, TypeError, AttributeError, ValueError):
+        check_schema(plan)                        # not shaped like a plan: the schema says why
+        raise
+    known = incremental.known_text(shape, parts)
+    if known is not None:
+        return known
+    try:
+        text, _, _ = build_plan(plan, parts, validate=False)
     except ValueError as exc:
         raise ValueError(_attribute(plan, str(exc))) from None
-    errors = [d for d in diagnostics if d["severity"] == "error"]
-    if errors:
-        raise ValueError("Rebuild failed validation: " + "; ".join(d["message"] for d in errors[:3]))
+    if incremental.verdict(plan, resolve_plan(plan, parts), text, parts, shape) is None:
+        _, diagnostics = validate_text(text, parts, name=plan["sections"][0]["name"])
+        errors = [d for d in diagnostics if d["severity"] == "error"]
+        if errors:
+            raise ValueError("Rebuild failed validation: " + "; ".join(d["message"] for d in errors[:3]))
+    incremental.remember(shape, text, parts)
     return text
 
 

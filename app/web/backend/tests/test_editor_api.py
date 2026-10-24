@@ -224,3 +224,61 @@ def test_publish_reuses_the_model_card_path(client, chat):
     published = next(p for p in Path(settings.GENERATED_DIR).glob("manual-model-v*.mpd"))
     assert published.is_file()
     assert (get_store().work_dir(chat) / "manual-model.mpd").is_file()
+
+
+# --- the resident editor worker ---------------------------------------------------------------------------
+
+def test_cli_arguments_become_a_worker_request():
+    from routers import editor as routes
+    request = routes._request(["apply", "--plan", "/p", "--state", "/s", "--mpd", "/m", "--base-revision", "3",
+                               "--edits", "/e", "--owned", "/o", "--mode", "prefer"])
+    assert request == {"op": "editor", "action": "apply", "plan": "/p", "state": "/s", "mpd": "/m",
+                       "base_revision": 3, "edits": "/e", "owned": "/o", "mode": "prefer"}
+    opened = routes._request(["open", "--plan", "/p", "--state", "/s", "--mpd", "/m", "--from-mpd", "/x", "--name", "n"])
+    assert opened["from_mpd"] == "/x" and opened["name"] == "n" and "base_revision" not in opened
+
+
+def test_edits_run_in_one_resident_process(client, chat):
+    import build_worker
+    if "def run_request" not in (settings.TOOLKIT_DIR / "ldraw_tools/commands/editor.py").read_text():
+        pytest.skip("this toolkit has no editor worker op")
+    build_worker._editor_worker = None
+    open_editor(client, chat)
+    assert apply_edits(client, chat, [{"op": "move", "id": "base", "position": [20, -24, 0]}], 1).status_code == 200
+    assert client.post(f"/api/chats/{chat}/editor/undo", json={}).status_code == 200
+    assert client.post(f"/api/chats/{chat}/editor/redo", json={}).status_code == 200
+    worker = build_worker._editor_worker
+    assert worker.alive and worker.starts == 1                           # all four went through the same warm process
+
+
+def test_a_toolkit_without_the_editor_op_falls_back_to_the_cli(client, chat, monkeypatch):
+    import build_worker
+
+    class OldWorker:
+        async def request(self, payload, timeout=None):
+            return {"ok": False, "error": f"Unknown op {payload['op']!r}", "error_type": "ValueError"}
+    monkeypatch.setattr(build_worker, "get_editor_worker", lambda: OldWorker())
+    opened = open_editor(client, chat)
+    assert opened["revision"] == 1 and "0 FILE" in opened["mpd"]
+    assert apply_edits(client, chat, [{"op": "recolour", "id": "base", "colour": 0}], 1).status_code == 200
+
+
+def test_a_worker_that_is_busy_or_crashed_falls_back_to_the_cli(client, chat, monkeypatch):
+    import build_worker
+
+    class BrokenWorker:
+        async def request(self, payload, timeout=None):
+            raise build_worker.WorkerCrashed("the build worker exited (code 3)")
+    monkeypatch.setattr(build_worker, "get_editor_worker", lambda: BrokenWorker())
+    assert open_editor(client, chat)["revision"] == 1
+
+
+def test_a_worker_timeout_is_a_gateway_timeout(client, chat, monkeypatch):
+    import build_worker
+    open_editor(client, chat)
+
+    class SlowWorker:
+        async def request(self, payload, timeout=None):
+            raise build_worker.WorkerTimeout("the build worker did not answer within 600 s and was stopped")
+    monkeypatch.setattr(build_worker, "get_editor_worker", lambda: SlowWorker())
+    assert apply_edits(client, chat, [{"op": "recolour", "id": "base", "colour": 0}], 1).status_code == 504

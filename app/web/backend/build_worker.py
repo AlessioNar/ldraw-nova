@@ -26,6 +26,7 @@ import toolkit
 REQUEST_TIMEOUT = int(os.environ.get("LDRAW_NOVA_WORKER_TIMEOUT", "300"))
 STARTUP_TIMEOUT = 120
 MAX_QUEUE = int(os.environ.get("LDRAW_NOVA_WORKER_QUEUE", "4"))
+EDITOR_QUEUE = int(os.environ.get("LDRAW_NOVA_EDITOR_QUEUE", "32"))
 MAX_REPLY_BYTES = 256 * 1024 * 1024
 
 
@@ -111,6 +112,15 @@ class BuildWorker:
     async def close(self) -> None:
         await self._kill()
 
+    def abandon(self) -> None:
+        """Stop the process without awaiting anything (for a worker whose event loop is gone)."""
+        proc, self._proc = self._proc, None
+        if proc is not None and proc.returncode is None:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+
     async def request(self, payload: dict, timeout: float | None = None) -> dict:
         """Send one request, return the worker's reply. Raises WorkerBusy, WorkerCrashed or WorkerTimeout."""
         if self._waiting >= self.max_queue + 1:          # one running plus max_queue waiting
@@ -133,7 +143,7 @@ class BuildWorker:
             proc.stdin.write(line.encode())
             await proc.stdin.drain()
             # a fresh worker also pays start-up and library loading, so allow for it
-            allowance = STARTUP_TIMEOUT if payload.get("op", "build") == "build" else 0
+            allowance = STARTUP_TIMEOUT if payload.get("op", "build") in ("build", "editor") else 0
             raw = await asyncio.wait_for(proc.stdout.readline(), timeout + allowance)
         except asyncio.TimeoutError:
             await self._kill()
@@ -155,6 +165,8 @@ class BuildWorker:
 
 
 _worker: BuildWorker | None = None
+_editor_worker: BuildWorker | None = None
+_editor_loop: asyncio.AbstractEventLoop | None = None
 
 
 def get_worker() -> BuildWorker:
@@ -164,8 +176,33 @@ def get_worker() -> BuildWorker:
     return _worker
 
 
+def get_editor_worker() -> BuildWorker:
+    """A second resident toolkit process for the 3D editor's operations.
+
+    Editing is interactive and a build can run for minutes, so edits get their own warm process instead of
+    queueing behind builds; the queue is longer because every change of a session goes through it.
+    """
+    global _editor_worker, _editor_loop
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    # The process, its pipes and its lock belong to one event loop; a different one (a test's asyncio.run, a
+    # reloaded server) cannot use them, so it gets its own worker and the old one is stopped.
+    if _editor_worker is None or (loop is not None and _editor_loop is not loop):
+        if _editor_worker is not None:
+            _editor_worker.abandon()
+        _editor_worker, _editor_loop = BuildWorker(max_queue=EDITOR_QUEUE), loop
+    return _editor_worker
+
+
 async def shutdown() -> None:
-    global _worker
+    global _worker, _editor_worker, _editor_loop
     if _worker is not None:
         await _worker.close()
-        _worker = None
+    if _editor_worker is not None:
+        if _editor_loop is None or _editor_loop is asyncio.get_running_loop():
+            await _editor_worker.close()
+        else:
+            _editor_worker.abandon()          # its loop is gone: nothing can be awaited on it
+    _worker = _editor_worker = _editor_loop = None

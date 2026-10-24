@@ -6,9 +6,10 @@ The plan is the source of truth and lives in the chat's work folder:
     output/editor/state.json    revision, undo/redo history and the plan's used-piece rows
     output/editor/preview.mpd   the last successfully rebuilt MPD
 
-The backend never imports the toolkit: every change goes through
-`ldraw-agent editor ...` (sandboxed, like every other toolkit call), which
-applies the task-01 edit operations, enforces the inventory gate in "only"
+The backend never imports the toolkit: every change goes through the toolkit's
+`editor` action, run in a resident, warm toolkit process (build_worker's editor
+worker; one sandboxed `ldraw-agent editor ...` process per call is the fallback
+and what agents use). The action applies the task-01 edit operations, enforces the inventory gate in "only"
 mode, rebuilds the preview and commits the three files together — nothing is
 written when the rebuild fails. Requests are serialised per chat with a lock,
 and a stale base revision is a 409 that carries the current revision.
@@ -27,6 +28,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+import build_worker
 import builds
 import parts_steering
 import sandbox
@@ -46,6 +48,12 @@ MAX_ROWS = 5000
 MAX_PLANS = 20
 MAX_SCAN_DEPTH = 3
 MAX_PLAN_BYTES = 5_000_000
+# Editor operations run in a resident toolkit process (see build_worker.get_editor_worker): the CLI pays seconds of
+# start-up and library loading on every call. LDRAW_NOVA_EDITOR_WORKER=0 goes back to one CLI process per call.
+EDITOR_WORKER = os.environ.get("LDRAW_NOVA_EDITOR_WORKER", "1") != "0"
+CLI_OPTIONS = {"--plan": "plan", "--state": "state", "--mpd": "mpd", "--base-revision": "base_revision",
+               "--edits": "edits", "--owned": "owned", "--mode": "mode", "--from": "source",
+               "--from-mpd": "from_mpd", "--name": "name"}
 
 _locks: dict[str, asyncio.Lock] = {}
 
@@ -144,7 +152,31 @@ def _outcome(report: dict, exit_code: int) -> dict:
     raise HTTPException(400, detail)
 
 
+def _request(arguments: list[str]) -> dict:
+    """The CLI arguments of one editor action as the worker's request object."""
+    request: dict[str, Any] = {"op": "editor", "action": arguments[0]}
+    for flag, value in zip(arguments[1::2], arguments[2::2]):
+        request[CLI_OPTIONS[flag]] = int(value) if flag == "--base-revision" else value
+    return request
+
+
 async def _run(store, chat_id: str, arguments: list[str]) -> dict:
+    if EDITOR_WORKER:
+        work = store.work_dir(chat_id)           # the CLI path gets this from toolkit.workspace
+        work.mkdir(parents=True, exist_ok=True)
+        sandbox.give_to_agent(work)
+        try:
+            reply = await build_worker.get_editor_worker().request(_request(arguments), timeout=TIMEOUT)
+        except build_worker.WorkerTimeout:
+            raise HTTPException(504, "The editor operation timed out") from None
+        except build_worker.WorkerError:
+            reply = None                    # busy or crashed: this call goes through the CLI, the next restarts the worker
+        if reply is not None and "exit_code" in reply:      # an older toolkit does not know the op: use the CLI
+            return reply
+    return await _run_cli(store, chat_id, arguments)
+
+
+async def _run_cli(store, chat_id: str, arguments: list[str]) -> dict:
     # The report carries the whole plan and MPD, which the sandbox's 20,000-character stdout cap
     # truncates for models of a few hundred parts, so read it from a file the tool writes.
     cwd = toolkit.workspace(store, chat_id)
