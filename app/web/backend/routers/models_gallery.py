@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
+import builds
 import gallery
 import glb
 import render
@@ -31,7 +32,8 @@ async def models_list():
     models = gallery.collection(settings.GENERATED_DIR)
     gallery.ensure_artifacts(models)
     index, origins = model_chat_index(get_store()), model_origins(get_store())
-    items = [{**model_info(path), "chats": index.get(path, []), "origin": origins.get(path)} for path in models]
+    items = [{**model_info(path), "chats": index.get(path, []), "origin": origins.get(path),
+              "build": builds.slug_of_file(path.name)} for path in models]
     return {"models": items, "pending": sum(1 for i in items if is_pending(i))}
 
 

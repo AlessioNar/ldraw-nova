@@ -62,7 +62,10 @@ export default function ChatPage() {
     stageRef.current = setPicked;
     return () => { if (stageRef.current === setPicked) stageRef.current = null; };
   }, [wide, stageRef]);
-  const latestUrl = latest?.model_url, latestTitle = latest ? latest.description || latest.file : "", latestParts = latest?.parts, latestVersion = latest?.version;
+  const fallback = detail?.build?.latest;       // a build's chat with no model of its own yet shows the build's latest version
+  const latestUrl = latest?.model_url ?? fallback?.model_url, latestParts = latest ? latest.parts : fallback?.parts;
+  const latestTitle = latest ? latest.description || latest.file : fallback ? fallback.description || fallback.file : "";
+  const latestVersion = latest ? latest.version : fallback?.version;
   const stageTarget = useMemo<ViewerTarget | null>(
     () => picked ?? (latestUrl ? { modelUrl: latestUrl, title: latestTitle, parts: latestParts, version: latestVersion } : null),
     [picked, latestUrl, latestTitle, latestParts, latestVersion],
@@ -127,6 +130,7 @@ export default function ChatPage() {
     <div className="chat-page">
       <header className="chat-head">
         <h2 className="ellipsis">{detail.chat.title}</h2>
+        {detail.build && <Link className="chat-build-link ellipsis" to={`/build/${detail.build.id}`} title="The build this chat works on">Build: {detail.build.title}</Link>}
         <Link className="chat-edit-link" to={`/chat/${id}/edit`} title="Place and move parts in 3D (desktop)">Edit in 3D</Link>
       </header>
       <BuildHeader detail={detail} chats={chats} running={running} connected={connected} activity={activity} tools={tools}
@@ -149,7 +153,7 @@ export default function ChatPage() {
         />
       </div>
     </div>
-    {wide && (<Suspense fallback={<section className="chat-stage" aria-busy="true" />}><ViewerStage chatId={id} target={stageTarget} /></Suspense>)}
+    {wide && (<Suspense fallback={<section className="chat-stage" aria-busy="true" />}><ViewerStage editorPath={`/chat/${id}/edit`} target={stageTarget} /></Suspense>)}
     </div>
   );
 }

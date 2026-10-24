@@ -18,7 +18,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import re
 import shutil
 import time
 import uuid
@@ -28,6 +27,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+import builds
 import parts_steering
 import sandbox
 import settings
@@ -393,7 +393,7 @@ async def editor_publish(space: str, chat_id: str, body: EditorPublish):
 
 def build_id_of(filename: str) -> str:
     """The build a model file belongs to: its name without extension and `-vN` version, as the publish slug."""
-    return tools._slug(re.sub(r"-v\d+$", "", Path(filename).stem, flags=re.IGNORECASE))
+    return builds.slug_of_file(filename)
 
 
 def _build_meta(store, key: str) -> dict:
@@ -409,11 +409,9 @@ def _write_build_meta(store, key: str, model: Path) -> None:
         json.dumps({"file": model.name, "mtime_ns": model.stat().st_mtime_ns}), encoding="utf-8")
 
 
-@router.post("/api/models/{filename}/edit")
-async def models_edit(filename: str):
+async def edit_model_file(store, filename: str) -> dict:
     """Open a My Builds model in the 3D editor: resume this build's session when it continues from this exact
     file, else import the file as a fresh plan (the old session is archived). No chat is created."""
-    store = get_store()
     root = settings.GENERATED_DIR.resolve()
     model = root / filename
     if (Path(filename).name != filename or filename.startswith(".") or model.suffix.lower() not in (".mpd", ".ldr")
@@ -422,6 +420,7 @@ async def models_edit(filename: str):
     if model.stat().st_size > MAX_PLAN_BYTES:
         raise HTTPException(400, "This model is too large to edit")
     build = build_id_of(filename)
+    builds.ensure(store, build)
     key = store.build_key(build)
     work = store.work_dir(key)
     work.mkdir(parents=True, exist_ok=True)
@@ -437,3 +436,8 @@ async def models_edit(filename: str):
         view = await open_session(store, key, name=build, replace=True, mpd=copy)
         _write_build_meta(store, key, model)
     return {**view, "build": build, "file": filename, "editor_url": f"/build/{build}/edit"}
+
+
+@router.post("/api/models/{filename}/edit")
+async def models_edit(filename: str):
+    return await edit_model_file(get_store(), filename)

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { api, type Chat, type LlmEntry } from "./api";
+import { api, buildsApi, type BuildSummary, type Chat, type LlmEntry, type OlderChat } from "./api";
 import { AppContext, type ViewerTarget } from "./context";
 import KeyBanner from "./components/KeyBanner";
 import Sidebar from "./components/Sidebar";
 import ViewerModal from "./components/ViewerModal";
+import BuildPage from "./pages/BuildPage";
 import ChatPage from "./pages/ChatPage";
 import EditorPage from "./pages/EditorPage";
 import Home from "./pages/Home";
@@ -17,6 +18,9 @@ import { setProviderCatalogue } from "./modelChoices";
 export default function App() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [chatsLoaded, setChatsLoaded] = useState(false);
+  const [builds, setBuilds] = useState<BuildSummary[]>([]);
+  const [olderChats, setOlderChats] = useState<OlderChat[]>([]);
+  const [buildsLoaded, setBuildsLoaded] = useState(false);
   const [llms, setLlms] = useState<LlmEntry[]>([]);
   const [defaultLlmId, setDefaultLlmId] = useState<string | null>(null);
   const [defaultWorkerId, setDefaultWorkerId] = useState<string | null>(null);
@@ -37,6 +41,16 @@ export default function App() {
       })
       .catch(() => {});
   }, []);
+  const refreshBuilds = useCallback(() => {
+    buildsApi
+      .list()
+      .then((r) => {
+        setBuilds(r.builds);
+        setOlderChats(r.older_chats);
+        setBuildsLoaded(true);
+      })
+      .catch(() => {});
+  }, []);
   const refreshLlms = useCallback(() => {
     api
       .llmModels()
@@ -50,6 +64,7 @@ export default function App() {
 
   useEffect(() => {
     refreshChats();
+    refreshBuilds();
     refreshLlms();
     // Labels live in a module map; the state flip re-renders the tree once they land.
     api
@@ -59,9 +74,10 @@ export default function App() {
         setProvidersLoaded(true);
       })
       .catch(() => {});
-  }, [refreshChats, refreshLlms]);
+  }, [refreshChats, refreshBuilds, refreshLlms]);
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
+  useEffect(() => refreshBuilds(), [location.pathname, refreshBuilds]);   // versions saved elsewhere (editor, chat) show up in the sidebar
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -76,8 +92,8 @@ export default function App() {
   }, [collapsed, setCollapsed]);
 
   const state = useMemo(
-    () => ({ chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer, stageRef }),
-    [chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer],
+    () => ({ chats, chatsLoaded, refreshChats, builds, olderChats, buildsLoaded, refreshBuilds, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer, stageRef }),
+    [chats, chatsLoaded, refreshChats, builds, olderChats, buildsLoaded, refreshBuilds, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer],
   );
 
   return (
@@ -93,6 +109,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/new" replace />} />
             <Route path="/new" element={<Home />} />
+            <Route path="/build/:id" element={<BuildPage />} />
             <Route path="/chat/:id" element={<ChatPage />} />
             <Route path="/chat/:id/edit" element={<EditorPage />} />
             <Route path="/build/:build/edit" element={<EditorPage />} />

@@ -83,14 +83,14 @@ class ChatStore:
 
     # --- chats -------------------------------------------------------------
 
-    def create_chat(self, title: str = "New chat", llm_model_id: Optional[str] = None) -> dict:
+    def create_chat(self, title: str = "New chat", llm_model_id: Optional[str] = None, build_id: Optional[str] = None) -> dict:
         with self._lock:
             chat_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
             now = time.time()
             self.chat_dir(chat_id).mkdir(parents=True)
             self.work_dir(chat_id).mkdir(parents=True, exist_ok=True)
             chat = {"id": chat_id, "title": title, "llm_model_id": llm_model_id,
-                    "created_at": now, "updated_at": now}
+                    "created_at": now, "updated_at": now, **({"build_id": build_id} if build_id else {})}
             self._write_chat(chat)
             return chat
 
@@ -113,7 +113,7 @@ class ChatStore:
             chat = self.get_chat(chat_id)
             if chat is None:
                 return
-            chat.update({k: v for k, v in fields.items() if k in ("title", "llm_model_id", "options")})
+            chat.update({k: v for k, v in fields.items() if k in ("title", "llm_model_id", "options", "build_id")})
             chat["updated_at"] = time.time()
             self._write_chat(chat)
 

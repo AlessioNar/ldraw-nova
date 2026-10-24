@@ -73,7 +73,7 @@ class Pipeline:
         return self.parts
 
     def run(self, outdir, *, plan=None, vehicle=None, palette=None, name="model", geometry=True, glb=True,
-            renders=(), force=False) -> dict:
+            renders=(), force=False, generator=None, params=None) -> dict:
         """Build `plan` (or a named vehicle design) into outdir/<name>.mpd and check, convert, render it.
 
         Returns a JSON-able dict: key, cached, ok, paths, diagnostics, geometry, timings. A build with errors writes
@@ -90,10 +90,15 @@ class Pipeline:
             from .common import library_path
             self.library = library_path(self.library_arg)
         timings = {}
-        if (plan is None) == (vehicle is None):
-            raise ValueError("Give exactly one of plan or vehicle")
+        if sum(x is not None for x in (plan, vehicle, generator)) != 1:
+            raise ValueError("Give exactly one of plan, vehicle or generator")
         t = time.monotonic()
-        if vehicle is not None:
+        generated = None
+        if generator is not None:
+            from .generators import generate
+            generated = generate(generator, params)
+            plan = generated["plan"]
+        elif vehicle is not None:
             from .vehicles import vehicle_plan
             plan = vehicle_plan(vehicle, palette)
         if plan.get("includes") or plan.get("assets"):
@@ -106,6 +111,8 @@ class Pipeline:
             result = self._restore(entry, outdir, name)
             if result:
                 result.update(key=key, cached=True, seconds=round(time.monotonic() - started, 3))
+                if generated:
+                    result["generator"] = {k: generated[k] for k in ("generator", "params", "notes")}
                 return result
         shutil.rmtree(entry, ignore_errors=True)
         entry.mkdir(parents=True, exist_ok=True)
@@ -122,6 +129,8 @@ class Pipeline:
         else:
             shutil.rmtree(entry, ignore_errors=True)
             result["paths"] = {}
+        if generated:
+            result["generator"] = {k: generated[k] for k in ("generator", "params", "notes")}
         return result
 
     # -- stages -------------------------------------------------------------------------------------------------
@@ -220,8 +229,12 @@ def _handle(pipeline: Pipeline, request: dict) -> dict:
         os._exit(3)
     if op == "hang" and os.environ.get("LDRAW_NOVA_WORKER_DEBUG") == "1":
         time.sleep(3600)
+    if op == "generators":
+        from .generators import REGISTRY
+        from .generators.colours import NAMES
+        return dict(ok=True, generators=[g.entry() for g in REGISTRY.values()], colours=dict(NAMES))
     if op == "build":
-        keys = ("plan", "vehicle", "palette", "name", "geometry", "glb", "renders", "force")
+        keys = ("plan", "vehicle", "palette", "name", "geometry", "glb", "renders", "force", "generator", "params")
         return pipeline.run(request["outdir"], **{k: request[k] for k in keys if k in request})
     raise ValueError(f"Unknown op {op!r}")
 

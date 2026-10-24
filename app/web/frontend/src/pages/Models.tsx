@@ -81,7 +81,7 @@ export default function Models() {
       {models && models.length > 0 && shown.length === 0 && <p className="muted">No models match your search.</p>}
       <div className="card-grid">
         {shown.map((m) => (
-          <ModelCard key={m.file} model={m} showChats onEdit={async () => {
+          <ModelCard key={m.file} model={m} showChats buildId={m.build} onEdit={async () => {
             const opened = await api.editModel(m.file);
             navigate(`/build/${encodeURIComponent(opened.build)}/edit`);
           }} onDelete={async () => {

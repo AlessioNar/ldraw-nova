@@ -1,5 +1,5 @@
 import { createContext, useContext, type MutableRefObject } from "react";
-import type { Chat, LlmEntry, ViewerMode } from "./api";
+import type { BuildSummary, Chat, LlmEntry, OlderChat, ViewerMode } from "./api";
 
 export type ViewerTarget = { modelUrl: string; title: string; parts?: number | null; mode?: ViewerMode; version?: number };
 
@@ -7,6 +7,11 @@ export type AppState = {
   chats: Chat[];
   chatsLoaded: boolean;
   refreshChats: () => void;
+  /** Recent builds for the sidebar, and chats that belong to no build ("Older chats"). */
+  builds: BuildSummary[];
+  olderChats: OlderChat[];
+  buildsLoaded: boolean;
+  refreshBuilds: () => void;
   llms: LlmEntry[];
   defaultLlmId: string | null;
   defaultWorkerId: string | null;

@@ -7,6 +7,7 @@ from urllib.parse import quote
 
 from fastapi import HTTPException
 
+import builds
 import gallery
 import model_versions
 import settings
@@ -68,13 +69,15 @@ def chat_models(store: ChatStore, chat_id: str) -> dict[str, dict]:
     a human `title`, `latest`, `origin` ("editor" for the person's own publish) and `changes`, the difference
     from the previous version computed from the two BOMs."""
     refs = store.models(chat_id)
+    attached = (store.get_chat(chat_id) or {}).get("build_id")      # a build's chat shows the build's version numbers
     result, previous = {}, None
     for index, ref in enumerate(refs):
         path = store.resolve(chat_id, ref["model"])
         info = model_info(path)
+        file_version = builds.VERSION_RE.match(path.stem) if attached else None
         result[ref["id"]] = {**info, "id": ref["id"], "name": ref["name"],
                              "warnings": ref.get("warnings", []), "created_at": ref["created_at"],
-                             "version": ref.get("version") or index + 1, "latest": index == len(refs) - 1,
+                             "version": int(file_version["n"]) if file_version else ref.get("version") or index + 1, "latest": index == len(refs) - 1,
                              "title": info["description"] or info["info_heading"] or ref["name"],
                              "origin": ref.get("origin"),
                              "changes": model_versions.diff(previous, path) if previous and path.is_file() else None}

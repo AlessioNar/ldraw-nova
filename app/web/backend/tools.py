@@ -11,7 +11,6 @@ from __future__ import annotations
 import inspect
 import hashlib
 import json
-import re
 import shutil
 import time
 import uuid
@@ -23,11 +22,13 @@ from urllib.parse import quote
 import sandbox
 import settings
 import toolkit
+import builds
 import gallery
 import parts_steering
 from budget import BudgetLedger, WorkerLimits
-from leocad_render import bom_path_for, list_models, snapshot_path_for
+from leocad_render import bom_path_for, snapshot_path_for
 from paths import safe_join
+import store as store_module
 from store import ChatStore
 
 MAX_WRITE_BYTES = 2 * 1024 * 1024
@@ -68,14 +69,8 @@ class ToolResult:
 
 # --- helpers ---------------------------------------------------------------
 
-def _slug(name: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:60] or "model"
-
-
-def _next_version(slug: str) -> int:
-    pattern = re.compile(rf"{re.escape(slug)}-v(\d+)\.(mpd|ldr|dat)", re.IGNORECASE)
-    versions = [int(m.group(1)) for p in list_models(settings.GENERATED_DIR) if (m := pattern.fullmatch(p.name))]
-    return max(versions, default=0) + 1
+_slug = builds.slugify
+_next_version = builds.next_version
 
 
 def resolve_path(ctx: ToolContext, path: str, *, write: bool = False) -> Path:
@@ -196,7 +191,9 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
     warnings = ["Physical buildability is not proven; read the validation and visual review reports."]
     if validation.exit_code == 1:
         warnings.append("Toolkit validation failed. This revision is for inspection and needs repair.")
-    slug = _slug(name or source.stem)
+    chat = None if ctx.store.is_build(ctx.chat_id) else ctx.store.get_chat(ctx.chat_id)
+    attached = (chat or {}).get("build_id")          # a chat attached to a build publishes into that build
+    slug = attached or _slug(name or source.stem)
     settings.GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     # Reserve synchronously before the next await, including concurrent chats.
     target = settings.GENERATED_DIR / f"{slug}-v{_next_version(slug)}.mpd"
@@ -216,6 +213,10 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
         warnings.append("Preview/BOM rendering failed; the model can still be opened in 3D.")
     ref = ctx.store.add_model(ctx.chat_id, name or source.stem, target, warnings, origin=ctx.origin,
                               source=source.relative_to(ctx.work_dir).as_posix() if ctx.work_dir in source.parents else None)
+    if attached:
+        builds.record_version(ctx.store, slug, name or source.stem, target, ctx.origin or "ai", warnings)
+    elif ctx.store.is_build(ctx.chat_id):
+        builds.touch(ctx.store, ctx.chat_id[len(store_module.BUILD_PREFIX):])
     ctx.emit("model", {"id": ref["id"], "name": ref["name"]})
     model_url = "/files/generated/" + quote(target.name)
     result = {"model_url": model_url, "source": artifact_url(ctx, source),

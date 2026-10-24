@@ -60,7 +60,7 @@ export default function EditorPage() {
   return (
     <div className="editor-page">
       <header className="chat-head">
-        {build ? <Link to="/models">← Back to My Builds</Link> : <Link to={`/chat/${id}`}>← Back to the chat</Link>}
+        {build ? <Link to={`/build/${build}`}>← Back to the build</Link> : <Link to={`/chat/${id}`}>← Back to the chat</Link>}
       </header>
       <div className="editor-body">
         <iframe ref={frame} className="editor-frame" src={build ? buildEditorUrl(build) : editorUrl(id)} title="3D model editor"
