@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { downloadGlb, downloadUrl, partsLabel, timeAgo, type ChatModel, type ModelFile, type ViewerMode } from "../api";
+import { downloadGlb, downloadUrl, timeAgo, type ChatModel, type ModelFile, type ViewerMode } from "../api";
 import { useApp } from "../context";
 import InfoModal from "./InfoModal";
 
@@ -66,7 +66,7 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
   }
 
   return (
-    <div className="model-card">
+    <div className={`model-card${model.latest ? " is-latest" : ""}`}>
       {onDelete && <button type="button" className="model-delete" aria-label={`Delete ${model.file}`} title="Delete model" disabled={deleting} onClick={remove}>
         {deleting ? <span className="spinner" aria-hidden="true" /> : "×"}
       </button>}
@@ -81,17 +81,16 @@ export default function ModelCard({ model, showChats = false, onDelete }: Props)
             {model.version != null && <span className="version-badge" title={model.latest ? "The latest version in this chat" : "An earlier version in this chat"}>v{model.version}{model.latest ? " · latest" : ""}</span>}
             {model.origin === "editor" && <span className="version-badge edited" title="You edited the plan in the 3D editor and published it">edited by you</span>}
             <strong className="ellipsis" title={model.file}>{model.version != null ? model.title || model.file : model.file}</strong>
-            {model.parts != null ? (
-              <span className="muted">, {partsLabel(model.parts)}</span>
-            ) : bomBusy ? (
-              <span className="muted">, counting parts…</span>
-            ) : null}
           </span>
           {warnings.length > 0 && (
             <button type="button" className="badge warn warning-toggle" aria-expanded={showWarnings} onClick={() => setShowWarnings(v => !v)}>
               {warnings.length} warning{warnings.length > 1 ? "s" : ""}
             </button>
           )}
+        </div>
+        <div className="model-spec" aria-label="Model facts">
+          <div><span className="label">Parts</span><b>{model.parts != null ? model.parts.toLocaleString() : bomBusy ? "…" : "–"}</b></div>
+          <div><span className="label">File</span><b>{model.size >= 1024 * 1024 ? `${(model.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(model.size / 1024))} KB`}</b></div>
         </div>
         {showWarnings && warnings.length > 0 && <ul className="model-warnings small">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
         {model.version != null && model.version > 1 && model.changes && (

@@ -39,6 +39,7 @@ export default function Home() {
   return (
     <div className="page home">
       <div className="home-hero">
+        <div className="brick-row" aria-hidden="true"><i /><i /><i /><i /></div>
         <h1>What should we build?</h1>
         <p className="muted">
           Turn your ideas into LEGO models you can explore in 3D. Start building with an agent,

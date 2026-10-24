@@ -1,24 +1,17 @@
 /* player.html */
-:root { --track: rgba(29,29,31,.18); --fill: #1d1d1f; --tip: #1d1d1f; --tip-fg: #fff; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --track: rgba(244,244,245,.22); --fill: #f4f4f5; --tip: #f4f4f5; --tip-fg: #18181b;
-  }
-}
-:root[data-theme="dark"] {
-  --track: rgba(244,244,245,.22); --fill: #f4f4f5; --tip: #f4f4f5; --tip-fg: #18181b;
-}
+:root { --track: color-mix(in srgb, var(--fg) 22%, transparent); --fill: var(--accent-solid); --tip: var(--fg); --tip-fg: var(--bg); }
 #canvas { display: block; width: 100%; height: 100%; }
 .bar { position: fixed; left: 0; right: 0; display: flex; gap: 8px; align-items: center;
        padding: 8px 12px; background: var(--bar); backdrop-filter: blur(6px); z-index: 2; }
 #top { top: 0; border-bottom: 1px solid var(--btn-border); }
 #title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; margin-right: auto; }
+#status:empty { display: none; }
 #controls { bottom: 0; border-top: 1px solid var(--btn-border); gap: 6px; }
-#status { position: fixed; left: 12px; bottom: 58px; color: var(--muted); z-index: 2;
-          text-shadow: 0 0 4px var(--bg); }
+#status { position: fixed; left: 12px; bottom: 58px; color: var(--fg-2); z-index: 2;
+          background: var(--bar); border: 1px solid var(--btn-border); border-radius: var(--radius-sm); padding: 2px 8px; font-size: 12px; }
 
 button, select { font: inherit; color: var(--fg); background: var(--btn); border: 1px solid var(--btn-border);
-                 border-radius: 6px; cursor: pointer; }
+                 border-radius: var(--radius); cursor: pointer; }
 button:disabled { opacity: .4; cursor: default; }
 button.icon { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; flex: none; }
 button.icon svg { width: 20px; height: 20px; fill: currentColor; }
@@ -28,9 +21,9 @@ button:focus-visible, select:focus-visible, #scrub:focus-visible { outline: 2px 
 select { padding: 4px 6px; flex: none; }
 .segmented { flex: none; }
 .segmented button { border-radius: 0; padding: 4px 10px; }
-.segmented button:first-child { border-radius: 6px 0 0 6px; }
-.segmented button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
-.segmented button[aria-pressed="true"] { background: var(--fill); color: var(--bar); border-color: var(--fill); }
+.segmented button:first-child { border-radius: var(--radius) 0 0 6px; }
+.segmented button:last-child { border-radius: 0 var(--radius) var(--radius) 0; border-left: 0; }
+.segmented button[aria-pressed="true"] { background: var(--fill); color: var(--accent-fg); border-color: var(--fill); }
 .readout { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; }
 
 /* The time slider: a bar cut into "chapters" at the step marks. */
