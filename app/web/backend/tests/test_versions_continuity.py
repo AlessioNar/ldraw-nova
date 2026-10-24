@@ -225,4 +225,4 @@ def test_editor_publish_message_is_not_a_turn_for_the_status_line():
     import usage
     messages = [{"role": "user", "content": "build", "created_at": 100}, {"role": "assistant", "_usage": {}, "created_at": 110},
                 {"role": "user", "_editor_publish": True, "content": "edited", "created_at": 9000}]
-    assert usage.turn_stats(messages) == {"turn_steps": 1, "duration_s": 10}
+    assert usage.turn_stats(messages) == {"turn_steps": 1, "duration_s": 10, "request_cost_eur": 0}
