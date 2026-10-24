@@ -157,8 +157,8 @@ export const api = {
     ),
   importLlm: (yaml: string) =>
     request<{ imported: LlmEntry[] }>("/api/llm-models/import", { method: "POST", body: json({ yaml }) }),
-  providerKeys: () => request<{ keys: Record<string, boolean> }>("/api/llm-providers/keys"),
-  testProvider: (p: string) => request<{ ok: boolean; message?: string; error?: string }>(`/api/llm-providers/${encodeURIComponent(p)}/test`, { method: "POST" }),
+  providerKeys: () => request<{ keys: Record<string, boolean>; rejected: string[] }>("/api/llm-providers/keys"),
+  testProvider: (p: string) => request<{ ok: boolean; status?: string; message?: string; error?: string }>(`/api/llm-providers/${encodeURIComponent(p)}/test`, { method: "POST" }),
   providers: () => request<{ providers: string[]; catalogue: ProviderInfo[] }>("/api/llm-providers"),
   providerModels: (p: string) => request<{ models: string[] }>(`/api/llm-providers/${encodeURIComponent(p)}/models`),
 };

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useRef, type ReactNode, type Ref, type UIEventHandler } from "react";
 import type { ChatDetail, ChatModel, LiveWorker, Message } from "../api";
 import { placeChatModels } from "../chatModels";
@@ -16,6 +17,12 @@ type ContentBlock = { type: string; text?: string; image_url?: { url: string } }
 const text = (m: Message) => typeof m.content === "string" ? m.content : Array.isArray(m.content) ? (m.content as ContentBlock[]).filter(b => b.type === "text").map(b => b.text).join("\n") : "";
 
 /** The transcript: saved messages with their tool calls and model cards, then the in-flight reply. */
+/** An error message whose "Open Settings" becomes a link to the Settings page. */
+function ErrorText({ text }: { text: string }) {
+  const [before, after] = text.split("Open Settings", 2);
+  return after === undefined ? <>{text}</> : <>{before}<Link to="/settings">Open Settings</Link>{after}</>;
+}
+
 export default function MessageList({ detail, running, draft, persisting, tools, workers, now, error, scrollerRef, bottomRef, onScroll }: {
   detail: ChatDetail; running: boolean; draft: string; persisting: string; tools: RunningTool[]; workers: LiveWorker[]; now: number; error: string | null;
   scrollerRef: Ref<HTMLDivElement>; bottomRef: Ref<HTMLDivElement>; onScroll: UIEventHandler<HTMLDivElement>;
@@ -73,7 +80,7 @@ export default function MessageList({ detail, running, draft, persisting, tools,
     if (m._hidden || m.role === "tool" || m.role === "system") continue;
     if (m._ui_only) {
       flush();
-      nodes.push(<div key={m.id} className={`banner ${m._error ? "error" : ""}`}>{text(m)}</div>);
+      nodes.push(<div key={m.id} className={`banner ${m._error ? "error" : ""}`}>{m._error ? <ErrorText text={text(m)} /> : text(m)}</div>);
       continue;
     }
     if (m.role === "user") {
@@ -138,7 +145,7 @@ export default function MessageList({ detail, running, draft, persisting, tools,
           </span>
         </div>
       )}
-      {error && !messages.some((m) => m._error && text(m) === error) && <div className="banner error">{error}</div>}
+      {error && !messages.some((m) => m._error && text(m) === error) && <div className="banner error"><ErrorText text={error} /></div>}
       <div ref={bottomRef} />
     </div>
   );

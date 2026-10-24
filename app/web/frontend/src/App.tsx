@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { api, type Chat, type LlmEntry } from "./api";
 import { AppContext, type ViewerTarget } from "./context";
+import KeyBanner from "./components/KeyBanner";
 import Sidebar from "./components/Sidebar";
 import ViewerModal from "./components/ViewerModal";
 import ChatPage from "./pages/ChatPage";
@@ -86,6 +87,7 @@ export default function App() {
           <button className="menu-button" aria-label="Open menu" title="Menu" onClick={() => setMenuOpen(true)}>
             ☰
           </button>
+          <KeyBanner />
           <Routes>
             <Route path="/" element={<Navigate to="/new" replace />} />
             <Route path="/new" element={<Home />} />
