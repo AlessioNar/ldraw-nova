@@ -1,4 +1,6 @@
-# ldraw-nova
+# <img src="img/open-brick-designer.svg" width="40" alt=""> Open Brick Designer
+
+Open Brick Designer is a fork of [anteloc/ldraw-nova](https://github.com/anteloc/ldraw-nova). The web app has a new name; the toolkit it packages is still **ldraw-nova** (`ldraw_tools`, `./ldraw-agent`).
 
 **Give an AI agent a model idea. Guide it, let it build it, and get an LDraw LEGO© model.**
 
@@ -24,7 +26,7 @@ Take a look at [the video](https://youtu.be/YDjjxGqWpgU):
 > - **A TypeSafe API key is optional.** If you have one (`TYPESAFE_API_KEY`), set its value on the web app's **Settings** section to enable Jev semantic search.
 > - **If you don't**, nothing breaks: searches automatically use **FTS (Full Text Search)** with keyword (BM25) ranking, which works but ranks parts and models **less well** than semantic search.
 
-Run **ldraw-nova** as a web app, with Docker. You need [Git](https://git-scm.com/downloads) and [Docker](https://docs.docker.com/get-started/get-docker/).
+Run **Open Brick Designer** as a web app, with Docker. You need [Git](https://git-scm.com/downloads) and [Docker](https://docs.docker.com/get-started/get-docker/).
 
 The web app runs dockerized. The Docker configuration and the web app live in [`app/`](app/), next to the toolkit it packages, so a single clone is all you need.
 

@@ -41,7 +41,7 @@ async def lifespan(_app: FastAPI):
     await build_worker.shutdown()
 
 
-app = FastAPI(title="LDraw Nova agent chat", lifespan=lifespan)
+app = FastAPI(title="Open Brick Designer", lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)

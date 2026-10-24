@@ -8,14 +8,7 @@
   display: flex; flex-direction: column; min-height: 0; padding: 14px 10px;
 }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 15px; padding: 2px 8px 14px; }
-.brand-mark {
-  width: 22px; height: 16px; border-radius: 3px; background: var(--accent); position: relative; margin-top: 4px;
-}
-.brand-mark::before, .brand-mark::after {
-  content: ""; position: absolute; top: -5px; width: 6px; height: 5px; border-radius: 1.5px 1.5px 0 0; background: var(--accent);
-}
-.brand-mark::before { left: 3px; }
-.brand-mark::after { right: 3px; }
+.brand-mark { width: 26px; height: 19px; flex: none; color: var(--accent); }
 .new-chat { justify-content: center; margin: 0 4px 10px; padding: 8px; font-weight: 500; }
 .new-chat { color: var(--fg); }
 .new-chat.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

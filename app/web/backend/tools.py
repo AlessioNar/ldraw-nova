@@ -189,7 +189,7 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
     revision = review / "model.mpd"
     revision.write_bytes(source_bytes)
     report = review / "validation.json"
-    ctx.emit("progress", {"summary": "Checking the model with LDraw Nova before publication."})
+    ctx.emit("progress", {"summary": "Checking the model before publication."})
     validation = await run_command(ctx, ["./ldraw-agent", "validate", str(revision), "--geometry",
                                          "--detail", "summary", "--report", str(report)], 1800)
     if validation.exit_code not in (0, 1) or not report.is_file():
