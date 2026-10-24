@@ -79,31 +79,31 @@
    "scored": 78,
    "agree": "41/78 = 0.53",
    "domain": "building",
-   "seconds": 8.4
+   "seconds": 8.7
   },
   "31038-1_Automn.mpd": {
    "scored": 17,
    "agree": "11/17 = 0.65",
    "domain": "building",
-   "seconds": 3.7
+   "seconds": 3.6
   },
   "4956-1_House-with-Arch.mpd": {
    "scored": 293,
    "agree": "142/293 = 0.48",
    "domain": "building",
-   "seconds": 4.2
+   "seconds": 4.0
   },
   "4954-1_House-with-Truck.mpd": {
    "scored": 19,
    "agree": "7/19 = 0.37",
    "domain": "building",
-   "seconds": 3.0
+   "seconds": 2.9
   },
   "4954-1_School.mpd": {
    "scored": 171,
    "agree": "90/171 = 0.53",
    "domain": "building",
-   "seconds": 0.7
+   "seconds": 0.5
   },
   "4996-1_Cozy-Cafe.mpd": {
    "scored": 35,
@@ -115,13 +115,13 @@
    "scored": 92,
    "agree": "61/92 = 0.66",
    "domain": "vehicle",
-   "seconds": 2.5
+   "seconds": 2.7
   },
   "5771-1.mpd": {
    "scored": 234,
    "agree": "84/234 = 0.36",
    "domain": "vehicle",
-   "seconds": 3.9
+   "seconds": 3.6
   },
   "5891-1_Holiday-House.mpd": {
    "scored": 36,
@@ -133,13 +133,13 @@
    "scored": 28,
    "agree": "9/28 = 0.32",
    "domain": "vehicle",
-   "seconds": 1.7
+   "seconds": 1.6
   },
   "10183-1_Tram-2.mpd": {
    "scored": 64,
    "agree": "29/64 = 0.45",
    "domain": "vehicle",
-   "seconds": 1.9
+   "seconds": 2.0
   },
   "10183-1_Passenger-car.mpd": {
    "scored": 116,
@@ -151,25 +151,25 @@
    "scored": 140,
    "agree": "29/140 = 0.21",
    "domain": "vehicle",
-   "seconds": 1.8
+   "seconds": 2.1
   },
   "4993-1_Truck.mpd": {
    "scored": 102,
    "agree": "41/102 = 0.40",
    "domain": "vehicle",
-   "seconds": 4.8
+   "seconds": 5.1
   },
   "5867-1.mpd": {
    "scored": 35,
    "agree": "0/35 = 0.00",
    "domain": "vehicle",
-   "seconds": 1.3
+   "seconds": 1.2
   },
   "5767-1.mpd": {
    "scored": 60,
    "agree": "0/60 = 0.00",
    "domain": "vehicle",
-   "seconds": 2.6
+   "seconds": 2.1
   },
   "60018-1.mpd": {
    "scored": 15,
@@ -181,19 +181,19 @@
    "scored": 11,
    "agree": "1/11 = 0.09",
    "domain": "vehicle",
-   "seconds": 3.7
+   "seconds": 3.9
   },
   "31045-1_Aircraft.mpd": {
    "scored": 29,
    "agree": "18/29 = 0.62",
    "domain": "aircraft",
-   "seconds": 0.4
+   "seconds": 0.5
   },
   "31049-1_Single-Engine-Airplane.mpd": {
    "scored": 44,
    "agree": "28/44 = 0.64",
    "domain": "aircraft",
-   "seconds": 0.8
+   "seconds": 1.1
   },
   "31092-1.mpd": {
    "scored": 30,
@@ -205,19 +205,19 @@
    "scored": 47,
    "agree": "28/47 = 0.60",
    "domain": "aircraft",
-   "seconds": 0.6
+   "seconds": 0.8
   },
   "6891-1.mpd": {
    "scored": 21,
    "agree": "8/21 = 0.38",
    "domain": "aircraft",
-   "seconds": 1.6
+   "seconds": 2.2
   },
   "5892-1.mpd": {
    "scored": 110,
    "agree": "58/110 = 0.53",
    "domain": "aircraft",
-   "seconds": 3.3
+   "seconds": 3.5
   }
  }
 }

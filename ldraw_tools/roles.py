@@ -463,8 +463,8 @@ def _score(leaf, glassy, domain, rel_h, share, lateral, ctx, edge, sections, roo
     if kind == 'light':
         return Role('detail', .6, 'light part')
     if glassy:
-        small = share < 0.01
-        if small and domain in ('vehicle', 'aircraft'):
+        small = share < 0.01 and kind not in ('slope', 'brick', 'windscreen', 'window', 'glass_window')
+        if small and domain in ('vehicle', 'aircraft'):           # a round plate or a tile: a lamp, not a window
             return Role('detail', .6, 'small transparent part (light)')
         return Role('window' if domain == 'building' else 'glass', .75, 'transparent colour')
     # 2. what the part's place in the model says, and 3. what the submodel it sits in is called; the surer one wins

@@ -14,7 +14,7 @@ Owner's direction, restated: the generators are too few, hand-coded and rigid. A
 | Template runtime | `generate(params) -> plan`, pure and fast (no parts library), same surface as a generator | `ldraw_tools/templates/core.py`, `__init__.py` |
 | Registry and routing | Templates appear next to the generators as `template:<id>` for the fast path; the build worker builds them; a generator wins every tie | `app/web/backend/generator_bridge.py`, `fast_path.choose`, `ldraw_tools/pipeline.py` |
 
-Measured (details in section 3): on generator models the classifier gets **78.5 %** of placements right from geometry and part descriptions alone (**84.3 %** on the physical roles, leaving out generator colour slots such as "accent"), up from 75.1 % / 80.6 % on the interrupted branch; wings went from 65 % to 98 %, base from 71 % to 100 %, chassis from 77 % to 83 %. Its confidence is calibrated: placements scored 0.8-1.0 were right 150/150 times. On 24 reference models it agrees with what their authors' submodel names imply on 44 % of parts (proxy labels, see 3.2) and picks the right object type for 22/24.
+Measured (details in section 3): on generator models the classifier gets **78.7 %** of placements right from geometry and part descriptions alone (**84.5 %** on the physical roles, leaving out generator colour slots such as "accent"), up from 75.1 % / 80.6 % on the interrupted branch; wings went from 65 % to 98 %, base from 71 % to 100 %, glass from 88 % to 100 %, chassis from 77 % to 83 %. Its confidence is calibrated: placements scored 0.8-1.0 were right 150/150 times. On 24 reference models it agrees with what their authors' submodel names imply on 44 % of parts (proxy labels, see 3.2) and picks the right object type for 22/24.
 
 The four prototype templates (section 4) are derived without a line of model-specific code: a reference house (LEGO 5891), a reference truck (4915), the owner's Willowbank Cottage, and a reference railway car (10183). Each has colours per role, at least one verified length or height knob, optional sub-assemblies and part swaps, and `generate()` takes 2-40 ms.
 
@@ -63,9 +63,9 @@ Scripts: `eval_roles.py` (generator ground truth), `eval_reference.py` (referenc
 
 | Mode | Accuracy | Physical roles only |
 |---|---|---|
-| parts + geometry (submodel names ignored) | 75.1 % -> **78.5 %** | 80.6 % -> **84.3 %** |
-| + submodel names | 73.6 % -> 77.0 % | 79.0 % -> 82.7 % |
-| + names + a family hint (what the understanding step knows) | 74.2 % -> 77.4 % | 79.2 % -> 82.7 % |
+| parts + geometry (submodel names ignored) | 75.1 % -> **78.7 %** | 80.6 % -> **84.5 %** |
+| + submodel names | 73.6 % -> 77.2 % | 79.0 % -> 82.9 % |
+| + names + a family hint (what the understanding step knows) | 74.2 % -> 77.6 % | 79.2 % -> 82.9 % |
 
 "Physical roles only" leaves out placements whose generator role is a colour slot (`accent`, `metal`, `wood`): a stripe on a wing is a wing to the classifier and an accent to the generator. Submodel names make things slightly worse on generator models because their submodels are named after construction steps (`hall-roof` holds the gable walls too), which is why names only override geometry for specific roles and only in a domain where the role exists.
 
@@ -79,9 +79,9 @@ Per role (parts + geometry):
 | detail | 24/33 | 24/33 | | wall | 170/184 | 170/184 |
 | door | 6/6 | 6/6 | | wheel | 10/10 | 10/10 |
 | engine | 6/6 | 6/6 | | window | 13/13 | 13/13 |
-| glass | 15/17 | 15/17 | | wing | 43/66 | **65/66** |
+| glass | 15/17 | **17/17** | | wing | 43/66 | **65/66** |
 
-Main confusions left: `trim -> wall` 32 (porch columns and the trim ring on top of a wall are bricks in the wall band), `trim -> wing` 30 (generator accent plates on wings: a label artefact), `roof -> body` 30 (the delivery van's two-tone upper body is "roof" to the generator), `trim -> body` 24, `roof -> trim` 16. `trim` is the weak role (14 %): to the generators it is a colour slot as much as a place. Calibration: confidence 0.8-1.0 right 150/150, 0.6-0.8 right 80 %, 0.4-0.6 right 73 %; below 0.4 rarely used and usually wrong (0/16), which is what `tag_plan`'s low-confidence list is for.
+Main confusions left: `trim -> wall` 32 (porch columns and the trim ring on top of a wall are bricks in the wall band), `trim -> wing` 30 (generator accent plates on wings: a label artefact), `roof -> body` 30 (the delivery van's two-tone upper body is "roof" to the generator), `trim -> body` 24, `roof -> trim` 16. `trim` is the weak role (14 %): to the generators it is a colour slot as much as a place. Calibration: confidence 0.8-1.0 right 150/150, 0.6-0.8 right 81 %, 0.4-0.6 right 73 %; below 0.4 rarely used and usually wrong (0/16), which is what `tag_plan`'s low-confidence list is for.
 
 ### 3.2 Reference models (24 models: 9 buildings, 9 road/rail vehicles, 6 aircraft and spacecraft)
 
@@ -97,7 +97,7 @@ The reference library has no per-part labels. Its authors do name submodels ("Ro
 
 Main confusions: `roof -> wall` 213 (gable triangles built into "Roof" submodels: arguably right, the roof colour should not repaint the gable), `roof -> body` 110 (a house in a scene classified as a vehicle, see below), `door -> chassis/body` 115 (car doors built from plates), `wheel -> chassis` 53 (bogies), `window -> roof` 48 (dormer windows in "Roof" submodels). The two object-type misses are scenes where the house and the car overlap in plan (a car parked under a carport), so they are one object to the scene splitter.
 
-The role-coloured renders in `renders/roles/` are the better check for reference models: red roof, tan wall, blue window, brown door, green base, yellow wheel, black tyre, dark grey chassis, orange body, light blue glass, white trim, pink detail.
+The role-coloured renders in `renders/roles/` (section 5) are the better check for reference models.
 
 ### 3.3 Fixes made in this round (all in `roles.py`)
 
@@ -105,7 +105,7 @@ The role-coloured renders in `renders/roles/` are the better check for reference
 2. Scenes: the root's sub-assemblies are merged into objects when their footprints overlap; when objects of different types stand apart (a house and a truck), each is scored in its own frame and vocabulary.
 3. Aircraft: a plate is a wing when it reaches beyond the fuselage (the typical half-width of the bricks and slopes), not when it is "far from the centre line".
 4. Buildings: plates in the bottom layer are base; tiles on top of a flat roof are roof.
-5. Vehicles: bricks above the glazing are roof; train wheels are wheels (they were "details"); bogies, buffers and couplings are chassis; big wheels no longer turn the cab front into chassis (only flat parts, or parts starting below the axles, are chassis level with the wheels); door parts are doors on vehicles too.
+5. Vehicles and aircraft: transparent slopes and bricks are glass (only small transparent plates and tiles are lamps); bricks above the glazing are roof; train wheels are wheels (they were "details"); bogies, buffers and couplings are chassis; big wheels no longer turn the cab front into chassis (only flat parts, or parts starting below the axles, are chassis level with the wheels); door parts are doors on vehicles too.
 6. Boats count as vehicles (a hull part decides).
 
 ## 4. The prototype templates
@@ -132,7 +132,38 @@ Other reference models tried while building this (not shipped): the 31049 propel
 
 ## 5. Renders
 
-FILL-RENDERS
+Rendering worked in this environment: LeoCAD 21.06 (`apt install leocad`) under `xvfb-run`. This LeoCAD has no BOM switch, so `snap.py` calls only the image export with the toolkit's switches. All pictures are rebuilt by `render_roles.py` and `render_variants.py variants.spec.json`; `renders/variants/summary.json` lists for every picture its part count, validation errors, geometry errors and connected components (template variants have exactly the source's numbers).
+
+**Roles** (`renders/roles/`, classifier output on models it has never seen roles for; colours: red roof, tan wall, blue window, brown door, green base, yellow wheel, black tyre, dark grey chassis, orange body, turquoise glass, magenta engine, purple wing, white trim, pink detail, light grey structure):
+
+| House 4956 | Truck 4993 | Passenger car 10183 |
+|---|---|---|
+| ![](renders/roles/4956-1_House-with-Arch-home.png) | ![](renders/roles/4993-1_Truck-home.png) | ![](renders/roles/10183-1_Passenger-car-home.png) |
+| **Willowbank Cottage** | **Aircraft 31045** | **House with truck 4954 (a scene)** |
+| ![](renders/roles/willowbank-cottage-v1-home.png) | ![](renders/roles/31045-1_Aircraft-home.png) | ![](renders/roles/4954-1_House-with-Truck-home.png) |
+
+What they show: roofs, walls, windows, doors and bases come out right on houses (the gable triangles count as wall, so "make the roof blue" leaves them alone; the 4956 chimney counts as roof); wheels, tyres, glass and bogies come out right on vehicles; the truck's grille and bumper are "chassis" because they sit level with very large wheels; on the passenger car the window strip between the panes is body. The same pictures for three generator models (roles removed first) are `generator-*-home.png`.
+
+**Template variants** (`renders/variants/`, before and after):
+
+| Source | Variant | Variant |
+|---|---|---|
+| ![](renders/variants/flatbed-truck-source.png) flatbed truck | ![](renders/variants/flatbed-truck-z+6.png) `z_delta: 6` | ![](renders/variants/flatbed-truck-z+12-red.png) `z_delta: 12`, body, door, trim red |
+| ![](renders/variants/passenger-car-source.png) passenger car | ![](renders/variants/passenger-car-z+4.png) `z_delta: 4` (a stepped seam; the gaps are closed with filler bricks) | ![](renders/variants/passenger-car-z+4-blue.png) `z_delta: 4`, blue body, grille bricks |
+| ![](renders/variants/small-house-source.png) small house | SMALL-HOUSE-VARIANT-1 | SMALL-HOUSE-VARIANT-2 |
+| ![](renders/variants/willowbank-cottage-source.png) Willowbank Cottage | COTTAGE-VARIANT-1 | COTTAGE-VARIANT-2 |
+
+**Role edits on imported reference models** (no template, no generator: import, classify, `role_edits`, `editor.apply`):
+
+| Before | "make the roof blue" |
+|---|---|
+| ![](renders/variants/edit-4956-house-source.png) | ![](renders/variants/edit-4956-house-roof-blue.png) |
+| **Before** | **"make the body lime"** |
+| ![](renders/variants/edit-4993-truck-source.png) | ![](renders/variants/edit-4993-truck-body-lime.png) |
+| **Before** | **"make the wings red"** |
+| ![](renders/variants/edit-31045-aircraft-source.png) | ![](renders/variants/edit-31045-aircraft-wings-red.png) |
+
+Problems the renders caught that validation did not, all fixed in the derivation: holes where a stretch opened a gap nothing crossed (the railway car's far side and roof); an arch whose top moved with the house while its pillar stayed in the garden (now the parts a house carries move with it); a fence behind a house that the growing house ran into (the garden is now tried both moving with its side and staying, and verification picks).
 
 ## 6. Making a template from a build
 

@@ -1,8 +1,8 @@
 {
  "parts+geometry": {
-  "accuracy": 0.785,
+  "accuracy": 0.787,
   "placements": 995,
-  "physical_accuracy": 0.843,
+  "physical_accuracy": 0.845,
   "physical_placements": 917,
   "by_generator": {
    "arcade-bay": "0/11 = 0.00",
@@ -12,7 +12,7 @@
    "harbour-launch": "5/9 = 0.56",
    "house": "300/373 = 0.80",
    "pickup": "95/119 = 0.80",
-   "starfighter": "86/122 = 0.70",
+   "starfighter": "88/122 = 0.72",
    "street-lantern": "0/6 = 0.00",
    "tipper-truck": "91/101 = 0.90",
    "touring-motorcycle": "5/8 = 0.62"
@@ -24,7 +24,7 @@
    "detail": "24/33 = 0.73",
    "door": "6/6 = 1.00",
    "engine": "6/6 = 1.00",
-   "glass": "15/17 = 0.88",
+   "glass": "17/17 = 1.00",
    "roof": "117/174 = 0.67",
    "trim": "17/123 = 0.14",
    "tyre": "10/10 = 1.00",
@@ -86,14 +86,14 @@
   "calibration": {
    "0.2-0.4": "0/16 = 0.00",
    "0.4-0.6": "320/441 = 0.73",
-   "0.6-0.8": "311/388 = 0.80",
+   "0.6-0.8": "313/388 = 0.81",
    "0.8-1.0": "150/150 = 1.00"
   }
  },
  "+submodel names": {
-  "accuracy": 0.77,
+  "accuracy": 0.772,
   "placements": 995,
-  "physical_accuracy": 0.827,
+  "physical_accuracy": 0.829,
   "physical_placements": 917,
   "by_generator": {
    "arcade-bay": "0/11 = 0.00",
@@ -103,7 +103,7 @@
    "harbour-launch": "5/9 = 0.56",
    "house": "285/373 = 0.76",
    "pickup": "95/119 = 0.80",
-   "starfighter": "86/122 = 0.70",
+   "starfighter": "88/122 = 0.72",
    "street-lantern": "0/6 = 0.00",
    "tipper-truck": "91/101 = 0.90",
    "touring-motorcycle": "5/8 = 0.62"
@@ -115,7 +115,7 @@
    "detail": "24/33 = 0.73",
    "door": "6/6 = 1.00",
    "engine": "6/6 = 1.00",
-   "glass": "15/17 = 0.88",
+   "glass": "17/17 = 1.00",
    "roof": "127/174 = 0.73",
    "trim": "14/123 = 0.11",
    "tyre": "10/10 = 1.00",
@@ -177,14 +177,14 @@
   "calibration": {
    "0.2-0.4": "0/16 = 0.00",
    "0.4-0.6": "295/388 = 0.76",
-   "0.6-0.8": "294/362 = 0.81",
+   "0.6-0.8": "296/362 = 0.82",
    "0.8-1.0": "177/229 = 0.77"
   }
  },
  "+names+family hint": {
-  "accuracy": 0.774,
+  "accuracy": 0.776,
   "placements": 995,
-  "physical_accuracy": 0.827,
+  "physical_accuracy": 0.829,
   "physical_placements": 917,
   "by_generator": {
    "arcade-bay": "4/11 = 0.36",
@@ -194,7 +194,7 @@
    "harbour-launch": "5/9 = 0.56",
    "house": "285/373 = 0.76",
    "pickup": "95/119 = 0.80",
-   "starfighter": "86/122 = 0.70",
+   "starfighter": "88/122 = 0.72",
    "street-lantern": "0/6 = 0.00",
    "tipper-truck": "91/101 = 0.90",
    "touring-motorcycle": "5/8 = 0.62"
@@ -206,7 +206,7 @@
    "detail": "24/33 = 0.73",
    "door": "6/6 = 1.00",
    "engine": "6/6 = 1.00",
-   "glass": "15/17 = 0.88",
+   "glass": "17/17 = 1.00",
    "roof": "127/174 = 0.73",
    "trim": "18/123 = 0.15",
    "tyre": "10/10 = 1.00",
@@ -268,7 +268,7 @@
   "calibration": {
    "0.2-0.4": "0/5 = 0.00",
    "0.4-0.6": "299/392 = 0.76",
-   "0.6-0.8": "294/369 = 0.80",
+   "0.6-0.8": "296/369 = 0.80",
    "0.8-1.0": "177/229 = 0.77"
   }
  }
