@@ -159,13 +159,14 @@ export function useWorkspace(id: string) {
   const recolourSelection = (c: number) => { setColour(c); send({ cmd: "set-colour", colour: c }); };
   const addPart = (part: string, c: number) => { setColour(c); setToolState("add"); send({ cmd: "add-part", part, colour: c }); };
 
+  const clearSelection = () => { setSelection([]); if (tabRef.current === "piece") { tabRef.current = prevTab.current; setTabState(prevTab.current); } };
   const backToDraft = () => { setViewing(null); send({ cmd: "back-to-draft" }); };
   const viewVersion = (version: number) => {
     const row = versions.find((v) => v.version === version);
     if (version === baseVersion && changes === 0) return backToDraft();
     const url = row?.detail?.model_url;
     if (!url) return say(`v${version} has no model file to show.`, { error: true });
-    setViewing({ kind: "version", version });
+    setViewing({ kind: "version", version }); clearSelection();
     send({ cmd: "view-version", url });
   };
 
@@ -231,7 +232,7 @@ export function useWorkspace(id: string) {
     await reloadAll();
     say("Proposal discarded.");
   });
-  const previewProposal = (p: Proposal) => { setViewing({ kind: "proposal", id: p.id }); send({ cmd: "view-version", url: wsApi.proposalUrl(id, p.id) }); };
+  const previewProposal = (p: Proposal) => { setViewing({ kind: "proposal", id: p.id }); clearSelection(); send({ cmd: "view-version", url: wsApi.proposalUrl(id, p.id) }); };
 
   const askAi = (text: string) => { setAiSeed({ text, n: Date.now() }); setTab("ai"); };
 

@@ -84,7 +84,7 @@ export const stub = {
   async partsCheck(id: string): Promise<PartsCheckData> {
     const d = await buildsApi.get(id), s = stateOf(id);
     const base = d.versions.find((v) => v.version === s.base) ?? d.versions.at(-1);
-    const parts = (base?.parts ?? 0) + (s.rev - s.baseRev);
+    const parts = base?.parts ?? 0;
     const n = (checkOf(parts, s.base).missing as number) + (s.rev - s.baseRev > 2 ? 1 : 0);
     const lines: MissingLine[] = n ? [{ part: "3037", colour: "Blue", need: 20, have: 20 - Math.min(n, 2) }, ...(n > 2 ? [{ part: "3036", colour: "Blue", need: 2, have: 1 }] : [])] : [];
     return { owned: Math.max(parts - n, 0), needed: parts, missing: lines };

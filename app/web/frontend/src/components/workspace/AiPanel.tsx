@@ -54,7 +54,7 @@ export default function AiPanel({ ws }: { ws: Workspace }) {
     reload().then((d) => { if (d) { setLlmId(d.chat.llm_model_id); if (d.chat.running) subscribe(); else setRunning(false); } }).catch((e: Error) => setError(e.message));
   }, [chatId, reload, subscribe, reset, setRunning, setError]);
   useEffect(() => { if (llms.length && (!llmId || !llms.some((m) => m.id === llmId))) setLlmId(defaultLlmId ?? llms[0].id); }, [llms, llmId, defaultLlmId]);
-  useLayoutEffect(() => { if (stick.current) bottom.current?.scrollIntoView({ block: "end" }); }, [detail, draft, persisting, tools]);
+  useLayoutEffect(() => { if (stick.current && scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight; }, [detail, draft, persisting, tools]);
 
   async function send(text: string, options: TurnOptions, images: string[], documents: DocumentUpload[]) {
     setError(null); stick.current = true;

@@ -3,24 +3,25 @@ import { Link } from "react-router-dom";
 import { paletteApi, type PaletteItem } from "../../api";
 import { colourHex } from "../../ldrawColours";
 import { useColours } from "../../workspace/colours";
+import { useOwned } from "../../workspace/owned";
 import type { Workspace } from "../../workspace/useWorkspace";
 import ColourPicker from "./ColourPicker";
 
-type Row = { part: string; description: string; colour: number; colourName: string; owned: number; used: number };
 const LIMIT = 40;
+const SHOWN = 60;
 
-/** Debounced palette search against the build's editor session; refetches after canvas edits so counts stay live. */
-function usePalette(id: string, query: string, inventoryOnly: boolean, tick: number) {
+/** Debounced library search through the existing palette endpoint; refetches nothing on edits (no live numbers there). */
+function useLibrary(id: string, query: string) {
   const [state, setState] = useState<{ items: PaletteItem[]; more: boolean; error: string | null; done: boolean }>({ items: [], more: false, error: null, done: false });
   useEffect(() => {
     let stale = false;
     const t = setTimeout(() => {
-      paletteApi.search(`b-${id}`, { query: query.trim(), inventoryOnly, limit: LIMIT })
+      paletteApi.search(`b-${id}`, { query: query.trim(), limit: LIMIT })
         .then((r) => { if (!stale) setState({ items: r.items, more: r.more, error: null, done: true }); })
         .catch((e: Error) => { if (!stale) setState({ items: [], more: false, error: e.message, done: true }); });
-    }, query ? 250 : tick ? 500 : 0);
+    }, query ? 250 : 0);
     return () => { stale = true; clearTimeout(t); };
-  }, [id, query, inventoryOnly, tick]);
+  }, [id, query]);
   return state;
 }
 
@@ -30,14 +31,18 @@ const remainingBar = (left: number, owned: number) => `${owned > 0 ? Math.max(0,
 export default function PartsPanel({ ws }: { ws: Workspace }) {
   const [query, setQuery] = useState("");
   const colours = useColours();
-  const mine = usePalette(ws.id, query, true, ws.editTick);
-  const library = usePalette(ws.id, query, false, ws.editTick);
+  const owned = useOwned(ws.id, ws.editTick);
+  const library = useLibrary(ws.id, query);
   const disabled = ws.mode !== "edit" || !!ws.viewing;
   const colourName = colours.find((c) => c.code === ws.colour)?.name ?? `Colour ${ws.colour}`;
 
-  const rows = useMemo<Row[]>(() => mine.items.flatMap((it) =>
-    it.colours.filter((c) => c.owned > 0).map((c) => ({ part: it.part, description: it.description, colour: c.colour, colourName: c.name, owned: c.owned, used: c.used }))), [mine.items]);
-  const ownedParts = new Set(mine.items.map((i) => i.part));
+  const q = query.trim().toLowerCase();
+  const rows = useMemo(() => {
+    const all = (owned.lines ?? []).filter((l) => !q || l.part.includes(q) || l.description.toLowerCase().includes(q) || l.colourName.toLowerCase().includes(q))
+      .map((l) => ({ ...l, used: owned.used.get(`${l.part}|${l.colour}`) ?? 0 }));
+    return all.sort((a, b) => Number(b.used > 0) - Number(a.used > 0));
+  }, [owned.lines, owned.used, q]);
+  const ownedParts = useMemo(() => new Set((owned.lines ?? []).map((l) => l.part)), [owned.lines]);
 
   return (
     <section className="ws-panel" role="tabpanel" aria-label="Parts">
@@ -46,9 +51,8 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
       <ColourPicker value={ws.colour} onPick={ws.setColour} label="Colour for new bricks" />
 
       <div className="ws-row-label"><span className="label">Your parts</span><span className="muted small">left after this draft, live</span></div>
-      {mine.error && <p className="ws-warn small">{mine.error}</p>}
-      <ul className="ws-parts">
-        {rows.map((r) => {
+            <ul className="ws-parts">
+        {rows.slice(0, SHOWN).map((r) => {
           const left = r.owned - r.used;
           return (
             <li key={`${r.part}-${r.colour}`}>
@@ -62,7 +66,8 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
             </li>
           );
         })}
-        {mine.done && rows.length === 0 && !mine.error && (
+        {rows.length > SHOWN && <li className="ws-none muted small">{rows.length - SHOWN} more: refine the search.</li>}
+        {owned.lines && rows.length === 0 && (
           <li className="ws-none muted small">{query ? "None of your parts match." : <>No parts list yet. <Link to="/parts">Add one in My Parts</Link> and its parts show up here.</>}</li>
         )}
       </ul>
@@ -75,7 +80,7 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
             <button className="ws-part" disabled={disabled} onClick={() => ws.addPart(it.part, ws.colour)} title={disabled ? "Switch to Edit mode to add parts" : `Add ${it.description} in ${colourName}`}>
               <span className="ws-pic" style={{ background: colourHex(ws.colour) }} />
               <span className="ws-nm">{it.description || it.part}<small>{it.part}</small></span>
-              {!ownedParts.has(it.part) && !it.in_inventory && <span className="ws-tag">not owned</span>}
+              {!ownedParts.has(it.part.toLowerCase().replace(/\.dat$/, "")) && <span className="ws-tag">not owned</span>}
             </button>
           </li>
         ))}

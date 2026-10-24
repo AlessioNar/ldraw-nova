@@ -26,7 +26,8 @@ export default function TopBar({ ws }: { ws: Workspace }) {
   let status: { cls: string; text: React.ReactNode };
   if (viewing?.kind === "version") status = { cls: "ro", text: <>Viewing v{viewing.version}<span className="ws-w muted"> · read-only</span></> };
   else if (viewing) status = { cls: "ro", text: <>Previewing an AI proposal<span className="ws-w muted"> · read-only</span></> };
-  else if (changes > 0 || (empty && draft)) {
+  else if (empty) status = { cls: "draft", text: <>New build<span className="ws-w"> · empty draft</span></> };
+  else if (changes > 0) {
     status = { cls: "draft", text: <>v{baseVersion} · draft, {changes}<span className="ws-w"> {changes === 1 ? "change" : "changes"}</span><span className="ws-auto"> · autosaved</span></> };
   } else status = { cls: "", text: <>{latest ? `v${baseVersion} · saved` : "Empty build"}</> };
 

@@ -40,7 +40,7 @@ function DescribeBar({ ws }: { ws: Workspace }) {
   let line: React.ReactNode = null;
   if (error) line = <span className="ws-warn">{error}</span>;
   else if (ask && "question" in ask) line = <b className="cost">{ask.question}</b>;
-  else if (ask) line = <><b className="cost">{ask.note}</b> The AI can try{ask.estimate ? `: ${ask.estimate}` : ""}. Nothing is spent until you send it there.</>;
+  else if (ask) line = <><b className="cost">{ask.note.replace(/[.\s]+$/, "")}.</b> The AI can try{ask.estimate ? `: ${ask.estimate}` : ""}. Nothing is spent until you send it there.</>;
   else if (hint?.route === "needs_ai") line = <>No rule fits this. The AI can try{estimateLabel(hint.estimate) ? `: ${estimateLabel(hint.estimate)}` : ""}. It asks before it spends.</>;
   else if (hint?.hint) line = <><b>{hint.confidence >= 0.7 ? "Fast path" : "Probably"}:</b> {hint.hint}. Free, about 1 s.</>;
 

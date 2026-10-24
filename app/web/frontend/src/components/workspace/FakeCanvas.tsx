@@ -18,9 +18,9 @@ const SAMPLE: CanvasPiece[] = [
 ];
 const WIDTH: Record<string, number> = { "3009": 6, "3008": 8, "60592": 2, "3037": 4, "3003": 2, "3036": 6 };
 
-const FakeCanvas = forwardRef<FakeHandle, { id: string; imageUrl?: string | null; viewing: boolean; onEvent: (e: CanvasEvent) => void }>(
-  function FakeCanvas({ id, imageUrl, viewing, onEvent }, ref) {
-    const [pieces, setPieces] = useState<CanvasPiece[]>(SAMPLE);
+const FakeCanvas = forwardRef<FakeHandle, { id: string; empty?: boolean; imageUrl?: string | null; viewing: boolean; onEvent: (e: CanvasEvent) => void }>(
+  function FakeCanvas({ id, empty, imageUrl, viewing, onEvent }, ref) {
+    const [pieces, setPieces] = useState<CanvasPiece[]>(empty ? [] : SAMPLE);
     const [selected, setSelected] = useState<string[]>([]);
     const tool = useRef<Tool>("select");
     const armed = useRef<{ part: string; colour: number } | null>(null);

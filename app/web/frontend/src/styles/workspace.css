@@ -127,7 +127,7 @@
 .ws-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* AI tab: proposals, the attached chat, its composer */
-.ws-ai { overflow: hidden; gap: 8px; }
+.ws-ai { overflow: clip; gap: 8px; }
 .ws-chat-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .ws-chat { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .ws-chat .messages { padding: 4px 2px 8px; gap: 10px; font-size: var(--fs-sm); }
@@ -152,7 +152,7 @@
 .ws-warnbox { margin: 0; font-size: var(--fs-xs); background: var(--warn-soft); border-color: var(--warn); color: var(--fg); }
 .ws-panel .gen-form { grid-template-columns: 1fr; }
 .ws-panel .gen-fields { grid-template-columns: 1fr 1fr; }
-.ws-panel .gen-actions { margin-top: 12px; }
+.ws-panel .gen-actions { margin-top: 12px; position: sticky; bottom: -14px; background: var(--surface); padding: 10px 0 14px; border-top: 1px solid var(--border); }
 
 /* ---------- bottom: describe + versions ---------- */
 .ws-bottom { grid-area: bottom; background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
@@ -221,7 +221,7 @@
   .ws-pc-txt { display: none; }
   .ws-pcheck .mono { display: none; }
   .ws-pcheck::after { content: "Parts"; }
-  .ws-panels { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; border-left: 0; border-top: 1px solid var(--border-strong); border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: 0 -8px 28px rgb(0 0 0 / .35); height: 46px; transition: height .22s var(--ease); overflow: hidden; }
+  .ws-panels { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; border-left: 0; border-top: 1px solid var(--border-strong); border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: 0 -8px 28px rgb(0 0 0 / .35); height: 46px; transition: height .22s var(--ease); overflow: clip; }
   .ws.sheet-open .ws-panels { height: min(58dvh, 520px); }
   .ws-handle { display: flex; position: absolute; left: 0; right: 0; top: 0; height: 12px; border: 0; background: none; padding: 0; justify-content: center; align-items: center; z-index: 2; }
   .ws-handle span { width: 36px; height: 4px; border-radius: 3px; background: var(--border-strong); }

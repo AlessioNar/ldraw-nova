@@ -74,7 +74,7 @@ export default function CanvasPane({ ws }: { ws: Workspace }) {
   return (
     <main className="ws-stage">
       {loaded && <iframe key={src} ref={frame} className="ws-frame" src={src} title="3D canvas" allow="fullscreen" />}
-      {fake && <FakeCanvas ref={fakeRef} id={id} viewing={!!viewing} imageUrl={viewedRow?.detail?.image_url ?? ws.versions.at(-1)?.detail?.image_url} onEvent={onCanvasEvent} />}
+      {fake && <FakeCanvas ref={fakeRef} id={id} empty={ws.empty} viewing={!!viewing} imageUrl={viewedRow?.detail?.image_url ?? ws.versions.at(-1)?.detail?.image_url} onEvent={onCanvasEvent} />}
       {!loaded && <div className="ws-loading muted"><span className="spinner" aria-hidden /> Opening the build…</div>}
 
       {viewing && (
