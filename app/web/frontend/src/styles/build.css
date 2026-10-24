@@ -133,3 +133,8 @@ a.wb-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 @media (max-width: 560px) { .wb-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .wb-hero h1 { font-size: var(--fs-xl); } }
 .wb-model { display: inline-flex; align-items: baseline; gap: 4px; max-width: 100%; min-width: 0; }
 .wb-model a { max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-card-wrap { position: relative; display: flex; }
+.wb-card-wrap > .wb-card { flex: 1; min-width: 0; }
+.wb-delete { position: absolute; top: 6px; right: 6px; opacity: 0; background: var(--surface); }
+.wb-card-wrap:hover .wb-delete, .wb-delete:focus-visible { opacity: 1; }
+@media (hover: none) { .wb-delete { opacity: 1; } }

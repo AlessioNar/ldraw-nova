@@ -400,6 +400,7 @@ export const buildsApi = {
   importFile: (id: string, filename: string, content: string) =>
     request<{ version: number; file: string }>(`${buildBase(id)}/import`, { method: "POST", body: json({ filename, content }) }),
   edit: (id: string) => request<{ editor_url: string }>(`${buildBase(id)}/edit`, { method: "POST" }),
+  remove: (id: string) => request<{ deleted: string[]; chats_kept: string[] }>(buildBase(id), { method: "DELETE" }),
   chat: (id: string, llm_model_id?: string | null, isNew = false) =>
     request<Chat>(`${buildBase(id)}/chat`, { method: "POST", body: json({ llm_model_id, new: isNew }) }),
   describe: (text: string, build_id?: string, current?: { generator: string; params: Record<string, unknown> }) =>
