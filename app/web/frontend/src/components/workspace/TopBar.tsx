@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { buildsApi, downloadGlb, downloadUrl, type GeneratorEntry } from "../../api";
 import { useApp } from "../../context";
 import { confirmDeleteBuild } from "../../buildActions";
@@ -8,7 +8,7 @@ import Icon from "./Icon";
 
 const KIND_TAG: Record<string, string> = { ai: "AI build", import: "Imported" };
 
-/** "← Builds", the build name (click to rename), generator tag, draft status, undo/redo, discard and save. */
+/** The build's own bar under the app bar: the build name (click to rename), generator tag, draft status, undo/redo, discard and save. */
 export default function TopBar({ ws }: { ws: Workspace }) {
   const { detail, draft, changes, viewing, nextVersion, baseVersion, latest, empty } = ws;
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -40,10 +40,6 @@ export default function TopBar({ ws }: { ws: Workspace }) {
 
   return (
     <header className="ws-top">
-      <Link className="ws-back" to="/builds" title="Back to My Builds">← Builds</Link>
-      <span className="ws-sep" />
-      <Link className="ws-logo" to="/" title="Open Brick Designer: home" aria-label="Open Brick Designer, home"><Icon name="logo" size={20} /><span className="ws-brand">Open Brick Designer</span></Link>
-      <span className="ws-sep" />
       {renaming == null
         ? <h1 className="ws-name ellipsis" title="Click to rename" tabIndex={0} onClick={() => setRenaming(build.title)}
             onKeyDown={(e) => { if (e.key === "Enter") setRenaming(build.title); }}>{build.title}</h1>

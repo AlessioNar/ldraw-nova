@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useMatch } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { api, buildsApi, type BuildSummary, type Chat, type LlmEntry, type OlderChat } from "./api";
 import { AppContext, type ViewerTarget } from "./context";
 import KeyBanner from "./components/KeyBanner";
@@ -81,13 +81,12 @@ export default function App() {
     [chats, chatsLoaded, refreshChats, builds, olderChats, buildsLoaded, refreshBuilds, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer],
   );
 
-  const workspace = !!useMatch("/build/:id");   // the build workspace has its own top bar
 
   return (
     <AppContext.Provider value={state}>
       <div className="app">
         <main className="main">
-          {!workspace && <AppBar />}
+          <AppBar />
           <KeyBanner />
           <div className="content">
           <Routes>
