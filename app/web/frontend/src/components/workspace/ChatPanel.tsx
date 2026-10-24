@@ -184,14 +184,14 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   const toAi = mode === "ai" ? !flip : flip;
   const toggle = <button type="button" className="ws-mode-toggle" onClick={() => setFlip((f) => !f)} aria-pressed={flip}>{toAi ? "Quick change instead" : "Ask the AI instead"}</button>;
   let line: ReactNode = "Simple changes are free and instant. Bigger ones show their cost first.";
-  if (toAi) line = <><b className="cost" data-mode="ai">Talking to the AI · costs apply</b> {toggle}</>;
-  else if (mode === "ai" || (ws.ws?.agent_chat && !typed)) line = <><b data-mode="quick">Quick changes · free</b> {toggle}</>;
+  if (toAi) line = <><b className="cost" data-mode="ai">Talking to the AI Â· costs apply</b> {toggle}</>;
+  else if (mode === "ai" || (ws.ws?.agent_chat && !typed)) line = <><b data-mode="quick">Quick changes Â· free</b> {toggle}</>;
   else if (typed && hint) {
     if (hint.route === "needs_ai") line = <><b className="cost">AI{estimateLabel(hint.estimate) ? `, ${estimateLabel(hint.estimate)}` : ""}</b>. It asks before it spends.</>;
     else if (hint.route === "clarify") line = "Free. I may ask one question first.";
     else line = <b>Free, about 1 s</b>;
     if (!toAi) line = <><span data-mode="quick">{line}</span> {toggle}</>;
-  } else if (!toAi) line = <><b data-mode="quick">Quick changes · free</b> {toggle}</>;
+  } else if (!toAi) line = <><b data-mode="quick">Quick changes Â· free</b> {toggle}</>;
   return (
     <section className="ws-panel ws-ai" role="tabpanel" aria-label="Chat">
       {ws.proposals.map((p) => <ProposalCard key={p.id} p={p} ws={ws} />)}
