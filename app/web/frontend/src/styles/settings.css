@@ -1,5 +1,6 @@
 /* --- settings --- */
-.settings { max-width: 900px; }
+/* .settings is the scroller (.page): keep it full width so the scrollbar sits at the window edge, and centre a 900px column */
+.settings { padding-inline: max(32px, calc((100% - 900px) / 2)); }
 .settings-models-head { align-items: center; }
 .settings-models-head p { margin-top: 5px; }
 .advanced-model-settings summary { cursor: pointer; color: var(--muted); font-size: 13px; }
