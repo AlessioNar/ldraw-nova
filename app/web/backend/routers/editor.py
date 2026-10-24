@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import shutil
 import time
 import uuid
@@ -29,6 +30,7 @@ from pydantic import BaseModel, Field
 
 import parts_steering
 import sandbox
+import settings
 import toolkit
 import tools
 from paths import safe_join
@@ -70,7 +72,23 @@ def _session(store, chat_id: str):
         return None
 
 
+def _key(space: str, chat_id: str) -> str:
+    """The workspace key for a route: a chat's id, or a build's b-<slug> (the same editor serves both)."""
+    if space == "chats":
+        if get_store().is_build(chat_id):
+            not_found("no such chat")
+        return chat_id
+    if space == "builds":
+        return get_store().build_key(chat_id)
+    not_found("no such workspace")
+
+
 def _chat(store, chat_id: str) -> dict:
+    """The workspace's record: the chat, or for a build a stand-in with no options (no inventory steering)."""
+    if store.is_build(chat_id):
+        if not store.valid_id(chat_id) or not store.chat_dir(chat_id).is_dir():
+            not_found("no such build")
+        return {"id": chat_id, "options": {}}
     return store.get_chat(chat_id) or not_found("no such chat")
 
 
@@ -108,6 +126,7 @@ def _view(store, chat_id: str) -> dict:
             "undo_depth": len(state.get("undo") or []),
             "redo_depth": len(state.get("redo") or []),
             "name": state.get("name"),
+            "warnings": state.get("warnings") or [],
             "mpd": preview,
             "parts": _parts_table(state.get("used"), _chat(store, chat_id).get("options") or {})}
 
@@ -171,25 +190,28 @@ def _arguments(store, chat_id: str, action: str, base_revision: Optional[int] = 
     return arguments
 
 
-@router.get("/api/chats/{chat_id}/editor/plans")
-def editor_plans(chat_id: str):
+@router.get("/api/{space}/{chat_id}/editor/plans")
+def editor_plans(space: str, chat_id: str):
     """The plan files the chat's work folder holds, for the "which model do you want to edit" choice."""
     store = get_store()
+    chat_id = _key(space, chat_id)
     _chat(store, chat_id)
     return {"plans": plan_files(store, chat_id)}
 
 
-@router.get("/api/chats/{chat_id}/editor")
-def editor_get(chat_id: str):
+@router.get("/api/{space}/{chat_id}/editor")
+def editor_get(space: str, chat_id: str):
     store = get_store()
+    chat_id = _key(space, chat_id)
     _chat(store, chat_id)
     return _view(store, chat_id)
 
 
-@router.post("/api/chats/{chat_id}/editor")
-async def editor_open(chat_id: str, body: EditorOpen):
+@router.post("/api/{space}/{chat_id}/editor")
+async def editor_open(space: str, chat_id: str, body: EditorOpen):
     """Start the chat's editor session: from a plan file in its work folder, or a one-brick skeleton."""
     store = get_store()
+    chat_id = _key(space, chat_id)
     return await open_session(store, chat_id, body.source, body.name, body.replace)
 
 
@@ -256,7 +278,7 @@ def plan_files(store, chat_id: str) -> list[dict]:
 
 
 async def open_session(store, chat_id: str, source: Optional[str] = None, name: Optional[str] = None,
-                       replace: bool = False) -> dict:
+                       replace: bool = False, mpd: Optional[Path] = None) -> dict:
     """Start the chat's editor session (shared by the route and the agent's editor_open tool)."""
     _chat(store, chat_id)
     _, plan_path, state_path, _ = _paths(store, chat_id)
@@ -271,6 +293,8 @@ async def open_session(store, chat_id: str, source: Optional[str] = None, name: 
         if found is None or not found.is_file() or found.suffix.lower() != ".json":
             not_found("source plan not found in the chat's work folder")
         arguments += ["--from", str(found)]
+    if mpd is not None:      # a model file (inside the work folder) imported as the plan
+        arguments += ["--from-mpd", str(mpd)]
     if name is not None:
         arguments += ["--name", name.strip()[:MAX_NAME]]
     async with _lock(chat_id):
@@ -279,17 +303,19 @@ async def open_session(store, chat_id: str, source: Optional[str] = None, name: 
     return _view(store, chat_id)
 
 
-@router.post("/api/chats/{chat_id}/editor/edits")
-async def editor_edits(chat_id: str, body: EditorEdits):
+@router.post("/api/{space}/{chat_id}/editor/edits")
+async def editor_edits(space: str, chat_id: str, body: EditorEdits):
     """Apply a batch of edit operations; the whole batch is rejected together."""
     store = get_store()
+    chat_id = _key(space, chat_id)
     _chat(store, chat_id)
     return await apply_edits(store, chat_id, body.edits, body.base_revision)
 
 
-@router.post("/api/chats/{chat_id}/editor/undo")
-async def editor_undo(chat_id: str, body: EditorRevision):
+@router.post("/api/{space}/{chat_id}/editor/undo")
+async def editor_undo(space: str, chat_id: str, body: EditorRevision):
     store = get_store()
+    chat_id = _key(space, chat_id)
     _chat(store, chat_id)
     if _session(store, chat_id) is None:
         not_found("no editor plan for this chat")
@@ -299,9 +325,10 @@ async def editor_undo(chat_id: str, body: EditorRevision):
         return _view(store, chat_id)
 
 
-@router.post("/api/chats/{chat_id}/editor/redo")
-async def editor_redo(chat_id: str, body: EditorRevision):
+@router.post("/api/{space}/{chat_id}/editor/redo")
+async def editor_redo(space: str, chat_id: str, body: EditorRevision):
     store = get_store()
+    chat_id = _key(space, chat_id)
     _chat(store, chat_id)
     if _session(store, chat_id) is None:
         not_found("no editor plan for this chat")
@@ -311,16 +338,19 @@ async def editor_redo(chat_id: str, body: EditorRevision):
         return _view(store, chat_id)
 
 
-@router.post("/api/chats/{chat_id}/editor/publish")
-async def editor_publish(chat_id: str, body: EditorPublish):
+@router.post("/api/{space}/{chat_id}/editor/publish")
+async def editor_publish(space: str, chat_id: str, body: EditorPublish):
     """Publish the current preview through the same path publish_model uses."""
     store = get_store()
+    chat_id = _key(space, chat_id)
     chat = _chat(store, chat_id)
     session = _session(store, chat_id)
     if session is None:
         not_found("no editor plan for this chat")
     _, state, preview = session
-    name = (body.name or state.get("name") or "manual model").strip()[:MAX_NAME] or "manual model"
+    build = store.is_build(chat_id)
+    # A build always saves under its own name: the next version of the same build, whatever the body says.
+    name = ((state.get("name") if build else body.name or state.get("name")) or "manual model").strip()[:MAX_NAME] or "manual model"
     target = store.work_dir(chat_id) / f"{tools._slug(name)}.mpd"
     async with _lock(chat_id):
         # Snapshot the committed revision; an edit that lands mid-publication publishes neither more nor less.
@@ -338,6 +368,14 @@ async def editor_publish(chat_id: str, body: EditorPublish):
     version = ref.get("version")
     pieces = sum(row[2] for row in state.get("used") or [])
     check = result.parts_check
+    if build:
+        saved = store.resolve(chat_id, ref["model"])
+        meta = _build_meta(store, chat_id)
+        _write_build_meta(store, chat_id, saved)      # the session now continues from the saved version
+        return {"ok": True, "publish": publish, "parts_check": None, "models": [ref["id"]], "model_id": ref["id"],
+                "version": version, "name": name, "pieces": pieces, "file": saved.name,
+                "previous": meta.get("file"), "builds_url": "/models",
+                "message": f"Saved as v{version} in My Builds"}
     note = f" Parts check: {check['summary']}" if check else ""
     # Record the person's publish in the chat: it is also what the agent reads on its next turn.
     store.add_message(chat_id, {
@@ -349,3 +387,53 @@ async def editor_publish(chat_id: str, body: EditorPublish):
         **({"_parts_check": check} if check else {})})
     return {"ok": True, "publish": publish, "parts_check": check, "models": [ref["id"]], "model_id": ref["id"],
             "version": version, "name": name, "pieces": pieces, "chat_url": f"/chat/{chat_id}#model-{ref['id']}"}
+
+
+# --- builds: the editor on a model in My Builds, with no chat -----------------------------------------------
+
+def build_id_of(filename: str) -> str:
+    """The build a model file belongs to: its name without extension and `-vN` version, as the publish slug."""
+    return tools._slug(re.sub(r"-v\d+$", "", Path(filename).stem, flags=re.IGNORECASE))
+
+
+def _build_meta(store, key: str) -> dict:
+    try:
+        return json.loads((store.chat_dir(key) / "edit.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _write_build_meta(store, key: str, model: Path) -> None:
+    """Remember which model file the session continues from (and its mtime, to notice a changed file)."""
+    (store.chat_dir(key) / "edit.json").write_text(
+        json.dumps({"file": model.name, "mtime_ns": model.stat().st_mtime_ns}), encoding="utf-8")
+
+
+@router.post("/api/models/{filename}/edit")
+async def models_edit(filename: str):
+    """Open a My Builds model in the 3D editor: resume this build's session when it continues from this exact
+    file, else import the file as a fresh plan (the old session is archived). No chat is created."""
+    store = get_store()
+    root = settings.GENERATED_DIR.resolve()
+    model = root / filename
+    if (Path(filename).name != filename or filename.startswith(".") or model.suffix.lower() not in (".mpd", ".ldr")
+            or model.is_symlink() or not model.is_file()):
+        not_found("Model not found")
+    if model.stat().st_size > MAX_PLAN_BYTES:
+        raise HTTPException(400, "This model is too large to edit")
+    build = build_id_of(filename)
+    key = store.build_key(build)
+    work = store.work_dir(key)
+    work.mkdir(parents=True, exist_ok=True)
+    sandbox.give_to_agent(work)
+    meta = _build_meta(store, key)
+    view = None
+    if _session(store, key) is not None and meta.get("file") == filename and meta.get("mtime_ns") == model.stat().st_mtime_ns:
+        view = _view(store, key)
+    if view is None:
+        copy = work / "source.mpd"
+        shutil.copyfile(model, copy)
+        sandbox.give_to_agent(copy)
+        view = await open_session(store, key, name=build, replace=True, mpd=copy)
+        _write_build_meta(store, key, model)
+    return {**view, "build": build, "file": filename, "editor_url": f"/build/{build}/edit"}

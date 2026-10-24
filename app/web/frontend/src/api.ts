@@ -20,6 +20,7 @@ export type ModelFile = {
   bom_status: SnapshotStatus;
   bom_error: string | null;
   chats?: { id: string; title: string }[]; // chats that produced it (My Builds page)
+  origin?: string | null; // "editor": saved from the 3D editor
 };
 
 /** A model a chat produced: a reference into data/generated. */
@@ -154,6 +155,7 @@ export const api = {
   worker: (id: string, worker: string) => request<WorkerTranscript>(`/api/chats/${id}/workers/${worker}`),
   cancel: (id: string) => request(`/api/chats/${id}/cancel`, { method: "POST" }),
   models: () => request<{ models: ModelFile[]; pending: number }>("/api/models"),
+  editModel: (filename: string) => request<{ build: string; file: string; editor_url: string; warnings: string[] }>(`/api/models/${encodeURIComponent(filename)}/edit`, { method: "POST" }),
   deleteModel: (filename: string) => request<{ deleted: string[] }>(`/api/models/${encodeURIComponent(filename)}`, { method: "DELETE" }),
 
   llmModels: () => request<{ models: LlmEntry[]; default_id: string | null; worker_id?: string | null }>("/api/llm-models"),
@@ -202,6 +204,11 @@ export const viewerUrl = (modelUrl: string, parts?: number | null, mode: ViewerM
   `/viewer/${mode}.html?model=${encodeURIComponent(modelUrl)}` + (parts != null ? `&parts=${parts}` : "");
 
 export const editorUrl = (chatId: string) => `/viewer/editor.html?chat=${encodeURIComponent(chatId)}`;
+export const buildEditorUrl = (build: string) => `/viewer/editor.html?build=${encodeURIComponent(build)}`;
+
+/** The editor's API base for a workspace: a chat id, or "b-<build>" for a build in My Builds. */
+export const workspaceBase = (id: string) =>
+  id.startsWith("b-") ? `/api/builds/${encodeURIComponent(id.slice(2))}` : `/api/chats/${encodeURIComponent(id)}`;
 
 export const partsLabel = (parts: number) => `${parts.toLocaleString()} part${parts === 1 ? "" : "s"}`;
 
@@ -303,7 +310,7 @@ export type PaletteCheck = {
 
 export const editorApi = {
   edits: (chatId: string, edits: Record<string, unknown>[], baseRevision: number) =>
-    request<{ revision: number }>(`/api/chats/${encodeURIComponent(chatId)}/editor/edits`,
+    request<{ revision: number }>(`${workspaceBase(chatId)}/editor/edits`,
       { method: "POST", body: json({ edits, base_revision: baseRevision }) }),
 };
 
@@ -315,8 +322,8 @@ export const paletteApi = {
     if (q.colour != null) params.set("colour", String(q.colour));
     if (q.inventoryOnly) params.set("inventory_only", "true");
     if (q.limit != null) params.set("limit", String(q.limit));
-    return request<PaletteResult>(`/api/chats/${encodeURIComponent(chatId)}/editor/palette?${params}`);
+    return request<PaletteResult>(`${workspaceBase(chatId)}/editor/palette?${params}`);
   },
   check: (chatId: string, part: string, colour: number, quantity = 1) =>
-    request<PaletteCheck>(`/api/chats/${encodeURIComponent(chatId)}/editor/palette/check`, { method: "POST", body: json({ part, colour, quantity }) }),
+    request<PaletteCheck>(`${workspaceBase(chatId)}/editor/palette/check`, { method: "POST", body: json({ part, colour, quantity }) }),
 };

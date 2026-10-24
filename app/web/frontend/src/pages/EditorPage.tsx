@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { editorApi, editorUrl } from "../api";
+import { buildEditorUrl, editorApi, editorUrl } from "../api";
 import type { PartsMode } from "../api";
 import Palette from "../components/editor/Palette";
 import type { PlanLike, SelectionPoint, UsedRow } from "../components/editor/paletteLogic";
@@ -16,7 +16,8 @@ type Bridge = {
 // reason the viewer is: its three.js/ldbi scripts are classic globals. It reports its
 // plan, used rows and selection by postMessage; the palette beside it adds parts.
 export default function EditorPage() {
-  const { id = "" } = useParams();
+  const { id: chatId = "", build } = useParams();
+  const id = build ? `b-${build}` : chatId;       // the workspace: a chat, or a build in My Builds (no chat)
   const frame = useRef<HTMLIFrameElement>(null);
   const [bridge, setBridge] = useState<Bridge | null>(null);
   const revision = useRef(0);
@@ -59,10 +60,10 @@ export default function EditorPage() {
   return (
     <div className="editor-page">
       <header className="chat-head">
-        <Link to={`/chat/${id}`}>← Back to the chat</Link>
+        {build ? <Link to="/models">← Back to My Builds</Link> : <Link to={`/chat/${id}`}>← Back to the chat</Link>}
       </header>
       <div className="editor-body">
-        <iframe ref={frame} className="editor-frame" src={editorUrl(id)} title="3D model editor"
+        <iframe ref={frame} className="editor-frame" src={build ? buildEditorUrl(build) : editorUrl(id)} title="3D model editor"
           onLoad={() => frame.current?.contentWindow?.postMessage({ type: "ping" }, location.origin)} />
         {bridge && (
           <div className="editor-side">

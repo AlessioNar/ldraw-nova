@@ -18,7 +18,7 @@ import settings
 from leocad_render import MODEL_SUFFIXES
 from paths import safe_join
 from store import get_store
-from .common import is_pending, model_chat_index, model_info, not_found
+from .common import is_pending, model_chat_index, model_info, model_origins, not_found
 
 router = APIRouter()
 
@@ -30,8 +30,8 @@ async def models_list():
     `pending` is 0."""
     models = gallery.collection(settings.GENERATED_DIR)
     gallery.ensure_artifacts(models)
-    index = model_chat_index(get_store())
-    items = [{**model_info(path), "chats": index.get(path, [])} for path in models]
+    index, origins = model_chat_index(get_store()), model_origins(get_store())
+    items = [{**model_info(path), "chats": index.get(path, []), "origin": origins.get(path)} for path in models]
     return {"models": items, "pending": sum(1 for i in items if is_pending(i))}
 
 

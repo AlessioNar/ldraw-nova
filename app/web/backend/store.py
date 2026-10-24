@@ -28,6 +28,7 @@ from typing import Any, Optional
 import settings
 
 CHAT_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+BUILD_PREFIX = "b-"      # a build's workspace key; chat ids start with a date, so they never collide
 
 
 class ChatStore:
@@ -43,15 +44,33 @@ class ChatStore:
     def valid_id(chat_id: str) -> bool:
         return bool(CHAT_ID_RE.match(chat_id or ""))
 
+    @staticmethod
+    def is_build(key: str) -> bool:
+        return key.startswith(BUILD_PREFIX)
+
+    @staticmethod
+    def build_key(build_id: str) -> str:
+        return BUILD_PREFIX + build_id
+
+    @property
+    def builds_dir(self) -> Path:
+        return self.output_dir.parent / "builds"
+
     def chat_dir(self, chat_id: str) -> Path:
+        """A chat's folder, or for a build's workspace key (b-<slug>) data/builds/<slug>/: the same
+        layout (workspace/, models.jsonl) without a chat.json, so a build is never listed as a chat."""
         if not self.valid_id(chat_id):
             raise ValueError(f"invalid chat id {chat_id!r}")
+        if self.is_build(chat_id):
+            return self.builds_dir / chat_id[len(BUILD_PREFIX):]
         return self.chats_dir / chat_id
 
     def work_dir(self, chat_id: str) -> Path:
-        """The chat's agent work folder: data/output/<chat-id>/."""
+        """The chat's agent work folder: data/output/<chat-id>/ (a build's: data/builds/<slug>/output/)."""
         if not self.valid_id(chat_id):
             raise ValueError(f"invalid chat id {chat_id!r}")
+        if self.is_build(chat_id):
+            return self.chat_dir(chat_id) / "output"
         return self.output_dir / chat_id
 
     def resolve(self, chat_id: str, ref: str) -> Path:
@@ -135,8 +154,12 @@ class ChatStore:
         agent picked; `source` is the work-folder file it was published from; `origin` "editor" marks the
         person's own publish."""
         with self._lock:
+            version = len(self.models(chat_id)) + 1
+            if self.is_build(chat_id):          # a build's version is the number in its file name (<slug>-vN.mpd)
+                match = re.search(r"-v(\d+)$", model_path.stem)
+                version = int(match.group(1)) if match else version
             record = {"id": secrets.token_hex(6), "name": name, "model": self.ref(chat_id, model_path),
-                      "warnings": warnings, "created_at": time.time(), "version": len(self.models(chat_id)) + 1,
+                      "warnings": warnings, "created_at": time.time(), "version": version,
                       **({"source": source} if source else {}), **({"origin": origin} if origin else {})}
             self._append(chat_id, "models.jsonl", record)
         return record

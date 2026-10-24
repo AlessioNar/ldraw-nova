@@ -18,7 +18,7 @@ from pathlib import Path
 
 from ..builder import check_schema
 from ..common import atomic_write, dumps
-from ..editor import apply, inverse, rebuild, usage
+from ..editor import apply, import_mpd, inverse, rebuild, usage
 from .base import Command
 
 MAX_HISTORY = 100                       # undo batches kept per session
@@ -55,7 +55,7 @@ def _load(plan_path, state_path):
 
 def _commit(plan_path, state_path, mpd_path, plan, state, rows, mpd_text):
     state = {"revision": state["revision"], "undo": state["undo"][-MAX_HISTORY:],
-             "redo": state["redo"], "used": rows, "name": state.get("name"),
+             "redo": state["redo"], "used": rows, "name": state.get("name"), "warnings": state.get("warnings"),
              "plan_sha256": hashlib.sha256(dumps(plan).encode()).hexdigest()}
     atomic_write(plan_path, dumps(plan) + "\n")
     atomic_write(mpd_path, mpd_text)
@@ -81,13 +81,17 @@ def run_editor(args, library, parts):
     if args.action == "open":
         if plan_path.exists() or state_path.exists():
             raise ValueError("This chat already has an editor plan")
-        plan = _read(args.source) if args.source else SKELETON
+        warnings = []
+        if args.from_mpd:
+            plan, warnings = import_mpd(Path(args.from_mpd).read_text(encoding="utf-8", errors="replace"), parts)
+        else:
+            plan = _read(args.source) if args.source else SKELETON
         check_schema(plan)
         rows = _rows(plan, parts)
         mpd_text = rebuild(plan, parts)
-        state = {"revision": 1, "undo": [], "redo": [], "name": args.name}
+        state = {"revision": 1, "undo": [], "redo": [], "name": args.name, "warnings": warnings or None}
         _commit(plan_path, state_path, mpd_path, plan, state, rows, mpd_text)
-        return _report(True, state, plan=plan, used=rows, mpd=mpd_text, name=state["name"])
+        return _report(True, state, plan=plan, used=rows, mpd=mpd_text, name=state["name"], warnings=warnings)
 
     plan, state = _load(plan_path, state_path)
     if args.base_revision is not None and args.base_revision != state["revision"]:
@@ -146,6 +150,7 @@ def register(commands):
         s.add_argument("--base-revision", type=int, help="Refuse the change when the session moved on")
         if action == "open":
             s.add_argument("--from", dest="source", help="An existing plan file to open (else a one-brick skeleton)")
+            s.add_argument("--from-mpd", help="An MPD/LDR model file to import as the plan (instead of --from)")
             s.add_argument("--name", help="A name for the model, used when publishing")
         if action == "apply":
             s.add_argument("--edits", required=True, help="JSON file with the list of edit operations")

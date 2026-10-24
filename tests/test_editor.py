@@ -339,3 +339,79 @@ def test_editor_cli_failed_rebuild_leaves_files_untouched(parts, tmp_path):
     report = json.loads(failed.stdout)
     assert failed.returncode == 2 and report.get("error") and "same world transform" in report["error"]
     assert (plan_path.read_text(), state_path.read_text(), mpd_path.read_text()) == before
+
+
+# ---------------------------------------------------------------- MPD import
+
+from ldraw_tools.common import ROOT as _ROOT                    # noqa: E402
+from ldraw_tools.editor import import_mpd                        # noqa: E402
+from ldraw_tools.document import parse_source                  # noqa: E402
+from ldraw_tools.inventory import model_bom                      # noqa: E402
+
+GENERATED = _ROOT / "app" / "data" / "generated"
+
+
+def _placed(text):
+    """[(section, ref, colour, position, matrix)] for every type-1 line of an MPD, in file order."""
+    result, section = [], None
+    for line in text.splitlines():
+        words = line.split()
+        if words[:2] == ["0", "FILE"]:
+            section = words[2].lower()
+        elif words[:1] == ["1"]:
+            numbers = [float(v) for v in words[2:14]]
+            result.append((section, words[14].lower(), int(words[1]), numbers[:3], numbers[3:]))
+    return result
+
+
+def _same_placements(a, b):
+    assert len(a) == len(b)
+    for (s1, r1, c1, p1, m1), (s2, r2, c2, p2, m2) in zip(a, b):
+        assert (s1, r1, c1) == (s2, r2, c2)
+        assert p1 == pytest.approx(p2, abs=1e-6) and m1 == pytest.approx(m2, abs=1e-6)
+
+
+SUBMODEL_MPD = (
+    "0 FILE main.ldr\n0 Two towers\n0 Author: Tester\n"
+    "0 // left: the left tower\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 tower.ldr\n0 STEP\n"
+    "1 1 80 0 0 0 0 -1 0 1 0 1 0 0 tower.ldr\n"
+    "0 FILE tower.ldr\n0 A tower\n1 14 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n"
+    "1 16 0 -24 0 1 0 0 0 1 0 0 0 1 3003.dat\n"
+    "2 24 0 0 0 10 0 0\n1 4 0 -48 0 1 0 0 0 1 0 0 0 1 9999.dat\n")
+
+
+def test_import_keeps_submodels_steps_and_reports_what_it_skips(parts):
+    plan, warnings = import_mpd(SUBMODEL_MPD, parts)
+    assert [s["name"] for s in plan["sections"]] == ["main.ldr", "tower.ldr"]
+    assert [len(step) for step in plan["sections"][0]["steps"]] == [1, 1]
+    left = plan["sections"][0]["steps"][0][0]
+    assert left["id"] == "left" and left["ref"] == "tower.ldr" and left["purpose"] == "the left tower"
+    assert plan["sections"][0]["steps"][1][0]["matrix"] == [[0, 0, -1], [0, 1, 0], [1, 0, 0]]
+    assert len(warnings) == 2 and any("type 2" in w for w in warnings) and any("9999.dat" in w for w in warnings)
+    rebuilt = rebuild(plan, parts)
+    assert usage(plan, parts) == {("3001", 14): 2, ("3003", 4): 1, ("3003", 1): 1}
+    _same_placements(_placed(rebuilt), [p for p in _placed(SUBMODEL_MPD) if p[1] != "9999.dat"])
+    # the imported plan is editable like any other
+    moved = apply(plan, [{"op": "move", "id": "left", "position": [20, 0, 0]}], parts)
+    assert "1 4 20 0 0" in rebuild(moved, parts)
+
+
+def test_import_names_and_errors(parts):
+    plan, _ = import_mpd("1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n", parts)           # a bare LDR with no FILE line
+    assert plan["sections"][0]["name"] == "model.ldr"
+    plan, _ = import_mpd("0 FILE Cool Model.mpd\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n", parts)
+    assert plan["sections"][0]["name"] == "Cool Model.ldr"
+    with pytest.raises(ValueError):
+        import_mpd("0 FILE a.ldr\n4 16 0 0 0 1 0 0 1 1 0 1 0 1 0\n", parts)
+
+
+@pytest.mark.parametrize("path", sorted(GENERATED.glob("*.mpd")), ids=lambda p: p.stem)
+def test_import_roundtrips_generated_models(official, path, tmp_path):
+    text = path.read_text(encoding="utf-8")
+    plan, warnings = import_mpd(text, official)
+    assert warnings == []
+    rebuilt = rebuild(plan, official)
+    _same_placements(_placed(rebuilt), _placed(text))
+    again = tmp_path / "again.mpd"
+    again.write_text(rebuilt, encoding="utf-8")
+    assert model_bom(parse_source(again), official) == model_bom(parse_source(path), official)
