@@ -62,6 +62,11 @@ async function selectBrick() {          // click a grid of points over the canva
   throw new Error('no brick could be selected');
 }
 
+{   // the seeded copy may carry the owner's unsaved draft: start from the saved version
+  const w = await api('GET', `/api/builds/${BUILD}/workspace`);
+  if (w.draft?.changes) await api('POST', `/api/builds/${BUILD}/draft/discard`);
+}
+
 try {
   await step('a. open the house build: real canvas, "v1 · saved", parts check', async () => {
     await page.goto(`${baseURL}/build/${BUILD}`);
