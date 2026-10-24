@@ -180,3 +180,35 @@ running uvicorn as a non-root user.
 R6. Bump `urllib3` and `certifi` in the toolkit `uv.lock`; run `npm audit fix` in `app/web/frontend`.
 R7. CSV export: escape formula-leading cells. Cap chunked request bodies.
 R8. Run one full `docker build` of this branch before merging, since the Dockerfile install step changed.
+
+## 7. Follow-ups done (branch `security-hardening`)
+
+Tests: `test_security.py` (with the new tests) plus `test_toolkit`, `test_environment`, `test_builder_settings`, `test_paths`,
+`test_api`, `test_gallery`, `test_sandbox`, `test_chat_features`, `test_builds`: 123 passed in a throwaway container.
+The full `docker build` of this branch succeeded and the image was started and probed as described below.
+
+| Item | What changed | Where |
+|---|---|---|
+| R1 / H1: agent code vs the app's API | At container start (root), `iptables -I OUTPUT -m owner --uid-owner agent -p tcp --dport 8000 -m addrtype --dst-type LOCAL -j REJECT --reject-with tcp-reset` (and `ip6tables`), so the `agent` user cannot reach port 8000 on 127.0.0.1, `localhost`, `[::1]`, `0.0.0.0` or the container's own address. Also rejected for `agent`: TCP to `host.docker.internal` and the default gateway, because the host's published port (8765) leads straight back to the API (set `LDRAW_NOVA_SANDBOX_ALLOW_HOST=1` to allow agent access to the Docker host). Internet access is untouched. The result is written to `/run/ldraw-nova-isolation` and returned as `sandbox_isolation` by `GET /api/environment`; Settings shows "Sandbox isolation: on/off". If the rule cannot be applied (no `NET_ADMIN`, no iptables) the app still starts, logs a warning and Settings shows "off". | `entrypoint.sh`, `sandbox.isolation_status`, `routers/environment.py`, `EnvironmentSettings.tsx` |
+| R1 (second half) | Changing `api_base`/`base_url`/`api_url` on an existing entry that has a credential (its own key, an `os.environ/` reference, or a provider default key present in the environment) is refused unless the request carries a freshly typed key (not masked, not an `os.environ/` reference). The connection test takes no body and only uses the stored entry. | `llm_config._guard_endpoint_change` |
+| R3 / M4: separate Jev key | New optional `JEV_OPENROUTER_API_KEY` (fixed row "Jev search key (OpenRouter, optional)" with a hint to create a separate spend-capped key). Order in `toolkit.jev_environment()`: `TYPESAFE_API_KEY`, then `JEV_OPENROUTER_API_KEY` routed to OpenRouter, then `OPENROUTER_API_KEY` (kept; Settings warns that the main key is then visible to agent code). `GET /api/environment` adds `jev_source`. | `toolkit.py`, `environment_config.py`, `EnvironmentSettings.tsx` |
+| R2: litellm | 1.102.1 -> 1.102.2. Release diff v1.102.1...v1.102.2 is 5 commits, proxy-only (session-token AES-GCM binding in `litellm/proxy/auth`); uploaded to PyPI 2026-09-29, before the MAL window; OSV query for litellm 1.102.2 returns no vulnerabilities; MAL-2026-2144 lists only 1.82.7, 1.82.8 and 1.107.0. `requirements.lock` regenerated with hashes (only litellm moved); the command is in its header. | `requirements.txt`, `requirements.lock` |
+| R6 | Toolkit `uv.lock`: urllib3 2.7.0 -> 2.8.0, certifi 2026.7.22 -> 2026.10.23 (nothing else). `npm audit fix` in `app/web/frontend`: 0 vulnerabilities, build green. | `uv.lock`, `package-lock.json` |
+| R4 | Base images pinned by digest (`node:24-slim`, `ubuntu:24.04`, tag kept in a comment). LeoCAD AppImage downloaded from the versioned release URL and checked with sha256. LDraw `complete.zip` checked with sha256: LDraw publishes only one unversioned complete archive (this is the 2026-09 release), so the build now fails on purpose when a new release appears until the checksum is updated. Not done: Dependabot/Renovate and CI audits. | `Dockerfile` |
+| R5 | Production compose: `no-new-privileges`, `cap_drop: [ALL]` plus CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER, KILL, SETPCAP, NET_ADMIN, `mem_limit: 4g`, `pids_limit: 512`. `NET_ADMIN` is the only way to install the firewall rule; the entrypoint removes it (and everything started afterwards) from the server's bounding set with `setpriv`, so neither the server nor agent code holds it. It remains available to a root `docker exec` shell only. Dev compose: `/app`, `/opt/web/viewer` and `/opt/scripts` mounted `:ro`; uvicorn `--reload` only reads, and the app, scripts and viewer work read-only. | `docker-compose.yml`, `docker-compose.dev.yml` |
+| R7 / L4 | Every CSV the app writes (LeoCAD BOM exports in `leocad_render.export_bom` and the toolkit's `restore_bom_names`) is rewritten with cells starting with `=`, `+`, `-`, `@`, tab or CR prefixed by an apostrophe (plain numbers such as `-1` are left alone). Request bodies without a Content-Length (chunked) are counted and answered with 413 at the same limits (18 MB, 27 MB for inventories). | `leocad_render.py`, `ldraw_tools/external.py`, `main.py` |
+
+Verification on the built image (throwaway container, port 8822, own volumes, production capability set):
+- Startup log: "Sandbox isolation: on"; `/api/environment` reports state `on`; the server process has NET_ADMIN removed
+  (`CapBnd 0x1eb`), the entrypoint process had it.
+- As `agent`: `curl` to `127.0.0.1:8000`, `localhost:8000`, the container IP, `[::1]:8000`, `0.0.0.0:8000`, and to
+  `host.docker.internal:8822` and `172.17.0.1:8822` all fail with connection refused (curl exit 7). Without the rule the same
+  request returns 200 (control). Root is unaffected (200).
+- From the host, `127.0.0.1:8822` works. As `agent`: `https://openrouter.ai` and `https://github.com` return 200.
+- Sandbox: `give_to_agent` chowns a folder on the Linux volume to uid 999, agent code writes there, a timed-out process is
+  killed (needs KILL), LeoCAD/Xvfb renders a PNG and exports a BOM with the reduced capabilities.
+- Dev layout (read-only code mounts, `--reload`): starts and serves; `touch /app/x` as agent fails read-only; `mpd2glb.sh` runs.
+
+Known gaps: creating (not changing) an entry with `api_key: os.environ/X` and a custom `api_base` is still allowed, since
+that is a legitimate setup (a LiteLLM proxy or local server with a key); the firewall rule is what protects against the
+create-then-test path. Without the firewall (Settings says "off") that path is open again.

@@ -3,5 +3,5 @@
 # Pinned on purpose: bump deliberately and rebuild.
 fastapi==0.141.1
 uvicorn[standard]==0.53.0
-litellm==1.102.1
+litellm==1.102.2
 pyyaml==6.0.3

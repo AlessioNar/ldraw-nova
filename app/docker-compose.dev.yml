@@ -45,9 +45,11 @@ services:
         - action: rebuild
           path: ../uv.lock
     volumes:
-      - .:/app                          # leocad_render.py, example.py, web/backend
-      - ./web/viewer:/opt/web/viewer    # viewer.html, player.html
-      - ./scripts:/opt/scripts          # command-line helpers (on the PATH)
+      # Code the server (root) runs is mounted read-only: agent code runs as the `agent` user and must not be
+      # able to edit Python that root then executes. Edit on the host; uvicorn --reload only reads these files.
+      - .:/app:ro                       # leocad_render.py, example.py, web/backend
+      - ./web/viewer:/opt/web/viewer:ro # viewer.html, player.html
+      - ./scripts:/opt/scripts:ro       # command-line helpers (on the PATH)
       - ./web/frontend/dist:/opt/web/static   # the UI from `npm run build`
       # Iterating on the 3D player (ldraw.rs-nova, tools/player/build.sh): use
       # your local build instead of the release zip baked into the image.

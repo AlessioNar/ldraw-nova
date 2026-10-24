@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -91,6 +92,30 @@ def _has_parts(model_path: str | Path) -> bool:
     return False
 
 
+_FORMULA_START = ("=", "+", "-", "@", chr(9), chr(13))
+_PLAIN_NUMBER = re.compile(r"[+-]?\d+(\.\d+)?")
+
+
+def csv_safe(value):
+    """Neutralise a cell a spreadsheet would run as a formula (leading = + - @ tab CR) with a leading apostrophe."""
+    if isinstance(value, str) and value.startswith(_FORMULA_START) and not _PLAIN_NUMBER.fullmatch(value):
+        return "'" + value
+    return value
+
+
+def make_csv_safe(path: str | Path) -> None:
+    """Rewrite a CSV so no cell can run as a spreadsheet formula (part names can come from imported models)."""
+    with open(path, newline="", encoding="utf-8-sig") as fh:
+        reader = csv.DictReader(fh)
+        fields, rows = reader.fieldnames, list(reader)
+    if not fields:
+        return
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows({k: csv_safe(v) for k, v in row.items()} for row in rows)
+
+
 def export_bom(model_path: str | Path, output_path: Optional[str | Path] = None, timeout: int = 60) -> Path:
     """Write the model's parts list with LeoCAD's CSV export
     (columns: Part Name, Color, Quantity, Part ID, Color Code)."""
@@ -102,6 +127,7 @@ def export_bom(model_path: str | Path, output_path: Optional[str | Path] = None,
                    check=True, capture_output=True, text=True, timeout=timeout)
     if not output_path.exists():
         raise RuntimeError(f"leocad exited 0 but did not create {output_path}")
+    make_csv_safe(output_path)
     return output_path
 
 

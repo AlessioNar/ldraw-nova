@@ -13,10 +13,13 @@
 # Pin versions explicitly:
 #   docker build --build-context nova=.. --build-arg LEOCAD_TAG=v25.09 -t ldraw-nova-app .
 
+# Base images are pinned by digest (the tag is only for readers): node:24-slim, ubuntu:24.04, resolved 2026-10-24.
+# To update: docker buildx imagetools inspect <tag>, review, and replace the digests below (4 places).
+
 # --- Stage 1: the web UI (React + Vite) --------------------------------------
 # Runs on the build host's own architecture (fast, no emulation); its output is
 # plain static files, so it doesn't matter that the final image is amd64.
-FROM --platform=$BUILDPLATFORM node:24-slim AS frontend
+FROM --platform=$BUILDPLATFORM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS frontend
 WORKDIR /src
 COPY web/frontend/package.json web/frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -25,7 +28,7 @@ RUN npm run build
 
 # --- Stage 1b: the 3D viewer's GLB decoders (Draco, meshopt) ----------------
 # Lockfile-pinned three.js, the same package the viewer's browser test uses.
-FROM --platform=$BUILDPLATFORM node:24-slim AS viewer-deps
+FROM --platform=$BUILDPLATFORM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS viewer-deps
 WORKDIR /src
 COPY web/viewer-deps/package.json web/viewer-deps/package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
@@ -36,7 +39,7 @@ RUN npm ci --omit=dev --no-audit --no-fund
 # file, (b) run in parallel, and (c) leave no archives or tools in the image.
 # Each only changes when its own pinned URL / version / checksum changes.
 # amd64 because bun (run by the mpd2glb stage) is an x86_64 binary.
-FROM --platform=linux/amd64 ubuntu:24.04 AS fetch
+FROM --platform=linux/amd64 ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac AS fetch
 ENV DEBIAN_FRONTEND=noninteractive
 # Keep downloaded .debs in the apt cache mount (the stock image deletes them).
 RUN rm -f /etc/apt/apt.conf.d/docker-clean \
@@ -61,17 +64,19 @@ RUN python3 /src/tools/models_pack.py --packed /src/models-packed --target /out/
 # Check https://github.com/leozide/leocad/releases for available tags.
 FROM fetch AS leocad
 ARG LEOCAD_TAG=v25.09
+# Checksum of that release's x86_64 AppImage. When changing LEOCAD_TAG, update this too (GitHub lists it as the
+# asset "digest" on the release; verify it by downloading the file once).
+ARG LEOCAD_SHA256=135140a17cd5d701a5d758907d88bff59e28d1f35277ef3fcac4d0a82e0ca467
 # An AppImage is an ELF runtime with a squashfs image appended right after its
 # section headers. We unpack that squashfs directly instead of running
 # `./LeoCAD.AppImage --appimage-extract`: the AppImage's "AI\x02" marker in the
 # ELF header padding makes emulated (e.g. Apple Silicon) builds fail with
 # "Exec format error", and this way nothing is executed at build time at all.
 RUN set -eux; \
-    rel_json="$(curl -fsSL "https://api.github.com/repos/leozide/leocad/releases/tags/${LEOCAD_TAG}")"; \
-    asset_url="$(printf '%s' "$rel_json" | grep -oP '"browser_download_url":\s*"\K[^"]*x86_64\.AppImage' | head -n1)"; \
-    test -n "$asset_url"; \
+    asset_url="https://github.com/leozide/leocad/releases/download/${LEOCAD_TAG}/LeoCAD-Linux-${LEOCAD_TAG#v}-x86_64.AppImage"; \
     echo "Downloading: ${asset_url}"; \
     curl -fsSL "$asset_url" -o /tmp/LeoCAD.AppImage; \
+    echo "${LEOCAD_SHA256}  /tmp/LeoCAD.AppImage" | sha256sum -c -; \
     offset="$(python3 -c 'import struct,sys; h=open(sys.argv[1],"rb").read(64); shoff,=struct.unpack_from("<Q",h,0x28); shentsize,shnum=struct.unpack_from("<HH",h,0x3A); print(shoff+shentsize*shnum)' /tmp/LeoCAD.AppImage)"; \
     echo "squashfs offset: ${offset}"; \
     mkdir -p /opt/leocad; \
@@ -81,8 +86,13 @@ RUN set -eux; \
 # --- The complete official LDraw parts library --------------------------------
 # Produces /opt/ldraw/ldraw/{parts,p,models,LDConfig.ldr,...}
 FROM fetch AS ldraw-lib
+# library.ldraw.org publishes only one complete archive, always the newest release (this one: update 2026-09, file
+# dated 2026-09-30); there is no versioned URL for it. So the build is pinned by checksum: when LDraw publishes a
+# new release the check fails on purpose. To move on, download complete.zip, review it, and update the checksum.
+ARG LDRAW_COMPLETE_SHA256=f3e496d0ede69ca7942fa4aa198e661ee2d22723906101e2e339d8917a4dd5f2
 RUN mkdir -p /opt/ldraw \
     && curl -fsSL https://library.ldraw.org/library/updates/complete.zip -o /tmp/complete.zip \
+    && echo "${LDRAW_COMPLETE_SHA256}  /tmp/complete.zip" | sha256sum -c - \
     && unzip -q /tmp/complete.zip -d /opt/ldraw \
     && rm /tmp/complete.zip
 
@@ -176,7 +186,7 @@ RUN set -eux; \
 # --- Stage 2: the runtime image ----------------------------------------------
 # LeoCAD only publishes x86_64 Linux AppImages, so the image is always amd64.
 # On Apple Silicon / arm64 hosts Docker Desktop runs it under emulation.
-FROM --platform=linux/amd64 ubuntu:24.04
+FROM --platform=linux/amd64 ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN rm -f /etc/apt/apt.conf.d/docker-clean \
@@ -196,7 +206,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
         libxcb-xinerama0 libnss3 libdbus-1-3 fontconfig \
         python3 python3-pip \
-        poppler-utils ripgrep git
+        poppler-utils ripgrep git \
+        iptables
+# iptables: the entrypoint uses it to keep the `agent` user away from the app's own API (see entrypoint.sh).
 
 # --- Unpacked downloads from the stages above ---------------------------------
 COPY --from=leocad /opt/leocad /opt/leocad

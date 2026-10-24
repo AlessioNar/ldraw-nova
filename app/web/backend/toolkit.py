@@ -27,13 +27,26 @@ KEYWORD_GUIDE = {"docs/agent/reference-discovery.md": "docs/agent/reference-disc
 OPENROUTER_JEV = {"TYPESAFE_BASE_URL": "https://openrouter.ai/api", "TYPESAFE_DEFAULT_MODEL": "typesafe/jev-1.13"}
 
 
-def jev_environment() -> dict[str, str]:
-    """Variables jev-rerank needs: a TypeSafe key, else the OpenRouter key routed to OpenRouter; {} means keyword search."""
+def jev_source() -> str:
+    """Which key Jev search uses: typesafe, jev_openrouter, openrouter (the main key, visible to agent code) or none."""
     saved = environment_config.snapshot()
-    if key := saved.get("TYPESAFE_API_KEY", "").strip():
-        return {"TYPESAFE_API_KEY": key}
-    if key := saved.get("OPENROUTER_API_KEY", "").strip():
-        return {"TYPESAFE_API_KEY": key, **OPENROUTER_JEV}
+    for source, name in (("typesafe", "TYPESAFE_API_KEY"), ("jev_openrouter", "JEV_OPENROUTER_API_KEY"), ("openrouter", "OPENROUTER_API_KEY")):
+        if saved.get(name, "").strip():
+            return source
+    return "none"
+
+
+def jev_environment() -> dict[str, str]:
+    """Variables jev-rerank needs, first match wins: TYPESAFE_API_KEY; JEV_OPENROUTER_API_KEY routed to OpenRouter;
+    the main OPENROUTER_API_KEY routed to OpenRouter (agent code can then read it). {} means keyword search."""
+    saved = environment_config.snapshot()
+    source = jev_source()
+    if source == "typesafe":
+        return {"TYPESAFE_API_KEY": saved["TYPESAFE_API_KEY"].strip()}
+    if source == "jev_openrouter":
+        return {"TYPESAFE_API_KEY": saved["JEV_OPENROUTER_API_KEY"].strip(), **OPENROUTER_JEV}
+    if source == "openrouter":
+        return {"TYPESAFE_API_KEY": saved["OPENROUTER_API_KEY"].strip(), **OPENROUTER_JEV}
     return {}
 
 

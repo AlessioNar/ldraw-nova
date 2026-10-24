@@ -86,6 +86,52 @@ async def reject_unknown_host(request: Request, call_next):
     return await call_next(request)
 
 
+def body_limit_mb(path: str) -> int:
+    # An inventory upload carries a CSV of up to 25 MB (the route enforces that) inside its JSON body.
+    return 27 if path == "/api/inventories" else 18
+
+
+class ChunkedBodyLimit:
+    """Caps request bodies that arrive without a Content-Length (chunked), which the check below cannot see.
+
+    Past the limit it answers 413 itself and tells the app the client went away (an exception would be
+    swallowed by the framework's body parsing and reported as a 400)."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if scope["type"] != "http" or not path.startswith("/api/") or any(k == b"content-length" for k, _ in scope["headers"]):
+            return await self.app(scope, receive, send)
+        limit = body_limit_mb(path) * 1024 * 1024
+        total = 0
+        started = rejected = False
+
+        async def limited_receive():
+            nonlocal total, rejected
+            if rejected:
+                return {"type": "http.disconnect"}
+            message = await receive()
+            if message["type"] == "http.request":
+                total += len(message.get("body", b""))
+                if total > limit and not started:
+                    rejected = True
+                    response = JSONResponse({"detail": f"Request exceeds {limit // (1024 * 1024)} MB"}, status_code=413)
+                    await response(scope, receive, send)
+                    return {"type": "http.disconnect"}
+            return message
+
+        async def tracking_send(message):
+            nonlocal started
+            if rejected:
+                return
+            started = started or message["type"] == "http.response.start"
+            await send(message)
+
+        await self.app(scope, limited_receive, tracking_send)
+
+
 @app.middleware("http")
 async def same_origin_api(request: Request, call_next):
     if request.url.path.startswith("/api/"):
@@ -98,8 +144,7 @@ async def same_origin_api(request: Request, call_next):
             size = int(request.headers.get("content-length", "0"))
         except ValueError:
             return JSONResponse({"detail": "Invalid Content-Length"}, status_code=400)
-        # An inventory upload carries a CSV of up to 25 MB (the route enforces that) inside its JSON body.
-        limit = 27 if request.url.path == "/api/inventories" else 18
+        limit = body_limit_mb(request.url.path)
         if size > limit * 1024 * 1024:
             return JSONResponse({"detail": f"Request exceeds {limit} MB"}, status_code=413)
     response = await call_next(request)
@@ -107,6 +152,8 @@ async def same_origin_api(request: Request, call_next):
         response.headers["Cache-Control"] = "no-store"
     return response
 
+
+app.add_middleware(ChunkedBodyLimit)   # outermost: also guards bodies the middlewares above never see in full
 
 for module in (builds_api, environment, llm_models, chats, editor, editor_palette, models_gallery, files, inventories, understand_api, describe_api, pipeline):
     app.include_router(module.router)

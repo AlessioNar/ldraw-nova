@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { api, type EnvironmentVariable } from "../api";
+import { api, type EnvironmentState, type EnvironmentVariable } from "../api";
 import { useApp } from "../context";
 
 type Row = { key: string; id?: string; name: string; value: string | null; has_value: boolean; fixed: boolean };
@@ -25,10 +25,17 @@ function ReplacementWarning({ row }: { row: Row }) {
   </span> : null;
 }
 
+const FIXED_LABELS: Record<string, string> = { JEV_OPENROUTER_API_KEY: "Jev search key (OpenRouter, optional)" };
+const FIXED_HINTS: Record<string, string> = {
+  TYPESAFE_API_KEY: "Optional. Enables Jev semantic search for parts and models. Without it, searches use keyword (BM25) ranking, which works but ranks less well.",
+  JEV_OPENROUTER_API_KEY: "Optional. Jev search through OpenRouter with a key of its own: create a separate key on OpenRouter with a low spend cap, because agent code can read it. Used when TYPESAFE_API_KEY is empty; if both are empty, Jev falls back to OPENROUTER_API_KEY.",
+};
+
 export default function EnvironmentSettings() {
   const { refreshLlms } = useApp();
   const [rows, setRows] = useState<Row[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [info, setInfo] = useState<Pick<EnvironmentState, "jev_source" | "sandbox_isolation">>({});
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +45,7 @@ export default function EnvironmentSettings() {
   useEffect(() => {
     let active = true;
     api.environment().then(result => {
-      if (active) { setRows(toRows(result.variables)); setLoaded(true); }
+      if (active) { setRows(toRows(result.variables)); setInfo({ jev_source: result.jev_source, sandbox_isolation: result.sandbox_isolation }); setLoaded(true); }
     }).catch(e => { if (active) setError(e.message); });
     return () => { active = false; };
   }, []);
@@ -53,6 +60,7 @@ export default function EnvironmentSettings() {
     try {
       const result = await api.saveEnvironment(rows.map(({ id, name, value }) => ({ id, name: name.trim(), value })));
       setRows(toRows(result.variables)); setDirty(false);
+      api.environment().then(state => setInfo({ jev_source: state.jev_source, sandbox_isolation: state.sandbox_isolation })).catch(() => {});
       refreshLlms();
       setMessage("Environment variables saved. New requests use these values.");
     } catch (e) { setError((e as Error).message); }
@@ -68,18 +76,22 @@ export default function EnvironmentSettings() {
         setDirty(true); setMessage(""); setError("");
       }}>Add</button>
     </div>
+    {info.sandbox_isolation?.state === "off" && <p className="warn-text" role="alert">Sandbox isolation: off. {info.sandbox_isolation.detail} Code the agent runs can reach this app's own API. Start the container with cap_add NET_ADMIN (see docker-compose.yml).</p>}
+    {info.sandbox_isolation?.state === "on" && <p className="ok-text small">Sandbox isolation: on. Agent code cannot reach this app's API.</p>}
     <p className="muted small">Click Add, enter a variable name and value, then Save. If the variable is missing or empty, this supplies its value. If it is already preconfigured, the value saved here takes precedence.</p>
     <p className="muted small">Values are hidden for everyone. Leave a saved value untouched to keep it, or type a new value to replace it. An empty value saved here means “no value”.</p>
     <form onSubmit={save}>
       <div className="environment-rows">
         {rows.map((row, index) => row.fixed ? <div className="required-environment" key={row.key}>
-          <label className="required-environment-row"><span>{row.name}:</span>
-            <span className="environment-value"><input aria-label={`${row.name} value`} aria-describedby="typesafe-hint" type="password" autoComplete="new-password" maxLength={65536} disabled={busy}
+          <label className="required-environment-row"><span>{FIXED_LABELS[row.name] ?? row.name}:</span>
+            <span className="environment-value"><input aria-label={`${row.name} value`} aria-describedby={`${row.name}-hint`} type="password" autoComplete="new-password" maxLength={65536} disabled={busy}
               placeholder={row.has_value ? "Value saved · type to replace" : "Enter value"} value={row.value ?? ""}
               onChange={e => change(row.key, { value: e.target.value })} />
               <ReplacementWarning row={row} /></span>
           </label>
-          <small id="typesafe-hint" className="muted typesafe-hint"><em>Optional. Enables Jev semantic search for parts and models. Without it, searches use keyword (BM25) ranking, which works but ranks less well.</em></small>
+          <small id={`${row.name}-hint`} className="muted typesafe-hint"><em>{FIXED_HINTS[row.name]}</em></small>
+          {row.name === "JEV_OPENROUTER_API_KEY" && info.jev_source === "openrouter" && <p className="warn-text small" role="status">
+            No separate Jev key is set, so Jev search uses your main OpenRouter key (OPENROUTER_API_KEY). Code the agent runs can read and send that key. Create a separate, spend-capped key above to avoid this.</p>}
         </div> : <div className="environment-row" key={row.key}>
           <label>
             <span>Name</span>
