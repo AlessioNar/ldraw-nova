@@ -26,7 +26,7 @@ Open Brick Designer is a fork of `anteloc/ldraw-nova`, rebranded. It is **one Do
 - a **web app**: a FastAPI backend (`app/web/backend`), a React frontend (`app/web/frontend`) and static 3D pages (`app/web/viewer`) for viewing, editing and step-by-step playing;
 - **LeoCAD** running under a virtual display (Xvfb) for snapshots and BOMs.
 
-The product is centred on **builds**. A build is a model with numbered versions and one editable draft. People make a build in four ways: describe it, start from a type, import a file, or start empty. They edit it in an always-3D workspace. Their own bricks ("My Parts") can steer what gets built and show what is missing.
+The product is centred on **builds**. A build is a model with numbered versions and one editable draft. People start a build empty, straight in the 3D workspace (then describe it in its chat or place parts), or import a model file. They edit it in an always-3D workspace. Their own bricks ("My Parts") can steer what gets built and show what is missing.
 
 The product direction is **deterministic first**. Code (generators and rules) builds whatever it can for free. One cheap LLM call only *reads the sentence*. The expensive AI agent runs only after the person agrees to a price.
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { api, buildsApi, estimateLabel, type ChatDetail, type DescribeHint, type DocumentUpload, type Message, type TurnOptions } from "../../api";
 import { useApp } from "../../context";
 import { useChatStream } from "../../hooks/useChatStream";
@@ -62,6 +63,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     setDetail(d);
     return d;
   }, [chatId]);
+  const prompt = (useLocation().state as { prompt?: string } | null)?.prompt;   // handed over by /new
   const { running, setRunning, draft, persisting, tools, error, setError, approvals, workers, contextNotice, now, subscribe, reset } =
     useChatStream(chatId ?? "", reload, useCallback(() => { refreshChats(); ws.reloadAll().catch(() => {}); }, [refreshChats, ws.reloadAll]));  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -208,7 +210,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       <div className="ws-composer">
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
-        <Composer key={chatId ?? "new"} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
+        <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
           onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<span className="ws-hint-line" role="status" aria-live="polite">{line}</span>}
           llmId={llmId} onLlmChange={setLlmId} onSend={send} onStop={() => chatId && api.cancel(chatId)} running={running} />
       </div>
