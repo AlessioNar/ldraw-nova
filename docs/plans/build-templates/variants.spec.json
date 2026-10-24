@@ -1,0 +1,20 @@
+[
+ {"name": "small-house-source", "template": "small-house"},
+ {"name": "small-house-z+2", "template": "small-house", "params": {"z_delta": 2}},
+ {"name": "small-house-courses+1", "template": "small-house", "params": {"courses_delta": 1}},
+ {"name": "small-house-courses-1", "template": "small-house", "params": {"courses_delta": -1}},
+ {"name": "small-house-red-roof-no-bushes", "template": "small-house", "params": {"colour_roof": "red", "colour_wall": "tan", "include_part_bush_all": false, "include_part_lamp_p144": false}},
+ {"name": "flatbed-truck-source", "template": "flatbed-truck"},
+ {"name": "flatbed-truck-z+6", "template": "flatbed-truck", "params": {"z_delta": 6}},
+ {"name": "flatbed-truck-z+12-red", "template": "flatbed-truck", "params": {"z_delta": 12, "colour_body": "red", "colour_trim": "red", "colour_door": "red"}},
+ {"name": "flatbed-truck-no-trailer", "template": "flatbed-truck", "params": {"include_part_trailer_p2": false}},
+ {"name": "passenger-car-source", "template": "passenger-car"},
+ {"name": "passenger-car-z+4", "template": "passenger-car", "params": {"z_delta": 4}},
+ {"name": "passenger-car-z+4-blue", "template": "passenger-car", "params": {"z_delta": 4, "colour_body": "blue", "colour_window": "blue", "colour_chassis": "blue", "swap_brick_1x2": "2877"}},
+ {"name": "edit-4956-house-roof-blue", "src": "4956-1_House-with-Arch.mpd", "edits": [["recolour_role", "roof", "blue"]]},
+ {"name": "edit-4956-house-source", "src": "4956-1_House-with-Arch.mpd"},
+ {"name": "edit-4993-truck-body-lime", "src": "4993-1_Truck.mpd", "edits": [["recolour_role", "body", "lime"]]},
+ {"name": "edit-4993-truck-source", "src": "4993-1_Truck.mpd"},
+ {"name": "edit-31045-aircraft-wings-red", "src": "31045-1_Aircraft.mpd", "edits": [["recolour_role", "wing", "red"]]},
+ {"name": "edit-31045-aircraft-source", "src": "31045-1_Aircraft.mpd"}
+]

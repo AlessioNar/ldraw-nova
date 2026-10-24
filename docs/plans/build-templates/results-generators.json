@@ -1,0 +1,275 @@
+{
+ "parts+geometry": {
+  "accuracy": 0.785,
+  "placements": 995,
+  "physical_accuracy": 0.843,
+  "physical_placements": 917,
+  "by_generator": {
+   "arcade-bay": "0/11 = 0.00",
+   "courier-jet": "18/44 = 0.41",
+   "delivery-van": "96/112 = 0.86",
+   "grand-tourer": "85/90 = 0.94",
+   "harbour-launch": "5/9 = 0.56",
+   "house": "300/373 = 0.80",
+   "pickup": "95/119 = 0.80",
+   "starfighter": "86/122 = 0.70",
+   "street-lantern": "0/6 = 0.00",
+   "tipper-truck": "91/101 = 0.90",
+   "touring-motorcycle": "5/8 = 0.62"
+  },
+  "by_role": {
+   "base": "14/14 = 1.00",
+   "body": "257/270 = 0.95",
+   "chassis": "57/69 = 0.83",
+   "detail": "24/33 = 0.73",
+   "door": "6/6 = 1.00",
+   "engine": "6/6 = 1.00",
+   "glass": "15/17 = 0.88",
+   "roof": "117/174 = 0.67",
+   "trim": "17/123 = 0.14",
+   "tyre": "10/10 = 1.00",
+   "wall": "170/184 = 0.92",
+   "wheel": "10/10 = 1.00",
+   "window": "13/13 = 1.00",
+   "wing": "65/66 = 0.98"
+  },
+  "top_confusions": [
+   [
+    "trim -> wall",
+    32
+   ],
+   [
+    "trim -> wing",
+    30
+   ],
+   [
+    "roof -> body",
+    30
+   ],
+   [
+    "trim -> body",
+    24
+   ],
+   [
+    "roof -> trim",
+    16
+   ],
+   [
+    "wall -> trim",
+    14
+   ],
+   [
+    "trim -> roof",
+    13
+   ],
+   [
+    "chassis -> body",
+    11
+   ],
+   [
+    "body -> structure",
+    11
+   ],
+   [
+    "detail -> body",
+    7
+   ],
+   [
+    "roof -> wing",
+    7
+   ],
+   [
+    "trim -> structure",
+    5
+   ]
+  ],
+  "calibration": {
+   "0.2-0.4": "0/16 = 0.00",
+   "0.4-0.6": "320/441 = 0.73",
+   "0.6-0.8": "311/388 = 0.80",
+   "0.8-1.0": "150/150 = 1.00"
+  }
+ },
+ "+submodel names": {
+  "accuracy": 0.77,
+  "placements": 995,
+  "physical_accuracy": 0.827,
+  "physical_placements": 917,
+  "by_generator": {
+   "arcade-bay": "0/11 = 0.00",
+   "courier-jet": "18/44 = 0.41",
+   "delivery-van": "96/112 = 0.86",
+   "grand-tourer": "85/90 = 0.94",
+   "harbour-launch": "5/9 = 0.56",
+   "house": "285/373 = 0.76",
+   "pickup": "95/119 = 0.80",
+   "starfighter": "86/122 = 0.70",
+   "street-lantern": "0/6 = 0.00",
+   "tipper-truck": "91/101 = 0.90",
+   "touring-motorcycle": "5/8 = 0.62"
+  },
+  "by_role": {
+   "base": "14/14 = 1.00",
+   "body": "257/270 = 0.95",
+   "chassis": "57/69 = 0.83",
+   "detail": "24/33 = 0.73",
+   "door": "6/6 = 1.00",
+   "engine": "6/6 = 1.00",
+   "glass": "15/17 = 0.88",
+   "roof": "127/174 = 0.73",
+   "trim": "14/123 = 0.11",
+   "tyre": "10/10 = 1.00",
+   "wall": "148/184 = 0.80",
+   "wheel": "10/10 = 1.00",
+   "window": "13/13 = 1.00",
+   "wing": "65/66 = 0.98"
+  },
+  "top_confusions": [
+   [
+    "wall -> roof",
+    36
+   ],
+   [
+    "trim -> wing",
+    30
+   ],
+   [
+    "roof -> body",
+    30
+   ],
+   [
+    "trim -> roof",
+    24
+   ],
+   [
+    "trim -> wall",
+    24
+   ],
+   [
+    "trim -> body",
+    24
+   ],
+   [
+    "chassis -> body",
+    11
+   ],
+   [
+    "body -> structure",
+    11
+   ],
+   [
+    "roof -> trim",
+    10
+   ],
+   [
+    "detail -> body",
+    7
+   ],
+   [
+    "roof -> wing",
+    7
+   ],
+   [
+    "trim -> structure",
+    5
+   ]
+  ],
+  "calibration": {
+   "0.2-0.4": "0/16 = 0.00",
+   "0.4-0.6": "295/388 = 0.76",
+   "0.6-0.8": "294/362 = 0.81",
+   "0.8-1.0": "177/229 = 0.77"
+  }
+ },
+ "+names+family hint": {
+  "accuracy": 0.774,
+  "placements": 995,
+  "physical_accuracy": 0.827,
+  "physical_placements": 917,
+  "by_generator": {
+   "arcade-bay": "4/11 = 0.36",
+   "courier-jet": "18/44 = 0.41",
+   "delivery-van": "96/112 = 0.86",
+   "grand-tourer": "85/90 = 0.94",
+   "harbour-launch": "5/9 = 0.56",
+   "house": "285/373 = 0.76",
+   "pickup": "95/119 = 0.80",
+   "starfighter": "86/122 = 0.70",
+   "street-lantern": "0/6 = 0.00",
+   "tipper-truck": "91/101 = 0.90",
+   "touring-motorcycle": "5/8 = 0.62"
+  },
+  "by_role": {
+   "base": "14/14 = 1.00",
+   "body": "257/270 = 0.95",
+   "chassis": "57/69 = 0.83",
+   "detail": "24/33 = 0.73",
+   "door": "6/6 = 1.00",
+   "engine": "6/6 = 1.00",
+   "glass": "15/17 = 0.88",
+   "roof": "127/174 = 0.73",
+   "trim": "18/123 = 0.15",
+   "tyre": "10/10 = 1.00",
+   "wall": "148/184 = 0.80",
+   "wheel": "10/10 = 1.00",
+   "window": "13/13 = 1.00",
+   "wing": "65/66 = 0.98"
+  },
+  "top_confusions": [
+   [
+    "wall -> roof",
+    36
+   ],
+   [
+    "trim -> wing",
+    30
+   ],
+   [
+    "roof -> body",
+    30
+   ],
+   [
+    "trim -> roof",
+    24
+   ],
+   [
+    "trim -> wall",
+    24
+   ],
+   [
+    "trim -> body",
+    24
+   ],
+   [
+    "chassis -> body",
+    11
+   ],
+   [
+    "roof -> trim",
+    10
+   ],
+   [
+    "detail -> body",
+    7
+   ],
+   [
+    "roof -> wing",
+    7
+   ],
+   [
+    "body -> wall",
+    6
+   ],
+   [
+    "body -> structure",
+    4
+   ]
+  ],
+  "calibration": {
+   "0.2-0.4": "0/5 = 0.00",
+   "0.4-0.6": "299/392 = 0.76",
+   "0.6-0.8": "294/369 = 0.80",
+   "0.8-1.0": "177/229 = 0.77"
+  }
+ }
+}

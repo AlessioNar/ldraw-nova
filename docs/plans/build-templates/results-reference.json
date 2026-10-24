@@ -1,0 +1,223 @@
+{
+ "agreement": 0.44,
+ "scored_parts": 1827,
+ "models": 24,
+ "domain_correct": "22/24",
+ "domain_misses": {
+  "5766-1.mpd": {
+   "expected": "building",
+   "got": "vehicle"
+  },
+  "5771-1.mpd": {
+   "expected": "building",
+   "got": "vehicle"
+  }
+ },
+ "by_role": {
+  "chassis": "19/81 = 0.23",
+  "door": "6/185 = 0.03",
+  "engine": "7/88 = 0.08",
+  "glass": "0/16 = 0.00",
+  "roof": "578/1005 = 0.58",
+  "wall": "12/31 = 0.39",
+  "wheel": "14/73 = 0.19",
+  "window": "24/122 = 0.20",
+  "wing": "144/226 = 0.64"
+ },
+ "top_confusions": [
+  [
+   "roof -> wall",
+   213
+  ],
+  [
+   "roof -> body",
+   110
+  ],
+  [
+   "wing -> body",
+   62
+  ],
+  [
+   "door -> chassis",
+   58
+  ],
+  [
+   "door -> body",
+   57
+  ],
+  [
+   "wheel -> chassis",
+   53
+  ],
+  [
+   "window -> roof",
+   48
+  ],
+  [
+   "chassis -> body",
+   41
+  ],
+  [
+   "engine -> body",
+   36
+  ],
+  [
+   "roof -> door",
+   33
+  ],
+  [
+   "roof -> trim",
+   27
+  ],
+  [
+   "engine -> chassis",
+   27
+  ]
+ ],
+ "per_model": {
+  "31009-1.mpd": {
+   "scored": 78,
+   "agree": "41/78 = 0.53",
+   "domain": "building",
+   "seconds": 8.4
+  },
+  "31038-1_Automn.mpd": {
+   "scored": 17,
+   "agree": "11/17 = 0.65",
+   "domain": "building",
+   "seconds": 3.7
+  },
+  "4956-1_House-with-Arch.mpd": {
+   "scored": 293,
+   "agree": "142/293 = 0.48",
+   "domain": "building",
+   "seconds": 4.2
+  },
+  "4954-1_House-with-Truck.mpd": {
+   "scored": 19,
+   "agree": "7/19 = 0.37",
+   "domain": "building",
+   "seconds": 3.0
+  },
+  "4954-1_School.mpd": {
+   "scored": 171,
+   "agree": "90/171 = 0.53",
+   "domain": "building",
+   "seconds": 0.7
+  },
+  "4996-1_Cozy-Cafe.mpd": {
+   "scored": 35,
+   "agree": "18/35 = 0.51",
+   "domain": "building",
+   "seconds": 2.1
+  },
+  "5766-1.mpd": {
+   "scored": 92,
+   "agree": "61/92 = 0.66",
+   "domain": "vehicle",
+   "seconds": 2.5
+  },
+  "5771-1.mpd": {
+   "scored": 234,
+   "agree": "84/234 = 0.36",
+   "domain": "vehicle",
+   "seconds": 3.9
+  },
+  "5891-1_Holiday-House.mpd": {
+   "scored": 36,
+   "agree": "11/36 = 0.31",
+   "domain": "building",
+   "seconds": 0.4
+  },
+  "10183-1_Caboose.mpd": {
+   "scored": 28,
+   "agree": "9/28 = 0.32",
+   "domain": "vehicle",
+   "seconds": 1.7
+  },
+  "10183-1_Tram-2.mpd": {
+   "scored": 64,
+   "agree": "29/64 = 0.45",
+   "domain": "vehicle",
+   "seconds": 1.9
+  },
+  "10183-1_Passenger-car.mpd": {
+   "scored": 116,
+   "agree": "76/116 = 0.66",
+   "domain": "vehicle",
+   "seconds": 0.4
+  },
+  "4432-1.mpd": {
+   "scored": 140,
+   "agree": "29/140 = 0.21",
+   "domain": "vehicle",
+   "seconds": 1.8
+  },
+  "4993-1_Truck.mpd": {
+   "scored": 102,
+   "agree": "41/102 = 0.40",
+   "domain": "vehicle",
+   "seconds": 4.8
+  },
+  "5867-1.mpd": {
+   "scored": 35,
+   "agree": "0/35 = 0.00",
+   "domain": "vehicle",
+   "seconds": 1.3
+  },
+  "5767-1.mpd": {
+   "scored": 60,
+   "agree": "0/60 = 0.00",
+   "domain": "vehicle",
+   "seconds": 2.6
+  },
+  "60018-1.mpd": {
+   "scored": 15,
+   "agree": "6/15 = 0.40",
+   "domain": "vehicle",
+   "seconds": 1.1
+  },
+  "744-1_Truck.mpd": {
+   "scored": 11,
+   "agree": "1/11 = 0.09",
+   "domain": "vehicle",
+   "seconds": 3.7
+  },
+  "31045-1_Aircraft.mpd": {
+   "scored": 29,
+   "agree": "18/29 = 0.62",
+   "domain": "aircraft",
+   "seconds": 0.4
+  },
+  "31049-1_Single-Engine-Airplane.mpd": {
+   "scored": 44,
+   "agree": "28/44 = 0.64",
+   "domain": "aircraft",
+   "seconds": 0.8
+  },
+  "31092-1.mpd": {
+   "scored": 30,
+   "agree": "8/30 = 0.27",
+   "domain": "aircraft",
+   "seconds": 1.0
+  },
+  "6745-1_Harrier-Jet.mpd": {
+   "scored": 47,
+   "agree": "28/47 = 0.60",
+   "domain": "aircraft",
+   "seconds": 0.6
+  },
+  "6891-1.mpd": {
+   "scored": 21,
+   "agree": "8/21 = 0.38",
+   "domain": "aircraft",
+   "seconds": 1.6
+  },
+  "5892-1.mpd": {
+   "scored": 110,
+   "agree": "58/110 = 0.53",
+   "domain": "aircraft",
+   "seconds": 3.3
+  }
+ }
+}

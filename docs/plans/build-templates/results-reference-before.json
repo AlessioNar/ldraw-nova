@@ -1,0 +1,227 @@
+{
+ "agreement": 0.406,
+ "scored_parts": 1921,
+ "models": 24,
+ "domain_correct": "21/24",
+ "domain_misses": {
+  "4954-1_House-with-Truck.mpd": {
+   "expected": "building",
+   "got": "vehicle"
+  },
+  "4954-1_School.mpd": {
+   "expected": "building",
+   "got": "vehicle"
+  },
+  "31092-1.mpd": {
+   "expected": "aircraft",
+   "got": "vehicle"
+  }
+ },
+ "by_role": {
+  "chassis": "20/81 = 0.25",
+  "door": "4/185 = 0.02",
+  "engine": "7/88 = 0.08",
+  "glass": "0/16 = 0.00",
+  "roof": "564/1005 = 0.56",
+  "wall": "16/31 = 0.52",
+  "wheel": "5/67 = 0.07",
+  "window": "30/122 = 0.25",
+  "wing": "134/326 = 0.41"
+ },
+ "top_confusions": [
+  [
+   "roof -> wall",
+   271
+  ],
+  [
+   "wing -> body",
+   168
+  ],
+  [
+   "door -> body",
+   93
+  ],
+  [
+   "roof -> body",
+   87
+  ],
+  [
+   "wheel -> body",
+   53
+  ],
+  [
+   "engine -> body",
+   50
+  ],
+  [
+   "chassis -> body",
+   46
+  ],
+  [
+   "window -> roof",
+   45
+  ],
+  [
+   "door -> chassis",
+   38
+  ],
+  [
+   "roof -> window",
+   29
+  ],
+  [
+   "engine -> chassis",
+   27
+  ],
+  [
+   "window -> body",
+   26
+  ]
+ ],
+ "per_model": {
+  "31009-1.mpd": {
+   "scored": 78,
+   "agree": "41/78 = 0.53",
+   "domain": "building",
+   "seconds": 8.7
+  },
+  "31038-1_Automn.mpd": {
+   "scored": 17,
+   "agree": "11/17 = 0.65",
+   "domain": "building",
+   "seconds": 4.6
+  },
+  "4956-1_House-with-Arch.mpd": {
+   "scored": 293,
+   "agree": "142/293 = 0.48",
+   "domain": "building",
+   "seconds": 5.5
+  },
+  "4954-1_House-with-Truck.mpd": {
+   "scored": 19,
+   "agree": "7/19 = 0.37",
+   "domain": "vehicle",
+   "seconds": 3.8
+  },
+  "4954-1_School.mpd": {
+   "scored": 171,
+   "agree": "89/171 = 0.52",
+   "domain": "vehicle",
+   "seconds": 0.6
+  },
+  "4996-1_Cozy-Cafe.mpd": {
+   "scored": 35,
+   "agree": "18/35 = 0.51",
+   "domain": "building",
+   "seconds": 2.4
+  },
+  "5766-1.mpd": {
+   "scored": 92,
+   "agree": "52/92 = 0.57",
+   "domain": "building",
+   "seconds": 3.2
+  },
+  "5771-1.mpd": {
+   "scored": 234,
+   "agree": "107/234 = 0.46",
+   "domain": "building",
+   "seconds": 5.0
+  },
+  "5891-1_Holiday-House.mpd": {
+   "scored": 36,
+   "agree": "11/36 = 0.31",
+   "domain": "building",
+   "seconds": 0.5
+  },
+  "10183-1_Caboose.mpd": {
+   "scored": 26,
+   "agree": "7/26 = 0.27",
+   "domain": "vehicle",
+   "seconds": 1.9
+  },
+  "10183-1_Tram-2.mpd": {
+   "scored": 62,
+   "agree": "22/62 = 0.35",
+   "domain": "vehicle",
+   "seconds": 2.4
+  },
+  "10183-1_Passenger-car.mpd": {
+   "scored": 114,
+   "agree": "62/114 = 0.54",
+   "domain": "vehicle",
+   "seconds": 0.5
+  },
+  "4432-1.mpd": {
+   "scored": 140,
+   "agree": "28/140 = 0.20",
+   "domain": "vehicle",
+   "seconds": 2.4
+  },
+  "4993-1_Truck.mpd": {
+   "scored": 102,
+   "agree": "40/102 = 0.39",
+   "domain": "vehicle",
+   "seconds": 6.4
+  },
+  "5867-1.mpd": {
+   "scored": 35,
+   "agree": "0/35 = 0.00",
+   "domain": "vehicle",
+   "seconds": 1.4
+  },
+  "5767-1.mpd": {
+   "scored": 60,
+   "agree": "0/60 = 0.00",
+   "domain": "vehicle",
+   "seconds": 2.6
+  },
+  "60018-1.mpd": {
+   "scored": 15,
+   "agree": "5/15 = 0.33",
+   "domain": "vehicle",
+   "seconds": 1.6
+  },
+  "744-1_Truck.mpd": {
+   "scored": 11,
+   "agree": "1/11 = 0.09",
+   "domain": "vehicle",
+   "seconds": 4.6
+  },
+  "31045-1_Aircraft.mpd": {
+   "scored": 29,
+   "agree": "16/29 = 0.55",
+   "domain": "aircraft",
+   "seconds": 0.4
+  },
+  "31049-1_Single-Engine-Airplane.mpd": {
+   "scored": 44,
+   "agree": "20/44 = 0.45",
+   "domain": "aircraft",
+   "seconds": 1.1
+  },
+  "31092-1.mpd": {
+   "scored": 30,
+   "agree": "2/30 = 0.07",
+   "domain": "vehicle",
+   "seconds": 1.2
+  },
+  "6745-1_Harrier-Jet.mpd": {
+   "scored": 47,
+   "agree": "15/47 = 0.32",
+   "domain": "aircraft",
+   "seconds": 0.7
+  },
+  "6891-1.mpd": {
+   "scored": 121,
+   "agree": "8/121 = 0.07",
+   "domain": "aircraft",
+   "seconds": 1.7
+  },
+  "5892-1.mpd": {
+   "scored": 110,
+   "agree": "76/110 = 0.69",
+   "domain": "aircraft",
+   "seconds": 3.7
+  }
+ }
+}

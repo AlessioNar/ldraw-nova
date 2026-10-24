@@ -163,8 +163,8 @@ def leaves_of(plan, parts, facts):
         role = stored.get(key) or stored.get(base) or 'structure'
         lo, hi = leaf['bounds']
         # every submodel instance above the part, outermost first: (path key, readable name)
-        groups = [('/'.join(i for _, i in leaf['chain'][:k + 1]), _group_name(leaf['chain'][k][1], leaf['chain'][k + 1][0]))
-                  for k in range(len(leaf['chain']) - 1)]
+        groups = [('/'.join(i for _, i in leaf['chain'][:k + 1]), _group_name(leaf['chain'][k][1], leaf['chain'][k + 1][0]),
+                   leaf['chain'][k + 1][0]) for k in range(len(leaf['chain']) - 1)]
         counter[role] += 1
         out.append(dict(id=f'l{n:04d}', ref=leaf['ref'], colour=int(leaf['colour']), role=role, groups=groups,
                         at=[round(float(v), 6) for v in leaf['origin']], matrix=[[round(float(v), 6) for v in row] for row in leaf['mat']],
@@ -247,7 +247,8 @@ class _Seams:
 
     def __init__(self, leaves, axis, fam, facts, skip=()):
         self.axis, self.fam, self.facts, self.skip = axis, fam, facts, set(skip)
-        self.solid = [l for l in leaves if l['kind'] != 'baseplate']
+        scenery = _scenery(leaves)               # a garden around a house stays where it is; the house grows
+        self.solid = [l for l in leaves if l['kind'] != 'baseplate' and l['id'] not in scenery]
         levels = sorted({round(l['ub'], 1) for l in self.solid} | {round(l['ut'], 1) for l in self.solid})
         self.bands = list(zip(levels, levels[1:]))
         self.members = [[] for _ in self.bands]
@@ -259,6 +260,18 @@ class _Seams:
                 self.members[i].append(l)
         self._options = {}
         self.deltas = [d for d in range(DELTA_RANGE[0], DELTA_RANGE[1] + 1) if d]
+        self.support = {}          # a small loose part goes with the part it sits on (or hangs from)
+        for l in self.solid:
+            if not _floats(l, axis):
+                continue
+            for other in self.solid:
+                if other is l:
+                    continue
+                touching = abs(other['ut'] - l['ub']) < 1.5 or abs(other['ub'] - l['ut']) < 1.5
+                overlap = all(min(l['box'][1][k], other['box'][1][k]) - max(l['box'][0][k], other['box'][0][k]) > 1 for k in (0, 2))
+                if touching and overlap and not _floats(other, axis):
+                    self.support[l['id']] = other
+                    break
 
     def extendable(self, l):
         if l['id'] not in self._options:
@@ -366,11 +379,17 @@ class _Seams:
                     return None
         extend, shift, allowed, left = {}, [], None, 0
         for l in self.solid:
+            where = self.side(l, cut_of[l['id']])
+            lo, hi = self.ends(l)
+            if l['id'] not in lengthen and lo < cut_of[l['id']] - 0.5 < cut_of[l['id']] + 0.5 < hi and l['id'] in self.support:
+                base = self.support[l['id']]          # a detail crossing the cut follows what it sits on
+                where = 'L' if base['id'] in lengthen else self.side(base, cut_of[base['id']])
+                where = 'L' if where == 'E' else where
             if l['id'] in lengthen:
                 found = self.extendable(l)
                 allowed = set(found) if allowed is None else allowed & set(found)
                 extend[l['id']] = found
-            elif self.side(l, cut_of[l['id']]) == 'R':
+            elif where == 'R':
                 shift.append(l['id'])
             else:
                 left += 1
@@ -518,6 +537,47 @@ def _footprint(leaves):
             min(l['box'][0][2] for l in core), max(l['box'][1][2] for l in core))
 
 
+def _scenery(leaves):
+    """Ids of the parts around a building (garden, paths, lamps): outside the rectangle under its roof and not touching
+    the house through other parts. Empty for anything that is not a building with walls and a roof."""
+    if not any(l['role'] == 'wall' for l in leaves) or not any(l['role'] == 'roof' for l in leaves):
+        return set()
+    rect = _footprint(leaves)
+    solid = [l for l in leaves if l['kind'] != 'baseplate']
+    attached = [l for l in solid if _inside(l, rect)]
+    near = (rect[0] - 2 * STUD, rect[1] + 2 * STUD, rect[2] - 2 * STUD, rect[3] + 2 * STUD)
+    outside = [l for l in solid if not _inside(l, rect) and _inside(l, near, margin=-0.5)]   # within two studs of it
+
+    def touch(a, b):
+        return all(min(a['box'][1][k], b['box'][1][k]) - max(a['box'][0][k], b['box'][0][k]) > -0.5 for k in range(3))
+    # what touches the house within two studs of its walls (a flower box, a fence against its corner) moves with it;
+    # everything else around it (a tree, a swing, a lamp post on the baseplate) is scenery and stays
+    reached, frontier = set(), list(attached)
+    while frontier:
+        nxt = []
+        for l in outside:
+            if l['id'] not in reached and any(touch(l, f) for f in frontier):
+                reached.add(l['id'])
+                nxt.append(l)
+        frontier = nxt
+    # whatever those parts stand on or carry goes with them (the pillar under an arch that springs from the wall)
+    others = [l for l in solid if not _inside(l, rect)]
+    stacked = attached + [l for l in others if l['id'] in reached]
+    while stacked:
+        nxt = []
+        for l in others:
+            if l['id'] in reached:
+                continue
+            for f in stacked:
+                above_below = abs(l['ut'] - f['ub']) < 1.5 or abs(l['ub'] - f['ut']) < 1.5
+                if above_below and all(min(l['box'][1][k], f['box'][1][k]) - max(l['box'][0][k], f['box'][0][k]) > 1 for k in (0, 2)):
+                    reached.add(l['id'])
+                    nxt.append(l)
+                    break
+        stacked = nxt
+    return {l['id'] for l in solid if not _inside(l, rect) and l['id'] not in reached}
+
+
 def _inside(leaf, rect, margin=1.0):
     x0, x1, z0, z1 = rect
     lo, hi = leaf['box']
@@ -572,11 +632,12 @@ def optional_groups(leaves):
         return False
     total = len(leaves)
     found = {}
-    by_group, names = collections.defaultdict(list), {}
+    by_group, names, section_of = collections.defaultdict(list), {}, {}
     for l in leaves:
-        for key, name in l.get('groups', ()):        # submodel instances at every depth: a garden lamp inside the house
+        for key, name, section in l.get('groups', ()):   # submodel instances at every depth: a garden lamp in the house
             by_group[key].append(l['id'])
-            names[key] = name
+            names[key], section_of[key] = name, section
+    instances = collections.defaultdict(list)          # section -> optional instances of it
     role_of = {l['id']: l['role'] for l in leaves}
     seen = set()
     for key, ids in sorted(by_group.items(), key=lambda kv: (kv[0].count('/'), kv[0])):
@@ -590,6 +651,15 @@ def optional_groups(leaves):
             while slug in found:
                 slug += '_b'
             found[slug] = dict(label=f'sub-assembly {name}', leaves=ids)
+            instances[section_of[key]].append(slug)
+    for section, slugs in instances.items():          # four identical filler panels are one knob, not four
+        if len(slugs) < 2:
+            continue
+        stem = re.sub(r'\.(ldr|mpd|dat)$', '', section, flags=re.IGNORECASE).split(' - ')[-1]
+        ids = [i for slug in slugs for i in found.pop(slug)['leaves']]
+        if len(ids) <= 0.4 * total:
+            found['part_' + re.sub(r'[^a-z0-9]+', '_', stem.casefold()).strip('_') + '_all'] = dict(
+                label=f'all {len(slugs)} {stem}', leaves=ids)
     for role in OPTIONAL_ROLES:
         ids = [l['id'] for l in leaves if l['role'] == role]
         if 2 <= len(ids) <= 0.4 * total:

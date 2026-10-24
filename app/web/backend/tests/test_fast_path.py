@@ -376,7 +376,28 @@ def test_registry_dump_matches_the_toolkit_when_available():
     if fresh is None:
         pytest.skip("toolkit cannot be imported here")
     generator_bridge._cache_path().unlink(missing_ok=True)
-    assert {e["id"]: e["params"] for e in fresh["entries"]} == {k: v["params"] for k, v in ENTRIES.items()}
+    generators = [e for e in fresh["entries"] if e.get("kind") != "template"]      # templates: data, tested below
+    assert {e["id"]: e["params"] for e in generators} == {k: v["params"] for k, v in ENTRIES.items()}
+
+
+def test_a_template_wins_only_a_kind_no_generator_owns():
+    """Templates (docs/plans/build-templates) sit next to the generators as "template:<id>"; a generator wins a tie."""
+    flatbed = {"id": "template:flatbed-truck", "kind": "template", "title": "Flatbed truck", "families": ["truck"],
+               "kinds": ["flatbed truck", "flatbed"], "quality": "Derived from a model", "defaults": {"z_delta": 0},
+               "params": {"type": "object", "properties": {
+                   "colour_body": {"type": ["string", "integer"], "x-colour": True, "default": 14},
+                   "z_delta": {"enum": [0, 2, 4], "default": 0}}}}
+    cottage = dict(flatbed, id="template:willowbank-cottage", families=["house", "building"], kinds=["cottage"])
+    generator_bridge.set_registry(dict(REGISTRY, entries=REGISTRY["entries"] + [flatbed, cottage]))
+    try:
+        entry, _ = fast_path.choose({"intent": "new_model", "subject": {"family": "truck", "kind": "flatbed truck"}})
+        assert entry["id"] == "template:flatbed-truck"
+        entry, _ = fast_path.choose({"intent": "new_model", "subject": {"family": "house", "kind": "cottage"}})
+        assert entry["id"] == "house"
+        params, notes = fast_path.params_from_spec(flatbed, {"subject": {"family": "truck"}, "colours": {"body": "red"}})
+        assert params["colour_body"] == "red" and params["z_delta"] == 0
+    finally:
+        generator_bridge.set_registry(REGISTRY)
 
 
 def test_estimate_with_a_generator_loads_a_cold_registry(client, provider, monkeypatch):

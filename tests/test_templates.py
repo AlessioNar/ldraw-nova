@@ -71,7 +71,7 @@ def test_colour_by_role_changes_only_that_role():
 
 def test_bad_parameters_are_rejected():
     t = templates.get('flatbed-truck')
-    for bad in [{'z_delta': 3}, {'colour_body': 'plaid'}, {'nope': 1}, {'swap_tile_1x2': '999'}]:
+    for bad in [{'z_delta': 99}, {'z_delta': -99}, {'colour_body': 'plaid'}, {'nope': 1}, {'swap_tile_1x2': '999'}]:
         with pytest.raises(ValueError):
             t.generate(bad)
 
