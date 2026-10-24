@@ -7,7 +7,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { wsApi } from "./wsApi";
 import type { CanvasCommand, CanvasEvent, CanvasMode, CanvasPiece, DescribeResult, DraftInfo, PartsCheckData, Proposal, Tool, WorkspaceData, WsVersion } from "./types";
 
-export type Tab = "parts" | "piece" | "ai" | "settings";
+export type Tab = "chat" | "parts" | "piece" | "settings";
 export type Viewing = { kind: "version"; version: number } | { kind: "proposal"; id: string } | null;
 export type VersionRow = WsVersion & { detail?: BuildVersion };
 export type Toast = { text: string; error?: boolean; action?: { label: string; run: () => void } };
@@ -23,7 +23,7 @@ export function useWorkspace(id: string) {
   const [ws, setWs] = useState<WorkspaceData | null>(null);
   const [draft, setDraftState] = useState<DraftInfo | null>(null);
   const [check, setCheck] = useState<PartsCheckData | null>(null);
-  const [tab, setTabState] = useState<Tab>("parts");
+  const [tab, setTabState] = useState<Tab>("chat");
   const [tool, setToolState] = useState<Tool>("select");
   const [mode, setModeState] = useState<CanvasMode>("edit");
   const [colour, setColour] = useState(4);                       // colour for new bricks and the paint tool
@@ -33,14 +33,13 @@ export function useWorkspace(id: string) {
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
-  const [aiSeed, setAiSeed] = useState<{ text: string; n: number } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
   const [steps, setSteps] = useState<{ total: number; current: number } | null>(null);
 
   const sendRef = useRef<(c: CanvasCommand) => void>(() => {});
-  const tabRef = useRef<Tab>("parts");
-  const prevTab = useRef<Tab>("parts");
+  const tabRef = useRef<Tab>("chat");
+  const prevTab = useRef<Tab>("chat");
   const draftTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const saveRef = useRef<() => unknown>(() => {});
   const checkTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -80,8 +79,8 @@ export function useWorkspace(id: string) {
 
   useEffect(() => {
     setDetail(null); setNotFound(false); setWs(null); setDraftState(null); setCheck(null); setViewing(null); setSelection([]);
-    setToast(null); setConfirm(null); setAiSeed(null); setCanvasReady(false); setSteps(null);
-    setToolState("select"); tabRef.current = "parts"; setTabState("parts");
+    setToast(null); setConfirm(null); setCanvasReady(false); setSteps(null);
+    setToolState("select"); tabRef.current = "chat"; setTabState("chat");
     let live = true;
     (async () => {
       try {
@@ -160,7 +159,8 @@ export function useWorkspace(id: string) {
   }
   const undo = () => { if (!viewing) send({ cmd: "undo" }); };
   const redo = () => { if (!viewing) send({ cmd: "redo" }); };
-  const afterBackendChange = async () => { await reloadAll(); send({ cmd: "reload" }); };
+  // A read-only view (version or proposal) ignores reload, so leave it first (a no-op when the canvas shows the draft).
+  const afterBackendChange = async () => { await reloadAll(); send({ cmd: "back-to-draft" }); send({ cmd: "reload" }); };
 
   const setTool = useCallback((t: Tool) => { setToolState(t); sendRef.current({ cmd: "set-tool", tool: t }); }, []);
   const setMode = useCallback((m: CanvasMode) => { setModeState(m); sendRef.current({ cmd: "set-mode", mode: m }); }, []);
@@ -213,13 +213,12 @@ export function useWorkspace(id: string) {
     });
   };
 
-  const describe = async (text: string): Promise<DescribeResult> => {
-    const r = await wsApi.describe(id, text);
+  /** One chat message through the free fast path. The server saves the turn in the build's chat; the chat shows the result. */
+  const describe = async (text: string, previous?: string, quick?: boolean): Promise<DescribeResult> => {
+    const r = await wsApi.describe(id, text, previous, quick);
     if (r.route === "generator" || r.route === "edit") {
       if (r.draft) setServerDraft(r.draft);
       setViewing(null); await afterBackendChange();
-      const what = [...(r.changes ?? []).map((c) => `${c.label}: ${String(c.from)} to ${String(c.to)}`), ...(r.notes ?? [])].join("; ");
-      say(`Applied${what ? `: ${what}` : "."}`, { action: { label: "Undo", run: undo } });
     }
     return r;
   };
@@ -245,8 +244,6 @@ export function useWorkspace(id: string) {
   });
   const previewProposal = (p: Proposal) => { setViewing({ kind: "proposal", id: p.id }); clearSelection(); send({ cmd: "view-version", url: wsApi.proposalUrl(id, p.id) }); };
 
-  const askAi = (text: string) => { setAiSeed({ text, n: Date.now() }); setTab("ai"); };
-
   // Ctrl+S: Save as vN (the canvas owns every other shortcut)
   saveRef.current = save;
   useEffect(() => {
@@ -258,10 +255,10 @@ export function useWorkspace(id: string) {
   }, []);
 
   return {
-    id, phone, detail, notFound, ws, draft, check, tab, tool, mode, colour, selection, viewing, editTick, busy, toast, confirm, aiSeed, sheetOpen, canvasReady, steps,
+    id, phone, detail, notFound, ws, draft, check, tab, tool, mode, colour, selection, viewing, editTick, busy, toast, confirm, sheetOpen, canvasReady, steps,
     versions, changes, latest, nextVersion, empty, baseVersion, readOnly, proposals,
     setTab, setSheetOpen, setConfirm, setToast, setColour: pickColour, recolourSelection, setTool, setMode, addPart, send, registerCanvas, onCanvasEvent,
-    undo, redo, backToDraft, viewVersion, save, discard, branch, describe, regenerate, keepProposal, dropProposal, previewProposal, askAi, say,
+    undo, redo, backToDraft, viewVersion, save, discard, branch, describe, regenerate, keepProposal, dropProposal, previewProposal, say,
     rename: async (title: string) => { const d = await act("rename", () => buildsApi.rename(id, title)); if (d) { setDetail(d); refreshBuilds(); } },
     reloadAll, refreshCheck,
   };

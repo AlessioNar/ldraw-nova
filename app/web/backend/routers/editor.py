@@ -56,6 +56,9 @@ CLI_OPTIONS = {"--plan": "plan", "--state": "state", "--mpd": "mpd", "--base-rev
                "--edits": "edits", "--owned": "owned", "--mode": "mode", "--from": "source",
                "--from-mpd": "from_mpd", "--name": "name"}
 
+EMPTY_PLAN = {"version": 1, "author": "LDraw Nova editor", "sections": [
+    {"name": "model.ldr", "description": "Manual editor model", "steps": [[]]}]}
+
 _locks: dict[str, asyncio.Lock] = {}
 
 
@@ -334,8 +337,10 @@ def plan_files(store, chat_id: str) -> list[dict]:
 
 
 async def open_session(store, chat_id: str, source: Optional[str] = None, name: Optional[str] = None,
-                       replace: bool = False, mpd: Optional[Path] = None) -> dict:
-    """Start the chat's editor session (shared by the route and the agent's editor_open tool)."""
+                       replace: bool = False, mpd: Optional[Path] = None, empty: bool = False) -> dict:
+    """Start the chat's editor session (shared by the route and the agent's editor_open tool).
+
+    `empty` opens a plan with no bricks (a new build); otherwise the toolkit's one-brick skeleton."""
     _chat(store, chat_id)
     _, plan_path, state_path, _ = _paths(store, chat_id)
     if plan_path.exists() or state_path.exists():
@@ -349,6 +354,12 @@ async def open_session(store, chat_id: str, source: Optional[str] = None, name: 
         if found is None or not found.is_file() or found.suffix.lower() != ".json":
             not_found("source plan not found in the chat's work folder")
         arguments += ["--from", str(found)]
+    if empty:
+        blank = store.work_dir(chat_id) / "empty-plan.json"
+        blank.parent.mkdir(parents=True, exist_ok=True)
+        blank.write_text(json.dumps(EMPTY_PLAN), encoding="utf-8")
+        sandbox.give_to_agent(blank)
+        arguments += ["--from", str(blank)]
     if mpd is not None:      # a model file (inside the work folder) imported as the plan
         arguments += ["--from-mpd", str(mpd)]
     if name is not None:
@@ -406,6 +417,8 @@ async def editor_publish(space: str, chat_id: str, body: EditorPublish):
     if session is None:
         not_found("no editor plan for this chat")
     _, state, preview = session
+    if not sum(row[2] for row in state.get("used") or []):
+        raise HTTPException(400, "Add at least one brick before saving a version")
     build = store.is_build(chat_id)
     # A build always saves under its own name: the next version of the same build, whatever the body says.
     name = ((state.get("name") if build else body.name or state.get("name")) or "manual model").strip()[:MAX_NAME] or "manual model"

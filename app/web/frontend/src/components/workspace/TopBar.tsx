@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { buildsApi, downloadGlb, downloadUrl, type GeneratorEntry } from "../../api";
+import { useApp } from "../../context";
+import { confirmDeleteBuild } from "../../pages/Home";
 import type { Workspace } from "../../workspace/useWorkspace";
 import Icon from "./Icon";
 
@@ -12,6 +14,8 @@ export default function TopBar({ ws }: { ws: Workspace }) {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [generators, setGenerators] = useState<GeneratorEntry[]>([]);
   const generatorId = ws.ws?.generator?.id;
+  const navigate = useNavigate();
+  const { refreshBuilds } = useApp();
   useEffect(() => { if (generatorId) buildsApi.generators().then((g) => setGenerators(g.generators)).catch(() => {}); }, [generatorId]);
   if (!detail) return <header className="ws-top" />;
 
@@ -58,6 +62,14 @@ export default function TopBar({ ws }: { ws: Workspace }) {
           </div>
         </details>
       )}
+      <details className="ws-menu">
+        <summary className="ws-icon-btn" title="More" aria-label="More actions">⋯</summary>
+        <div className="ws-menu-pop">
+          <button className="danger-text" onClick={async () => {
+            if (await confirmDeleteBuild({ id: build.id, title: build.title, versions: build.versions })) { refreshBuilds(); navigate("/"); }
+          }}>Delete build…</button>
+        </div>
+      </details>
       <span className="ws-group">
         <button className="ws-icon-btn" title="Undo (Ctrl+Z)" disabled={!!viewing || !draft || draft.undo_depth === 0} onClick={ws.undo}><Icon name="undo" /><span className="ws-lbl">Undo</span></button>
         <button className="ws-icon-btn" title="Redo (Ctrl+Shift+Z)" disabled={!!viewing || !draft || draft.redo_depth === 0} onClick={ws.redo}><Icon name="redo" /><span className="ws-lbl">Redo</span></button>
