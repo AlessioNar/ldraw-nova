@@ -10,6 +10,7 @@
 }
 html, body { margin: 0; height: 100%; background: var(--stage); color: var(--fg);
              font: 13px/1.4 var(--font-text); }
+a { color: var(--accent); }
 #stage { position: fixed; inset: 0; }
 #title strong { font-weight: 600; }
 #parts { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }

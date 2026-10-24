@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { api, type Chat, type LlmEntry } from "./api";
 import { AppContext, type ViewerTarget } from "./context";
@@ -25,6 +25,8 @@ export default function App() {
   const [collapsed, setCollapsed] = usePersistentFlag("ldraw-nova.sidebar", "collapsed", "expanded", false);
   const [, setProvidersLoaded] = useState(false);
   const location = useLocation();
+  const stageRef = useRef<((target: ViewerTarget) => void) | null>(null);
+  const openViewer = useCallback((target: ViewerTarget) => (stageRef.current ?? setViewer)(target), []);
 
   const refreshChats = useCallback(() => {
     api
@@ -74,8 +76,8 @@ export default function App() {
   }, [collapsed, setCollapsed]);
 
   const state = useMemo(
-    () => ({ chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer: setViewer }),
-    [chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms],
+    () => ({ chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer, stageRef }),
+    [chats, chatsLoaded, refreshChats, llms, defaultLlmId, defaultWorkerId, refreshLlms, openViewer],
   );
 
   return (

@@ -87,6 +87,7 @@
 .sidebar-close { display: none; }
 .sidebar-toggle, .sidebar-close { font-size: 15px; padding: 2px 7px; }
 .nav-icon { width: 20px; text-align: center; flex: none; }
+.nav .label, .new-chat .label, .sidebar-footer .label { text-transform: none; letter-spacing: 0; font-size: var(--fs-sm); font-weight: inherit; color: inherit; }
 .nav a, .sidebar-footer a, .new-chat { display: flex; align-items: center; gap: 8px; }
 .sidebar-footer { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; flex: none; }
 .sidebar { overflow: hidden; }
