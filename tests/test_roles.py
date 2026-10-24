@@ -3,7 +3,6 @@ import hashlib
 import json
 from pathlib import Path
 
-import pytest
 
 from ldraw_tools import generators, roles
 

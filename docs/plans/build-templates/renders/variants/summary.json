@@ -1,0 +1,80 @@
+{
+ "house-0-source": {
+  "parts": 107,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.1
+ },
+ "house-1-taller-blue-roof": {
+  "parts": 128,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.2
+ },
+ "house-2-shorter-swapped": {
+  "parts": 100,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.3
+ },
+ "truck-0-source": {
+  "parts": 59,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.3
+ },
+ "truck-1-long-blue": {
+  "parts": 59,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.0
+ },
+ "truck-2-short-no-part2": {
+  "parts": 37,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.1
+ },
+ "tractor-0-source": {
+  "parts": 57,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.1
+ },
+ "tractor-1-long-red": {
+  "parts": 57,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.0
+ },
+ "edit-house-0-before": {
+  "parts": 108,
+  "errors": [],
+  "notes": [],
+  "seconds": 3.5
+ },
+ "edit-house-1-roof-green": {
+  "parts": 108,
+  "errors": [],
+  "notes": [
+   "recolour_role ['roof', 'dark green']: 32 ops []",
+   "recolour_role ['door', 'red']: 1 ops []"
+  ],
+  "seconds": 1.1
+ },
+ "edit-plane-0-before": {
+  "parts": 133,
+  "errors": [],
+  "notes": [],
+  "seconds": 4.9
+ },
+ "edit-plane-1-wings-red": {
+  "parts": 133,
+  "errors": [],
+  "notes": [
+   "recolour_role ['wing', 'red']: 48 ops []",
+   "recolour_role ['body', 'white']: 38 ops []"
+  ],
+  "seconds": 1.2
+ }
+}

@@ -8,7 +8,6 @@ understanding step knows).
 import collections
 import json
 import sys
-import time
 
 from ldraw_tools import generators, roles
 from ldraw_tools.common import get_parts
@@ -54,7 +53,6 @@ def main(out_path=None):
             plan = generators.generate(gid, params)['plan']
             gold = truth(plan)
             for mode, opt in modes.items():
-                t = time.time()
                 found = roles.classify(strip(plan), parts, hints=HINT[gid] if opt.get('hint') else '',
                                        use_names=opt['use_names'], facts=facts)
                 r = report[mode]

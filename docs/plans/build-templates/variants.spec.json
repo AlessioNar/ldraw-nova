@@ -1,0 +1,14 @@
+[
+ {"name": "house-0-source", "template": "small-house", "params": {}},
+ {"name": "house-1-taller-blue-roof", "template": "small-house", "params": {"courses_delta": 3, "colour_roof": "blue", "colour_wall": "white"}},
+ {"name": "house-2-shorter-swapped", "template": "small-house", "params": {"courses_delta": -1, "swap_brick_1x2": "98283", "colour_wall": "yellow"}},
+ {"name": "truck-0-source", "template": "flatbed-truck", "params": {}},
+ {"name": "truck-1-long-blue", "template": "flatbed-truck", "params": {"z_delta": 4, "colour_body": "blue", "colour_trim": "yellow"}},
+ {"name": "truck-2-short-no-part2", "template": "flatbed-truck", "params": {"z_delta": -2, "colour_body": "bright green", "include_part_p2": false}},
+ {"name": "tractor-0-source", "template": "tractor-trailer", "params": {}},
+ {"name": "tractor-1-long-red", "template": "tractor-trailer", "params": {"z_delta": 6, "colour_body": "red", "colour_chassis": "black"}},
+ {"name": "edit-house-0-before", "src": "544-1_House.mpd", "edits": []},
+ {"name": "edit-house-1-roof-green", "src": "544-1_House.mpd", "edits": [["recolour_role", "roof", "dark green"], ["recolour_role", "door", "red"]]},
+ {"name": "edit-plane-0-before", "src": "31049-1_Single-Engine-Airplane.mpd", "edits": []},
+ {"name": "edit-plane-1-wings-red", "src": "31049-1_Single-Engine-Airplane.mpd", "edits": [["recolour_role", "wing", "red"], ["recolour_role", "body", "white"]]}
+]

@@ -15,7 +15,7 @@ import re
 
 import numpy as np
 
-from .. import role_edits, roles
+from .. import roles
 from ..builder import build_plan
 from ..editor import import_mpd
 from ..geometry import analyze_geometry
@@ -235,7 +235,7 @@ def course_candidates(leaves):
             continue
         slice_ = [l for l in leaves if l['ub'] >= cut - COURSE - tol and l['ut'] <= cut + tol and l['ub'] <= cut - COURSE + tol]
         above = [l for l in leaves if l['ub'] >= cut - tol]
-        if len(slice_) < 4 or not above or any(l['role'] not in SLICE_ROLES for l in slice_):
+        if len(slice_) < 4 or not above or any(l['role'] not in SLICE_ROLES and not (l['role'] == 'roof' and l['kind'] == 'brick') for l in slice_):
             continue
         out.append((len(slice_), cut, [l['id'] for l in slice_]))
     if not out:
@@ -352,6 +352,8 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
                             kept += [x for x in side if abs(x) <= abs(d)]
                             break
                 allowed = sorted(kept)
+                if len(extend) < 3:                       # one or two parts bridge the gap: a long bare bridge is not a design
+                    allowed = [d for d in allowed if abs(d) <= 4]
                 cand['delta'] = allowed
                 ok_all = bool(allowed)
             tried.append(dict(cut=cut, deltas=allowed, ok=ok_all, checks={str(k): v for k, v in verdicts.items()}))
@@ -377,7 +379,7 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
             accepted.pop()                                   # the combination failed: fall back to fewer cuts
         report['rejected'][axis] = [t for t in tried if not t['ok']]
         log('stretch', axis, report['verified'].get(axis))
-    for count, cut, ids in course_candidates(leaves):
+    for _count, cut, ids in course_candidates(leaves):
         spec = dict(cut=cut, height=COURSE, slice=ids, delta=list(range(COURSE_RANGE[0], COURSE_RANGE[1] + 1)))
         trial = dict(data, courses=spec)
         verdicts, ok_all = {}, True

@@ -313,11 +313,18 @@ def classify(plan, parts, *, hints='', use_names=True, facts=None):
     if domain == 'building' and slopes:
         roof_start = min(rel(lf)[0] for lf in slopes)
     wheel_top = max((rel(lf)[1] for lf in leaves if lf['facts']['kind'] in ('wheel', 'tyre')), default=None)
+    roof_colours = set()
+    if domain == 'building':
+        # A stepped brick gable has no slopes: a colour that only appears in the top of the model is the roof.
+        body = [lf for lf in solid if lf['facts']['kind'] not in ('slope', 'tile', 'plate') and rel(lf)[0] < .62]
+        upper = collections.Counter(lf['colour'] for lf in solid if rel(lf)[0] >= .62 and lf['facts']['kind'] != 'slope')
+        below = {lf['colour'] for lf in body} | {lf['colour'] for lf in solid if rel(lf)[0] < .4}
+        roof_colours = {c for c, n in upper.items() if n >= 3 and c not in below and not transparent_colour(parts, c)}
 
     votes = collections.defaultdict(list)
     for i, leaf in enumerate(leaves):
         votes[leaf['key']].append(_score(leaf, transparent[i], domain, rel(leaf), share(leaf), lateral(leaf), roof_start,
-                                         wheel_top, sections, root['name'], use_names))
+                                         wheel_top, sections, root['name'], use_names, roof_colours))
     result = {}
     for key, found in votes.items():     # a part inside a submodel used several times is voted on by every instance
         ballot = collections.defaultdict(float)
@@ -353,7 +360,11 @@ def _entry_key(plan, key):
     return key
 
 
-def _score(leaf, glassy, domain, rel_h, share, lateral, roof_start, wheel_top, sections, root, use_names):
+def transparent_colour(parts, colour):
+    return _transparent(parts, colour)
+
+
+def _score(leaf, glassy, domain, rel_h, share, lateral, roof_start, wheel_top, sections, root, use_names, roof_colours=()):
     info = leaf['facts']
     kind, desc = info['kind'], info['desc'].casefold()
     bottom, top, mid = rel_h
@@ -388,6 +399,8 @@ def _score(leaf, glassy, domain, rel_h, share, lateral, roof_start, wheel_top, s
     # 2. what the part's place in the model says, and 3. what the submodel it sits in is called; the surer one wins
     if domain == 'building':
         geo = _building(kind, desc, bottom, top, mid, share, roof_start)
+        if leaf['colour'] in roof_colours and bottom >= .6 and kind in ('brick', 'plate', 'tile', 'other', 'wedgeplate') and geo.role != 'roof':
+            geo = Role('roof', .65, 'colour that only the top of the building has')
     elif domain == 'vehicle':
         geo = _vehicle(kind, desc, bottom, top, mid, share, wheel_top)
     elif domain == 'aircraft':

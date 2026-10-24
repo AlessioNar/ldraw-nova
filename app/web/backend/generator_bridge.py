@@ -21,16 +21,19 @@ _DUMP = (
     "import json\n"
     "from ldraw_tools import generators as g\n"
     "from ldraw_tools.generators.colours import NAMES\n"
-    "print(json.dumps({'digest': g.digest(), 'entries': [x.entry() for x in g.REGISTRY.values()], 'colours': sorted(NAMES)}))\n"
+    "from ldraw_tools import templates as t\n"
+    "print(json.dumps({'digest': g.digest(), 'entries': [x.entry() for x in g.REGISTRY.values()], 'colours': sorted(NAMES),\n"
+    "                  'templates': [x.entry() for x in t.REGISTRY.values()], 'template_digest': t.digest()}))\n"
 )
 _memory: Optional[dict] = None
 _lock: Optional[asyncio.Lock] = None
 
 
 def _signature() -> str:
-    folder = settings.TOOLKIT_DIR / "ldraw_tools" / "generators"
+    root = settings.TOOLKIT_DIR / "ldraw_tools"
     try:
-        return ",".join(f"{p.name}:{p.stat().st_mtime_ns}" for p in sorted(folder.glob("*.py")))
+        files = sorted(root.glob("generators/*.py")) + sorted(root.glob("templates/*.py")) + sorted(root.glob("data/templates/*.json"))
+        return ",".join(f"{p.parent.name}/{p.name}:{p.stat().st_mtime_ns}" for p in files)
     except OSError:
         return ""
 
@@ -50,6 +53,11 @@ def cached() -> Optional[dict]:
         except (OSError, ValueError):
             pass
     return _memory
+
+
+def template_entries() -> list:
+    """Entries of the templates (builds turned into parametric starting points, docs/plans/build-templates); [] if none."""
+    return (cached() or {}).get("templates") or []
 
 
 def set_registry(data: Optional[dict]) -> None:

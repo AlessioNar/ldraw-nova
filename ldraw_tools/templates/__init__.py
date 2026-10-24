@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..generators.base import digest_line
-from . import core
+from . import core  # noqa: F401
 from .core import Template, from_data, load  # noqa: F401
 
 BUNDLED = Path(__file__).resolve().parents[1] / 'data' / 'templates'

@@ -7,7 +7,6 @@ Writes OUTDIR/<name>.png, <name>.roles.json and summary.json.
 """
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 
@@ -60,7 +59,11 @@ def main(argv=None):
                 text = build_plan(recoloured(tagged), parts, validate=False)[0]
                 mpd = out / f'{name}.mpd'
                 mpd.write_text(text)
-                render(mpd, library_path(), out / name, views=args.views, timeout=240)
+                try:
+                    render(mpd, library_path(), out / name, views=args.views, timeout=240)
+                except Exception:  # noqa: BLE001 - old LeoCAD fails the BOM step after the PNGs are written
+                    if not all((out / name / f'{v}.png').exists() for v in args.views):
+                        raise
                 mpd.unlink()
                 for view in args.views:
                     (out / name / f'{view}.png').replace(out / f'{name}-{view}.png')

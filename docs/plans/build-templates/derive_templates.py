@@ -6,7 +6,6 @@ SPEC.json: a list of {"id", "src" (reference model name or path), "title", "fami
 """
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 

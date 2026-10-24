@@ -186,7 +186,6 @@ def _removal(plan, targets):
     """Ops deleting the targets, refusing what would break the plan (dependants) or empty a section."""
     by_key = {(s['name'], e['id']): e for s, e in _entries(plan)}
     root = plan['sections'][0]['name']
-    sections = {s['name'].casefold(): s['name'] for s in plan['sections']}
     skipped, notes = [], []
     targets = {k for k in targets if k in by_key}
     # Placements that other placements depend on (on / attach.to / snap.to) stay unless the dependants go too.

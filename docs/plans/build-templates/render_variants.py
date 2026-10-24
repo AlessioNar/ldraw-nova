@@ -47,7 +47,11 @@ def main(outdir, spec):
             errors = [d['message'] for d in diagnostics if d['severity'] == 'error']
             mpd = out / f"{item['name']}.mpd"
             mpd.write_text(text)
-            render(mpd, library_path(), out / item['name'], views=['home'], timeout=300)
+            try:
+                render(mpd, library_path(), out / item['name'], views=['home'], timeout=300)
+            except Exception:  # noqa: BLE001 - old LeoCAD fails the BOM step after the PNGs are written
+                if not (out / item['name'] / 'home.png').exists():
+                    raise
             (out / item['name'] / 'home.png').replace(out / f"{item['name']}.png")
             mpd.unlink()
             summary[item['name']] = dict(parts=sum(len(s) for sec in plan['sections'] for s in sec['steps']), errors=errors[:3],
