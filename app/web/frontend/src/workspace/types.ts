@@ -13,8 +13,9 @@ export type Proposal = { id: string; created_at: number; summary: { added: numbe
 export type WorkspaceData = {
   build?: unknown; versions: WsVersion[]; draft: DraftInfo | null;
   generator: { id: string; params: Record<string, unknown> } | null; proposals: Proposal[]; chat_id: string | null;
+  chat_mode?: "ai" | "quick"; agent_chat?: boolean;
 };
-export type DescribeResult = Partial<Describe> & { route: Describe["route"]; draft?: DraftInfo | null; chat_id?: string; took_ms?: number; choices?: string[] };
+export type DescribeResult = Partial<Describe> & { route: Describe["route"]; draft?: DraftInfo | null; chat_id?: string; took_ms?: number; choices?: string[]; chat_mode?: "ai" | "quick" };
 export type RegenerateResult = { replaced_manual_edits: boolean; draft?: DraftInfo | null };
 
 // ---- canvas messages (window.postMessage, type prefixed "obd:") ----
