@@ -89,6 +89,9 @@ def gable(ctx, rect, y_top, st):
     if D < 4:
         raise ValueError('roof too narrow for a gable')
     prev_front = prev_back = set()
+    hole = gable_window_cells(ctx, D, T) if cfg['gable_windows'] else None
+    if cfg['gable_windows'] and hole is None:
+        ctx.note('gable windows skipped: the gable end is too narrow for a window (gable-window-fits)')
     for t in range(T):
         y0 = y_top + 3 * t
         prev_front = slope_run(ctx, frame, colour, 'roof', t, 0, W, y0, 0, f'roof tier {t} front', prev_front)
@@ -97,7 +100,13 @@ def gable(ctx, rect, y_top, st):
         mid0, mid1 = t + 2, D - t - 2
         if mid1 > mid0:
             for u in (g, W - g - 1):
-                _gable_wall(ctx, frame, u, mid0, mid1, y0, wall, t)
+                if hole and t < 2:
+                    _gable_wall(ctx, frame, u, mid0, hole, y0, wall, t)
+                    _gable_wall(ctx, frame, u, hole + 2, mid1, y0, wall, t)
+                    if t == 0:
+                        _gable_window(ctx, frame, u, hole, y0)
+                else:
+                    _gable_wall(ctx, frame, u, mid0, mid1, y0, wall, t)
     ridge_v0 = T
     ridge_d = D - 2 * T
     keep = set()
@@ -112,8 +121,25 @@ def gable(ctx, rect, y_top, st):
     return frame
 
 
+def gable_window_cells(ctx, D, T):
+    """First of the two cells (across the ridge) of a 2x2 window in the gable end, or None when tiers 0 and 1 of the
+    gable wall are not both wide enough: the window is two courses (tiers) tall and needs tier 2 or the slopes above."""
+    if T < 2:
+        return None
+    c = D // 2 - 1
+    return c if (c >= 3 and c + 2 <= D - 3) else None
+
+
+def _gable_window(ctx, frame, u, v, y0):
+    x, z = frame.point(u + .5, v + 1)
+    ctx.canvas.put(catalog.WINDOW_2X2, ctx.code(ctx.cfg['openings']['frame_colour']), 'window', x, z, y0,
+                   90 if frame.along_x else 0, label='gable window')
+
+
 def _gable_wall(ctx, frame, u, v0, v1, y0, colour, tier):
     n = v1 - v0
+    if n <= 0:
+        return
     start = v0
     for length in tiling.tile_run(n, start, set()):
         x, z = frame.point(u + .5, start + length / 2)

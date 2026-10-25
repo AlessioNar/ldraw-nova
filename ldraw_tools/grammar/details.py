@@ -153,3 +153,41 @@ def chimney(ctx):
     for k in range(cfg['chimney_courses']):
         ctx.canvas.put('3003', colour, 'detail', x, z, y + 3 * k, 0, label='chimney')
     ctx.canvas.put('3022', colour, 'detail', x, z, y + 3 * cfg['chimney_courses'], 0, label='chimney cap')
+
+
+def fence(ctx):
+    """Picket fence on the outer ring of the base plate: 1x1 posts two studs apart under 1x3 rails, gaps where
+    something (the path) already stands. Everything stands on the base plate, so it is connected."""
+    cfg = ctx.cfg['details']
+    if not cfg['fence'] or ctx.base_rect is None or ctx.cfg['base']['kind'] != 'plate':
+        return
+    colour = ctx.code(cfg['fence_colour'])
+    bx0, bz0, bw, bd = ctx.base_rect
+    y = ctx.y_ground
+    lines = [[(i, bz0) for i in range(bx0, bx0 + bw)], [(i, bz0 + bd - 1) for i in range(bx0, bx0 + bw)],
+             [(bx0, j) for j in range(bz0 + 1, bz0 + bd - 1)], [(bx0 + bw - 1, j) for j in range(bz0 + 1, bz0 + bd - 1)]]
+    for line in lines:
+        run = []
+        for cell in line + [None]:
+            if cell is not None and ctx.canvas.all_free([cell], y, 4):
+                run.append(cell)
+                continue
+            _fence_run(ctx, run, colour, y)
+            run = []
+
+
+def _fence_run(ctx, run, colour, y):
+    pos = 0
+    while pos < len(run):
+        n = min(3, len(run) - pos)
+        posts = (pos, pos + 2) if n == 3 else tuple(range(pos, pos + n))
+        for p in posts:
+            ctx.canvas.put(catalog.BRICK[1], colour, 'detail', run[p][0] + .5, run[p][1] + .5, y, 0, label='fence post')
+        first, last = run[pos], run[pos + n - 1]
+        if n > 1:
+            horizontal = first[1] == last[1]
+            cx, cz = (first[0] + last[0]) / 2 + .5, (first[1] + last[1]) / 2 + .5
+            ctx.canvas.put(catalog.PLATE[n], colour, 'detail', cx, cz, y + 3, 0 if horizontal else 90, label='fence rail')
+        else:
+            ctx.canvas.put(catalog.PLATE[1], colour, 'detail', first[0] + .5, first[1] + .5, y + 3, 0, label='fence rail')
+        pos += n

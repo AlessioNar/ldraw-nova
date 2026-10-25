@@ -89,7 +89,13 @@ SCHEMA = {
             count=integer(0, 0, 12, 'Windows per facade (0 = as many as fit)'),
             sides={'type': 'array', 'uniqueItems': True, 'items': {'enum': SIDES}, 'default': list(SIDES),
                    'description': 'Facades that get windows'},
-            above_door=flag(True, 'A window above the door on upper floors')),
+            above_door=flag(True, 'A window above the door on upper floors'),
+            sills=flag(False, 'Projecting sill plate under every rect, small, tall and wide window that has a wall course below it'),
+            sill_colour=colour('white', 'Window sills'),
+            shutters=flag(False, 'Coloured shutter bricks on both sides of every rect, small, tall and wide window'),
+            shutter_colour=colour('dark green', 'Shutters'),
+            keystones=flag(False, 'Arch windows: a keystone brick in the course above the arch'),
+            keystone_colour=colour('light grey', 'Keystone')),
         'corners': group('Corners', 'Building corners',
             style=choice('plain', ['plain', 'pillars', 'towers'], 'plain interlocking corners, coloured pillars, or corner towers'),
             pillar_colour=colour('white', 'Pillar/quoin colour'),
@@ -114,7 +120,8 @@ SCHEMA = {
             merlon=integer(1, 1, 2, 'Battlement merlon width'),
             gap=integer(1, 1, 2, 'Battlement gap width'),
             parapet_courses=integer(1, 1, 2, 'Parapet height in courses'),
-            crenel_colour=colour('tan', 'Parapet and merlon colour')),
+            crenel_colour=colour('tan', 'Parapet and merlon colour'),
+            gable_windows=flag(False, 'Gable roofs: a small window in each gable end')),
         'details': group('Details', 'Add-ons',
             chimney=choice('none', ['none', 'left', 'centre', 'right'], 'Chimney on the ridge (gable/hip)'),
             chimney_colour=colour('dark grey', 'Chimney bricks'),
@@ -125,6 +132,11 @@ SCHEMA = {
             balcony_colour=colour('white', 'Balcony floor and railing'),
             sign=choice('none', ['none', 'fascia'], 'Shop sign band above the ground floor'),
             sign_colour=colour('red', 'Sign band colour'),
+            flower_boxes=flag(False, 'Flower boxes on the window sills (turns sills on)'),
+            planter_colour=colour('reddish brown', 'Planter boxes'),
+            flower_colour=colour('red', 'Flowers'),
+            fence=flag(False, 'Picket fence round the garden at the edge of the base plate, open where the path crosses it'),
+            fence_colour=colour('white', 'Fence'),
             connectors=flag(False, 'Technic pin bricks in the side walls near the top of every storey, to bolt modules together')),
         'base': group('Base', 'Ground',
             kind=choice('plate', ['none', 'plate', 'modular'], 'none, a plate round the building, or a 32x32 modular-building plate with a sidewalk'),
@@ -156,6 +168,9 @@ CONSTRAINTS = [
     ('eaves-setback', 'Eave roofs round storeys need each upper storey to step in by 1 or more'),
     ('setback-fits', 'The top storey must stay at least 4 studs wide after all setbacks'),
     ('eaves-rect', 'Eave roofs only go round rectangular storeys'),
+    ('fence-base', 'A fence needs a plain base plate with a margin of 2 studs or more'),
+    ('flowers-sills', 'Flower boxes stand on window sills, so they turn sills on'),
+    ('gable-window-fits', 'A gable-end window needs a gable roof at least 8 studs deep'),
     ('sign-shop', 'A fascia sign needs a door and a ground storey of 7 or more courses'),
 ]
 
@@ -291,6 +306,15 @@ def normalise(config):
         if dt['sign'] != 'none':
             dt['sign'] = 'none'
             notes.append('sign removed: it needs a door (sign-shop)')
+    if dt['fence'] and (bs['kind'] != 'plate' or bs['margin'] < 2):
+        dt['fence'] = False
+        notes.append('fence removed: it needs a plain base plate with a margin of 2 or more (fence-base)')
+    if dt['flower_boxes'] and not op['sills']:
+        op['sills'] = True
+        notes.append('sills turned on: flower boxes stand on them (flowers-sills)')
+    if rf['gable_windows'] and (rf['style'] != 'gable' or min(w, d) + 2 * rf['overhang'] < 8):
+        rf['gable_windows'] = False
+        notes.append('gable windows removed: they need a gable roof at least 8 studs deep (gable-window-fits)')
     if dt['balcony'] and st['count'] < 2:
         dt['balcony'] = False
         notes.append('balcony removed: it needs 2 or more storeys (balcony-storeys)')

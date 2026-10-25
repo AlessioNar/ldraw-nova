@@ -13,8 +13,8 @@ ROLES = {
     'glass': 'Transparent panes',
     'base': 'Baseplate, ground, paths',
     'tower': 'Corner tower bodies (round bricks, tower walls) and tower caps',
-    'detail': 'Chimney, porch, balcony, steps, sign, crenellation extras',
-    'trim': 'Bands between storeys, cornices, corner pillars, plinth',
+    'detail': 'Chimney, porch, balcony, steps, sign, shutters, flower boxes, fences, crenellation extras',
+    'trim': 'Bands between storeys, cornices, corner pillars, plinth, window sills, keystones',
     'structure': 'Interior floors and hidden supports',
 }
 ROLE_NAMES = tuple(ROLES)

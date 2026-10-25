@@ -21,6 +21,8 @@ class Storey:
     walls: footprint.Walls = None
     carve: dict = field(default_factory=dict)       # local course -> set of cells left open
     openings: list = field(default_factory=list)
+    shutters: dict = field(default_factory=dict)    # local course -> cells coloured as shutters
+    keystones: dict = field(default_factory=dict)   # local course -> cells coloured as keystones
     band_h: int = 1           # plates of floor band on top (2 when an interior floor or deck is laid)
 
     @property

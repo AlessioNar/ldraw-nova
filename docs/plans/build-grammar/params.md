@@ -64,6 +64,12 @@ Doors and windows, sized from real parts.
 | `count` | 0..12 | `0` | Windows per facade (0 = as many as fit) |
 | `sides` | any of `front`, `back`, `left`, `right` | `["front", "back", "left", "right"]` | Facades that get windows |
 | `above_door` | yes / no | `true` | A window above the door on upper floors |
+| `sills` | yes / no | `false` | Projecting sill plate under every rect, small, tall and wide window that has a wall course below it |
+| `sill_colour` | colour name or code | `white` | Window sills |
+| `shutters` | yes / no | `false` | Coloured shutter bricks on both sides of every rect, small, tall and wide window |
+| `shutter_colour` | colour name or code | `dark green` | Shutters |
+| `keystones` | yes / no | `false` | Arch windows: a keystone brick in the course above the arch |
+| `keystone_colour` | colour name or code | `light grey` | Keystone |
 
 #### Corners  (`corners`)
 
@@ -101,6 +107,7 @@ Roof or top finish.
 | `gap` | 1..2 | `1` | Battlement gap width |
 | `parapet_courses` | 1..2 | `1` | Parapet height in courses |
 | `crenel_colour` | colour name or code | `tan` | Parapet and merlon colour |
+| `gable_windows` | yes / no | `false` | Gable roofs: a small window in each gable end |
 
 #### Details  (`details`)
 
@@ -117,6 +124,11 @@ Add-ons.
 | `balcony_colour` | colour name or code | `white` | Balcony floor and railing |
 | `sign` | `none` / `fascia` | `none` | Shop sign band above the ground floor |
 | `sign_colour` | colour name or code | `red` | Sign band colour |
+| `flower_boxes` | yes / no | `false` | Flower boxes on the window sills (turns sills on) |
+| `planter_colour` | colour name or code | `reddish brown` | Planter boxes |
+| `flower_colour` | colour name or code | `red` | Flowers |
+| `fence` | yes / no | `false` | Picket fence round the garden at the edge of the base plate, open where the path crosses it |
+| `fence_colour` | colour name or code | `white` | Fence |
 | `connectors` | yes / no | `false` | Technic pin bricks in the side walls near the top of every storey, to bolt modules together |
 
 #### Base  (`base`)
@@ -155,4 +167,7 @@ Ground.
 | `eaves-setback` | Eave roofs round storeys need each upper storey to step in by 1 or more |
 | `setback-fits` | The top storey must stay at least 4 studs wide after all setbacks |
 | `eaves-rect` | Eave roofs only go round rectangular storeys |
+| `fence-base` | A fence needs a plain base plate with a margin of 2 studs or more |
+| `flowers-sills` | Flower boxes stand on window sills, so they turn sills on |
+| `gable-window-fits` | A gable-end window needs a gable roof at least 8 studs deep |
 | `sign-shop` | A fascia sign needs a door and a ground storey of 7 or more courses |

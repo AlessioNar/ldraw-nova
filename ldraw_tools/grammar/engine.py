@@ -39,6 +39,7 @@ def build(config, inventory=None):
     details.chimney(ctx)
     details.porch(ctx)
     details.path(ctx)
+    details.fence(ctx)
     canvas = ctx.canvas
     name = (cfg['name'] or 'building').strip() or 'building'
     desc = f"{name}: {cfg['footprint']['shape']} {cfg['footprint']['width']}x{cfg['footprint']['depth']} studs, {cfg['storeys']['count']} storeys, {cfg['roof']['style']} roof"
