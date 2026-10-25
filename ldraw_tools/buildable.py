@@ -1,8 +1,10 @@
 """Which bundled set models can an inventory build, or nearly build?
 
 Every model's physical BOM is expanded once and cached on disk, keyed by the model file's size and
-mtime and by a signature of the parts library, so the first run over the whole catalogue takes minutes
-and later runs take seconds.  The comparison with an inventory is inventory.match_bom, the same
+content hash and by a signature of the parts library's file names and sizes (not paths or mtimes, which
+change whenever the models are unpacked or the image is rebuilt), so the first run over the whole
+catalogue takes minutes and later runs, including after a restart, take seconds.  The image build
+runs `inventory buildable --warm`, so even the first run in a fresh container finds the cache full.  The comparison with an inventory is inventory.match_bom, the same
 counting `inventory check` uses.
 """
 from __future__ import annotations
@@ -21,7 +23,7 @@ from pathlib import Path
 from .common import CACHE, atomic_write, database_path, models_path, readonly_uri
 from .inventory import colour_name, combine, describe, index_owned, match_bom, substituted_pieces
 
-VERSION = 1
+VERSION = 2
 MIN_PARTS = 20
 TOP_MISSING = 5
 DEFAULT_BUDGET = 900        # seconds of BOM building per invocation; a rerun resumes where it stopped
@@ -29,10 +31,11 @@ SET_ID = re.compile(r"(\d+-\d+)")
 
 
 def library_signature(library):
-    """Changes with the library's part files (get_parts stamps them) and its location."""
-    stamp = library.path.parent / "signature"
-    text = stamp.read_text() if stamp.is_file() else str(library.path.stat().st_mtime_ns)
-    return hashlib.sha256(f"{VERSION}|{library.path.resolve()}|{text}".encode()).hexdigest()[:16]
+    """Changes with the library's part files (names and sizes), not with where it lives or when it was unpacked."""
+    parts = (library.path.parent / "parts").resolve()
+    files = sorted(os.scandir(parts), key=lambda e: e.name) if parts.is_dir() else []
+    text = "\n".join(f"{e.name}:{e.stat().st_size}" for e in files if e.is_file())
+    return hashlib.sha256(f"{VERSION}|{text}".encode()).hexdigest()[:16]
 
 
 def cache_dir(library, base=None):
@@ -81,20 +84,36 @@ def _slot(directory, name):
     return Path(directory) / (hashlib.sha1(name.encode()).hexdigest()[:20] + ".json")
 
 
-def _read(directory, name, stat):
+def _digest(path):
+    return hashlib.sha1(Path(path).read_bytes()).hexdigest()
+
+
+def _read(directory, name, path, stat):
+    """The cached entry for a model file: same size and mtime, or (after a re-unpack) same content."""
     try:
         data = json.loads(_slot(directory, name).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    if data.get("file") != name or data.get("size") != stat.st_size or data.get("mtime_ns") != stat.st_mtime_ns:
+    if data.get("file") != name or data.get("size") != stat.st_size:
         return None
+    if data.get("mtime_ns") != stat.st_mtime_ns:
+        try:
+            if data.get("sha1") != _digest(path):
+                return None
+        except OSError:
+            return None
+        data["mtime_ns"] = stat.st_mtime_ns
+        try:
+            atomic_write(_slot(directory, name), json.dumps(data))
+        except OSError:
+            pass
     if "bom" in data:
         return Entry(name, {(p, c): int(q) for p, c, q in data["bom"]})
     return Entry(name, None, str(data.get("error", "unreadable")))
 
 
-def _write(directory, name, stat, entry):
-    data = dict(file=name, size=stat.st_size, mtime_ns=stat.st_mtime_ns)
+def _write(directory, name, path, stat, entry):
+    data = dict(file=name, size=stat.st_size, mtime_ns=stat.st_mtime_ns, sha1=_digest(path))
     if entry.bom is not None:
         data["bom"] = [[p, c, q] for (p, c), q in sorted(entry.bom.items(), key=lambda kv: (kv[0][0], kv[0][1] is not None, kv[0][1] or 0))]
     else:
@@ -131,7 +150,7 @@ def scan(library, *, root=None, cache=None, build=True, budget=DEFAULT_BUDGET, w
     todo = []
     for path in files:
         name = path.relative_to(root).as_posix()
-        entry = _read(directory, name, path.stat())
+        entry = _read(directory, name, path, path.stat())
         if entry is None:
             todo.append((name, path))
         else:
@@ -156,7 +175,7 @@ def _build_all(library, todo, result, directory, budget, workers, progress):
 
     def record(name, path, rows, error):
         entry = Entry(name, {(p, c): q for p, c, q in rows} if rows is not None else None, error)
-        _write(directory, name, path.stat(), entry)
+        _write(directory, name, path, path.stat(), entry)
         result.entries.append(entry)
         result.built += 1
         report()
