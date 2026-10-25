@@ -1,7 +1,7 @@
 """Wall courses: cells -> running-bond bricks, with colour by style, corners that interlock, openings left open."""
 from __future__ import annotations
 
-from . import catalog, tiling
+from . import catalog, parts
 
 
 def wall_colours(ctx, st, course, cell, axis, corners, carved):
@@ -65,7 +65,7 @@ def tile_course(ctx, st, course, y0, joints, override=None):
                     continue
                 colour, role = lines[key][run[0]]
                 avoid = set(joints[axis].get(key, ())) | cur[axis].get(key - 1, set())
-                lengths = choose_lengths(ctx, len(run), run[0], avoid, colour)
+                lengths = parts.fit_run(ctx, len(run), run[0], avoid, catalog.BRICK, colour)
                 pos = run[0]
                 for length in lengths:
                     place_brick(ctx, st, axis, key, pos, length, colour, role, y0, course)
@@ -95,22 +95,6 @@ def technic_bricks(ctx, st, course, y0, free):
 def footprint_bbox(st):
     from .footprint import bbox
     return bbox(st.cells - st.blocked)
-
-
-def choose_lengths(ctx, n, start, avoid, colour):
-    inv = ctx.inv
-    allowed = tiling.BRICK_LENGTHS
-    owned = None
-    if inv is not None:
-        owned_set = {n_ for n_ in tiling.BRICK_LENGTHS if inv.left(catalog.BRICK[n_], colour) > 0}
-        if inv.mode == 'only' and owned_set:
-            allowed = tuple(x for x in tiling.BRICK_LENGTHS if x in owned_set)
-            try:
-                return tiling.tile_run(n, start, avoid, allowed)
-            except ValueError:
-                allowed = tiling.BRICK_LENGTHS
-        owned = (lambda length: 0.0 if length in owned_set else 1.8)
-    return tiling.tile_run(n, start, avoid, allowed, owned=owned)
 
 
 def place_brick(ctx, st, axis, key, pos, length, colour, role, y0, course):

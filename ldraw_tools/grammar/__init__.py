@@ -31,7 +31,8 @@ def generate(config=None, *, preset=None, inventory=None, mode='prefer', validat
 
     preset names a starting configuration that `config` then overrides. inventory is a list of
     {part, colour, qty} rows; mode 'prefer' orders choices by what is owned and reports shortages, 'only'
-    restricts tilings to owned lengths and substitutes colours that are not owned.
+    restricts tilings (bricks, slopes, plates) to owned lengths and substitutes colours, window kinds, door leaves
+    and tiles (for plates) that are not owned; every swap is listed in the report's `substitutions`.
     """
     cfg = deep_merge(preset_config(preset), config) if preset else config
     inv = None

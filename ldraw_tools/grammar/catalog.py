@@ -148,6 +148,12 @@ class Inventory:
         pool = sorted({c for (p, c) in self.rows if (codes is None or p in codes) and self.left(p, c) > 0})
         return min(pool, key=lambda c: (colour_distance(colour, c), c)) if pool else colour
 
+    def substitute(self, kind, wanted, used, reason):
+        """Record a swap in 'only' mode (once per wanted/used pair): kind is 'colour' or 'part'."""
+        entry = dict(kind=kind, wanted=wanted, used=used, reason=reason)
+        if entry not in self.substitutions:
+            self.substitutions.append(entry)
+
     def take(self, code, colour):
         key = (code, colour)
         self.used[key] = self.used.get(key, 0) + 1

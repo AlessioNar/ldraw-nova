@@ -516,6 +516,52 @@ def test_parts_aware_mode_is_deterministic():
     assert json.dumps(a['plan'], sort_keys=True) == json.dumps(b['plan'], sort_keys=True) and a['inventory'] == b['inventory']
 
 
+def _everything_but(*drop):
+    from ldraw_tools.grammar import catalog
+    return [dict(part=c, colour='white', qty=999) for c in catalog.PARTS if c not in drop]
+
+
+def _refs(result):
+    return {p['ref'] for st in result['plan']['sections'][0]['steps'] for p in st}
+
+
+def _part_swaps(result):
+    return [s for s in result['inventory']['substitutions'] if s['kind'] == 'part']
+
+
+def test_only_mode_swaps_a_door_leaf_that_is_not_owned():
+    r = grammar.generate(preset='house', inventory=_everything_but('60623'), mode='only')
+    assert '60623.dat' not in _refs(r) and '60616a.dat' in _refs(r)
+    assert dict(kind='part', wanted='60623', used='60616a', reason='door leaf not owned') in r['inventory']['substitutions']
+
+
+def test_only_mode_replaces_tiles_with_plates_when_none_are_owned():
+    from ldraw_tools.grammar import catalog
+    r = grammar.generate(preset='house', inventory=_everything_but(*catalog.TILE.values(), *catalog.TILE2.values()), mode='only')
+    assert not _refs(r) & {f'{c}.dat' for c in (*catalog.TILE.values(), *catalog.TILE2.values())}
+    assert any(s['wanted'] == 'tile' and s['used'] == 'plate' for s in _part_swaps(r))
+
+
+def test_only_mode_tiles_slopes_with_the_owned_lengths():
+    from ldraw_tools.grammar import catalog
+    r = grammar.generate(preset='house', inventory=_everything_but(catalog.SLOPE45[4], catalog.SLOPE45[3]), mode='only')
+    assert not _refs(r) & {'3037.dat', '3038.dat'} and '3039.dat' in _refs(r)
+    assert r['inventory']['complete']
+
+
+def test_only_mode_falls_back_to_a_smaller_window_it_owns():
+    from ldraw_tools.grammar import catalog
+    cfg = {'openings': {'ground_windows': 'tall', 'upper_windows': 'tall'}}
+    r = grammar.generate(cfg, preset='house', inventory=_everything_but(catalog.WINDOW_2X3), mode='only')
+    assert '60593c01.dat' not in _refs(r) and '60592c01.dat' in _refs(r)
+    assert any(s['used'] == catalog.WINDOW_2X2 and 'window' in s['reason'] for s in _part_swaps(r))
+
+
+def test_prefer_mode_never_swaps_parts():
+    r = grammar.generate(preset='house', inventory=_everything_but('60623'), mode='prefer')
+    assert '60623.dat' in _refs(r) and not _part_swaps(r)
+
+
 # ---------------------------------------------------------------- natural language
 
 @pytest.mark.parametrize('text,path,value', [

@@ -5,7 +5,7 @@ closed by stepped wall bricks, and a ridge of plates and tiles caps the top. All
 """
 from __future__ import annotations
 
-from . import catalog, tiling
+from . import catalog, parts, tiling
 
 
 class Frame:
@@ -36,7 +36,7 @@ class Frame:
 
 def slope_run(ctx, frame, colour, role, v, u0, length, y0, yaw_local, label, prev_joints):
     """A row of slopes along u from u0, 2 deep starting at v (front: low side at v; back: low side at v+2)."""
-    lengths = tiling.tile_run(length, u0, prev_joints, tiling.SLOPE_LENGTHS, cost={4: 1.0, 3: 1.35, 2: 1.0, 1: 1.8})
+    lengths = parts.fit_run(ctx, length, u0, prev_joints, catalog.SLOPE45, colour, tiling.SLOPE_LENGTHS, parts.SLOPE_COST)
     pos, joints = u0, set()
     for n in lengths:
         centre = pos + n / 2
@@ -52,11 +52,11 @@ def slope_run(ctx, frame, colour, role, v, u0, length, y0, yaw_local, label, pre
 def cap(ctx, frame, colour, role, u0, v0, w, d, y_plate, with_tiles=True, keep_free=()):
     """Plates over the ridge region and tiles on top, skipping cells in keep_free for the tiles."""
     cells = frame.rect_cells(u0, v0, w, d)
-    for (code, i, j, pw, pd) in tiling.rect_cover(cells, 'plate'):
+    for (code, i, j, pw, pd) in parts.cover(ctx, cells, 'plate', colour):
         _put_cover(ctx, code, colour, role, i, j, pw, pd, y_plate, 'ridge plate')
     if with_tiles:
         tcells = [c for c in cells if c not in keep_free]
-        for (code, i, j, pw, pd) in tiling.rect_cover(tcells, 'tile'):
+        for (code, i, j, pw, pd) in parts.cover(ctx, tcells, 'tile', colour):
             _put_cover(ctx, code, colour, role, i, j, pw, pd, y_plate + 1, 'ridge tile')
 
 
@@ -141,7 +141,7 @@ def _gable_wall(ctx, frame, u, v0, v1, y0, colour, tier):
     if n <= 0:
         return
     start = v0
-    for length in tiling.tile_run(n, start, set()):
+    for length in parts.fit_run(ctx, n, start, set(), catalog.BRICK, colour):
         x, z = frame.point(u + .5, start + length / 2)
         ctx.canvas.put(catalog.BRICK[length], colour, 'wall', x, z, y0, 90 if frame.along_x else 0, label=f'gable end tier {tier}')
         start += length
@@ -166,7 +166,7 @@ def hip(ctx, rect, y_top, colour, role, tiers=0, label='hip roof', ring_only=Fal
         for (row, yaw_local) in ((b0, 0), (b1 - 2, 180)):
             n = (a1 - 2) - (a0 + 2)
             if n > 0:
-                lengths = tiling.tile_run(n, a0 + 2, prev, tiling.SLOPE_LENGTHS, cost={4: 1.0, 3: 1.35, 2: 1.0, 1: 1.8})
+                lengths = parts.fit_run(ctx, n, a0 + 2, prev, catalog.SLOPE45, colour, tiling.SLOPE_LENGTHS, parts.SLOPE_COST)
                 pos = a0 + 2
                 for length in lengths:
                     zc = row + (1.5 if yaw_local == 0 else .5)
@@ -175,7 +175,7 @@ def hip(ctx, rect, y_top, colour, role, tiers=0, label='hip roof', ring_only=Fal
         for (col, yaw) in ((a0, 90), (a1 - 2, -90)):
             n = (b1 - 2) - (b0 + 2)
             if n > 0:
-                lengths = tiling.tile_run(n, b0 + 2, set(), tiling.SLOPE_LENGTHS, cost={4: 1.0, 3: 1.35, 2: 1.0, 1: 1.8})
+                lengths = parts.fit_run(ctx, n, b0 + 2, set(), catalog.SLOPE45, colour, tiling.SLOPE_LENGTHS, parts.SLOPE_COST)
                 pos = b0 + 2
                 for length in lengths:
                     xc = col + (1.5 if yaw == 90 else .5)
@@ -186,10 +186,10 @@ def hip(ctx, rect, y_top, colour, role, tiers=0, label='hip roof', ring_only=Fal
     inner = (T, T, w - 2 * T, d - 2 * T)
     cells = [(i0 + i, j0 + j) for i in range(inner[0], inner[0] + inner[2]) for j in range(inner[1], inner[1] + inner[3])]
     y = y_top + 3 * T
-    for (code, i, j, pw, pd) in tiling.rect_cover(cells, 'plate'):
+    for (code, i, j, pw, pd) in parts.cover(ctx, cells, 'plate', colour):
         _put_cover(ctx, code, colour, role, i, j, pw, pd, y, 'ridge plate')
     spire = (i0 + inner[0] + inner[2] // 2 - (1 if inner[2] % 2 == 0 else 0), j0 + inner[1] + inner[3] // 2 - (1 if inner[3] % 2 == 0 else 0)) if finial else None
-    for (code, i, j, pw, pd) in tiling.rect_cover([c for c in cells if c != spire], 'tile'):
+    for (code, i, j, pw, pd) in parts.cover(ctx, [c for c in cells if c != spire], 'tile', colour):
         _put_cover(ctx, code, colour, role, i, j, pw, pd, y + 1, 'ridge tile')
     if spire:
         ctx.canvas.put(catalog.ROUND_BRICK_1, colour, role, spire[0] + .5, spire[1] + .5, y + 1, 0, label='finial')

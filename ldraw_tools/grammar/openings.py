@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import math
 
-from . import catalog, footprint
+from . import catalog, footprint, parts
 from .canvas import rotate
 
 YAW = {'front': 0, 'back': 180, 'left': 90, 'right': -90}
@@ -29,14 +29,14 @@ def fit_slots(a, b, width, pier, count=None):
     return [a + half_up(extra * (k + 1)) + k * (width + pier) for k in range(n)]
 
 
-def kind_for(want, storey_courses, span_len, pier, ground):
+def kind_for(want, storey_courses, span_len, pier, ground, ctx=None):
     """Largest window kind <= want that fits the storey height and the span; None when nothing does."""
     kind = want
     while kind and kind != 'none':
         spec = catalog.WINDOWS[kind]
         height_ok = spec['courses'] + 1 <= storey_courses
         if height_ok and spec['width'] <= span_len:
-            return kind
+            return parts.window_kind(ctx, kind) if ctx is not None else kind
         kind = catalog.FALLBACK.get(kind)
     return None
 
@@ -90,7 +90,7 @@ def plan_storey(ctx, st):
             centres = []
             per = None if count is None else max(1, math.ceil(count / len(spans)))
             for (a, b) in spans:
-                kind = kind_for(want_here, n, b - a, pier, ground)
+                kind = kind_for(want_here, n, b - a, pier, ground, ctx)
                 if kind is None:
                     continue
                 w = catalog.WINDOWS[kind]['width']
@@ -99,13 +99,13 @@ def plan_storey(ctx, st):
                                             c0=base_course(kind, n, ground), courses=catalog.WINDOWS[kind]['courses']))
                     centres.append(u0 + w / 2)
             ctx.facade_slots[key] = centres + ([door_centre] if door_centre is not None and cfg['above_door'] else [])
-            if kind_for(want, n, 99, pier, ground) is not None and not centres and door_fac is None:
+            if kind_for(want, n, 99, pier, ground, ctx) is not None and not centres and door_fac is None:
                 pass
         else:
             known = ctx.facade_slots.get(key)
             if known:
                 for centre in sorted(known):
-                    kind = kind_for(want, n, ub - ua, pier, ground)
+                    kind = kind_for(want, n, ub - ua, pier, ground, ctx)
                     if kind is None:
                         break
                     w = catalog.WINDOWS[kind]['width']
@@ -115,7 +115,7 @@ def plan_storey(ctx, st):
                     st.openings.append(dict(kind=kind, side=side, line=fac['line'], u0=u0, width=w,
                                             c0=base_course(kind, n, ground), courses=catalog.WINDOWS[kind]['courses']))
             else:
-                kind = kind_for(want, n, ub - ua, pier, ground)
+                kind = kind_for(want, n, ub - ua, pier, ground, ctx)
                 if kind is None:
                     continue
                 w = catalog.WINDOWS[kind]['width']
@@ -253,7 +253,7 @@ def emit(ctx, st):
                 emit_flower_box(ctx, st, o)
         if kind == 'door':
             door = canvas.put(catalog.DOOR_FRAME, frame, 'door', x, z, y0, yaw, label='door frame ' + side)
-            style = cfg['door']
+            style = parts.door_style(ctx, cfg['door'], leaf)
             dx, dz = rotate(-1.6, .25, yaw)
             leaf_colour = frame if style in ('smooth', 'glazed') and False else leaf
             canvas.put(catalog.DOOR_LEAF[style], leaf_colour, 'door', x + dx, z + dz, y0, yaw, host=door.index,

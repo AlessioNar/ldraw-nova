@@ -1,7 +1,7 @@
 """Add-ons: base plate and path, porch, balcony, chimney."""
 from __future__ import annotations
 
-from . import catalog, footprint, tiling
+from . import catalog, footprint, parts
 from .roofs import _put_cover
 
 
@@ -27,7 +27,8 @@ def base_plate(ctx):
         prev, pos = set(), 0
         while pos < breadth:
             depth = 2 if breadth - pos >= 2 else 1
-            lengths = tiling.tile_run(length, 0, prev, (8, 6, 4, 3, 2) if depth == 2 else (8, 6, 4, 3, 2, 1))
+            lengths = parts.fit_run(ctx, length, 0, prev, catalog.PLATE2 if depth == 2 else catalog.PLATE, colour,
+                                    (8, 6, 4, 3, 2) if depth == 2 else (8, 6, 4, 3, 2, 1))
             joints, at = set(), 0
             for n in lengths:
                 code = (catalog.PLATE2 if depth == 2 else catalog.PLATE)[n]
@@ -54,7 +55,7 @@ def sidewalk(ctx):
     kerb = {c for c in cells if c[1] == bz0}
     for cells_, colour in ((cells - kerb, ctx.code(cfg['path_colour'])), (kerb, ctx.code(72))):
         free = {c for c in cells_ if ctx.canvas.free(c[0], c[1], ctx.y_ground)}
-        for (code, i, j, w, d) in tiling.rect_cover(free, 'tile'):
+        for (code, i, j, w, d) in parts.cover(ctx, free, 'tile', colour):
             _put_cover(ctx, code, colour, 'base', i, j, w, d, ctx.y_ground, 'sidewalk')
     for (i, j) in lamps:
         for k in range(4):
@@ -87,7 +88,7 @@ def path(ctx):
             k += 1
     cells = {c for c in cells if ctx.canvas.free(c[0], c[1], ctx.y_ground)}
     colour = ctx.code(cfg['path_colour'])
-    for (code, i, j, w, d) in tiling.rect_cover(cells, 'tile'):
+    for (code, i, j, w, d) in parts.cover(ctx, cells, 'tile', colour):
         _put_cover(ctx, code, colour, 'base', i, j, w, d, ctx.y_ground, 'path')
 
 
@@ -105,7 +106,7 @@ def porch(ctx):
     if len(cells) < 12:
         ctx.note('porch skipped: no room in front of the door')
         return
-    for (code, i, j, w, d) in tiling.rect_cover(cells, 'plate'):
+    for (code, i, j, w, d) in parts.cover(ctx, cells, 'plate', colour):
         _put_cover(ctx, code, colour, 'detail', i, j, w, d, y, 'porch floor')
     for (pi, pj) in ((u0 - 1, line - 2), (u0 + 4, line - 2)):
         for k in range(5):
@@ -113,9 +114,9 @@ def porch(ctx):
         ctx.canvas.put(catalog.PLATE[1], colour, 'detail', pi + .5, pj + .5, y + 16, 0, label='porch pillar')
         ctx.canvas.put(catalog.PLATE[1], colour, 'detail', pi + .5, pj + .5, y + 17, 0, label='porch pillar')
     top = footprint.rect(u0 - 1, line - 2, 6, 2)
-    for (code, i, j, w, d) in tiling.rect_cover(top, 'plate'):
+    for (code, i, j, w, d) in parts.cover(ctx, top, 'plate', roof):
         _put_cover(ctx, code, roof, 'detail', i, j, w, d, y + 18, 'porch canopy')
-    for (code, i, j, w, d) in tiling.rect_cover(top, 'tile'):
+    for (code, i, j, w, d) in parts.cover(ctx, top, 'tile', roof):
         _put_cover(ctx, code, roof, 'detail', i, j, w, d, y + 19, 'porch canopy tile')
 
 
