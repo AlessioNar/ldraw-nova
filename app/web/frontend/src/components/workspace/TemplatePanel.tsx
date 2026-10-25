@@ -147,7 +147,7 @@ export default function TemplatePanel({ ws }: { ws: Workspace }) {
           <p className="muted small ws-about">The canvas shows each part in the colour of its role. Check them: a template recolours, removes and stretches by role. Roles you correct are kept.</p>
           <ul className="tpl-legend" aria-label="Roles">
             {Object.entries(preview.roles).map(([role, info]) => (
-              <li key={role}><i style={{ background: colourHex(preview.palette[role] ?? 71) }} aria-hidden /><span>{humanise(role)}</span><span className="muted mono">{info.count}</span></li>
+              <li key={role} className={role.includes(":") ? "tpl-sub-role" : undefined}><i style={{ background: colourHex(preview.palette[role] ?? 71) }} aria-hidden /><span>{humanise(role)}</span><span className="muted mono">{info.count}</span></li>
             ))}
           </ul>
           {ws.selection.length > 0 && (
@@ -201,7 +201,7 @@ export default function TemplatePanel({ ws }: { ws: Workspace }) {
           <p className="muted small ws-about">{result.quality}</p>
           <label className="tpl-field">Name<input value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} /></label>
           <label className="tpl-field">It answers to<input value={kinds} onChange={(e) => setKinds(e.target.value)} /></label>
-          <p className="small tpl-sub">Colours by role: {result.roles.map(humanise).join(", ")}</p>
+          <p className="small tpl-sub">Colours by role: {result.roles.map((r) => result.stripes?.[r] ? `${humanise(r)} (${result.stripes[r].length} stripes)` : humanise(r)).join(", ")}</p>
           <p className="small tpl-sub">What you can vary</p>
           {result.knobs.length === 0 && <p className="muted small">No size, swap or removal survived the checks; only the colours.</p>}
           <ul className="tpl-knobs">

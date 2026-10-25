@@ -196,6 +196,64 @@ role:tail_lamp a skos:Concept ;
     skos:definition "Alias: a generator's own word for detail."@en ;
     skos:broader role:detail .
 
+# Per-colour sub-roles (issue #220): a role that is striped in more than one colour carries one narrower concept per colour group,
+# named <role>:stripe-a, -b, -c in the order the colours first appear. A sub-role is a skos:narrower of its role and folds into it
+# (canonical()); a model without stripes never uses them.
+
+role:wall:stripe-a a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "wall stripe A"@en ;
+    skos:definition "First colour group of the wall when it is striped in several colours"@en ;
+    skos:broader role:wall .
+
+role:wall:stripe-b a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "wall stripe B"@en ;
+    skos:definition "Second colour group of the wall when it is striped in several colours"@en ;
+    skos:broader role:wall .
+
+role:wall:stripe-c a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "wall stripe C"@en ;
+    skos:definition "Third colour group of the wall when it is striped in several colours"@en ;
+    skos:broader role:wall .
+
+role:roof:stripe-a a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "roof stripe A"@en ;
+    skos:definition "First colour group of the roof when it is striped in several colours"@en ;
+    skos:broader role:roof .
+
+role:roof:stripe-b a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "roof stripe B"@en ;
+    skos:definition "Second colour group of the roof when it is striped in several colours"@en ;
+    skos:broader role:roof .
+
+role:roof:stripe-c a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "roof stripe C"@en ;
+    skos:definition "Third colour group of the roof when it is striped in several colours"@en ;
+    skos:broader role:roof .
+
+role:body:stripe-a a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "body stripe A"@en ;
+    skos:definition "First colour group of the body when it is striped in several colours"@en ;
+    skos:broader role:body .
+
+role:body:stripe-b a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "body stripe B"@en ;
+    skos:definition "Second colour group of the body when it is striped in several colours"@en ;
+    skos:broader role:body .
+
+role:body:stripe-c a skos:Concept ;
+    skos:inScheme <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    skos:prefLabel "body stripe C"@en ;
+    skos:definition "Third colour group of the body when it is striped in several colours"@en ;
+    skos:broader role:body .
+
 role:grammar a skos:OrderedCollection ;
     skos:prefLabel "roles stamped by the building grammar"@en ;
     skos:memberList ( role:roof role:wall role:window role:door role:glass role:base role:tower role:detail role:trim role:structure ) .

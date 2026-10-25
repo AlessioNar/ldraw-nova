@@ -47,7 +47,7 @@ There are two folders and it matters which one you edit:
 | Source file in `ontology/` | What it holds | Published in `docs/ns/` | Notes |
 |---|---|---|---|
 | `obd.ttl` | Build, Building and its eight components (Footprint, Storeys, Walls, Openings, Corners, Roof, Details, Base), every parameter with range, default and order | yes | Checked against the hand-kept schema in CI |
-| `roles.ttl` | The role vocabulary (SKOS), its aliases and the order roles are listed in | yes | Generates a block of `ldraw_tools/role_vocab.py` |
+| `roles.ttl` | The role vocabulary (SKOS), its aliases, the per-colour sub-roles (`wall:stripe-a` ...) and the order roles are listed in | yes | Generates a block of `ldraw_tools/role_vocab.py` |
 | `shapes.ttl` | SHACL rules for buildings, one shape per validity rule | yes | |
 | `vehicles.ttl` | Vehicle, road vehicle, motorcycle, watercraft, aircraft, rail vehicle, spaceship and their components | yes | Vocabulary only, see below |
 | `sets.ttl` | Sets, set parts, brands, parts-list sources | yes | Vocabulary only. Owned sets stay in the app database |

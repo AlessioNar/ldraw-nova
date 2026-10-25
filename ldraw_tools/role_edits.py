@@ -15,6 +15,8 @@ from __future__ import annotations
 import collections
 
 from .generators.colours import colour_code
+from . import subroles
+from .role_vocab import SUBROLES
 from .roles import ROLE_WORDS, canonical
 
 # Transparent LDraw colours that keep their transparency when a window or lamp is recoloured.
@@ -50,12 +52,12 @@ def _entries(plan):
 
 
 def _role_targets(plan, role, chosen=None):
-    """(section, id) of every placement with exactly this role; when none has it, those whose generator role folds into it
+    """(section, id) of every placement with exactly this role (a role also covers its per-colour stripes); when none has it, those whose generator role folds into it
     (an 'accent' or 'hull' placement answers to 'trim' and 'body')."""
     def pick(match):
         return {(s['name'], e['id']) for s, e in _entries(plan) if e.get('role') and match(e['role'])
                 and (chosen is None or (s['name'], e['id']) in chosen)}
-    return pick(lambda r: r == role) or pick(lambda r: canonical(r) == role)
+    return pick(lambda r: r == role or SUBROLES.get(r) == role) or pick(lambda r: canonical(r) == role)
 
 
 def _select(plan, selection):
@@ -276,6 +278,36 @@ def _tagged(plan, parts):
     return out, conf
 
 
+def _stripe_edits(tagged, edits):
+    """Edits with "wall stripes red and white" spelled out as one edit per stripe, or a clarify when the role has none.
+
+    "the wall stripes" / "the wall stripe b" name a striped role; the colours go to its stripes in order (a, b, c), and a
+    stripe left without a colour keeps the one it has.
+    """
+    out, striped = [], subroles.stripes_of(tagged)
+    for edit in edits:
+        found = subroles.parse_stripe_word(edit.get('role'))
+        role = role_word(found[0]) if found else None
+        if not role or edit.get('op') == 'remove':
+            out.append(edit)
+            continue
+        role = canonical(role)
+        names = striped.get(role, [])
+        colours = subroles.colour_list(edit.get('colour'))
+        if not names or not colours:
+            return None, dict(ops=[], changes=[], notes=[], clarify=dict(
+                question=f"The {role} is one colour in this model, so it has no stripes to colour separately. Colour all of the {role}?",
+                choices=[f'make the {role} {colours[0]}'] if colours else []))
+        if found[1] is not None:
+            names, colours = names[found[1]:found[1] + 1], colours[:1]
+            if not names:
+                return None, dict(ops=[], changes=[], notes=[], clarify=dict(
+                    question=f"The {role} has only {len(striped[role])} stripe{'s' if len(striped[role]) != 1 else ''}. Which one do you mean?",
+                    choices=[f'make the {subroles.label(n)} {colours[0]}' for n in striped[role][:3]] if colours else []))
+        out.extend(dict(edit, role=name, colour=colour) for name, colour in zip(names, colours))
+    return out, None
+
+
 def resolve(plan, parts, edits, *, selection=None, force=False):
     """Editor ops for "make the roof blue" / "remove the chimney" / "paint this red" on ANY plan, with what to tell the person.
 
@@ -285,6 +317,11 @@ def resolve(plan, parts, edits, *, selection=None, force=False):
     word, nothing matching, or a role found only with low confidence (unless `force`).
     """
     tagged, conf = _tagged(plan, parts)
+    if any(subroles.parse_stripe_word(e.get('role')) for e in edits):
+        tagged = subroles.split_stripes(tagged)        # the colour groups of a plain striped role, in the order they appear
+        edits, clarify = _stripe_edits(tagged, edits)
+        if clarify:
+            return clarify
     present = role_summary(tagged)
     ops, changes, notes, touched = [], [], [], set()
     for edit in edits:

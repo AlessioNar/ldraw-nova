@@ -4,7 +4,7 @@
     python tools/build_role_vocab.py --check   exit 1 if role_vocab.py is out of date (CI)
 
 Needs rdflib (toolkit-only: `pip install rdflib`); the app never imports this.
-Mapping: concept -> role; obd:order -> ROLES order; skos:definition -> ROLES text; skos:broader -> ALIAS;
+Mapping: concept -> role; obd:order -> ROLES order; skos:definition -> ROLES text; skos:broader -> ALIAS (or SUBROLES when the concept is <role>:<suffix>, issue #220);
 skos:altLabel -> WORDS (classifier phrasing); skos:hiddenLabel -> GRAMMAR_WORDS (grammar phrasing);
 role:grammar (skos:OrderedCollection) -> GRAMMAR_ROLES.
 """
@@ -35,16 +35,18 @@ def load(path=TTL):
     concepts = sorted(g.subjects(RDF.type, SKOS.Concept), key=str)
     order = {c: int(g.value(c, OBD.order)) for c in concepts if g.value(c, OBD.order) is not None}
     roles = {local(c): str(g.value(c, SKOS.definition)) for c in sorted(order, key=order.get)}
-    alias = {local(c): local(g.value(c, SKOS.broader)) for c in concepts if g.value(c, SKOS.broader)}
+    broader = {local(c): local(g.value(c, SKOS.broader)) for c in concepts if g.value(c, SKOS.broader)}
+    alias = {a: b for a, b in broader.items() if ':' not in a}
+    subroles = {a: b for a, b in broader.items() if ':' in a}
     words = {str(w): local(c) for c in concepts for w in g.objects(c, SKOS.altLabel)}
     grammar_words = {local(c): tuple(sorted(str(w) for w in g.objects(c, SKOS.hiddenLabel)))
                      for c in sorted(order, key=order.get) if (c, SKOS.hiddenLabel, None) in g}
     grammar_roles = tuple(local(c) for c in Collection(g, g.value(ROLE.grammar, SKOS.memberList)))
-    return roles, grammar_roles, alias, words, grammar_words
+    return roles, grammar_roles, alias, words, grammar_words, subroles
 
 
 def render(data):
-    roles, grammar_roles, alias, words, grammar_words = data
+    roles, grammar_roles, alias, words, grammar_words, subroles = data
     lines = ['ROLES = {   # role -> what it covers']
     lines += [f'    {r!r}: {d!r},' for r, d in roles.items()]
     lines += ['}', '',
@@ -53,6 +55,10 @@ def render(data):
               "# A role name that is a narrower alias (skos:broader) of a canonical role, e.g. 'tower' -> 'wall'.",
               'ALIAS = {']
     lines += [f'    {a!r}: {b!r},' for a, b in sorted(alias.items())]
+    lines += ['}', '',
+              "# Per-colour sub-roles of a role (skos:broader, named '<role>:<suffix>'): a striped wall is wall:stripe-a, wall:stripe-b...",
+              'SUBROLES = {']
+    lines += [f'    {a!r}: {b!r},' for a, b in sorted(subroles.items())]
     lines += ['}', '', '# What a person says (skos:altLabel) -> role, used by role_edits.', 'WORDS = {']
     lines += [f'    {w!r}: {r!r},' for w, r in sorted(words.items())]
     lines += ['}', '', "# The grammar's phrasing of its roles (skos:hiddenLabel), feature words included.", 'GRAMMAR_WORDS = {']

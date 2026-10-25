@@ -111,6 +111,7 @@ A **role** says what a brick is for, independent of its part number or colour: `
 `ldraw_tools/role_edits.py` turns words into edits for **any** model that has roles, which is what lets "make the roof blue" work on an AI-built, imported or hand-edited build with no generator behind it.
 
 - Primitives are pure functions from a plan to a list of editor operations: `recolour_role()`, `recolour_selection()`, `recolour_like_selection()`, `remove_role()`, `remove_selection()`. Transparent colours stay transparent when a window or lamp is recoloured. Nothing touches geometry or positions; `ldraw_tools/editor.py` stays the only thing that changes plans.
+- **Stripes.** A role that is striped in several colours (a wall of red and yellow courses) has per-colour sub-roles, `wall:stripe-a`, `wall:stripe-b`, `wall:stripe-c`, named in the order the colours first appear. They are narrower concepts of the role in `ontology/roles.ttl` (`role_vocab.SUBROLES`, and `canonical()` folds them back into the role), found by `ldraw_tools/subroles.py` `split_stripes()` from the colours already in the plan: a colour needs at least two parts and a tenth of the role's parts, and a role with a single colour has no stripes. "Make the wall stripes red and white" recolours stripe A red and stripe B white; "the wall stripe b blue" changes one; "the wall blue" still changes all of it. Stripes are never guessed by AI and a part the person set by hand is never moved. In "Make this a template" the role preview lists the stripes under their role, the person can set a stripe on a selection, and the template gets one colour knob per stripe (the form folds them under the role's colour).
 - `resolve(plan, parts, edits, selection=, force=)` is the entry point the app uses. It classifies the plan, resolves the person's word to a role (a role the plan really has wins over the vocabulary), and returns the editor ops, a list of `changes` (label, from, to, count), `notes`, and a `clarify` question when it should not act blindly: no selection for "paint this", a word that matches nothing, or at least half of the matched parts below the 0.5 confidence threshold (`LOW_CONFIDENCE`) unless `force` is set.
 - The backend reaches it through the build worker's editor op: `app/web/backend/routers/editor.py` `apply_role_edit()` writes a request file, runs `ldraw-agent editor role`, and answers with the delta. See [workspace-and-editor.md](workspace-and-editor.md).
 
@@ -125,7 +126,8 @@ A **template** (`ldraw_tools/templates/`) is a finished model, with roles, plus 
 
 | Knob | Effect |
 |---|---|
-| `colour_<role>` | Recolours every part of a role |
+| `colour_<role>` | Recolours every part of a role, stripes included |
+| `colour_<role>_stripe_a`, `_b`, `_c` | Recolours one colour group of a striped role; applied after `colour_<role>`, so it wins |
 | `x_delta`, `z_delta` | Stretch: add or remove studs along an axis. Parts crossing a cut become the next longer or shorter equivalent part from the same family (a Brick 2 x 4 becomes a 2 x 6), or get a filler of their own family; parts beyond the cut move |
 | `x_repeat`, `z_repeat` | Repeat or remove a section (a wall bay with its window, a train car's panel run) |
 | `courses_delta` | Repeat or drop one slice of wall height |

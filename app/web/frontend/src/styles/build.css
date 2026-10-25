@@ -160,3 +160,6 @@ a.wb-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 .first-run li.done .first-run-mark { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
 .first-run li.done > div { opacity: 0.6; }
 @media (max-width: 560px) { .first-run li { flex-wrap: wrap; } }
+.gen-with-stripes { display: flex; flex-direction: column; gap: 6px; }
+.gen-stripes > summary { cursor: pointer; color: var(--muted); }
+.gen-stripes[open] > summary { margin-bottom: 8px; }

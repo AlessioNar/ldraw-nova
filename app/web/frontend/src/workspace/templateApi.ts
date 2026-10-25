@@ -10,6 +10,7 @@ export type UnsurePart = { section: string; id: string; key: string; role: strin
 export type RolePreview = {
   domain: string; roles: Record<string, { count: number; colours: Record<string, number> }>; low_confidence: UnsurePart[]; low_total: number;
   palette: Record<string, number>; vocabulary: string[]; corrected: number; url: string;
+  stripes?: Record<string, string[]>; // a role striped in several colours -> its per-colour sub-roles
 };
 export type TemplateSource = { name: string; build: string; version: number | null; draft_changes?: number; author?: string; license?: string };
 export type TemplateCheck = { gate: TemplateGate | null; source: TemplateSource; suggested_kinds: string[]; preview?: RolePreview };
@@ -20,7 +21,7 @@ export type Knob = {
   description: string; extremes: { value: string | number | boolean; text: string; thumb?: string }[];
 };
 export type JobResult = {
-  knobs: Knob[]; rejected: { param: string; reason: string }[]; roles: string[]; coverage: string[]; quality: string;
+  knobs: Knob[]; rejected: { param: string; reason: string }[]; roles: string[]; stripes?: Record<string, string[]>; coverage: string[]; quality: string;
   title: string | null; kinds: string[]; description: string; source: TemplateSource;
 };
 export type JobRow = {

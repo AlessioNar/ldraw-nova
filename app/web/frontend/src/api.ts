@@ -540,7 +540,7 @@ export type OlderChat = { id: string; title: string; updated_at: number; running
 /** One parameter of a generator, as JSON schema (ldraw_tools/generators/base.py). */
 export type ParamSpec = {
   type?: string | string[]; enum?: (string | number)[]; minimum?: number; maximum?: number; default?: unknown;
-  description?: string; "x-colour"?: boolean; "x-even"?: boolean; "x-component"?: string; uniqueItems?: boolean; items?: { enum?: string[] };
+  description?: string; "x-colour"?: boolean; "x-even"?: boolean; "x-component"?: string; "x-parent"?: string; "x-label"?: string; uniqueItems?: boolean; items?: { enum?: string[] };
   properties?: Record<string, ParamSpec>; // a group of the building grammar (footprint, roof...)
 };
 export type GeneratorEntry = {
