@@ -29,6 +29,9 @@ function ProposalCard({ p, ws }: { p: Proposal; ws: Workspace }) {
 }
 
 const EXAMPLES = ["Build a small house", "Make the roof blue", "Add two more windows"];
+const summaryOf = (f: NonNullable<Message["_fast_path"]>) => f.history ? "Went back one step"
+  : f.route === "generator" ? `Built ${f.title ?? f.generator} from the generator`
+  : (f.changes ?? []).map((c) => `${c.label}: ${show(c.from)} → ${show(c.to)}`).join("; ") || "No visible change";
 const DEFAULT_OPTIONS = { mode: "agent", permissions: "ask" } as TurnOptions;
 const seconds = (ms: number) => (ms < 950 ? `${Math.max(ms / 1000, 0.1).toFixed(1)} s` : `${Math.round(ms / 1000)} s`);
 const show = (v: unknown) => (typeof v === "object" && v !== null ? JSON.stringify(v) : String(v));
@@ -140,9 +143,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     const f = m._fast_path!;
     const live = m.id === lastId && !running && !acting;   // only the latest answer may still be undone
     if (f.route === "generator" || f.route === "edit") {
-      const summary = f.history ? "Went back one step"
-        : f.route === "generator" ? `Built ${f.title ?? f.generator} from the generator`
-        : (f.changes ?? []).map((c) => `${c.label}: ${show(c.from)} → ${show(c.to)}`).join("; ") || "No visible change";
+      const summary = summaryOf(f);
       const canUndo = live && !ws.viewing && (ws.draft?.undo_depth ?? 0) > 0 && !ws.busy;
       return (
         <div className="ws-fp" data-route={f.route}>
@@ -202,6 +203,26 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     );
   })() : null;
 
+  // The session's changes in one place: step back and forward through the draft, or go back to a saved version.
+  const edits = messages.filter((m) => !m._hidden && (m._fast_path?.route === "edit" || m._fast_path?.route === "generator") && !m._fast_path.history).slice(-5).reverse();
+  const undoDepth = ws.draft?.undo_depth ?? 0, redoDepth = ws.draft?.redo_depth ?? 0;
+  const savedVersions = [...ws.versions].reverse();
+  const session = (edits.length || undoDepth || redoDepth || savedVersions.length) ? (
+    <details className="ws-session">
+      <summary>Session changes{ws.draft?.changes ? ` · ${ws.draft.changes} unsaved` : ""}</summary>
+      <div className="ws-ai-actions">
+        <button disabled={!undoDepth || !!ws.viewing || !!ws.busy} onClick={() => ws.undo()}>Undo{undoDepth ? ` (${undoDepth})` : ""}</button>
+        <button disabled={!redoDepth || !!ws.viewing || !!ws.busy} onClick={() => ws.redo()}>Redo{redoDepth ? ` (${redoDepth})` : ""}</button>
+      </div>
+      {!!edits.length && <ul className="ws-fp-notes">{edits.map((m) => <li key={m.id}>{summaryOf(m._fast_path!)}</li>)}</ul>}
+      {!!savedVersions.length && (
+        <div className="ws-session-versions">
+          {savedVersions.slice(0, 5).map((v) => <button key={v.version} className="ws-chip-btn" disabled={!!ws.busy} onClick={() => ws.branch(v.version)}>Go back to v{v.version}</button>)}
+        </div>
+      )}
+    </details>
+  ) : null;
+
   const cost = detail?.usage?.cost_eur;
   const toAi = mode === "ai" ? !flip : flip;
   const seg = (
@@ -238,6 +259,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
         {ws.proposals.map((p) => <ProposalCard key={p.id} p={p} ws={ws} />)}
         {tray}
+        {session}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
           onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<>{seg} <span className="ws-hint-line" role="status" aria-live="polite">{line}</span></>}
