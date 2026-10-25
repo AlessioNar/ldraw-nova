@@ -31,7 +31,10 @@ import sandbox
 import settings
 from db import migrate as db_migrate
 from routers import builds_api, chats, collection, costs_api, describe_api, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, pipeline, reservations, spa, templates_api, understand_api, workspace_api
-from store import get_store
+import builds
+import migrate_json
+import storage
+from store import get_store, reset_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
@@ -42,16 +45,33 @@ async def _prune_request_log_daily() -> None:
         await asyncio.to_thread(request_log.prune)
 
 
+async def _import_json_on_first_start() -> None:
+    """LDRAW_NOVA_DB_IMPORT=auto: dry run, commit and verify of the JSON chats and builds when none was imported yet."""
+    try:
+        done = await asyncio.to_thread(migrate_json.first_start, settings.DATA_DIR)
+    except Exception as exc:  # noqa: BLE001 - a failed import leaves the files in use, it never stops the app
+        logging.getLogger("migrate_json").error("the first-start import failed: %s: %s", exc.__class__.__name__, str(exc)[:300])
+        return
+    if done is not None:
+        logging.getLogger("migrate_json").log(logging.INFO if done else logging.ERROR,
+                                               "first-start import %s (report in %s/)", "verified" if done else "FAILED verification",
+                                               settings.DATA_DIR / migrate_json.REPORT_DIR_NAME)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     for folder in (settings.GENERATED_DIR, settings.CHATS_DIR, settings.OUTPUT_DIR):
         folder.mkdir(parents=True, exist_ok=True)
     sandbox.give_to_agent(settings.GENERATED_DIR)      # agent scripts may publish models there
-    get_store()
     # The schema is brought up to date before anything uses the database; if it cannot be reached the app still
-    # starts (nothing stored there is needed to build) and /api/environment says "Database: unavailable".
+    # starts (the chats and builds then stay files) and /api/environment says "Database: unavailable".
     if await asyncio.to_thread(db_migrate.upgrade_when_ready):
         await asyncio.to_thread(request_log.prune)
+        await _import_json_on_first_start()
+    storage.refresh()
+    reset_store()
+    if get_store().pg:
+        await asyncio.to_thread(builds.reconcile, get_store())      # a version record for every model file of a recorded build
     pruning = asyncio.create_task(_prune_request_log_daily())
     generator_bridge.warm()      # refresh the generator registry after a toolkit update, before the first request
     yield

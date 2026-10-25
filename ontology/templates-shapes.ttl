@@ -1,0 +1,38 @@
+# SHACL shapes for the template catalogue (issue #95, epic #89): what a catalogue entry must state.
+# Checked by tests/test_templates_ttl.py with pyshacl against ontology/templates.ttl and ontology/roles.ttl (toolkit-only).
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix obdsh: <https://alessionar.github.io/open-brick-designer/ns/shapes#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+<https://alessionar.github.io/open-brick-designer/ns/template-shapes> a owl:Ontology ;
+    dcterms:title "Open Brick Designer template catalogue shapes"@en ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> .
+
+obdsh:TemplateShape a sh:NodeShape ; sh:targetClass obd:Template ;
+    sh:property [ sh:path dcterms:title ; sh:minCount 1 ; sh:message "A template has a title." ] ;
+    sh:property [ sh:path dcterms:identifier ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A template has one identifier." ] ;
+    sh:property [ sh:path obd:family ; sh:minCount 1 ; sh:message "A template names at least one family." ] ;
+    sh:property [ sh:path obd:kind ; sh:minCount 1 ; sh:message "A template names at least one kind." ] ;
+    sh:property [ sh:path obd:carriesRole ; sh:minCount 1 ; sh:class skos:Concept ; sh:message "A template carries at least one role, and every role is a concept of the role scheme." ] ;
+    sh:property [ sh:path obd:hasKnob ; sh:class obd:Knob ; sh:message "Every knob is an obd:Knob." ] ;
+    sh:property [ sh:path prov:wasDerivedFrom ; sh:minCount 1 ; sh:class obd:SourceModel ; sh:message "A template is derived from a source model." ] ;
+    sh:property [ sh:path prov:wasAttributedTo ; sh:class prov:Agent ; sh:message "Attribution points at an agent." ] ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+        sh:message "A template whose source model has a licence states the same licence." ;
+        sh:prefixes obdsh: ;
+        sh:select """SELECT $this ?value WHERE { $this prov:wasDerivedFrom/dcterms:license ?value . FILTER NOT EXISTS { $this dcterms:license ?value } }""" ] ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+        sh:message "A template whose source model names an author is attributed to that author." ;
+        sh:prefixes obdsh: ;
+        sh:select """SELECT $this ?value WHERE { $this prov:wasDerivedFrom/prov:wasAttributedTo ?value . FILTER NOT EXISTS { $this prov:wasAttributedTo ?value } }""" ] .
+
+obdsh:ColourKnobShape a sh:NodeShape ; sh:targetClass obd:ColourKnob ;
+    sh:property [ sh:path obd:forRole ; sh:minCount 1 ; sh:maxCount 1 ; sh:class skos:Concept ; sh:message "A colour knob colours one role." ] .
+
+obdsh: sh:declare [ sh:prefix "prov" ; sh:namespace "http://www.w3.org/ns/prov#"^^<http://www.w3.org/2001/XMLSchema#anyURI> ],
+    [ sh:prefix "dcterms" ; sh:namespace "http://purl.org/dc/terms/"^^<http://www.w3.org/2001/XMLSchema#anyURI> ] .

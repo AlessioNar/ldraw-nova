@@ -98,7 +98,10 @@ def test_schema_equals_the_reference_sql(pg_admin, pg_template):
     with reference.connect() as connection:
         connection.exec_driver_sql(REFERENCE_SQL.read_text(encoding="utf-8"))
         connection.commit()
-    migrated = create_engine(url.set(database=pg_template))
+    first = f"obd_rev1_{os.getpid()}"
+    first_url = create_database(pg_admin, first)
+    migrated = create_engine(first_url)
+    migrate.upgrade(migrated, "0001")                                  # later revisions are tested on their own
 
     def describe(engine):
         with engine.connect() as c:
@@ -124,6 +127,7 @@ def test_schema_equals_the_reference_sql(pg_admin, pg_template):
         reference.dispose()
         migrated.dispose()
         drop_database(pg_admin, name)
+        drop_database(pg_admin, first)
     assert wanted[3] == got[3], "view"
     for label, left, right in zip(("columns", "constraints", "indexes"), wanted, got):
         only_reference, only_migrated = set(map(tuple, left)) - set(map(tuple, right)), set(map(tuple, right)) - set(map(tuple, left))
@@ -339,3 +343,24 @@ def test_environment_reports_the_database(database, client):
     assert state["state"] == "ok" and "PostgreSQL" in state["detail"]
     database.configure("postgresql+psycopg://nobody:x@127.0.0.1:1/none")
     assert client.get("/api/environment").json()["database"]["state"] == "unavailable"
+
+
+def test_revision_0002_adds_the_draft_extra_column_and_frees_proposal_chat(fresh_database):
+    """0002 on top of 0001: build_draft.extra exists with its default, proposal.chat_id has no foreign key, and it downgrades."""
+    from alembic import command
+    engine = create_engine(fresh_database)
+    migrate.upgrade(engine, "0001")
+    with engine.connect() as connection:
+        connection.execute(text("insert into build (id, title) values ('b', 'B')"))
+        connection.execute(text("insert into build_draft (build_id) values ('b')"))
+        connection.commit()
+    migrate.upgrade(engine)
+    with engine.connect() as connection:
+        assert connection.execute(text("select extra from build_draft")).scalar_one() == {}
+        connection.execute(text("insert into proposal (id, build_id, chat_id) values ('0123456789ab', 'b', 'no-such-chat')"))
+        connection.commit()
+        command.downgrade(migrate.alembic_config(connection), "0001")
+        connection.commit()
+        assert connection.execute(text("select chat_id from proposal")).scalar_one() is None       # the dangling id is cleared
+        assert "extra" not in {c["name"] for c in inspect(connection).get_columns("build_draft")}
+    engine.dispose()

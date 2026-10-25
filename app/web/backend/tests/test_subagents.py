@@ -111,8 +111,7 @@ def test_worker_writes_outputs_and_result_format(monkeypatch, worker, ctx):
     assert any(line.startswith("Validation: ok") for line in lines)
     # transcript: side file only
     wid = lines[0].split()[1].rstrip(":")
-    side = ctx.chat_dir / "workers" / f"{wid}.jsonl"
-    records = [json.loads(x) for x in side.read_text().splitlines()]
+    records = ctx.store.worker_messages(ctx.chat_id, wid)
     assert [r["role"] for r in records] == ["user", "assistant", "tool", "assistant"]
     assert not [m for m in ctx.store.messages(ctx.chat_id) if m["role"] == "tool" or m.get("_worker") != wid and m.get("_subagent")]
 
@@ -251,8 +250,7 @@ def test_planner_delegates_and_prefix_stays_identical(monkeypatch, worker, store
     [result] = [m for m in messages if m["role"] == "tool"]
     assert result["name"] == "delegate" and "status step_cap" in result["content"] and "Files:" in result["content"]
     # worker messages are in the side file, not in messages.jsonl
-    [side] = list((store.chat_dir(chat_id) / "workers").glob("*.jsonl"))
-    assert len(side.read_text().splitlines()) == 1 + 2 + 2                        # task, 2 assistant, 2 tool results
+    assert len(store.worker_messages(chat_id, result["_worker"]["id"])) == 1 + 2 + 2      # task, 2 assistant, 2 tool results
     assert [m for m in messages if m["role"] == "tool"] == [result]
     assert not [m for m in messages if m.get("_subagent")]
     assert result["_worker"]["id"] and result["_worker"]["steps"] == 2 and result["_usage"]["cost_usd"] > 0

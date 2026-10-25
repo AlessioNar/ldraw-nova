@@ -77,6 +77,7 @@ async def builds_delete(build_id: str):
     folder = builds.dir_of(store, build_id)
     if folder.is_dir() and not folder.is_symlink() and folder.resolve().parent == store.builds_dir.resolve():
         shutil.rmtree(folder)
+    builds.forget(store, build_id)
     for chat in chats:
         if chat.get("build_id") == build_id:
             store.update_chat(chat["id"], build_id=None)

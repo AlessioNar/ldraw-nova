@@ -1,4 +1,12 @@
-"""Writes ontology.schema.json (the machine-readable ontology) and params.md (parameter tables) from the code."""
+"""Writes ontology.schema.json (the machine-readable ontology) and params.md (parameter tables) from ontology/obd.ttl (#94).
+
+    python docs/plans/build-grammar/export_schema.py            rewrite both files
+    python docs/plans/build-grammar/export_schema.py --check    exit 1 if either file differs from what obd.ttl generates (CI)
+
+Needs rdflib (toolkit-only). The schema keeps the shape of ldraw_tools/grammar/schema.py, including x-component and x-colour,
+so the component-tree editor (#50) is unaffected. The validity-rule table still comes from grammar.CONSTRAINTS until SHACL (#93) replaces it.
+"""
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -8,6 +16,22 @@ sys.path.insert(0, str(ROOT))
 from ldraw_tools import grammar  # noqa: E402
 
 HERE = Path(__file__).parent
+_spec = importlib.util.spec_from_file_location('build_obd', ROOT / 'tools' / 'build_obd.py')
+build_obd = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(build_obd)
+
+
+def build_schema():
+    """The JSON Schema as a dict, equal to grammar.SCHEMA when obd.ttl agrees with it."""
+    groups, building = build_obd.load()
+    props = dict(building)
+    for key, comp in groups.items():
+        specs = comp['properties']
+        props[key] = {'type': 'object', 'additionalProperties': False, 'x-component': comp['component'],
+                      'description': comp['description'], 'properties': specs,
+                      'default': {k: v['default'] for k, v in specs.items()}}
+    return {'$schema': 'https://json-schema.org/draft/2020-12/schema', 'title': 'Building grammar configuration',
+            'type': 'object', 'additionalProperties': False, 'properties': props}
 
 
 def cell(spec):
@@ -24,9 +48,8 @@ def cell(spec):
     return spec.get('type', '')
 
 
-def main():
-    schema = grammar.SCHEMA
-    (HERE / 'ontology.schema.json').write_text(json.dumps(schema, indent=1) + '\n', encoding='utf-8')
+def render(schema):
+    """-> {file name: text}."""
     lines = []
     for group, spec in schema['properties'].items():
         if spec.get('type') != 'object':
@@ -39,8 +62,20 @@ def main():
         lines.append('')
     lines += ['#### Validity rules', '', '| rule | what it says |', '|---|---|']
     lines += [f'| `{rule}` | {text} |' for rule, text in grammar.CONSTRAINTS]
-    (HERE / 'params.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    return {'ontology.schema.json': json.dumps(schema, indent=1) + '\n', 'params.md': '\n'.join(lines) + '\n'}
+
+
+def main(argv):
+    files = render(build_schema())
+    if '--check' in argv:
+        stale = [n for n, text in files.items() if (HERE / n).read_text(encoding='utf-8') != text]
+        if stale:
+            print(f'{", ".join(stale)} differ from ontology/obd.ttl; run: python docs/plans/build-grammar/export_schema.py')
+        return 1 if stale else 0
+    for name, text in files.items():
+        (HERE / name).write_text(text, encoding='utf-8')
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main(sys.argv[1:]))

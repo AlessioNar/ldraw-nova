@@ -1,6 +1,6 @@
 # Data and storage
 
-Chats, builds, models and parts lists are **files** on two Docker volumes, plus read-only data baked into the image. A PostgreSQL database (a third volume) holds only the request log and the cost history so far; see [database.md](database.md). More moves there in later phases.
+Models, parts lists, editor state and agent work folders are **files** on two Docker volumes, plus read-only data baked into the image. A PostgreSQL database (a third volume) holds the request log, the cost history and, once imported, the chats, messages, builds, version records, drafts and proposals; until then those stay JSON files too (`LDRAW_NOVA_STORAGE`, see [database.md](database.md)). The parts collection moves there in a later phase.
 
 ## Volumes
 
@@ -8,7 +8,7 @@ Chats, builds, models and parts lists are **files** on two Docker volumes, plus 
 |---|---|---|---|
 | `ldraw-nova-docker_data` | `/data` | Builds, versions, chats, parts lists, agent work folders | Writable by the agent user only in its work folders |
 | `ldraw-nova-docker_config` | `/config` | `models.json` (LLM entries), `environment.json` (keys and env vars), `generators.json` (registry cache) | root-only (0700); agent code cannot read it |
-| `ldraw-nova-docker_db` | `/var/lib/postgresql` in the `db` container | PostgreSQL data: request log, cost history | Not mounted in the app. Back up with `scripts/backup.sh` |
+| `ldraw-nova-docker_db` | `/var/lib/postgresql` in the `db` container | PostgreSQL data: request log, cost history, chats and builds (after the import) | Not mounted in the app. Back up with `scripts/backup.sh` |
 | `ldraw-nova-docker_secrets` | `/run/secrets` (read-only in the app) | The generated database passwords | root-owned, 0440 |
 
 - Defined in `app/docker-compose.yml:20-25, 72-78`.
@@ -21,8 +21,9 @@ Chats, builds, models and parts lists are **files** on two Docker volumes, plus 
 | Path | Contents | Served to the browser? |
 |---|---|---|
 | `/data/generated/` | Every saved model: `<slug>-vN.mpd` plus `.png` snapshot and `.csv` BOM. This is "My Builds". | yes |
-| `/data/builds/<slug>/` | `build.json`, `models.jsonl` (version log), `draft.json`, `edit.json`, `proposals/`, `output/` (editor `plan.json`, `state.json`, `preview.mpd`) | via API |
-| `/data/chats/<chat-id>/` | `chat.json`, `messages.jsonl` (with `_usage` per step), `models.jsonl`, `renders/`, `workers/<id>.jsonl` | yes |
+| `/data/builds/<slug>/` | In files mode `build.json`, `models.jsonl` (version log), `draft.json`, `proposals/<id>.json`; always `proposals/<id>.mpd`, `edit.json`, `output/` (editor `plan.json`, `state.json`, `preview.mpd`) | via API |
+| `/data/chats/<chat-id>/` | In files mode `chat.json`, `messages.jsonl` (with `_usage` per step), `models.jsonl`, `workers/<id>.jsonl`; always `renders/`, `workspace/` | yes |
+| `/data/_migration/` | Reports of the JSON importer (`report-<time>.json`) | no |
 | `/data/output/<chat-id>/` | The agent's work folder: scripts, plans, `NOTES.md`, renders | **no** (never served; reached only through the artifact API) |
 | `/data/inventories/` | Parts lists: `<id>.json` and `<id>.csv` | via API |
 

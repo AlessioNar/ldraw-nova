@@ -247,6 +247,47 @@ def test_selection_from_the_canvas_names_the_parts(client, house_mpd):
     assert gone["changes"][0]["to"] == "removed" and gone["draft"]["undo_depth"] == 2
 
 
+SUBMODEL_MPD = """0 FILE main.ldr
+0 Name: main.ldr
+1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 4 0 -24 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 16 80 0 0 1 0 0 0 1 0 0 0 1 wing.ldr
+0 FILE wing.ldr
+0 Name: wing.ldr
+1 2 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat
+1 2 0 -24 0 1 0 0 0 1 0 0 0 1 3001.dat
+"""
+
+
+def colours_by_file(mpd):
+    out, current = {}, None
+    for line in mpd.splitlines():
+        if line.startswith("0 FILE "):
+            current = line[7:].strip()
+            out[current] = []
+        elif line.startswith("1 ") and current:
+            out[current].append(line.split()[1])
+    return out
+
+
+def test_selection_ids_inside_a_submodel_paint_only_that_submodel(client):
+    """The canvas names a part by section and id ("wing.ldr:e1"): the id alone also exists in the main model."""
+    slug = make_build(client, "nl submodel selection", SUBMODEL_MPD)
+    opened = client.post(f"/api/builds/{slug}/draft/open", json={}).json()
+    sections = {sec["name"]: [p["id"] for step in sec["steps"] for p in step if p["ref"].endswith(".dat")] for sec in opened["plan"]["sections"]}
+    root, wing = list(sections)[0], next(n for n in sections if n != list(sections)[0])
+    shared = set(sections[root]) & set(sections[wing])
+    assert shared, sections                                            # the same ids in both files: a bare id would be ambiguous
+    pick = sorted(shared)[0]
+    reply = say(client, slug, "paint this blue", selection=[f"{wing}:{pick}"])
+    assert reply["route"] == "edit" and reply["changes"][0]["label"] == "selection colour" and reply["changes"][0]["count"] == 1, reply
+    after = colours_by_file(view(client, slug)["mpd"])
+    assert after[root].count("4") == 2 and after[root].count("1") == 0                    # the main model is untouched
+    assert sorted(after[wing]) == ["1", "2"]                                               # one wing part is blue now
+    gone = say(client, slug, "delete this", selection=[f"{wing}:{pick}"])
+    assert gone["changes"][0]["to"] == "removed" and len(colours_by_file(view(client, slug)["mpd"])[wing]) == 1
+
+
 def test_a_text_edit_never_regenerates_over_a_diverged_draft(client):
     slug = make_build(client, "nl diverged")
     client.post(f"/api/builds/{slug}/draft/regenerate", json={"generator": "house", "params": {}})

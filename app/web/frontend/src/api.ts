@@ -92,7 +92,7 @@ export type EnvironmentState = { variables: EnvironmentVariable[]; jev_source?: 
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
 export type ConnectionStatus = "not_tested" | "connected" | "not_connected";
-export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; worker_model_id?: string | null; effort?: string | null; context_tokens?: number | null; budget_eur?: number | null; parts_mode?: PartsMode; inventory_ids?: string[] };
+export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; worker_model_id?: string | null; effort?: string | null; context_tokens?: number | null; budget_eur?: number | null; confirm_with_documents?: boolean; parts_mode?: PartsMode; inventory_ids?: string[] };
 export type ModelProfile = {
   model: string; name: string; context_window: number | null; efforts: string[]; default_effort: string | null; context_budgets: number[];
   max_output_tokens?: number | null; tools?: boolean | null; vision?: boolean | null; reasoning?: boolean | null;
@@ -417,9 +417,9 @@ export const collectionApi = {
   importDiff: (previewId: string, replace: string) => request<ImportDiff>(`/api/collection/imports/${sid(previewId)}/diff`, { method: "POST", body: json({ replace }) }),
   commitImport: (previewId: string, body: { name?: string; replace?: string }) =>
     request<{ inventory: Inventory; report: ImportReport; diff?: Omit<ImportDiff, "lines">; batch?: number }>(`/api/collection/imports/${sid(previewId)}/commit`, { method: "POST", body: json(body) }),
-  sets: (query: string) => request<{ sets: CatalogSet[] }>(`/api/sets?${qs({ query, limit: 20 })}`),
-  addSet: (set_num: string, copies: number, state: "parts" | "built") =>
-    request<{ inventory: Inventory }>("/api/collection/sets", { method: "POST", body: json({ set_num, copies, state }) }),
+  sets: (query: string) => request<{ sets: CatalogSet[] }>(`/api/catalog/sets?${qs({ query, limit: 20 })}`),
+  addSet: (set_num: string, copies: number, state: "parts" | "built", brand?: string) =>
+    request<{ inventory: Inventory }>("/api/collection/sets", { method: "POST", body: json({ set_num, copies, state, brand }) }),
   quickParse: (text: string) => request<{ items: QuickItem[]; ok: number; total: number }>("/api/collection/quick-add/parse", { method: "POST", body: json({ text }) }),
   exportPreview: (format: string, scope: string) => request<ExportSummary>(`/api/collection/export/preview?${qs({ format, scope })}`),
   quickAdd: (items: { part: string; colour: number; qty: number }[]) =>
@@ -535,6 +535,7 @@ export type Describe = {
 export type FastPathTurn = {
   route: Describe["route"]; title?: string; generator?: string; changes?: Describe["changes"]; notes?: string[]; history?: string;
   question?: string; choices?: string[]; reason?: string; estimate?: DescribeEstimate; cost_eur: number; took_ms: number;
+  highlight?: string[]; // "section:id" of the parts a clarify is about (the canvas can select them)
 };
 export type DescribeHint = { route: Describe["route"]; hint: string; confidence: number; estimate?: DescribeEstimate };
 

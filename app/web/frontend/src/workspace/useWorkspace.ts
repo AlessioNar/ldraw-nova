@@ -37,6 +37,7 @@ export function useWorkspace(id: string) {
   const [canvasReady, setCanvasReady] = useState(false);
   const [steps, setSteps] = useState<{ total: number; current: number } | null>(null);
 
+  const keepTab = useRef(false);        // the next canvas selection is the chat's own ("Show them"): do not leave the chat for the Piece tab
   const sendRef = useRef<(c: CanvasCommand) => void>(() => {});
   const tabRef = useRef<Tab>("chat");
   const prevTab = useRef<Tab>("chat");
@@ -132,7 +133,8 @@ export function useWorkspace(id: string) {
       checkTimer.current = setTimeout(refreshCheck, 800);
     } else if (e.type === "obd:selection") {
       setSelection(e.pieces);
-      if (e.pieces.length) { if (tabRef.current !== "piece") prevTab.current = tabRef.current; tabRef.current = "piece"; setTabState("piece"); }
+      if (e.pieces.length && keepTab.current) keepTab.current = false;                // "Show them": stay in the chat
+      else if (e.pieces.length) { if (tabRef.current !== "piece") prevTab.current = tabRef.current; tabRef.current = "piece"; setTabState("piece"); }
       else if (tabRef.current === "piece") { tabRef.current = prevTab.current; setTabState(prevTab.current); }
     }
   }, [refreshCheck, say, syncDraft]);
@@ -178,6 +180,14 @@ export function useWorkspace(id: string) {
   const recolourSelection = (c: number) => { setColour(c); send({ cmd: "set-colour", colour: c }); };
   const addPart = (part: string, c: number) => { setColour(c); setToolState("add"); send({ cmd: "add-part", part, colour: c }); };
 
+  /** Select the parts a clarifying question is about ("section:id" as the server names them) and frame them. */
+  const showParts = (ids: string[]) => {
+    if (viewing) backToDraft();
+    if (mode !== "edit") return say("Switch to Edit mode to see which parts these are.");
+    if (phone) setSheetOpen(false);
+    keepTab.current = true; setTimeout(() => { keepTab.current = false; }, 600);
+    send({ cmd: "select", ids });
+  };
   const clearSelection = () => { setSelection([]); if (tabRef.current === "piece") { tabRef.current = prevTab.current; setTabState(prevTab.current); } };
   const backToDraft = () => { setViewing(null); send({ cmd: "back-to-draft" }); };
   const viewVersion = (version: number) => {
@@ -223,7 +233,7 @@ export function useWorkspace(id: string) {
 
   /** One chat message through the free fast path. The server saves the turn in the build's chat; the chat shows the result. */
   const describe = async (text: string, previous?: string, quick?: boolean): Promise<DescribeResult> => {
-    const r = await wsApi.describe(id, text, previous, quick, selection.map((p) => p.id));   // "paint this red" names the canvas selection
+    const r = await wsApi.describe(id, text, previous, quick, selection.map((p) => (p.section ? `${p.section}:${p.id}` : p.id)));   // "paint this red" names the canvas selection
     if (r.route === "generator" || r.route === "edit") {
       if (r.draft) setServerDraft(r.draft);
       setViewing(null); await afterBackendChange();
@@ -266,7 +276,7 @@ export function useWorkspace(id: string) {
     id, phone, detail, notFound, ws, draft, check, tab, tool, mode, colour, selection, viewing, editTick, busy, toast, confirm, sheetOpen, canvasReady, steps,
     versions, changes, latest, nextVersion, empty, baseVersion, readOnly, proposals,
     setTab, setSheetOpen, setConfirm, setToast, setColour: pickColour, recolourSelection, setTool, setMode, addPart, send, registerCanvas, onCanvasEvent,
-    undo, redo, backToDraft, viewVersion, save, discard, branch, describe, regenerate, keepProposal, dropProposal, previewProposal, say,
+    undo, redo, showParts, backToDraft, viewVersion, save, discard, branch, describe, regenerate, keepProposal, dropProposal, previewProposal, say,
     rename: async (title: string) => { const d = await act("rename", () => buildsApi.rename(id, title)); if (d) { setDetail(d); refreshBuilds(); } },
     reloadAll, refreshCheck,
   };
