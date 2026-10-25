@@ -50,7 +50,7 @@ export default function SetDetail() {
   async function remove(s: OwnedSetDetail) {
     if (!confirm(`Remove "${s.name}" and its parts from your collection?\n\nIts history goes with it.`)) return;
     setBusy(true);
-    try { await inventoryApi.remove(s.id); navigate("/parts"); }
+    try { await inventoryApi.remove(s.id); navigate("/sets"); }
     catch (e) { setError((e as Error).message); setBusy(false); }
   }
   const wanted = (s: OwnedSetDetail, rows: SetRow[]) => act(async () => {
@@ -74,7 +74,7 @@ export default function SetDetail() {
   }, [shown, group]);
 
   if (!data) return <div className="set-detail">
-    <Link to="/parts" className="muted small">← My Parts</Link>
+    <Link to="/sets" className="muted small">← My Sets</Link>
     {error ? <div className="banner error" role="alert">{error}</div> : <p className="muted"><span className="spinner" aria-hidden /> Loading…</p>}
   </div>;
 
@@ -82,7 +82,7 @@ export default function SetDetail() {
   const built = s.state === "built";
   const missingLines = rows.filter(r => r.missing > 0).length;
   return <div className="set-detail">
-    <Link to="/parts" className="muted small">← My Parts</Link>
+    <Link to="/sets" className="muted small">← My Sets</Link>
     {error && <div className="banner error" role="alert">{error}</div>}
     {notice && <div className="banner" role="status">{notice}</div>}
     <header className="set-head">

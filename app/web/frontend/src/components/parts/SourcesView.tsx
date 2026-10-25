@@ -37,7 +37,7 @@ export default function SourcesView({ sources, version, onShow, onReplace, onCha
       {(s.unmapped_parts > 0 || s.unmapped_colours > 0) && <p className="small"><span className="badge warn">{s.unmapped_parts + s.unmapped_colours} unrecognised</span></p>}
       <div className="card-actions source-actions">
         <button type="button" onClick={() => onShow(s.id)} disabled={s.total_pieces === 0 && !s.review_pieces}>Show parts</button>
-        {(s.kind ?? "import") === "import" && !s.virtual && <button type="button" onClick={() => onReplace(s.id)}>Replace file</button>}
+        {((s.kind ?? "import") === "import" || (s.kind === "set" && s.set?.manual)) && !s.virtual && <button type="button" onClick={() => onReplace(s.id)}>{s.kind === "set" ? "Import parts" : "Replace file"}</button>}
         {!s.virtual && <button type="button" aria-expanded={history === s.id} onClick={() => setHistory(history === s.id ? "" : s.id)}>History</button>}
         {!s.virtual && <button type="button" className="danger-text" disabled={busy} aria-label={`Delete ${s.name}`} onClick={() => void remove(s)}>Delete</button>}
       </div>

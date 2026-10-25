@@ -256,7 +256,7 @@ export type Inventory = {
   unmapped_parts: number; unmapped_colours: number;
   review_items?: number; review_pieces?: number; // colour-family pieces waiting for a colour; not in total_pieces
   kind?: "import" | "set" | "loose"; schema?: number; virtual?: boolean;
-  set?: { set_num: string; name: string; year: number; theme: string; num_parts: number; copies: number; state: "parts" | "built"; dropped_pieces: number };
+  set?: { set_num: string; brand?: string; manual?: boolean; name: string; year: number; theme: string; num_parts: number; copies: number; state: "parts" | "built"; dropped_pieces: number };
   origin?: { format?: string; file?: string; scans?: number };
 };
 type BuildableLine = { part: string; colour: number; colour_name: string; description: string; needed: number; owned: number; missing: number };
@@ -420,6 +420,8 @@ export const collectionApi = {
   sets: (query: string) => request<{ sets: CatalogSet[] }>(`/api/catalog/sets?${qs({ query, limit: 20 })}`),
   addSet: (set_num: string, copies: number, state: "parts" | "built", brand?: string) =>
     request<{ inventory: Inventory }>("/api/collection/sets", { method: "POST", body: json({ set_num, copies, state, brand }) }),
+  addManualSet: (set: { brand: string; name: string; code: string; year: number | null; copies: number; state: "parts" | "built" }) =>
+    request<{ inventory: Inventory }>("/api/collection/sets/manual", { method: "POST", body: json(set) }),
   quickParse: (text: string) => request<{ items: QuickItem[]; ok: number; total: number }>("/api/collection/quick-add/parse", { method: "POST", body: json({ text }) }),
   exportPreview: (format: string, scope: string) => request<ExportSummary>(`/api/collection/export/preview?${qs({ format, scope })}`),
   quickAdd: (items: { part: string; colour: number; qty: number }[]) =>

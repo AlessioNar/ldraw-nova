@@ -118,6 +118,7 @@
     selected: [],
     editable: new Set(),  // keys of the placements that are entries of the plan
     tool: 'move',
+    grid: 20,             // LDU the stud grid snaps to on x and z: 20 (a stud) or 10 (half a stud)
     mode: Core.MODES.includes(params.get('mode')) ? params.get('mode') : 'edit',
     add: null,            // { part, colour }: what the add tool places
     colour: 4,            // the paint tool's colour
@@ -523,6 +524,7 @@
   // ---- overlay: selection boxes, hover, the add tool's ghost, and the gizmo -----------------------
 
   const AXIS_COLOURS = { x: 0xe03131, y: 0x2f9e44, z: 0x1c7ed6 };
+  const VALID_COLOUR = 0x2f9e44, INVALID_COLOUR = 0xe03131;       // a surface drag's outline: clear / cutting into a part
   const SELECT_COLOUR = 0xff8800, HOVER_COLOUR = 0x3b8bff, PENDING_COLOUR = 0x8a94a6;
   const sceneAxis = axis => { const a = Core.AXES[axis]; return new THREE.Vector3(a[0], -a[1], -a[2]); };   // LDraw axis in scene space
 
@@ -779,7 +781,7 @@
     }
     if (!editing()) return;
     const axis = gizmoHit(ray);
-    if (!axis) return;
+    if (!axis) { startSurfaceDrag(e, ray, shown); return; }
     // Our drag, not the orbit's: switch the controls off before they see this event.
     shown.scene.orbitControls.enabled = false;
     stage.setPointerCapture(e.pointerId);
@@ -802,25 +804,89 @@
       marquee.hidden = Math.hypot(b.x1 - b.x0, b.y1 - b.y0) <= CLICK_PIXELS;
       return;
     }
+    if (g && g.surface) { moveSurface(e, g); return; }
     if (g && g.drag) {
       const d = g.drag, ray = pointerRay(e).ldraw, free = e.altKey;
       if (d.kind === 'move') {
         const s = Core.axisParameter(ray, d.pivot, Core.AXES[d.axis]);
-        d.amount = s === null || d.start === null ? 0 : Core.snapMove(d.axis, s - d.start, !free);
+        d.amount = s === null || d.start === null ? 0 : Core.snapMove(d.axis, s - d.start, !free, state.grid);
       } else {
         const angle = Core.planeAngle(d.startRay, ray, d.pivot, Core.AXES[d.axis]);
         d.amount = angle === null ? 0 : Core.snapRotate(angle, !free);
       }
       previewDrag(d);
       const text = d.kind === 'move' ? `Move ${d.axis.toUpperCase()} ${d.amount > 0 ? '+' : ''}${d.amount} LDU` : `Rotate ${d.axis.toUpperCase()} ${d.amount}°`;
-      showSnap(`${text} · ${free ? 'free (Alt)' : `snap ${d.kind === 'move' ? `${Core.snapStep(d.axis)} LDU` : '15°'}, Alt = free`}`);
-      setStatus(d.kind === 'move' ? `${text} (${free ? 'free, Alt held' : `snapping to ${Core.snapStep(d.axis)} LDU, hold Alt for free`})` : `${text} (${free ? 'free, Alt held' : 'snapping to 15°, hold Alt for free'})`, false);
+      showSnap(`${text} · ${free ? 'free (Alt)' : `snap ${d.kind === 'move' ? `${Core.snapStep(d.axis, state.grid)} LDU` : '15°'}, Alt = free`}`);
+      setStatus(d.kind === 'move' ? `${text} (${free ? 'free, Alt held' : `snapping to ${Core.snapStep(d.axis, state.grid)} LDU, hold Alt for free`})` : `${text} (${free ? 'free, Alt held' : 'snapping to 15°, hold Alt for free'})`, false);
       return;
     }
     if (!g && e.buttons === 0) pointerIdle(e);
   });
 
   stage.addEventListener('pointerleave', () => { setHover(null); clearGhost(); });
+
+
+  // ---- dragging a selected part over the surface under the pointer (move tool) ----------------------
+
+  // A press on a part that is already selected, with the move tool, picks the selection up: it follows the pointer on the
+  // stud grid and lands on the ground or on top of whatever is under the pointer. A click without moving still selects
+  // as before; Alt, Shift, Ctrl and the other tools keep the orbit and the marquee.
+  function startSurfaceDrag(e, ray, shown) {
+    if (state.tool !== 'move' || e.altKey || e.shiftKey || !state.selected.length) return;
+    const mine = new Set(state.selected.filter(k => state.editable.has(k)));
+    if (!mine.size) return;
+    const hit = Core.pickHits(ray.ldraw, shown.leaves.filter(p => mine.has(p.key)), shown.boxes)[0];
+    if (!hit) return;
+    shown.scene.orbitControls.enabled = false;           // ours, not the orbit's
+    stage.setPointerCapture(e.pointerId);
+    const g = ray.ldraw;
+    state.gesture.surface = { grab: g.origin.map((v, k) => v + g.direction[k] * hit.t), keys: mine, moved: false, delta: null, overlaps: false };
+  }
+
+  function moveSurface(e, g) {
+    const sf = g.surface, shown = state.shown;
+    if (!sf.moved && Math.hypot(e.clientX - g.x, e.clientY - g.y) <= CLICK_PIXELS) return;
+    const moving = shown.leaves.filter(p => sf.keys.has(p.key));
+    const others = shown.leaves.filter(p => !sf.keys.has(p.key));
+    const found = Core.surfaceMove(pointerRay(e).ldraw, sf.grab, moving, others, shown.boxes, groundY(), state.grid);
+    if (!found) return;
+    sf.moved = true;
+    sf.delta = found.delta; sf.overlaps = found.overlaps;
+    const [dx, dy, dz] = found.delta;
+    const ids = [...sf.keys];
+    let edits = null;
+    try { edits = Core.moveEdits(shown.placements, ids, found.delta); } catch (error) { edits = null; }
+    if (edits && shown.placements.length <= LIVE_LIMIT) paint(edits.length ? Core.predictEdits(state.nodes, edits) : state.nodes, true);
+    const boxes = shown.selectionBoxes;
+    if (boxes) {
+      boxes.matrix.makeTranslation(dx, -dy, -dz);                    // LDraw -> scene: y and z flip
+      boxes.matrixWorldNeedsUpdate = true;
+      boxes.traverse(o => { if (o.material && o.material.color) o.material.color.set(found.overlaps ? INVALID_COLOUR : VALID_COLOUR); });
+    }
+    const text = `Move ${dx}, ${-dy}, ${dz} LDU${found.onPart ? ' · on top of a part' : ' · on the ground'}`;
+    showSnap(`${text} · grid ${state.grid === 20 ? 'stud' : 'half stud'} (H)${found.overlaps ? ' · overlaps a part' : ''}`);
+    setStatus(found.overlaps ? 'This spot overlaps another part. Release to put it there anyway, Esc to cancel.' : `${text}. Release to drop, Esc to cancel.`, found.overlaps);
+    shown.scene.render();
+  }
+
+  function finishSurface(g, cancelled) {
+    const sf = g.surface, shown = state.shown;
+    let edits = [];
+    try { edits = cancelled || !sf.delta ? [] : Core.moveEdits(shown.placements, [...sf.keys], sf.delta); }
+    catch (error) {
+      paint(state.nodes); drawOverlay();
+      setStatus(`${error.message} (the model is unchanged)`, true);
+      post({ type: 'obd:error', message: error.message });
+      return;
+    }
+    if (!edits.length) { paint(state.nodes); drawOverlay(); setRestingStatus(); return; }
+    send(edits);
+  }
+
+  function toggleGrid() {
+    state.grid = state.grid === 20 ? 10 : 20;
+    setStatus(`Grid: ${state.grid === 20 ? 'one stud (20 LDU)' : 'half a stud (10 LDU)'}. Arrows, dragging and the arrows on a part snap to it. H switches back.`, false);
+  }
 
   // ---- hover and the add tool's ghost (one frame at a time) ------------------------------------
 
@@ -907,8 +973,9 @@
     marquee.hidden = true;
     showSnap('');
     if (!g || !shown) return;
-    if (g.drag || g.box) shown.scene.orbitControls.enabled = true;
+    if (g.drag || g.box || g.surface) shown.scene.orbitControls.enabled = true;
     if (g.box) return finishBox(g, cancelled);
+    if (g.surface && g.surface.moved) return finishSurface(g, cancelled);
     // A click on a gizmo handle that did not move anything is a click on the part behind it (the gizmo sits on the
     // selection, so otherwise a second click there could never step to the next overlapping part).
     const plainClick = g.drag && !cancelled && !g.drag.amount && Math.hypot(e.clientX - g.x, e.clientY - g.y) <= CLICK_PIXELS;
@@ -1014,7 +1081,7 @@
   let pumping = false;
 
   // Show what the edits will give, then send them. `retry` runs when the server refuses (400) the first form.
-  function send(edits, { optimistic = true, retry, predicted: given, label } = {}) {
+  function send(edits, { optimistic = true, retry, predicted: given, label, after } = {}) {
     const entry = { kind: edits.map(e => e.op).join('+'), edits, t0: performance.now(), label };
     if ((optimistic || given) && state.shown) {
       try {
@@ -1026,7 +1093,7 @@
       } catch (e) { /* not predictable: the answer will show it */ }
     }
     entry.optimisticMs = performance.now() - entry.t0;
-    enqueue({ entry, run: () => call('/edits', { ...Core.editsBody(edits, state.session.revision), delta: true }), retry });
+    enqueue({ entry, run: () => call('/edits', { ...Core.editsBody(edits, state.session.revision), delta: true }), retry, after });
   }
 
   function enqueue(job) {
@@ -1050,6 +1117,7 @@
 
   async function pump() {
     let failed = null;
+    const afters = [];
     if (pumping) return;
     pumping = true;
     state.busy = true;
@@ -1075,7 +1143,9 @@
         job.entry.requestMs = requestMs; job.entry.applyMs = applyMs; job.entry.totalMs = performance.now() - job.entry.t0;
         state.perf.push(job.entry);
         post({ type: 'obd:changed', revision: session.revision, undo_depth: session.undo_depth, redo_depth: session.redo_depth });
+        if (job.after) afters.push(job.after);
       }
+      for (const after of afters) after();                      // e.g. select what a paste added, once it is on screen
     } catch (e) {
       queue.length = 0;
       if (e.status === 409) {
@@ -1192,36 +1262,110 @@
   }
   toolButtons.forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
+  // ---- keyboard helpers: camera-relative nudging, select all, copy and paste, the shortcut list ---------------
+
+  // The way the camera looks along the ground, [x, z] in LDraw.
+  function cameraForward() {
+    const { position, target } = cameraInLdraw(state.shown);
+    return [target[0] - position[0], target[2] - position[2]];
+  }
+
+  function selectAll() {
+    if (!state.shown || !selecting()) return;
+    setSelected(state.shown.leaves.filter(p => p.editable).map(p => p.key));
+  }
+
+  function turnSelection(degrees) {
+    let edits = [];
+    try { edits = Core.rotateEdits(state.shown.placements, state.selected.filter(k => state.editable.has(k)), 'y', degrees); }
+    catch (error) { setStatus(`${error.message} (the model is unchanged)`, true); return; }
+    if (edits.length) send(edits);
+  }
+
+  let clipboard = null;        // { items, pastes }: what Ctrl+C took, and how many times it has been pasted
+  function copySelection() {
+    if (!state.shown || !state.selected.length) return false;
+    const { items, skipped } = Core.copyParts(state.shown.placements, state.selected.filter(k => state.editable.has(k)));
+    if (!items.length) { setStatus('Nothing to copy: sub-models, repeated runs and parts tilted on several axes are not copied yet.', true); return false; }
+    clipboard = { items, pastes: 0 };
+    setStatus(`Copied ${items.length} part${items.length === 1 ? '' : 's'}${skipped ? `, ${skipped} skipped (not a plain part)` : ''}. Ctrl+V pastes.`, false);
+    return true;
+  }
+
+  // Each paste lands one stud further to the viewer's right than the last, so copies do not pile up in one spot.
+  function pasteClipboard() {
+    if (!clipboard || !needEdit('paste')) return;
+    const { items } = clipboard;
+    const { r } = Core.groundAxes(cameraForward());
+    clipboard.pastes++;
+    const edits = Core.pasteEdits(items, [r[0] * 20 * clipboard.pastes, 0, r[1] * 20 * clipboard.pastes]);
+    const plan = state.session.plan;
+    const taken = new Set();                                    // the ids the server will give them, one after the other
+    const made = edits.map(edit => {
+      const id = Core.nextEntryId(plan, [...state.nodes, ...[...taken].map(entryId => ({ entryId }))]);
+      taken.add(id);
+      return { section: edit.section, id };
+    });
+    send(edits, { label: 'paste', optimistic: false, after: () => {
+      const keys = Core.keysForIds(state.shown.placements, made.map(m => `${m.section}:${m.id}`));
+      if (keys.length) setSelected(keys);
+    } });
+  }
+
+  function duplicateSelection() {
+    if (!needEdit('duplicate') || !copySelection()) return;
+    pasteClipboard();
+  }
+
+  const helpPanel = $('help');
+  function toggleHelp(show = helpPanel.hidden) { helpPanel.hidden = !show; }
+  $('help-close').addEventListener('click', () => toggleHelp(false));
+  const helpButton = $('help-button');
+  if (helpButton) helpButton.addEventListener('click', () => toggleHelp());
+
   // ---- keyboard -------------------------------------------------------------------------------
-  // V M R B P: tools. Delete: delete. Ctrl+Z, Ctrl+Shift+Z (or Ctrl+Y): undo, redo. F: frame the selection (or the
-  // model), Home: reset the view. G: widen to the sub-model. Arrows: nudge. Esc: clear (or leave the add tool).
-  // Space, Left, Right in the player. The stage takes focus on click.
+  // V M R B P: tools. Delete: delete. Ctrl+Z, Ctrl+Shift+Z (or Ctrl+Y): undo, redo. Ctrl+A: select all. Ctrl+C, V, D:
+  // copy, paste, duplicate. F: frame the selection (or the model), Home: reset the view. G: widen to the sub-model.
+  // H: stud or half-stud grid. Arrows, Page Up / Down: nudge (relative to the camera). [ and ]: turn a quarter. ?: the shortcut list.
+  // Esc: close the list, clear (or leave the add tool). Space, Left, Right in the player. The stage takes focus on click.
   const TOOL_KEYS = { v: 'select', m: 'move', r: 'rotate', b: 'add', p: 'paint' };
   addEventListener('keydown', e => {
     if (!state.shown || (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return;
     const mod = e.ctrlKey || e.metaKey;
     const key = e.key.toLowerCase();
     if (mod && key === 's' && !e.shiftKey) { e.preventDefault(); post({ type: 'obd:shortcut', action: 'save' }); return; }
+    if (!mod && e.key === '?') { e.preventDefault(); toggleHelp(); return; }
+    if (e.key === 'Escape' && !helpPanel.hidden) { e.preventDefault(); toggleHelp(false); return; }
     if (state.mode === 'player') return playerKey(e);
     if (state.mode === 'view') { if (!mod && (key === 'f' || e.key === 'Home')) { e.preventDefault(); key === 'f' ? frameSelection() : resetView(state.shown); } return; }
     if (mod && key === 'z') { e.preventDefault(); (e.shiftKey ? redo : undo)(); }
     else if (mod && key === 'y') { e.preventDefault(); redo(); }
+    else if (mod && key === 'a' && !e.shiftKey) { e.preventDefault(); selectAll(); }
+    else if (mod && key === 'c' && !e.shiftKey) { e.preventDefault(); copySelection(); }
+    else if (mod && key === 'v' && !e.shiftKey) { e.preventDefault(); pasteClipboard(); }
+    else if (mod && key === 'd' && !e.shiftKey) { e.preventDefault(); duplicateSelection(); }
     else if (mod) return;
     else if (e.altKey) return;
     else if (TOOL_KEYS[key] && editing()) { e.preventDefault(); setTool(TOOL_KEYS[key]); }
     else if ((e.key === 'Delete' || e.key === 'Backspace') && state.selected.length) { e.preventDefault(); remove(); }
     else if (key === 'f') { e.preventDefault(); frameSelection(); }
     else if (e.key === 'Home') { e.preventDefault(); resetView(state.shown); }
+    else if (key === 'h') { e.preventDefault(); toggleGrid(); }
     else if (key === 'g' && state.selected.length) widen();
+    else if ((e.key === '[' || e.key === ']') && state.selected.length && editing()) {
+      e.preventDefault();
+      turnSelection(e.key === ']' ? 90 : -90);
+    }
     else if (/^(Arrow(Left|Right|Up|Down)|Page(Up|Down))$/.test(e.key) && state.selected.length && editing()) {
       e.preventDefault();                        // nudge: one stud / plate per press, one undo step each
       let edits = [];
-      try { edits = Core.nudgeEdits(state.shown.placements, state.selected.filter(k => state.editable.has(k)), e.key, e.shiftKey); }
+      try { edits = Core.nudgeEdits(state.shown.placements, state.selected.filter(k => state.editable.has(k)), e.key, e.shiftKey, cameraForward(), state.grid); }
       catch (error) { setStatus(`${error.message} (the model is unchanged)`, true); return; }
       if (edits.length) send(edits);
     }
     else if (e.key === 'Escape') {
-      if (state.tool === 'add' || state.tool === 'paint' || state.tool === 'delete') setTool('select');
+      if (state.gesture) endGesture({ clientX: 0, clientY: 0 }, true);
+      else if (state.tool === 'add' || state.tool === 'paint' || state.tool === 'delete') setTool('select');
       else if (state.selected.length) setSelected([]);
     }
   });

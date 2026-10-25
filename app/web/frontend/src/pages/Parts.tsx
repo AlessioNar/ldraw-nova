@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { collectionApi, inventoryApi, timeAgo, type Inventory } from "../api";
 import AddPartsMenu, { type AddWay } from "../components/parts/AddPartsMenu";
 import AddSetDialog from "../components/parts/AddSetDialog";
@@ -11,13 +11,12 @@ import QuickAddDialog from "../components/parts/QuickAddDialog";
 import ReservedView from "../components/parts/ReservedView";
 import ReviewQueue from "../components/parts/ReviewQueue";
 import SourceHistory from "../components/parts/SourceHistory";
-import SetsView from "../components/parts/SetsView";
 import SourcesView from "../components/parts/SourcesView";
 import UploadDialog from "../components/parts/UploadDialog";
 import type { OnChanged } from "../components/parts/changes";
 
-type View = "collection" | "sets" | "sources" | "review" | "reserved" | "build";
-const VIEWS: View[] = ["collection", "sets", "sources", "review", "reserved", "build"];
+type View = "collection" | "sources" | "review" | "reserved" | "build";
+const VIEWS: View[] = ["collection", "sources", "review", "reserved", "build"];
 type Dialog = null | { kind: AddWay; replace?: string } | { kind: "export"; scope: string; name: string };
 type Notice = { text: string; source?: string } | null;
 
@@ -76,7 +75,7 @@ export default function Parts() {
 
   const dialogs = <>
     {dialog?.kind === "quick" && <QuickAddDialog onClose={() => setDialog(null)} onChanged={changed} />}
-    {dialog?.kind === "set" && <AddSetDialog onClose={() => setDialog(null)} onChanged={changed} />}
+    {dialog?.kind === "set" && <AddSetDialog onClose={() => setDialog(null)} onChanged={changed} onImportParts={id => setDialog({ kind: "import", replace: id })} />}
     {dialog?.kind === "export" && <ExportDialog scope={dialog.scope} name={dialog.name} onClose={() => setDialog(null)} />}
     {dialog?.kind === "import" && <UploadDialog sources={sources ?? []} replaceId={dialog.replace} onClose={() => setDialog(null)} onChanged={changed} />}
   </>;
@@ -86,6 +85,7 @@ export default function Parts() {
     <button type="button" className="icon-button" aria-label="Dismiss" onClick={() => setNotice(null)}>✕</button>
   </div>;
 
+  if (search.get("view") === "sets") return <Navigate to="/sets" replace />;
   if (id) {
     return <div className="page parts-page">
       <p className="small"><Link to="/parts?view=sources">← Sources</Link></p>
@@ -100,7 +100,7 @@ export default function Parts() {
           </form> : <div><h1>{current.name}</h1><p className="muted small">
             {current.kind === "set" && current.set ? `Set ${current.set.set_num} · ${current.set.copies} ${current.set.copies === 1 ? "copy" : "copies"} · ` : current.kind === "loose" ? "Manual and quick adds · " : `${current.source_filename ?? "No source file"} · `}added {timeAgo(current.created_at)}</p></div>}
           <div className="head-actions">
-            {(current.kind ?? "import") === "import" && <button type="button" disabled={busy} onClick={() => setDialog({ kind: "import", replace: current.id })}>Replace file</button>}
+            {((current.kind ?? "import") === "import" || (current.kind === "set" && current.set?.manual)) && <button type="button" disabled={busy} onClick={() => setDialog({ kind: "import", replace: current.id })}>{current.kind === "set" ? "Import parts" : "Replace file"}</button>}
             <button type="button" disabled={busy} onClick={() => setDialog({ kind: "export", scope: `source:${current.id}`, name: current.name })}>Export</button>
             <button type="button" disabled={busy || renaming || current.kind === "loose"} onClick={() => { setDraft(current.name); setRenaming(true); }}>Rename</button>
             <button type="button" className="danger-text" disabled={busy} onClick={() => void remove(current)}>Delete</button>
@@ -124,7 +124,6 @@ export default function Parts() {
     {sources && <>
       <div className="segmented parts-tabs" role="group" aria-label="My Parts view">
         <button type="button" aria-pressed={view === "collection"} onClick={() => go("collection")}>Collection</button>
-        <button type="button" aria-pressed={view === "sets"} onClick={() => go("sets")}>My sets</button>
         <button type="button" aria-pressed={view === "sources"} onClick={() => go("sources")}>Sources ({real.length})</button>
         <button type="button" aria-pressed={view === "review"} onClick={() => go("review")}>Review{reviewPieces > 0 ? ` (${reviewPieces.toLocaleString()})` : ""}</button>
         <button type="button" aria-pressed={view === "reserved"} onClick={() => go("reserved")}>Reserved</button>
@@ -132,7 +131,6 @@ export default function Parts() {
       </div>
       {view === "collection" && <CollectionView version={version} source={sourceFilter} onSource={s => setSearch(s ? { source: s } : {})}
         onChanged={changed} onReview={() => go("review")} onAdd={() => setDialog({ kind: "quick" })} />}
-      {view === "sets" && <SetsView version={version} onChanged={changed} onAdd={() => setDialog({ kind: "set" })} onAddManual={() => setDialog({ kind: "quick" })} />}
       {view === "sources" && <SourcesView sources={sources} version={version} onChanged={changed} onRemoved={() => setVersion(v => v + 1)}
         onShow={s => go("collection", { source: s })} onReplace={s => setDialog({ kind: "import", replace: s })} />}
       {view === "review" && <ReviewQueue version={version} onChanged={changed} />}

@@ -799,11 +799,19 @@ def pictures(tmp_path, monkeypatch):
     return downloads
 
 
-def test_set_picture_is_a_placeholder_and_nothing_is_downloaded_until_opted_in(client, catalog, pictures):
+def test_set_picture_is_a_placeholder_and_nothing_is_downloaded_when_switched_off(client, catalog, pictures):
     client.post("/api/collection/sets", json={"set_num": "8448"})
+    client.put("/api/set-images/settings", json={"remote_fetch": False})
     r = client.get("/files/set-image/8448-1")
     assert r.status_code == 200 and r.headers["content-type"] == "image/svg+xml" and r.headers["cache-control"] == "no-store"
     assert pictures == [] and client.get("/api/set-images/settings").json()["remote_fetch"] is False
+
+
+def test_fetching_is_on_by_default_and_the_env_switch_turns_it_off(client, catalog, pictures, monkeypatch):
+    client.post("/api/collection/sets", json={"set_num": "8448"})
+    assert client.get("/api/set-images/settings").json()["remote_fetch"] is True
+    monkeypatch.setenv("LDRAW_NOVA_SET_IMAGE_FETCH", "0")
+    assert client.get("/files/set-image/8448-1").headers["content-type"] == "image/svg+xml" and pictures == []
 
 
 def test_opted_in_fetch_happens_once_for_an_owned_set_and_is_cached(client, catalog, pictures):
@@ -866,7 +874,34 @@ def test_set_with_a_bundled_model_falls_back_to_a_render(client, catalog, pictur
         return out
     monkeypatch.setattr(set_images.render, "render", fake_render)
     client.post("/api/collection/sets", json={"set_num": "8448"})
+    client.put("/api/set-images/settings", json={"remote_fetch": False})
     for _ in range(2):
         r = client.get("/files/set-image/8448-1")
         assert r.headers["content-type"] == "image/png" and r.content == PNG
     assert renders == ["8448-1.mpd"] and pictures == []
+
+
+def test_manual_set_is_empty_until_a_file_is_imported_over_it(client, cli):
+    r = client.post("/api/collection/sets/manual", json={"brand": "CADA", "name": "Red Baron Plane", "code": "C51026W", "year": 2023, "copies": 2, "state": "built"})
+    assert r.status_code == 200, r.text
+    inv, record = r.json()["inventory"], r.json()["set"]
+    assert (record["set_num"], record["brand"], record["copies"], record["state"], record["year"]) == ("cada:C51026W", "CADA", 2, "built", 2023)
+    assert inv["kind"] == "set" and inv["total_pieces"] == 0
+    listed = client.get("/api/sets").json()["sets"]
+    assert [(s["set_num"], s["brand"], s["pieces"]) for s in listed] == [("cada:C51026W", "CADA", 0)]
+
+    pv = preview(client, "inventory", RB)
+    done = client.post(f"/api/collection/imports/{pv['preview_id']}/commit", json={"replace": inv["id"]})
+    assert done.status_code == 200, done.text
+    after = done.json()["inventory"]
+    assert after["kind"] == "set" and after["total_pieces"] == 22          # the file's 11 pieces x 2 copies
+    assert after["set"]["manual"] and after["set"]["brand"] == "CADA" and after["set"]["num_parts"] == 11
+    assert client.get("/api/sets").json()["sets"][0]["pieces"] == 22
+
+
+def test_manual_set_rejects_bad_input(client):
+    ok = {"brand": "CADA", "name": "Plane", "code": "C1"}
+    for bad in ({"name": " "}, {"code": ""}, {"code": "a b/c"}, {"year": 1500}, {"state": "lost"}, {"copies": 100}, {"brand": "x" * 50}):
+        assert client.post("/api/collection/sets/manual", json={**ok, **bad}).status_code == 400, bad
+    twice = [client.post("/api/collection/sets/manual", json=ok).json()["inventory"]["id"] for _ in range(2)]
+    assert twice[0] != twice[1]

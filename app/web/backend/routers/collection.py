@@ -58,6 +58,15 @@ class NewSet(BaseModel):
     brand: Optional[str] = None
 
 
+class ManualSet(BaseModel):
+    brand: str
+    name: str
+    code: str
+    year: Optional[int] = None
+    copies: Optional[int] = 1
+    state: Optional[str] = "parts"
+
+
 class QuickText(BaseModel):
     text: str
 
@@ -296,7 +305,7 @@ def set_image_settings():
 @router.put("/api/set-images/settings")
 def set_image_settings_save(body: SetImageSettings):
     """remote_fetch: let the backend download a picture of an owned set from the catalogue source once and cache it on this
-    machine. Off by default; cached pictures are never committed or shared."""
+    machine. On by default; cached pictures are never committed or shared."""
     set_images.set_remote_enabled(body.remote_fetch)
     return set_image_settings()
 
@@ -336,6 +345,15 @@ def set_image_remove(source_id: str):
 def sets_add(body: NewSet):
     try:
         return collection.add_set(body.set_num, 1 if body.copies is None else body.copies, body.state or "parts", body.brand)
+    except InventoryError as exc:
+        raise failure(exc) from None
+
+
+@router.post("/api/collection/sets/manual")
+def sets_add_manual(body: ManualSet):
+    """A set that no catalogue knows, added by hand (brand, name, code, year); its parts come from an import over it."""
+    try:
+        return collection.add_manual_set(body.brand, body.name, body.code, body.year, 1 if body.copies is None else body.copies, body.state or "parts")
     except InventoryError as exc:
         raise failure(exc) from None
 

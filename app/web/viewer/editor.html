@@ -34,6 +34,7 @@
   </span>
   <button id="open-other" class="editing"title="Open another plan from this chat's folder instead of the current model" disabled>Open plan…</button>
   <a id="chat-link" target="_top" hidden title="Back to this chat">Back to the chat</a>
+  <button id="help-button" class="icon" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
   <button id="home" class="icon" title="Reset view" aria-label="Reset view" disabled>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9V5a2 2 0 0 1 2-2h4v2H5v4zm12-6h4a2 2 0 0 1 2 2v4h-2V5h-4zM3 15h2v4h4v2H5a2 2 0 0 1-2-2zm16 0h2v4a2 2 0 0 1-2 2h-4v-2h4zM12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"/></svg>
   </button>
@@ -56,6 +57,26 @@
   <ul id="plans"></ul>
   <button id="start-button">Start a new model</button>
   <button id="start-cancel" hidden>Cancel</button>
+</div>
+<div id="help" role="dialog" aria-label="Keyboard shortcuts" hidden>
+  <div id="help-head"><strong>Keyboard shortcuts</strong><button id="help-close" class="icon" aria-label="Close">&times;</button></div>
+  <dl>
+    <dt>Arrows</dt><dd>Move the selection one stud, relative to the camera</dd>
+    <dt>Drag a selected part</dt><dd>Move it over the surface; green = clear, red = overlaps (Esc cancels)</dd>
+    <dt>H</dt><dd>Grid: one stud or half a stud</dd>
+    <dt>Page Up / Down</dt><dd>Move one plate up / down</dd>
+    <dt>Shift + Left / Right, [ and ]</dt><dd>Turn a quarter</dd>
+    <dt>Ctrl + C, V, D</dt><dd>Copy, paste, duplicate</dd>
+    <dt>Ctrl + A</dt><dd>Select all</dd>
+    <dt>Delete</dt><dd>Delete the selection</dd>
+    <dt>Ctrl + Z, Ctrl + Shift + Z</dt><dd>Undo, redo</dd>
+    <dt>Ctrl + S</dt><dd>Save as a new version</dd>
+    <dt>V, M, R, B, P</dt><dd>Select, move, rotate, add, paint</dd>
+    <dt>F, Home</dt><dd>Frame the selection, the whole model</dd>
+    <dt>G</dt><dd>Select the whole sub-model</dd>
+    <dt>Esc</dt><dd>Deselect, or leave the add tool</dd>
+    <dt>?</dt><dd>This list</dd>
+  </dl>
 </div>
 <div id="desktop-note" hidden>Editing needs a desktop browser with a mouse. You can still look around.</div>
 <div id="status" role="status">Loading…</div>
