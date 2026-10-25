@@ -101,3 +101,10 @@ characters. The real `/api/describe` may decide differently once the model has r
 - `needs_ai`: show `reason` and `estimate`, let the person confirm, then start the AI build with `spec`. No automatic fallback.
 - The generator registry is dumped once from the toolkit interpreter (about 2 s) and cached in `CONFIG_DIR/generators.json`; the first
   `/api/describe` after a toolkit update pays that. Until it is loaded the estimate endpoint falls back to a built-in family list.
+
+## Wave 2 additions (#42)
+
+- **More rules, no call.** With a current build the rules read ordered, multi-clause follow-ups ("make the roof red and the door white, then add a chimney", "2 studs longer", "two more windows", "bigger wheels", "remove the porch") in English, with Italian, Spanish and French keywords for the common words. All or nothing: one unreadable clause sends the whole message to the model.
+- **Steps.** "a red car and make it longer" builds the first part, then applies the edits on it. The `generator` answer carries the final `params` and `steps: [{step, route, text, ...}]` reporting each step.
+- **Preview.** An `edit` (or a `generator` from "make it a truck instead") that moves a size by more than 30 %, replaces the generator, or touches a draft with hand edits (`current.manual_edits: true`) carries `preview: {reasons, summary}`. The payload is still complete, so a client that ignores `preview` keeps applying it.
+- **Ask on doubt.** A model reading with confidence below 0.5, or with a flagged ambiguity, applies nothing and returns `clarify` with the ambiguity's options as `choices`.

@@ -42,6 +42,7 @@ FEATURE_WORDS = {"door": "door", "window": "windows", "windows": "windows", "por
                  "dormer": "dormer", "engine": "engines", "engines": "engines", "wheel": "wheels", "wheels": "wheels"}
 # scale word -> share of the way from the default to the maximum (negative: from the default to the minimum)
 SCALE_SHARE = {"micro": -1.0, "mini": -0.5, "small": 0.0, "medium": 0.3, "large": 0.7}
+BIG_CHANGE = 0.30          # a size change above this share of the current value replaces the model rather than tweaks it
 _DROP = object()
 
 
@@ -453,7 +454,9 @@ def _route_edit(spec: dict, current: Optional[dict], confidence: float) -> dict:
         carried = {k: v for k, v in (current.get("params") or {}).items()
                    if entry["params"]["properties"].get(k, {}).get("x-colour") and k in target["params"]["properties"]}
         params, notes = clamp(target, carried)
-        return _generator_route(target, params, notes, confidence)
+        out = _generator_route(target, params, notes, confidence)
+        out["preview"] = {"reasons": [f"replaces the {entry['title']} with the {target['title']}"], "summary": f"{entry['title']} to {target['title']}"}
+        return out
     base, _ = clamp(entry, current.get("params"))
     params, changes, notes, history = edit_params(entry, base, edits)
     if not changes and not history:
@@ -464,7 +467,28 @@ def _route_edit(spec: dict, current: Optional[dict], confidence: float) -> dict:
            "confidence": round(confidence, 2), "cost_eur": 0.0, "seconds_estimate": SECONDS.get(entry["id"], DEFAULT_SECONDS)}
     if history:
         out["history"] = history
+    elif preview := _preview(base, changes, bool(current.get("manual_edits"))):
+        out["preview"] = preview
     return out
+
+
+def _preview(base: dict, changes: list[dict], manual_edits: bool) -> Optional[dict]:
+    """Why a change should be shown as a proposal before it is applied, or None for a small change (applied, with Undo).
+
+    Big: a size parameter moves by more than BIG_CHANGE, or the draft carries manual edits that a regenerate would replace.
+    """
+    reasons = []
+    for change in changes:
+        old, new = base.get(change["param"]), change["to"]
+        if change["param"] in (*SIZE_PARAMS, "courses") and isinstance(old, (int, float)) and isinstance(new, (int, float)) \
+                and old and abs(new - old) / abs(old) > BIG_CHANGE:
+            reasons.append(f"{change['label']} changes by {abs(new - old) / abs(old):.0%}")
+    if manual_edits and changes:
+        reasons.append("the draft has manual edits that this change replaces")
+    if not reasons:
+        return None
+    summary = ", ".join(f"{c['label']} {c['from']} to {c['to']}" for c in changes[:4])
+    return {"reasons": reasons, "summary": summary}
 
 
 # ---------------------------------------------------------------- rules-only guess (the composer hint)
@@ -537,10 +561,50 @@ def confidence_low(result, spec: dict) -> bool:
     return result.source != "llm" or float(spec.get("confidence", 1.0)) < 0.6
 
 
+_STEP_BREAK = re.compile(r"\s*(?:,|;|\band then\b|\bthen\b|\band\b)\s+(?=(?:please\s+)?(?:make|paint|colou?r|turn|change|add|remove|delete|drop)\b"
+                         r"|(?:bigger|smaller|longer|shorter|wider|narrower|taller|lower)\b)", re.I)
+
+
+def split_steps(text: str) -> Optional[tuple[str, str, list[dict]]]:
+    """("a red car", "make it longer", edits) when a new-model request is followed by edits the rules fully read, else None."""
+    found = _STEP_BREAK.search(text)
+    if not found:
+        return None
+    head, tail = text[:found.start()].strip(), text[found.end():].strip()
+    edits = understand.rules_edits(tail) if head else None
+    return (head, tail, edits) if edits else None
+
+
+async def _describe_steps(head: str, tail: str, edits: list[dict], **kwargs) -> Optional[dict]:
+    """Build the head request, then apply the edits on that result as a scratch plan; the steps report what each did.
+
+    Only when the head is a generator build and every edit lands: otherwise None and the whole message goes the usual way.
+    """
+    decision = await describe(head, **kwargs)
+    entry = _entry(decision["generator"]) if decision["route"] == "generator" else None
+    if entry is None:
+        return None
+    params, changes, notes, history = edit_params(entry, decision["params"], edits)
+    if history or not changes:
+        return None
+    steps = [{"step": 1, "route": "generator", "text": head, "generator": entry["id"], "params": decision["params"]},
+             {"step": 2, "route": "edit", "text": tail, "changes": changes, "notes": notes}]
+    return {**decision, "params": params, "notes": [*decision["notes"], *notes], "steps": steps}
+
+
+def _unsure(spec: dict) -> bool:
+    """A model reading that should be asked about, not applied: low confidence, or it flagged an ambiguity with a question."""
+    return float(spec.get("confidence", 1.0)) < 0.5 or any(a.get("question") for a in spec.get("ambiguities") or [])
+
+
 async def describe(text: str, *, current: Optional[dict] = None, build_id: Optional[str] = None,
                    previous_text: Optional[str] = None, llm_id: Optional[str] = None) -> dict:
     """Understand the request (rules first, else one structured call) and route it. See docs/plans/phase2/fast-path.md."""
     await generator_bridge.ensure()
+    if not current and (steps := split_steps(text)):
+        combined = await _describe_steps(*steps, build_id=build_id, llm_id=llm_id)
+        if combined:
+            return combined
     current_spec = _current_spec(current)
     params = None
     if not understand.rules_shortcut(text, current_spec, previous_text):
@@ -556,7 +620,13 @@ async def describe(text: str, *, current: Optional[dict] = None, build_id: Optio
         decision["notes"] = ["no understanding model answered; the request was read by keywords", *decision["notes"]]
     if result.errors and result.source != "llm":
         decision["understanding_errors"] = result.errors[:2]
-    if current and result.source != "rules" and decision["route"] in ("edit", "generator") and (
+    if result.source == "llm" and decision["route"] in ("edit", "generator") and _unsure(spec):
+        # Apply nothing and ask, with the ambiguity's options as chips ("6x8 studs" / "6x8 bricks"), instead of resolving silently.
+        extras = {k: v for k, v in decision.items() if k.startswith("understand")}
+        decision = {**_clarify(spec), "spec": spec, **extras}
+        if "choices" not in decision:
+            decision["question"] = "I am not sure I read that right. Could you say it a little differently?"
+    elif current and result.source != "rules" and decision["route"] in ("edit", "generator") and (
             confidence_low(result, spec) or not chat_routing.whole_edit_command(text)):
         # An understood edit is applied only when the whole message is that edit: an edit word inside a longer instruction
         # ("go on... consider all bricks as dark grey") or a shaky reading is asked about, never applied.
