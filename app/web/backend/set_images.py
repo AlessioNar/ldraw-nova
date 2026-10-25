@@ -2,10 +2,10 @@
 
 Decided on the set-image issue (#111): the catalogue picture is linked to its source (Rebrickable's CDN) and cached on this
 machine for offline use. Cached pictures live under `<DATA_DIR>/cache/set-images/`, are never committed or redistributed, and
-are only fetched when the owner has switched remote fetching on (off by default). An uploaded picture works for any set,
+are fetched for owned sets unless the owner has switched remote fetching off (on by default, so pictures show without setup). An uploaded picture works for any set,
 including third-party ones (CADA), which have no catalogue picture.
 
-Order served: uploaded photo, cached catalogue picture, catalogue picture fetched now (opt-in, owned LEGO sets only),
+Order served: uploaded photo, cached catalogue picture, catalogue picture fetched now (owned LEGO sets only, unless switched off),
 render of the bundled model, neutral placeholder. A failed fetch is remembered for a while so a dead link costs one request.
 """
 from __future__ import annotations
@@ -74,13 +74,17 @@ def image_url(set_num: str) -> str:
 # --- the opt-in --------------------------------------------------------------
 
 def remote_enabled() -> bool:
-    """Whether the backend may download catalogue pictures. LDRAW_NOVA_SET_IMAGE_FETCH=1 forces it on for a deployment."""
-    if os.environ.get("LDRAW_NOVA_SET_IMAGE_FETCH", "").strip().lower() in ("1", "true", "yes", "on"):
+    """Whether the backend may download catalogue pictures. On unless the owner switched it off in Settings or
+    LDRAW_NOVA_SET_IMAGE_FETCH is 0/false/no/off (the latter wins, for offline deployments)."""
+    env = os.environ.get("LDRAW_NOVA_SET_IMAGE_FETCH", "").strip().lower()
+    if env in ("0", "false", "no", "off"):
+        return False
+    if env in ("1", "true", "yes", "on"):
         return True
     try:
-        return json.loads(settings_file().read_text(encoding="utf-8")).get("remote_fetch") is True
+        return json.loads(settings_file().read_text(encoding="utf-8")).get("remote_fetch") is not False
     except (OSError, ValueError, AttributeError):
-        return False
+        return True
 
 
 def set_remote_enabled(value: bool) -> None:
