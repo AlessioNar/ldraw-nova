@@ -152,9 +152,13 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       );
     }
     if (f.route === "clarify") {
+      const at = messages.findIndex((x) => x.id === m.id);
+      const answer = messages.slice(at + 1).find((x) => x.role === "user" && typeof x.content === "string")?.content as string | undefined;
+      const picked = answer && (f.choices ?? []).includes(answer) ? answer : null;
       return (
         <div className="ws-fp" data-route="clarify">
           <div className="ws-fp-line"><span>{f.question}</span></div>
+          {picked && <div className="ws-fp-chosen muted small">You chose: <b>{picked}</b></div>}
           {!!f.notes?.length && <ul className="ws-fp-notes">{f.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
         </div>
       );
