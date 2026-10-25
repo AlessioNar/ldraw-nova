@@ -70,7 +70,7 @@ jobs:
       - run: python tools/export_ontology.py --check
       - run: python tools/validate_shapes.py --presets
       # Cookbook queries run against docs/ns/; --noconftest because tests/conftest.py needs the LDraw library.
-      - run: pytest -q --noconftest tests/test_ontology_export.py tests/test_role_ontology.py tests/test_component_ontology.py tests/test_shapes.py
+      - run: pytest -q --noconftest tests/test_ontology_export.py tests/test_role_ontology.py tests/test_component_ontology.py tests/test_shapes.py tests/test_vehicle_ontology.py
 
   # The only place the Dockerfile is built end to end and the tests that need
   # LeoCAD / the LDraw library can run. Real network access is required: the

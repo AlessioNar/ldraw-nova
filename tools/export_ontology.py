@@ -4,7 +4,7 @@
     python tools/export_ontology.py --check   exit 1 if docs/ns/ is out of date (CI)
 
 Needs rdflib (toolkit-only: `pip install rdflib`); the app never imports this. Each source file is re-serialised
-byte-stably (blank nodes relabelled canonically, subjects sorted, no timestamps), the three are also merged into one
+byte-stably (blank nodes relabelled canonically, subjects sorted, no timestamps), they are also merged into one
 ontology.ttl for loading in a single call, and index.html links them. GitHub Pages serves docs/, so
 https://alessionar.github.io/open-brick-designer/ns/obd.ttl is docs/ns/obd.ttl.
 """
@@ -24,6 +24,7 @@ FILES = {
     'obd.ttl': 'Component classes and parameters (OWL)',
     'roles.ttl': 'Role vocabulary (SKOS)',
     'shapes.ttl': 'Validity rules (SHACL)',
+    'vehicles.ttl': 'Vehicles and spaceships (OWL, SHACL)',
 }
 MERGED = 'ontology.ttl'
 PREFIXES = {
@@ -56,7 +57,7 @@ def render():
         '<h1>Open Brick Designer ontology</h1>\n'
         f'<p>Licence: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Namespace <code>{BASE}</code>.'
         ' Generated from <code>ontology/</code> by <code>tools/export_ontology.py</code>.</p>\n'
-        f'<ul>{links}<li><a href="{MERGED}">{MERGED}</a>: all three in one file</li></ul>\n'
+        f'<ul>{links}<li><a href="{MERGED}">{MERGED}</a>: all of them in one file</li></ul>\n'
     )
     return files
 
