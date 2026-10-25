@@ -98,10 +98,14 @@ def main() -> None:
 
     rows = asyncio.run(go())
     summary = rates(rows)
+    expected = {c["id"]: c["expected"] for c in load_golden()}
     for r in rows:
         bad = [k for k, v in r["match"].items() if v is False]
         if bad or not r["valid"] or r["source"] == "rules_fallback":
             print(f"MISMATCH {r['id']}: {bad or 'invalid'} source={r['source']} {r['prompt']!r}")
+            for dim in bad:
+                key = {"intent": "intent", "family": "subject", "colours": "colours", "edits": "edits"}[dim]
+                print(f"    {dim}: expected {json.dumps(expected[r['id']].get(key))} got {json.dumps((r['spec'] or {}).get(key))}")
     print(json.dumps(summary, indent=1))
     ok = [summary[d]["rate"] for d in ("family", "colours", "edits") if summary[d]["rate"] is not None]
     print(f"target: family, colours and edits >= 0.90 (min seen {min(ok):.2f}); median cost < $0.0005 (seen {summary['median_cost_usd']})")
