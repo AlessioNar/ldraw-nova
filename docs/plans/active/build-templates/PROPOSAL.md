@@ -207,6 +207,8 @@ What is built, and where: the gate, the role preview, the job and the knob card 
 
 The same derivation is still one command for reference models: `python docs/plans/active/build-templates/derive_templates.py OUTDIR SPEC.json` (see `templates.spec.json`).
 
+For the whole reference library, `tools/derive_template_candidates.py` runs the quality gate over every model (`gate`), derives the best gated ones (`derive --top N`) and ranks them by soundness and verified knobs (`ranking.csv`). Everything lands in the gitignored `data/local/template-candidates/`; nothing ships until a person picks the 50-100 to publish (#56).
+
 ## 7. Template vs generator vs AI in the fast path
 
 The understanding step already turns a sentence into `spec.v1` (family, kind, sizes, colours, features). Routing stays deterministic:
