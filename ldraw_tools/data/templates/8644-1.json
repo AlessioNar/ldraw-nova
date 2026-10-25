@@ -1,0 +1,1143 @@
+{
+ "version": 1,
+ "id": "8644-1",
+ "title": "assembly for the Street Maniac, a compact yellow racing car model.",
+ "families": [
+  "generic"
+ ],
+ "kinds": [
+  "assembly for the street maniac, a compact yellow racing car model."
+ ],
+ "description": "assembly for the Street Maniac, a compact yellow racing car model.",
+ "source": {
+  "name": "8644-1.mpd",
+  "author": "Massimo Maso [Sirio]",
+  "license": "Redistributable under CCAL version 2.0 : see CAreadme.txt"
+ },
+ "leaves": [
+  {
+   "id": "l0001",
+   "ref": "6157.dat",
+   "colour": 0,
+   "role": "chassis",
+   "at": [
+    0.0,
+    -8.0,
+    60.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": -8.0
+  },
+  {
+   "id": "l0002",
+   "ref": "3031.dat",
+   "colour": 8,
+   "role": "chassis",
+   "at": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": -8.0
+  },
+  {
+   "id": "l0003",
+   "ref": "6157.dat",
+   "colour": 0,
+   "role": "chassis",
+   "at": [
+    0.0,
+    -8.0,
+    -60.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": -8.0
+  },
+  {
+   "id": "l0004",
+   "ref": "2436a.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    0.0,
+    -8.0,
+    70.0
+   ],
+   "matrix": [
+    [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0
+    ]
+   ],
+   "ub": -12.0
+  },
+  {
+   "id": "l0005",
+   "ref": "2420.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    -10.0,
+    -8.0,
+    30.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -0.0
+  },
+  {
+   "id": "l0006",
+   "ref": "2420.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    10.0,
+    -8.0,
+    30.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": -0.0
+  },
+  {
+   "id": "l0007",
+   "ref": "3020.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    0.0,
+    -8.0,
+    0.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": -0.0
+  },
+  {
+   "id": "l0008",
+   "ref": "2420.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    -10.0,
+    -8.0,
+    -30.0
+   ],
+   "matrix": [
+    [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0
+    ]
+   ],
+   "ub": -0.0
+  },
+  {
+   "id": "l0009",
+   "ref": "2420.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    10.0,
+    -8.0,
+    -30.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -0.0
+  },
+  {
+   "id": "l0010",
+   "ref": "50949.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    0.0,
+    -8.0,
+    -70.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": -8.0
+  },
+  {
+   "id": "l0011",
+   "ref": "6231.dat",
+   "colour": 8,
+   "role": "glass",
+   "at": [
+    -30.0,
+    2.0,
+    108.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     -1.0,
+     0.0
+    ]
+   ],
+   "ub": -12.0
+  },
+  {
+   "id": "l0012",
+   "ref": "6231.dat",
+   "colour": 8,
+   "role": "glass",
+   "at": [
+    -10.0,
+    2.0,
+    108.0
+   ],
+   "matrix": [
+    [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     -1.0,
+     0.0
+    ]
+   ],
+   "ub": -12.0
+  },
+  {
+   "id": "l0013",
+   "ref": "6231.dat",
+   "colour": 8,
+   "role": "glass",
+   "at": [
+    10.0,
+    2.0,
+    108.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     -1.0,
+     0.0
+    ]
+   ],
+   "ub": -12.0
+  },
+  {
+   "id": "l0014",
+   "ref": "6231.dat",
+   "colour": 8,
+   "role": "glass",
+   "at": [
+    30.0,
+    2.0,
+    108.0
+   ],
+   "matrix": [
+    [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     -1.0,
+     0.0
+    ]
+   ],
+   "ub": -12.0
+  },
+  {
+   "id": "l0015",
+   "ref": "3795.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    0.0,
+    -16.0,
+    40.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": 8.0
+  },
+  {
+   "id": "l0016",
+   "ref": "50947.dat",
+   "colour": 14,
+   "role": "body",
+   "at": [
+    -30.0,
+    -16.0,
+    20.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": 8.0
+  },
+  {
+   "id": "l0017",
+   "ref": "50947.dat",
+   "colour": 14,
+   "role": "body",
+   "at": [
+    30.0,
+    -16.0,
+    20.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": 8.0
+  },
+  {
+   "id": "l0018",
+   "ref": "50947.dat",
+   "colour": 14,
+   "role": "body",
+   "at": [
+    -30.0,
+    -16.0,
+    -20.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": 8.0
+  },
+  {
+   "id": "l0019",
+   "ref": "50947.dat",
+   "colour": 14,
+   "role": "body",
+   "at": [
+    30.0,
+    -16.0,
+    -20.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": 8.0
+  },
+  {
+   "id": "l0020",
+   "ref": "3021.dat",
+   "colour": 14,
+   "role": "chassis",
+   "at": [
+    0.0,
+    -16.0,
+    -50.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": 8.0
+  },
+  {
+   "id": "l0021",
+   "ref": "3023.dat",
+   "colour": 36,
+   "role": "glass",
+   "at": [
+    0.0,
+    -24.0,
+    90.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": 16.0
+  },
+  {
+   "id": "l0022",
+   "ref": "50948.dat",
+   "colour": 0,
+   "role": "body",
+   "at": [
+    0.0,
+    -24.0,
+    30.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": 16.0
+  },
+  {
+   "id": "l0023",
+   "ref": "3023.dat",
+   "colour": 8,
+   "role": "body",
+   "at": [
+    0.0,
+    -24.0,
+    10.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": 16.0
+  },
+  {
+   "id": "l0024",
+   "ref": "2431.dat",
+   "colour": 14,
+   "role": "roof",
+   "at": [
+    0.0,
+    -32.0,
+    90.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": 24.0
+  },
+  {
+   "id": "l0025",
+   "ref": "50950.dat",
+   "colour": 14,
+   "role": "body",
+   "at": [
+    -10.0,
+    -40.0,
+    50.0
+   ],
+   "matrix": [
+    [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0
+    ]
+   ],
+   "ub": 16.0
+  },
+  {
+   "id": "l0026",
+   "ref": "50950.dat",
+   "colour": 14,
+   "role": "body",
+   "at": [
+    10.0,
+    -40.0,
+    50.0
+   ],
+   "matrix": [
+    [
+     -1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     -1.0
+    ]
+   ],
+   "ub": 16.0
+  },
+  {
+   "id": "l0027",
+   "ref": "3069b.dat",
+   "colour": 14,
+   "role": "roof",
+   "at": [
+    0.0,
+    -32.0,
+    10.0
+   ],
+   "matrix": [
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "ub": 24.0
+  },
+  {
+   "id": "l0028",
+   "ref": "51719.dat",
+   "colour": 0,
+   "role": "wheel",
+   "at": [
+    -40.0,
+    -3.0,
+    60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -11.0
+  },
+  {
+   "id": "l0029",
+   "ref": "51719.dat",
+   "colour": 0,
+   "role": "wheel",
+   "at": [
+    40.0,
+    -3.0,
+    60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -11.0
+  },
+  {
+   "id": "l0030",
+   "ref": "51719.dat",
+   "colour": 0,
+   "role": "wheel",
+   "at": [
+    -40.0,
+    -3.0,
+    -60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     -1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -11.0
+  },
+  {
+   "id": "l0031",
+   "ref": "51719.dat",
+   "colour": 0,
+   "role": "wheel",
+   "at": [
+    40.0,
+    -3.0,
+    -60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -11.0
+  },
+  {
+   "id": "l0032",
+   "ref": "50951.dat",
+   "colour": 256,
+   "role": "tyre",
+   "at": [
+    -40.0,
+    -3.0,
+    60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -16.001
+  },
+  {
+   "id": "l0033",
+   "ref": "50951.dat",
+   "colour": 256,
+   "role": "tyre",
+   "at": [
+    40.0,
+    -3.0,
+    60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -16.001
+  },
+  {
+   "id": "l0034",
+   "ref": "50951.dat",
+   "colour": 256,
+   "role": "tyre",
+   "at": [
+    -40.0,
+    -3.0,
+    -60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -16.001
+  },
+  {
+   "id": "l0035",
+   "ref": "50951.dat",
+   "colour": 256,
+   "role": "tyre",
+   "at": [
+    40.0,
+    -3.0,
+    -60.0
+   ],
+   "matrix": [
+    [
+     0.0,
+     0.0,
+     -1.0
+    ],
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ]
+   ],
+   "ub": -16.001
+  }
+ ],
+ "stretch": {},
+ "repeat": {},
+ "courses": null,
+ "swaps": {
+  "tile_1x2": {
+   "codes": [
+    "3069b",
+    "2412b"
+   ],
+   "labels": {
+    "3069b": "Tile  1 x  2 with Groove",
+    "2412b": "Tile  1 x  2 Grille with Groove"
+   },
+   "leaves": [
+    "l0027"
+   ]
+  }
+ },
+ "groups": {},
+ "colours": {
+  "body": 14,
+  "chassis": 14,
+  "glass": 8,
+  "roof": 14,
+  "tyre": 256,
+  "wheel": 0
+ },
+ "roles": [
+  "body",
+  "chassis",
+  "glass",
+  "roof",
+  "tyre",
+  "wheel"
+ ],
+ "params": {
+  "colour_body": {
+   "type": [
+    "string",
+    "integer"
+   ],
+   "x-colour": true,
+   "default": 14,
+   "description": "Colour of the body parts (colour name or LDraw code)"
+  },
+  "colour_chassis": {
+   "type": [
+    "string",
+    "integer"
+   ],
+   "x-colour": true,
+   "default": 14,
+   "description": "Colour of the chassis parts (colour name or LDraw code)"
+  },
+  "colour_glass": {
+   "type": [
+    "string",
+    "integer"
+   ],
+   "x-colour": true,
+   "default": 8,
+   "description": "Colour of the glass parts (colour name or LDraw code)"
+  },
+  "colour_roof": {
+   "type": [
+    "string",
+    "integer"
+   ],
+   "x-colour": true,
+   "default": 14,
+   "description": "Colour of the roof parts (colour name or LDraw code)"
+  },
+  "colour_tyre": {
+   "type": [
+    "string",
+    "integer"
+   ],
+   "x-colour": true,
+   "default": 256,
+   "description": "Colour of the tyre parts (colour name or LDraw code)"
+  },
+  "colour_wheel": {
+   "type": [
+    "string",
+    "integer"
+   ],
+   "x-colour": true,
+   "default": 0,
+   "description": "Colour of the wheel parts (colour name or LDraw code)"
+  },
+  "swap_tile_1x2": {
+   "enum": [
+    "keep",
+    "3069b",
+    "2412b"
+   ],
+   "default": "keep",
+   "x-labels": {
+    "3069b": "Tile  1 x  2 with Groove",
+    "2412b": "Tile  1 x  2 Grille with Groove"
+   },
+   "description": "Swap every tile 1x2 for an equivalent part"
+  }
+ },
+ "coverage": [
+  "colours by role",
+  "swap tile_1x2"
+ ],
+ "quality": "Derived from 8644-1.mpd: 35 parts, roles by classifier (vehicle); every offered size, swap and removal was built and checked."
+}
