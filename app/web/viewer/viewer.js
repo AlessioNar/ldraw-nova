@@ -293,7 +293,7 @@ var scene = null;
   // Camera. ldbi's scene has an orthographic camera, which can't go inside a
   // model; this is a perspective one, with two ways to move it (the same as the
   // 3D player's, see player.html):
-  //   Inspect: drag to orbit, Shift+drag to pan (OrbitControls), scroll to zoom
+  //   Inspect: drag to orbit, right-drag or Shift+drag to pan (OrbitControls), scroll to zoom
   //     towards the pointer. Close to the orbit point, zooming in keeps flying
   //     forward, through walls: nothing stops the camera.
   //   Walk: first person. Click and the mouse looks around (pointer lock, Esc
@@ -323,7 +323,8 @@ var scene = null;
     const controls = new THREE.OrbitControls(camera, scene.renderer.domElement);
     controls.addEventListener('change', () => scene.render());
     controls.screenSpacePanning = true;
-    controls.mouseButtons.RIGHT = -1;    // Shift+drag pans (as do Ctrl/Cmd+drag); right-drag does nothing
+    controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;   // right-drag pans (Shift/Ctrl/Cmd+left-drag too)
+    scene.renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
     scene.orbitControls = controls;      // (its wheel zoom never sees the wheel: see onWheel)
 
     scene.render = function () {
