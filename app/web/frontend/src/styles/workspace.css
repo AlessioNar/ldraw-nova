@@ -311,3 +311,6 @@
 .ws-session summary { cursor: pointer; color: var(--muted); }
 .ws-session .ws-ai-actions, .ws-session .ws-session-versions { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
 .ws-fp-changes { margin: 0; padding-left: 16px; font-size: var(--fs-xs); }
+
+/* What the canvas selection is, above the composer. */
+.ws-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-xs); color: var(--muted); }

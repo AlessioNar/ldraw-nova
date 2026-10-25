@@ -49,6 +49,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   const [llmId, setLlmId] = useState<string | null>(null);
   const [hint, setHint] = useState<DescribeHint | null>(null);
   const [typed, setTyped] = useState(false);
+  const [shown, setShown] = useState(false);                                      // "Show them" is on: the clarify's parts are selected on the canvas
   const [attached, setAttached] = useState(0);                                       // files in the composer: they always go to the AI
   const [acting, setActing] = useState(false);
   const [mode, setMode] = useState<"ai" | "quick">(ws.ws?.chat_mode ?? "quick");   // decided by the server, from the saved chat
@@ -62,6 +63,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   useEffect(() => setChatId((c) => c ?? ws.ws?.chat_id ?? null), [ws.ws?.chat_id]);
   useEffect(() => setMode(ws.ws?.chat_mode ?? "quick"), [ws.ws?.chat_mode]);
   useEffect(() => () => clearTimeout(hintTimer.current), []);
+  useEffect(() => { if (!ws.selection.length) setShown(false); }, [ws.selection.length]);
 
   const reload = useCallback(async () => {
     if (!chatId) return null;
@@ -204,7 +206,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       <div className="ws-tray" role="region" aria-label="Needs you">
         <div className="label">Needs you</div>
         <div className="ws-chips" role="group" aria-label="Quick replies">
-          {!!f.highlight?.length && <button className="ws-chip-btn" onClick={() => ws.showParts(f.highlight!)}>Show them</button>}
+          {!!f.highlight?.length && <button className="ws-chip-btn" aria-pressed={shown} onClick={() => { if (shown) { ws.hideParts(); setShown(false); } else { ws.showParts(f.highlight!); setShown(true); } }}>{shown ? "Hide them" : "Show them"}</button>}
           {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}
           {choices.some((c) => c !== "Ask the AI") && <button className="ws-chip-btn pick" onClick={() => reply(choices.find((c) => c !== "Ask the AI")!)}>Just pick for me</button>}
         </div>
@@ -230,6 +232,15 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         </div>
       )}
     </details>
+  ) : null;
+
+  // The canvas selection scopes the next quick message ("paint this red"), so the composer says what it is.
+  const names = [...new Set(ws.selection.map((p) => p.name || p.part))];
+  const context = ws.selection.length ? (
+    <div className="ws-context" role="status">
+      <span>{names.length === 1 ? names[0] : "Parts"} · {ws.selection.length} selected</span>
+      <button type="button" className="ws-chip-btn" onClick={() => { ws.hideParts(); setShown(false); }}>Clear</button>
+    </div>
   ) : null;
 
   const cost = detail?.usage?.cost_eur;
@@ -269,6 +280,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
         {ws.proposals.map((p) => <ProposalCard key={p.id} p={p} ws={ws} />)}
         {tray}
+        {context}
         {session}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
