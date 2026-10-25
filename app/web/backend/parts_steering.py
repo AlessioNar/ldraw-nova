@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+import collection_store
 import inventories
 import settings
 
@@ -49,30 +50,12 @@ class Owned:
         return sum(q for _p, _c, q in self.rows)
 
 
-_cache: dict[Path, tuple[tuple[int, int], Owned]] = {}
-
-
 def load_inventory(inv_id: str) -> Owned | None:
-    """The stored inventory <id>.json, or None when it is missing, unreadable or not an inventory."""
+    """The stored source's exact rows (through the collection store), or None when it is missing or unreadable."""
     if not isinstance(inv_id, str) or not ID_RE.fullmatch(inv_id):
         return None
-    path = settings.INVENTORIES_DIR / f"{inv_id}.json"
-    try:
-        stat = path.stat()
-        if not path.is_file() or stat.st_size > MAX_FILE_BYTES:
-            return None
-        stamp = (stat.st_mtime_ns, stat.st_size)
-        if path in _cache and _cache[path][0] == stamp:
-            return _cache[path][1]
-        data = json.loads(path.read_text(encoding="utf-8"))
-        rows = [(str(r["part"]), int(r["colour"]), int(r["qty"])) for r in data.get("rows", []) if int(r["qty"]) > 0]
-        owned = Owned(inv_id, str(data.get("name") or inv_id), rows)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        return None
-    if len(_cache) > 8:
-        _cache.clear()
-    _cache[path] = (stamp, owned)
-    return owned
+    found = collection_store.exact_rows(inv_id)
+    return Owned(inv_id, found[0], found[1]) if found else None
 
 
 def selection(options: dict | None) -> tuple[str, list[Owned]]:

@@ -14,7 +14,7 @@ Backend paths are relative to `app/web/backend/`, and frontend paths to `app/web
 
 ## Hint vs decision
 
-- **Hint** = `GET /api/describe/estimate?text=&generator=` (`routers/describe_api.py:50`). It uses keywords only and never calls a model. It shows "Fast path: free, ~N s" or "AI build: ~EUR a–b, ~m–n min", prefixed "Probably:" when confidence is below 0.7 (`components/DescribeBox.tsx`, `components/workspace/BottomBar.tsx`).
+- **Hint** = `GET /api/describe/estimate?text=&generator=` (`routers/describe_api.py:50`). It uses keywords only and never calls a model. It shows "Fast path: free, ~N s" or "AI build: ~EUR a–b, ~m–n min", prefixed "Probably:" when confidence is below 0.7 (`components/workspace/BottomBar.tsx`).
 - **Decision** = `POST /api/describe` (`describe_api.py:35`), or `POST /api/builds/{id}/draft/describe` inside a build. It may spend one cheap call, and it is the only one that triggers a build or an edit.
 - The two use different readers, and they **disagree on 15 of 54 realistic prompts** (REVIEW.md:160). For example, the hint says "AI build EUR 1–2" where the decision would ask a question or use a generator.
 
@@ -37,49 +37,11 @@ Backend paths are relative to `app/web/backend/`, and frontend paths to `app/web
 
 **Estimate shown for AI.** By default it is EUR 1–2 and 15–30 min. Once there are 3 finished chats, it becomes the quartiles of your own past turns (`fast_path.ai_estimate`, `history_stats`).
 
-## New build (Home or New build page)
+## New build
 
-```mermaid
-sequenceDiagram
-  actor P as Person
-  participant UI as Home / NewBuild (DescribeBox)
-  participant API as Backend
-  participant FP as fast_path.describe
-  participant LLM as Understanding model (Haiku 5.5)
-  participant W as Build worker (generators)
-  participant AG as AI agent
+`/new` has no screen of its own. It creates an empty build (`POST /api/builds` with `source: {kind: "empty"}`) and opens it in the workspace (`pages/NewBuild.tsx`). The person then describes what they want in the workspace chat, which goes through the same fast path, or places parts by hand. A prompt handed to `/new` ("Design something like this" on What can I build?) is put in the chat's composer. Importing a model file starts from My Builds → Import a model file (`POST /api/builds`, then `POST /api/builds/{id}/import`).
 
-  P->>UI: types "a small red car"
-  UI->>API: GET /api/describe/estimate (debounced 350 ms)
-  API-->>UI: hint "Probably: Fast path, free, ~15 s"
-  P->>UI: submit
-  UI->>API: POST /api/describe {text}
-  API->>FP: describe(text)
-  alt rules shortcut matches (preset, undo, "make the roof blue")
-    FP-->>FP: spec from rules, 0 EUR
-  else otherwise
-    FP->>LLM: one forced tool call emit_spec (prefix cached)
-    LLM-->>FP: spec.v1 JSON (1 retry on invalid; then keyword fallback)
-  end
-  FP-->>API: route
-  alt route = generator
-    API-->>UI: {generator, params, notes}
-    UI->>API: POST /api/builds, then POST /api/builds/{id}/generate
-    API->>W: generate(id, params) + geometry check
-    W-->>API: v1.mpd (11-21 s warm)
-    UI->>P: workspace /build/{id}
-  else route = needs_ai
-    UI->>P: "Build with AI for ~EUR 1-2?"
-    P->>UI: clicks Build with AI
-    UI->>API: create build (source ai), POST /api/builds/{id}/chat, POST /api/chats/{chat}/messages {mode: agent, permissions: ask}
-    API->>AG: start turn (background task)
-    AG-->>API: publish_model creates a PROPOSAL on the build
-  else route = clarify
-    UI->>P: question, nothing spent
-  end
-```
-
-Code: `pages/Home.tsx:104-127`, `pages/NewBuild.tsx:55-64`, `routers/builds_api.py:226` (`builds_generate`), `routers/builds_api.py:306` (`builds_chat`), `routers/chats.py` (`chats_send`).
+The describe box that used to sit on Home and on the New build page, with its own create-then-generate and "Build with AI" flow, was removed with the app shell redesign (October 2026).
 
 ## Change to an existing build (workspace bottom bar)
 
@@ -108,11 +70,11 @@ sequenceDiagram
 
 - Code: `routers/workspace_api.py:240` (`draft_describe`), `_regenerate`, and `fast_path._route_edit` (line 436).
 - Edits change only the **generator params**: colour, size and feature toggles (`fast_path.edit_params`).
-- **The AI tab in the workspace is a separate path.** A message typed there goes straight to the agent, with no fast path in front (REVIEW.md:20-22).
+- **Routing in the workspace chat.** There is one chat per build and the server decides who answers (`chat_routing.state`; `chat_mode` in `GET /workspace`). While the AI agent is engaged (its turn is the latest real one and it asked a question or has not delivered a proposal since the person wrote) every message goes to the agent and `draft/describe` returns `route: "agent"` without applying or saving anything; only the per-message "Quick change instead" (`quick: true`) reaches the fast path. In quick mode, replies and follow-ups (yes, go on, step N, questions) get a clarify about the build instead of a guess, and an understood edit is applied only if the whole message is one short edit command with a confident reading. Details in workspace-and-editor.md.
 
 ## How the person agrees to spend
 
-1. **The estimate banner** appears before any chat exists (`DescribeBox.tsx`).
+1. **The estimate hint** shows under the workspace chat before an AI turn starts.
 2. **Per-tool approval** applies when the chat's permission is "ask" (the default). Every tool that is not read-only waits up to 600 s for Approve or Deny (`agent.execute_tool`, `tool_policy.py:9`).
 3. **A EUR budget per request**: the UI default is EUR 2, with choices 1/2/5/10/20/custom/none (`components/ChatSettings.tsx:7-8`). See [ai-agent.md](ai-agent.md).
 

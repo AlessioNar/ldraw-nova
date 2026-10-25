@@ -375,7 +375,7 @@ def test_discard_a_proposal_and_accept_without_a_draft(client):
 def test_workspace_get_shape(client):
     slug = make_build(client, "ws shape", TINY)
     ws = client.get(f"/api/builds/{slug}/workspace").json()
-    assert set(ws) == {"build", "versions", "draft", "generator", "proposals", "chat_id"}
+    assert set(ws) == {"build", "versions", "draft", "generator", "proposals", "chat_id", "chat_mode", "agent_chat"}
     assert ws["build"]["id"] == slug and ws["draft"] is None and ws["proposals"] == []
     version = ws["versions"][0]
     assert set(version) >= {"version", "file", "origin", "parts", "changes", "parts_check"}
@@ -446,3 +446,103 @@ def test_the_palette_of_a_build_without_parts_lists_refuses_inventory_search(cli
     slug = make_build(client, "ws palette none", TINY)
     client.post(f"/api/builds/{slug}/draft/open", json={})
     assert client.get(f"/api/builds/{slug}/editor/palette?query=3001&inventory_only=true").status_code == 400
+
+
+# --- who answers: the fast path or the AI agent ------------------------------------------------------------------------
+
+CASTLE_TURNS = [
+    ("user", "Design a castle from my parts, step by step."),
+    ("assistant", "Step 1 is the keep. Should I go ahead with step 2?"),
+    ("user", "yes"),
+    ("assistant", "Step 2 added the curtain wall. Should I go ahead with step 3?"),
+]
+
+
+@pytest.fixture
+def house_registry():
+    import generator_bridge
+    from pathlib import Path
+    generator_bridge.set_registry(json.loads(Path(__file__).with_name("generators_registry.json").read_text(encoding="utf-8")))
+    yield
+    generator_bridge.set_registry(None)
+
+
+def _no_describe(monkeypatch):
+    async def boom(*a, **k):
+        raise AssertionError("the fast path must not be asked")
+    monkeypatch.setattr(fast_path, "describe", boom)
+
+
+def _agent_chat(slug, turns):
+    from routers.builds_api import attached_chat
+    store = get_store()
+    chat = attached_chat(store, slug)
+    for role, text in turns:
+        store.add_message(chat["id"], {"role": role, "content": text})
+    return chat["id"]
+
+
+def test_replay_owner_conversation_goes_to_the_agent(client, monkeypatch, house_registry):
+    """The agent asked "Should I go ahead with step 3?": colour words and 'step 4' are for the agent, not the fast path."""
+    slug = make_build(client, "ws castle", TINY)
+    client.post(f"/api/builds/{slug}/draft/regenerate", json={"generator": "house", "params": {}})
+    chat_id = _agent_chat(slug, CASTLE_TURNS)
+    changes = client.get(f"/api/builds/{slug}/workspace").json()["draft"]["changes"]
+    assert client.get(f"/api/builds/{slug}/workspace").json()["chat_mode"] == "ai"
+    _no_describe(monkeypatch)
+    for text in ("Please go on. However this time, let's be agnostic of colors for the render and consider all bricks as dark grey.",
+                 "What about step 4, I am speaking of the castle."):
+        reply = client.post(f"/api/builds/{slug}/draft/describe", json={"text": text})
+        assert reply.status_code == 200 and reply.json()["route"] == "agent" and reply.json()["chat_mode"] == "ai"
+        assert reply.json()["draft"]["changes"] == changes
+    assert len(get_store().messages(chat_id)) == len(CASTLE_TURNS)           # nothing was written here
+
+
+def test_quick_mode_applies_a_whole_edit_and_ai_mode_does_not(client, monkeypatch, house_registry):
+    slug = make_build(client, "ws modes", TINY)
+    client.post(f"/api/builds/{slug}/draft/regenerate", json={"generator": "house", "params": {}})
+    assert client.get(f"/api/builds/{slug}/workspace").json()["chat_mode"] == "quick"
+    quick = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "make the roof blue"}).json()
+    assert quick["route"] == "edit" and quick["chat_mode"] == "quick"
+    _agent_chat(slug, CASTLE_TURNS)
+    ai = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "make the roof green"}).json()
+    assert ai["route"] == "agent" and ai["draft"]["changes"] == quick["draft"]["changes"]
+    forced = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "make the roof green", "quick": True}).json()
+    assert forced["route"] == "edit" and forced["changes"][0]["to"] == "green"
+
+
+def test_a_reply_with_no_agent_gets_a_clarify_about_the_build(client, monkeypatch, house_registry):
+    slug = make_build(client, "ws clarify", TINY)
+    client.post(f"/api/builds/{slug}/draft/regenerate", json={"generator": "house", "params": {}})
+    _no_describe(monkeypatch)
+    reply = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes"}).json()
+    assert reply["route"] == "clarify" and "change on the House" in reply["question"] and "build?" not in reply["question"]
+    assert any(c.startswith("make the") for c in reply["choices"]) and "Ask the AI" not in reply["choices"]
+    follow = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "What about step 4?"}).json()
+    assert follow["route"] == "clarify" and "Ask the AI" not in follow["choices"]
+    _agent_chat(slug, [("user", "hi"), ("assistant", "Done.")])
+    client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes", "quick": True})
+    last = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes"}).json()   # a quick turn doesn't end the AI conversation
+    assert last["route"] == "agent"
+
+
+def test_edit_words_inside_a_long_instruction_are_not_applied(client, monkeypatch, house_registry):
+    """The model reads the long message as 'recolour the walls'; it is asked about, never applied."""
+    import understand
+    slug = make_build(client, "ws long", TINY)
+    client.post(f"/api/builds/{slug}/draft/regenerate", json={"generator": "house", "params": {}})
+    before = client.get(f"/api/builds/{slug}/workspace").json()["draft"]["changes"]
+
+    async def params(llm_id=None):
+        return object()
+
+    async def understood(text, **kw):
+        return understand.Result(spec={"intent": "edit", "subject": {"family": "house"}, "confidence": 0.9,
+                                       "edits": [{"op": "set_colour", "target": "body", "value": "Dark Bluish Gray"}]}, source="llm")
+    monkeypatch.setattr(understand, "model_params", params)
+    monkeypatch.setattr(understand, "understand", understood)
+    reply = client.post(f"/api/builds/{slug}/draft/describe", json={
+        "text": "Please tidy up the layout of the rooms and this time consider all bricks as dark grey."}).json()
+    assert reply["route"] == "clarify" and reply["draft"]["changes"] == before
+    short = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "walls dark grey"}).json()
+    assert short["route"] == "edit"

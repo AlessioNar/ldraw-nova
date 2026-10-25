@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 import builds
+import chat_routing
 import fast_path
 import generator_bridge
 import sandbox
@@ -41,6 +42,7 @@ class Describe(BaseModel):
     text: str = Field(max_length=understand.MAX_REQUEST_CHARS * 2)
     previous_text: Optional[str] = Field(default=None, max_length=understand.MAX_REQUEST_CHARS * 2)   # "again", "a bit less"
     persist: bool = True            # write the turn into the build's chat (one saved history per build)
+    quick: bool = False             # the person chose "Quick change instead" for this message while the AI is engaged
 
 
 class Note(BaseModel):
@@ -177,9 +179,11 @@ async def workspace_get(build_id: str):
     if stored is not None:
         draft = workspace.draft_summary(stored, _view(store, key))
     attached = [c for c in index.chats_of(build_id) if c.get("build_id") == build_id]
+    mode = _chat_state(store, build_id)
     summary = builds.summary(store, build_id, record, index, builds.group_versions())
     return {"build": summary, "versions": rows, "draft": draft, "generator": _generator(record),
-            "proposals": workspace.list_proposals(store, build_id), "chat_id": attached[0]["id"] if attached else None}
+            "proposals": workspace.list_proposals(store, build_id), "chat_id": attached[0]["id"] if attached else None,
+            "chat_mode": mode["mode"], "agent_chat": mode["has_agent"]}
 
 
 # --- the draft ------------------------------------------------------------------------------------------------------
@@ -271,6 +275,16 @@ STARTERS = ["a small house", "a small red car", "a tree"]
 TWEAKS = ["make the roof red", "make the walls blue"]            # rules-understood, so the chip works without a model
 
 
+def _chat_state(store, build_id: str) -> dict:
+    """Who answers the next message (chat_routing.state) from the build's saved chat; nothing is created."""
+    index = builds.Index(store)
+    attached = [c for c in index.chats_of(build_id) if c.get("build_id") == build_id]
+    if not attached:
+        return chat_routing.state([])
+    chat = attached[0]
+    return chat_routing.state(store.messages(chat["id"]), bool(chat.get("running")))
+
+
 def _spoken(decision: dict) -> str:
     """The assistant's reply as plain text: what the chat shows compactly and what the agent reads as its own earlier turn."""
     route = decision.get("route")
@@ -280,10 +294,10 @@ def _spoken(decision: dict) -> str:
             what = [f"Built {decision.get('title') or decision.get('generator')} from the generator"]
         if decision.get("history"):
             what = [f"Went back one step ({decision['history']})"]
-        text = "Applied to the draft (free): " + ("; ".join(what) or "no visible change") + "."
+        text = "[Quick change made by the app's free fast path, not by you; the draft on the canvas changed accordingly] Applied to the draft (free): " + ("; ".join(what) or "no visible change") + "."
         return text + (" Notes: " + "; ".join(decision["notes"]) + "." if decision.get("notes") else "")
     if route == "clarify":
-        return str(decision.get("question") or "Can you say a little more?")
+        return "[Quick-change helper, not the AI; nothing changed] " + str(decision.get("question") or "Can you say a little more?")
     est = decision.get("estimate") or {}
     text = f"This needs the AI ({decision.get('reason') or 'no rule fits'})"
     if est.get("eur_low") is not None:
@@ -294,7 +308,7 @@ def _spoken(decision: dict) -> str:
 
 def _persist_turn(store, build_id: str, text: str, decision: dict, took_ms: float) -> str:
     chat = attached_chat(store, build_id)
-    store.add_message(chat["id"], {"role": "user", "content": text})
+    store.add_message(chat["id"], {"role": "user", "content": text, "_fast_path": {"by": "person"}})   # a quick-change turn
     keep = ("route", "title", "generator", "changes", "notes", "history", "question", "choices", "reason", "estimate", "spec",
             "understood_by", "replaced_manual_edits")
     meta = {k: decision[k] for k in keep if decision.get(k) is not None}
@@ -326,15 +340,31 @@ async def draft_describe(build_id: str, body: Describe):
     if current and registry and not any(e["id"] == current["id"] for e in registry["entries"]):
         current = None
     previous = body.previous_text if body.previous_text is not None else (_last_user_text(store, build_id) if body.persist else None)
-    decision = await fast_path.describe(body.text, current={"generator": current["id"], "params": current["params"]}
-                                        if current else None, build_id=build_id, previous_text=previous)
-    if decision.get("route") == "clarify" and not decision.get("choices"):
+    mode = _chat_state(store, build_id)
+    if mode["mode"] == "ai" and not body.quick:      # the agent is engaged: it gets the message, nothing is applied or saved here
+        return {"route": "agent", "chat_mode": "ai", "reason": "The AI is working on this build with you",
+                "draft": _draft(store, build_id) if _record(store, build_id) is not None else None}
+    entry = next((e for e in (registry or {}).get("entries", []) if current and e["id"] == current["id"]), None)
+    shortcut = understand.rules_shortcut(body.text, None, previous)
+    if not shortcut and not chat_routing.whole_edit_command(body.text) and chat_routing.is_continuation(body.text, mode["agent_text"]):
+        decision = {"route": "clarify", "generic": True}          # a reply or follow-up, not a command: never a colour/size guess
+    else:
+        decision = await fast_path.describe(body.text, current={"generator": current["id"], "params": current["params"]}
+                                            if current else None, build_id=build_id, previous_text=previous)
+    if decision.get("route") == "clarify" and decision.get("generic"):
+        title = record.get("title") or build_id
+        draft_now = _draft(store, build_id) if _record(store, build_id) is not None else None
+        decision = {**decision, **chat_routing.contextual_clarify(
+            title=title, entry=entry, params=(current or {}).get("params"), has_agent=mode["has_agent"],
+            empty=not current and not builds.versions(build_id) and not (draft_now or {}).get("changes"))}
+    if decision.get("route") == "clarify" and not decision.get("choices") and not decision.get("generic"):
         decision["choices"] = TWEAKS if current else STARTERS
     if decision.get("route") in ("generator", "edit"):
         done = await _regenerate(store, build_id, decision["generator"], decision.get("params") or {})
         answer = {**decision, "replaced_manual_edits": done["replaced_manual_edits"], "draft": done["draft"]}
     else:
         answer = {**decision, "draft": _draft(store, build_id) if _record(store, build_id) is not None else None}
+    answer["chat_mode"] = "quick"
     if body.persist:
         answer["chat_id"] = _persist_turn(store, build_id, body.text, answer, (time.monotonic() - started) * 1000)
         answer["took_ms"] = round((time.monotonic() - started) * 1000)

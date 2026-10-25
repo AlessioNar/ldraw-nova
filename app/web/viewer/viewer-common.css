@@ -18,3 +18,8 @@ a { color: var(--accent); }
 #status.error { color: var(--danger); }
 .segmented { display: inline-flex; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* logo link to the app's Home; hidden when the page is embedded (?embed=1 or inside an iframe) */
+.obd-logo { display: inline-flex; align-items: center; color: var(--accent); flex: none; }
+.obd-logo svg { width: 26px; height: 19px; }
+html.framed .obd-logo { display: none; }

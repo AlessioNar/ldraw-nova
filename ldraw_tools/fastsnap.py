@@ -21,6 +21,8 @@ connector option) returns None and the caller runs `snap_report`.
 """
 from __future__ import annotations
 
+import os
+import time
 from dataclasses import replace
 from itertools import chain
 
@@ -40,6 +42,11 @@ from .technic import candidates as technic_candidates, curate, managed
 NEIGHBOUR_MARGIN = 10.0     # LDU: parts farther than this from a pose cannot touch or collide with it
 TIE = 1e-6                  # squared LDU: candidates this close in distance from the drop are examined together
 MAX_CANDIDATES = 100        # the same cap snap_report applies
+# Time allowed for examining candidates when none has settled the question (a refused snap examines them all).
+# When it runs out the candidates examined so far are ranked as usual and, if none of them is usable, the snap is
+# refused ("no candidate") instead of working through the rest: a drop that cannot snap answers in a fraction of a
+# second and the editor then adds the part where it was dropped. None switches the budget off (exact, unbounded).
+BUDGET_SECONDS = float(os.environ.get("LDRAW_NOVA_SNAP_BUDGET", "0.25")) or None
 LIMIT = 64                  # the same ranked-list length the editor asks snap_report for
 _NOTHING = Model(name="")
 
@@ -204,8 +211,13 @@ def _nearest(preview, parts, moving, support, near, instance_limit, hood):
         return entry
 
     examined, settled = {}, None
+    deadline = None if BUDGET_SECONDS is None else time.perf_counter() + BUDGET_SECONDS
+    out_of_time = False
     for order in sorted(range(len(pending)), key=lambda i: (pending[i][0], i)):
         if settled is not None and pending[order][0] > settled + TIE:
+            break
+        if settled is None and deadline is not None and examined and time.perf_counter() > deadline:
+            out_of_time = True
             break
         entry = examine(*pending[order][1:])
         examined[order] = entry
@@ -213,7 +225,9 @@ def _nearest(preview, parts, moving, support, near, instance_limit, hood):
                 and entry['contact_status'] == 'confirmed'):
             settled = pending[order][0]
     ranked = [examined[i] for i in sorted(examined) if examined[i] is not None]
-    if all(c['collision']['status'] == 'blocked' for c in ranked):
+    if out_of_time and all(c['collision']['status'] == 'blocked' for c in ranked):
+        ranked = []
+    elif all(c['collision']['status'] == 'blocked' for c in ranked):
         # Nothing usable: snap_report answers "collides" if some blocked candidate is a real connection, else "no
         # candidate". Blocked candidates are only checked for being connections until one is found.
         ranked = next(([c] for c in ranked if verified(*c['later']) is not None), [])

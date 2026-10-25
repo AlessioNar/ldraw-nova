@@ -87,7 +87,8 @@ export type ChatDetail = { chat: Chat; messages: Message[]; models: Record<strin
 type Capability = boolean | "auto";
 export type EnvironmentVariable = { id: string; name: string; value: null; has_value: boolean; fixed: boolean };
 export type SandboxIsolation = { state: "on" | "off" | "n/a"; detail: string };
-export type EnvironmentState = { variables: EnvironmentVariable[]; jev_source?: "typesafe" | "jev_openrouter" | "openrouter" | "none"; sandbox_isolation?: SandboxIsolation };
+export type DatabaseStatus = { state: "ok" | "unavailable" | "off"; detail: string };
+export type EnvironmentState = { variables: EnvironmentVariable[]; jev_source?: "typesafe" | "jev_openrouter" | "openrouter" | "none"; sandbox_isolation?: SandboxIsolation; database?: DatabaseStatus };
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
 export type ConnectionStatus = "not_tested" | "connected" | "not_connected";
@@ -240,6 +241,9 @@ export type Inventory = {
   distinct_parts: number; distinct_colours: number; total_pieces: number; spare_pieces: number;
   unmapped_parts: number; unmapped_colours: number;
   review_items?: number; review_pieces?: number; // colour-family pieces waiting for a colour; not in total_pieces
+  kind?: "import" | "set" | "loose"; schema?: number; virtual?: boolean;
+  set?: { set_num: string; name: string; year: number; theme: string; num_parts: number; copies: number; state: "parts" | "built"; dropped_pieces: number };
+  origin?: { format?: string; file?: string; scans?: number };
 };
 type BuildableLine = { part: string; colour: number; colour_name: string; description: string; needed: number; owned: number; missing: number };
 export type BuildableModel = {
@@ -261,7 +265,7 @@ export type PileometerSummary = {
   families: { family: string; colour: number | null; colour_name: string; candidates: { colour: number; name: string }[]; rows: number; pieces: number }[];
 };
 export type ImportReport = {
-  dialect: string; total_rows: number; total_pieces: number; spare_pieces: number;
+  dialect: string; format?: string; total_rows: number; total_pieces: number; spare_pieces: number;
   unmapped_parts: { rb_part: string; colour: number; qty: number; name?: string; family?: string }[];
   unmapped_colours: { rb_colour: number; part: string; qty: number; family?: string }[];
   warnings: string[];
@@ -308,6 +312,87 @@ export const inventoryApi = {
   },
   buildableStatus: () => request<BuildableStatus>("/api/inventories/buildable/status"),
   buildableWarm: () => request<BuildableStatus>("/api/inventories/buildable/warm", { method: "POST" }),
+};
+
+// --- the collection: sources added together, with history, imports with preview, sets, quick add ---
+
+export type CollectionColour = { colour: number; name: string; qty: number };
+export type CollectionPart = {
+  part: string; description: string; category: string; size: string; total: number; note: string; maybe: number;
+  colours: CollectionColour[]; sources: { id: string; name: string; qty: number }[];
+};
+export type CollectionBrowse = {
+  parts: CollectionPart[]; total: number;
+  totals: { pieces: number; parts: number; review_items: number; review_pieces: number };
+  collection: { pieces: number; parts: number; colours: number; sources: number };
+  facets: {
+    colours: CollectionColour[]; categories: { category: string; parts: number }[]; sizes: { size: string; parts: number }[];
+    sources: { id: string; name: string; kind: string; pieces: number }[];
+  };
+};
+export type CollectionQuery = { q?: string; colour?: number | null; category?: string; size?: string; source?: string; sort?: string; maybe?: boolean; limit?: number; offset?: number };
+export type PartDetail = {
+  part: string; description: string; category: string; size: string; note: string; total: number;
+  rows: { source: string; source_name: string; kind: string; colour: number; colour_name: string; qty: number }[];
+  maybe: { source: string; source_name: string; id: string; family: string; qty: number }[];
+};
+export type CollectionOp =
+  | { op: "add" | "set"; part: string; colour: number; qty: number }
+  | { op: "remove"; part: string; colour: number }
+  | { op: "review_resolve"; id: string; colour: number; qty?: number }
+  | { op: "review_discard"; id: string };
+export type OpsResult = { batch: number | null; changes: number; source: Inventory; pieces?: number };
+export type HistoryBatch = { batch: number; ts: number; note: string; summary: string; changes: number; kind: "edit" | "replace" | "undo" | "create"; undone: boolean; undoable: boolean };
+export type ReviewItem = { id: string; part: string; description: string; qty: number; note: string; brickit_part: string; candidates: { colour: number; name: string; owned: boolean }[] };
+export type ReviewGroup = { source: string; source_name: string; family: string; pieces: number; candidates: ReviewItem["candidates"]; items: ReviewItem[] };
+export type ImportPreview = {
+  preview_id: string; name: string; format: string; report: ImportReport; same_name: string | null;
+  totals: { lines: number; pieces: number; parts: number; colours: number; review_items: number; review_pieces: number; unmapped_pieces: number };
+};
+export type DiffLine = { part: string; colour: number; colour_name: string; description: string; before: number; after: number };
+export type ImportDiff = {
+  added: number; removed: number; changed: number; unchanged: number; pieces_before: number; pieces_after: number;
+  lines: { added: DiffLine[]; removed: DiffLine[]; changed: DiffLine[] };
+  review: { before_items: number; after_items: number; before_pieces: number; after_pieces: number };
+  target: { id: string; name: string };
+};
+export type CatalogSet = { set_num: string; name: string; year: number; theme: string; num_parts: number; mapped_pieces: number; dropped_pieces: number };
+export type QuickItem = {
+  line: string; qty: number | null; qty_assumed: boolean; colour: number | null; colour_name: string;
+  colour_candidates: { colour: number; name: string }[]; part: string | null; description: string; category: string;
+  candidates: { part: string; description: string; category: string }[]; status: "ok" | "needs_part" | "needs_colour"; message: string; notes: string[];
+};
+
+const qs = (params: Record<string, string | number | boolean | null | undefined>) => {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== "" && v !== false) p.set(k, String(v));
+  return p.toString();
+};
+const sid = (id: string) => encodeURIComponent(id);
+
+export const collectionApi = {
+  overview: () => request<{ sources: Inventory[]; collection: CollectionBrowse["collection"]; facets: CollectionBrowse["facets"] }>("/api/collection"),
+  browse: (q: CollectionQuery) => request<CollectionBrowse>(`/api/collection/parts?${qs({ ...q })}`),
+  part: (part: string) => request<PartDetail>(`/api/collection/parts/${encodeURIComponent(part)}`),
+  setNote: (part: string, note: string) => request<{ part: string; note: string }>(`/api/collection/parts/${encodeURIComponent(part)}/note`, { method: "PUT", body: json({ note }) }),
+  colours: () => request<{ colours: { code: number; name: string }[] }>("/api/collection/colours"),
+  ops: (source: string, ops: CollectionOp[], note = "") => request<OpsResult>(`/api/collection/sources/${sid(source)}/ops`, { method: "POST", body: json({ ops, note }) }),
+  history: (source: string) => request<{ batches: HistoryBatch[]; undo_batch: number | null }>(`/api/collection/sources/${sid(source)}/history`),
+  undo: (source: string) => request<{ undone: number; summary: string; source: Inventory }>(`/api/collection/sources/${sid(source)}/undo`, { method: "POST" }),
+  review: () => request<{ groups: ReviewGroup[]; items: number; pieces: number }>("/api/collection/review"),
+  resolveReview: (body: { source: string; id?: string; family?: string; colour?: number; qty?: number; discard?: boolean }) =>
+    request<OpsResult>("/api/collection/review", { method: "POST", body: json(body) }),
+  previewImport: (name: string, csv: string, include_spares: boolean, filename: string, family_colours?: Record<string, number>) =>
+    request<ImportPreview>("/api/collection/imports/preview", { method: "POST", body: json({ name, csv, include_spares, filename, family_colours }) }),
+  importDiff: (previewId: string, replace: string) => request<ImportDiff>(`/api/collection/imports/${sid(previewId)}/diff`, { method: "POST", body: json({ replace }) }),
+  commitImport: (previewId: string, body: { name?: string; replace?: string }) =>
+    request<{ inventory: Inventory; report: ImportReport; diff?: Omit<ImportDiff, "lines">; batch?: number }>(`/api/collection/imports/${sid(previewId)}/commit`, { method: "POST", body: json(body) }),
+  sets: (query: string) => request<{ sets: CatalogSet[] }>(`/api/sets?${qs({ query, limit: 20 })}`),
+  addSet: (set_num: string, copies: number, state: "parts" | "built") =>
+    request<{ inventory: Inventory }>("/api/collection/sets", { method: "POST", body: json({ set_num, copies, state }) }),
+  quickParse: (text: string) => request<{ items: QuickItem[]; ok: number; total: number }>("/api/collection/quick-add/parse", { method: "POST", body: json({ text }) }),
+  quickAdd: (items: { part: string; colour: number; qty: number }[]) =>
+    request<OpsResult & { pieces: number }>("/api/collection/quick-add", { method: "POST", body: json({ items }) }),
 };
 
 /** A bundled set model (data/models-annotated) as the 3D viewer can load it. */
@@ -380,7 +465,7 @@ export type GeneratorList = { generators: GeneratorEntry[]; colours: { name: str
  *  engine is not installed: the Describe box then offers only the AI. */
 export type DescribeEstimate = { eur_low?: number; eur_high?: number; minutes_low?: number; minutes_high?: number; basis?: string };
 export type Describe = {
-  route: "generator" | "edit" | "needs_ai" | "clarify";
+  route: "generator" | "edit" | "needs_ai" | "clarify" | "agent";
   generator?: string; title?: string; params?: Record<string, unknown>; notes?: string[];
   changes?: { param: string; label: string; from: unknown; to: unknown }[]; history?: "undo" | "revert";
   question?: string; reason?: string; estimate?: DescribeEstimate; understanding_cost_eur?: number | null;

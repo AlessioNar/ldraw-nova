@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
+import db
 import environment_config
 import sandbox
 import toolkit
@@ -13,7 +14,7 @@ router = APIRouter()
 @router.get("/api/environment")
 def environment_get():
     return {"variables": environment_config.public(), "jev_source": toolkit.jev_source(),
-            "sandbox_isolation": sandbox.isolation_status()}
+            "sandbox_isolation": sandbox.isolation_status(), "database": db.status()}
 
 
 @router.get("/api/environment/check")

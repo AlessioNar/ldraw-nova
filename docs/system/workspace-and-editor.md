@@ -36,20 +36,21 @@ A model in `/data/generated` without a `build.json` is still listed, as a "legac
 
 | Route | Page | Notes |
 |---|---|---|
-| `/` | Home ("Workbench") | Describe box, "Continue" cards for the 8 newest builds, a "From my parts" summary, and links to the other ways to start |
-| `/new` | New build | Four ways, described below |
-| `/build/:id` | **Workspace** (`components/workspace/Workspace`) | Full-screen, with no sidebar |
-| `/build/:id/edit`, `/chat/:id/edit` | Legacy editor page (`EditorPage.tsx`) | Still used by "Empty" and by My Builds → Edit |
-| `/models` | My Builds | Every model file in `/data/generated`, with zip download, edit and delete |
+| `/` | Home | A menu of four tiles (New build, My Builds, My Parts, Settings), each with one live line: build count and the latest build, pieces and colour families to review |
+| `/new` | New build | No screen: creates an empty build and opens it in the workspace |
+| `/build/:id` | **Workspace** (`components/workspace/Workspace`) | Fills the window under the app bar, with the build's own bar (build name, status, downloads, undo/redo, save) |
+| `/build/:id/edit`, `/chat/:id/edit` | Legacy editor page (`EditorPage.tsx`) | Still used by My Builds → All model files → Edit |
+| `/builds` | My Builds (`pages/Builds.tsx`) | Every build as a card, newest first, with a name filter, a New build card and "Import a model file"; "Older chats" (chats without a build) and "All model files" (every file in `/data/generated`, with zip download, edit and delete) fold away below. `/models` redirects here |
 | `/chat/:id` | Chat | The agent conversation |
 | `/parts` | My Parts | See [parts-and-collection.md](parts-and-collection.md) |
+| `/settings` | Settings | See [settings-and-providers.md](settings-and-providers.md) |
 
-The four ways to start a new build (`pages/NewBuild.tsx`):
+Every page, the workspace included, sits under the app bar (`components/AppBar.tsx`): the logo and name link Home, and My Builds, My Parts and Settings sit on the right (a menu button below 820 px). There is no sidebar. The standalone viewer, player and editor pages carry the same logo as a link Home, hidden when they are embedded (`?embed=1` or inside an iframe).
 
-1. **Describe it.** The fast path decides. A generator build opens the workspace. Otherwise the person is offered "Build with AI".
-2. **Start from a type.** The person picks a generator and fills its form, with a live preview (`GeneratorForm`, `POST /api/generators/preview`).
-3. **Import a model file.** An `.mpd` or `.ldr` file becomes v1 (`POST /api/builds/{id}/import`).
-4. **Empty.** This opens the **legacy** editor page; saving creates v1.
+Starting a build:
+
+- **New build** (Home, My Builds, `/new`) creates an empty build and opens the workspace on it. Its empty canvas offers "Describe it" (the workspace chat: fast path first, the AI agent if needed) and "Pick a part". A generator type is reached by describing it.
+- **Import a model file** (My Builds) makes an `.mpd` or `.ldr` file v1 of a new build (`POST /api/builds/{id}/import`) and opens it.
 
 ## The workspace
 
@@ -62,6 +63,8 @@ The four ways to start a new build (`pages/NewBuild.tsx`):
 
 **One chat per build.** Every message in the Chat tab first goes to `POST /api/builds/{id}/draft/describe` (the free fast path, with the last user message as `previous_text`). A generator or edit answer is applied to the draft and shown as a compact reply with Undo; a clarify answer is one question with quick-reply chips; a needs_ai answer is a card with the estimate and "Ask the AI" / "Cancel" (nothing paid runs before Ask the AI). The server saves every turn (user text, then an assistant message with `_fast_path` metadata: route, changes, notes, cost 0, timing) in the build's attached chat, creating it on first use, so the agent later reads them as ordinary history. The needs_ai turn's text carries the understood spec. `/chat/:id` of a build chat redirects to `/build/:id?tab=chat`; chats without a build keep the chat page.
 
+**Chat mode: who answers.** The server decides (`chat_routing.state`, returned as `chat_mode: "ai" | "quick"` and `agent_chat` by `GET /workspace`). The mode is `ai` while the agent is engaged: a turn of its own is the latest real turn (fast-path turns do not count, notes are skipped) and either it asks the person something (a trailing "?", "should I", "would you like"...) or it has not delivered a proposal since the person last wrote; a user message with no answer yet (a turn in flight) also means `ai`. Otherwise `quick`. In `ai` mode messages go to the agent (`POST /api/chats/{id}/messages`) whatever words they contain; `draft/describe` itself answers `route: "agent"` and applies and saves nothing unless the body says `quick: true` (the per-message "Quick change instead"). The composer shows "Talking to the AI · costs apply" with "Quick change instead", or "Quick changes · free" with "Ask the AI instead"; the toggle affects one message. The needs_ai card's "Ask the AI" (and the "Ask the AI" chip, present when an agent conversation exists) puts the chat in `ai` mode. In `quick` mode a reply or follow-up (yes, ok, go on, next, step N, what about..., anything ending in "?", or "the <thing the agent mentioned>") that is not itself a whole edit command gets a clarify about this build, never a colour or size guess. An understood edit is applied only when the whole message is one short edit command (`chat_routing.whole_edit_command`) and the reading is a confident model one; otherwise it is a clarify. Clarify text is about the build ("What would you like to change on the House? (roof colour, size, ...)") with chips from the generator's own colour parameters. A quick turn is saved with a bracketed note in its text so the agent knows the app, not it, changed the draft.
+
 **State** lives in `components/workspace/useWorkspace.ts` and the API calls in `wsApi.ts`.
 
 The canvas is a **separate static page in an iframe**: `/viewer/editor.html?space=builds&id=<slug>&embed=1&mode=edit|view|player`. It talks to React with `postMessage`:
@@ -73,10 +76,10 @@ sequenceDiagram
   participant API as Backend editor API
   participant EW as Resident editor worker
   R->>C: obd:command {cmd: set-tool / add-part / undo / view-version ...}
-  C->>API: POST /api/builds/{id}/editor/edits {ops, base_revision}
+  C->>API: POST /api/builds/{id}/editor/edits {ops, base_revision, delta: true}
   API->>EW: apply ops to plan.json, rebuild
   EW-->>API: new revision (or 409 conflict)
-  API-->>C: updated model
+  API-->>C: the changed entries (or the whole model when it cannot say so)
   C-->>R: obd:changed / obd:selection / obd:steps
 ```
 
@@ -90,6 +93,8 @@ sequenceDiagram
 - **Internal ops**: `set_entry, insert, replace_plan`. `replace_plan` is what Regenerate, text edits and Keep-proposal use, so each of those is **one** undo step.
 - **The plan JSON is the source of truth.** The MPD is rebuilt from it, and nothing is written if the rebuild fails (`routers/editor.py:1-17`).
 - **Requests are serialised.** A stale `base_revision` returns 409, and the client re-reads.
+- **Adding is optimistic.** The add tool shows the brick at the drop position at once (grey dashed outline) and sends the request in the background; adds queue in order. The answer slides it to its snapped place (120 ms) or, if refused, removes it and reports why (`obd:error`). `edits`, `undo` and `redo` take `delta: true` and then answer `{delta, revision, undo_depth, redo_depth, splices, parts}`: `splices` are replacements of runs of entries inside plan steps (`plan_delta` in `ldraw_tools/commands/editor.py`), applied by `EditorCore.applyDelta` to the canvas's plan and nodes. The whole view (plan and preview MPD) is still sent without the flag (agent, old pages), when the plan's shape changed, and on reload; the canvas asks for it whenever a changed entry is relative, repeated or a sub-model.
+- **Warm-up.** Opening a workspace (`GET .../editor`, resuming a build) starts the editor worker and queues the geometry of the plan's part types. A snap that finds no free candidate within 0.25 s of examining (`fastsnap.BUDGET_SECONDS`, env `LDRAW_NOVA_SNAP_BUDGET`) is refused, and the canvas then adds the part unsnapped.
 - **Speed.** A resident editor worker was added, separate from the build worker so edits never queue behind a build. On a 1,124-part cottage:
   - move went from about 3.5 s to 105–200 ms;
   - undo went from about 4 s to 25–32 ms;

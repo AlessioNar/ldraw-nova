@@ -121,4 +121,33 @@ and the preview (they are on disk).
   app.
 * The first snap after a model opens still loads geometry for part types the plan does not use (the part being added).
 * `Parts.geometry` itself is slow on first load (resolving files and connection metadata); only the warm-up hides it.
-* The browser still receives the whole plan and preview after every operation.
+
+## Adding a brick: latency (add-latency branch)
+
+What the owner saw: after a click the brick appeared only when the whole round trip finished (request, edit, rebuild,
+the full plan and preview MPD back, parse, draw), plus a second round trip when the snap was refused.
+
+Now the canvas draws the brick at the drop position in the same frame as the click (pending outline), sends the
+request in the background (adds queue in order), and the answer is the changed entries only; the brick slides onto
+its snap in 120 ms, or is removed with the reason when the add is refused. The editor worker is warmed when a workspace
+opens, and a snap that has examined candidates for 0.25 s without finding a usable one is refused.
+
+Through the API (FastAPI app, resident worker warmed, in-process `TestClient`, median of 6, host shared so +-30%):
+
+| model, operation | before (whole view) | after (delta) |
+|---|---|---|
+| brick visible after click | after the full round trip (add 160 - 250 ms server + transfer + parse; with a refused snap 560+ ms) | same frame (optimistic), < 50 ms |
+| cottage (1,124 parts) add, no snap: server confirm | 160 ms (max 400) | 112 ms (max 137) |
+| cottage add, no snap: response size | 172 KB | 5.3 KB |
+| cottage undo: server / size | 64 ms / 173 KB | 37 ms / 5.2 KB |
+| house (106 parts) add, no snap: server / size | 38 ms / 18.4 KB | 38 ms / 1.2 KB |
+| house undo: server / size | 21 ms / 19.5 KB | 16 ms / 1.2 KB |
+| cottage add + snap in the dense roof section (5 of 6 drops were refused and retried unsnapped) | 568 ms | 561 ms (hidden behind the optimistic brick) |
+| house add + snap (4 of 6 refused, retried) | 248 ms | 251 ms |
+| first snap of a session, cold geometry (in-process, cottage) | 1,800 ms | hidden by the warm-up on open |
+
+Not changed: the server still rebuilds and validates the preview (about 90 of the 112 ms on the cottage) before
+answering, because the commit writes plan, preview and history together and a failed validation must refuse the
+edit. A refused snap on the cottage costs about 130 ms warm here, so the 0.25 s budget only matters in denser
+places; the unit test shows the number of examined poses dropping when it runs out.
+

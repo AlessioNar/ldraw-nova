@@ -7,7 +7,7 @@ export type AppState = {
   chats: Chat[];
   chatsLoaded: boolean;
   refreshChats: () => void;
-  /** Recent builds for the sidebar, and chats that belong to no build ("Older chats"). */
+  /** Every build (Home, My Builds), and chats that belong to no build ("Older chats"). */
   builds: BuildSummary[];
   olderChats: OlderChat[];
   buildsLoaded: boolean;

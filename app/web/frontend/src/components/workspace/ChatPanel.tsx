@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { api, buildsApi, estimateLabel, type ChatDetail, type DescribeHint, type DocumentUpload, type Message, type TurnOptions } from "../../api";
 import { useApp } from "../../context";
 import { useChatStream } from "../../hooks/useChatStream";
@@ -33,6 +34,7 @@ const show = (v: unknown) => (typeof v === "object" && v !== null ? JSON.stringi
 
 /** The one chat of a build. Every message first tries the free fast path (applied to the draft at once, with Undo);
  *  a vague one gets a single question with quick replies; one only the AI can do shows its cost and waits for "Ask the AI".
+ *  While the AI is engaged (the server decides, from the saved chat) messages go to it instead, unless the person flips one.
  *  The AI then works in the same conversation and its result arrives as a proposal card. */
 export default function ChatPanel({ ws }: { ws: Workspace }) {
   const { id } = ws;
@@ -43,6 +45,8 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   const [hint, setHint] = useState<DescribeHint | null>(null);
   const [typed, setTyped] = useState(false);
   const [acting, setActing] = useState(false);
+  const [mode, setMode] = useState<"ai" | "quick">(ws.ws?.chat_mode ?? "quick");   // decided by the server, from the saved chat
+  const [flip, setFlip] = useState(false);                                          // this one message goes the other way
   const scroller = useRef<HTMLDivElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -50,6 +54,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   const hintTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const generator = ws.ws?.generator?.id;
   useEffect(() => setChatId((c) => c ?? ws.ws?.chat_id ?? null), [ws.ws?.chat_id]);
+  useEffect(() => setMode(ws.ws?.chat_mode ?? "quick"), [ws.ws?.chat_mode]);
   useEffect(() => () => clearTimeout(hintTimer.current), []);
 
   const reload = useCallback(async () => {
@@ -58,6 +63,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     setDetail(d);
     return d;
   }, [chatId]);
+  const prompt = (useLocation().state as { prompt?: string } | null)?.prompt;   // handed over by /new
   const { running, setRunning, draft, persisting, tools, error, setError, approvals, workers, contextNotice, now, subscribe, reset } =
     useChatStream(chatId ?? "", reload, useCallback(() => { refreshChats(); ws.reloadAll().catch(() => {}); }, [refreshChats, ws.reloadAll]));  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -93,16 +99,24 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     refreshChats();
   }
 
+  async function viaAgent(text: string, opts: TurnOptions, images: string[], documents: DocumentUpload[]) {
+    if (!llmId) throw new Error("Add a model in Settings first: the AI needs one.");
+    const target = chatId ?? (await buildsApi.chat(id, llmId, false)).id;
+    if (!chatId) setChatId(target);
+    setMode("ai");
+    await toAgent(target, text, opts, images, documents);
+  }
+
   async function send(text: string, opts: TurnOptions, images: string[], documents: DocumentUpload[]) {
     setError(null); stick.current = true; options.current = opts;
+    const toAi = mode === "ai" ? !flip : flip;               // the person's choice for this message, else the server's mode
+    setFlip(false);
     try {
-      if (images.length || documents.length) {               // attachments are for the AI: no fast path
-        const target = chatId ?? (await buildsApi.chat(id, llmId, false)).id;
-        if (!chatId) setChatId(target);
-        return await toAgent(target, text, opts, images, documents);
-      }
+      if (images.length || documents.length || toAi) return await viaAgent(text, opts, images, documents);   // attachments are for the AI
       if (ws.viewing) ws.backToDraft();
-      const r = await ws.describe(text, lastUser);
+      const r = await ws.describe(text, lastUser, mode === "ai" && !toAi);
+      if (r.route === "agent") return await viaAgent(text, opts, images, documents);    // the server says the AI is engaged
+      if (r.chat_mode) setMode(r.chat_mode);
       if (r.chat_id && r.chat_id !== chatId) setChatId(r.chat_id); else await reload();
       refreshChats();
     } catch (e) { setError((e as Error).message); throw e; }
@@ -112,12 +126,12 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     setActing(true); setError(null);
     try { await work(); } catch (e) { setError((e as Error).message); } finally { setActing(false); }
   }
-  const reply = (text: string) => guarded(() => send(text, options.current, [], []).catch(() => undefined));
   const askAi = () => guarded(async () => {
     if (!chatId || !llmId) throw new Error("Add a model in Settings first: the AI needs one.");
-    stick.current = true;
+    stick.current = true; setMode("ai");
     await toAgent(chatId, "Yes, ask the AI to do this.", options.current, [], []);
   });
+  const reply = (text: string) => (text === "Ask the AI" ? askAi() : guarded(() => send(text, options.current, [], []).catch(() => undefined)));
   const note = (text: string) => guarded(async () => { await wsApi.note(id, text); await reload(); });
   const undoStep = (summary: string) => guarded(async () => { ws.undo(); await wsApi.note(id, `Undone: ${summary}`); await reload(); });
 
@@ -145,7 +159,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
           {live && !!choices.length && (
             <div className="ws-chips" role="group" aria-label="Quick replies">
               {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}
-              <button className="ws-chip-btn pick" onClick={() => reply(choices[0])}>Just pick for me</button>
+              {choices.some((c) => c !== "Ask the AI") && <button className="ws-chip-btn pick" onClick={() => reply(choices.find((c) => c !== "Ask the AI")!)}>Just pick for me</button>}
             </div>
           )}
         </div>
@@ -169,12 +183,17 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   };
 
   const cost = detail?.usage?.cost_eur;
+  const toAi = mode === "ai" ? !flip : flip;
+  const toggle = <button type="button" className="ws-mode-toggle" onClick={() => setFlip((f) => !f)} aria-pressed={flip}>{toAi ? "Quick change instead" : "Ask the AI instead"}</button>;
   let line: ReactNode = "Simple changes are free and instant. Bigger ones show their cost first.";
-  if (typed && hint) {
+  if (toAi) line = <><b className="cost" data-mode="ai">Talking to the AI · costs apply</b> {toggle}</>;
+  else if (mode === "ai" || (ws.ws?.agent_chat && !typed)) line = <><b data-mode="quick">Quick changes · free</b> {toggle}</>;
+  else if (typed && hint) {
     if (hint.route === "needs_ai") line = <><b className="cost">AI{estimateLabel(hint.estimate) ? `, ${estimateLabel(hint.estimate)}` : ""}</b>. It asks before it spends.</>;
     else if (hint.route === "clarify") line = "Free. I may ask one question first.";
     else line = <b>Free, about 1 s</b>;
-  }
+    if (!toAi) line = <><span data-mode="quick">{line}</span> {toggle}</>;
+  } else if (!toAi) line = <><b data-mode="quick">Quick changes · free</b> {toggle}</>;
   return (
     <section className="ws-panel ws-ai" role="tabpanel" aria-label="Chat">
       {ws.proposals.map((p) => <ProposalCard key={p.id} p={p} ws={ws} />)}
@@ -191,7 +210,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       <div className="ws-composer">
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
-        <Composer key={chatId ?? "new"} initialOptions={detail?.chat.options} allowNoModel placeholder="Describe a change, e.g. make the roof blue"
+        <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
           onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<span className="ws-hint-line" role="status" aria-live="polite">{line}</span>}
           llmId={llmId} onLlmChange={setLlmId} onSend={send} onStop={() => chatId && api.cancel(chatId)} running={running} />
       </div>

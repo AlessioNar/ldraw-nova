@@ -10,6 +10,7 @@ This folder explains how the system works, written for the owner. It aims at und
 | [workspace-and-editor.md](workspace-and-editor.md) | Builds, versions, the draft, the 3D canvas, editor operations |
 | [parts-and-collection.md](parts-and-collection.md) | Parts lists, Brickit/Pileometer import, "maybe" pieces, what-can-I-build, parts check |
 | [data-and-storage.md](data-and-storage.md) | What lives where: volumes, folders, files, the reference library |
+| [database.md](database.md) | PostgreSQL: what is in it, how it is secured, backup and restore, tests |
 | [settings-and-providers.md](settings-and-providers.md) | LLM providers, keys, the three model roles, cost tracking |
 | [security.md](security.md) | The short version of the security pass |
 | [operations.md](operations.md) | Dev mode, rebuilds, tests, logs, common tasks |
@@ -25,7 +26,7 @@ Open Brick Designer is a fork of `anteloc/ldraw-nova`, rebranded. It is **one Do
 - a **web app**: a FastAPI backend (`app/web/backend`), a React frontend (`app/web/frontend`) and static 3D pages (`app/web/viewer`) for viewing, editing and step-by-step playing;
 - **LeoCAD** running under a virtual display (Xvfb) for snapshots and BOMs.
 
-The product is centred on **builds**. A build is a model with numbered versions and one editable draft. People make a build in four ways: describe it, start from a type, import a file, or start empty. They edit it in an always-3D workspace. Their own bricks ("My Parts") can steer what gets built and show what is missing.
+The product is centred on **builds**. A build is a model with numbered versions and one editable draft. People start a build empty, straight in the 3D workspace (then describe it in its chat or place parts), or import a model file. They edit it in an always-3D workspace. Their own bricks ("My Parts") can steer what gets built and show what is missing.
 
 The product direction is **deterministic first**. Code (generators and rules) builds whatever it can for free. One cheap LLM call only *reads the sentence*. The expensive AI agent runs only after the person agrees to a price.
 
