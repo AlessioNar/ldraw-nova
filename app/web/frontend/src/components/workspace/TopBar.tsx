@@ -20,7 +20,7 @@ export default function TopBar({ ws }: { ws: Workspace }) {
   if (!detail) return <header className="ws-top" />;
 
   const build = detail.build;
-  const tag = generatorId ? `Generator: ${generators.find((g) => g.id === generatorId)?.title ?? generatorId}` : KIND_TAG[detail.source.kind];
+  const tag = generatorId ? `${generatorId.startsWith("template:") ? "Template" : "Generator"}: ${generators.find((g) => g.id === generatorId)?.title ?? generatorId.replace(/^template:/, "")}` : KIND_TAG[detail.source.kind];
   const done = async () => {
     const title = renaming?.trim();
     setRenaming(null);
@@ -45,7 +45,7 @@ export default function TopBar({ ws }: { ws: Workspace }) {
             onKeyDown={(e) => { if (e.key === "Enter") setRenaming(build.title); }}>{build.title}</h1>
         : <input className="ws-rename" autoFocus value={renaming} maxLength={120} aria-label="Build name" onChange={(e) => setRenaming(e.target.value)} onBlur={done}
             onKeyDown={(e) => { if (e.key === "Enter") done(); if (e.key === "Escape") setRenaming(null); }} />}
-      {tag && <span className="ws-chip kind" title={generatorId ? "This build was made by a generator" : "How this build started"}>{tag}</span>}
+      {tag && <span className="ws-chip kind" title={generatorId ? "This build was made from a generator or template" : "How this build started"}>{tag}</span>}
       <span className="ws-spacer" />
       <span className={`ws-status ${status.cls}`} role="status">{status.text}</span>
       {shown?.model_url && (
@@ -62,6 +62,8 @@ export default function TopBar({ ws }: { ws: Workspace }) {
       <details className="ws-menu">
         <summary className="ws-icon-btn" title="More" aria-label="More actions">⋯</summary>
         <div className="ws-menu-pop">
+          <button disabled={!!viewing || empty} title="Turn this build into a starting point you can stretch, shrink and recolour"
+            onClick={(e) => { e.currentTarget.closest("details")?.removeAttribute("open"); ws.setTab("template"); }}>Make this a template…</button>
           <button className="danger-text" onClick={async () => {
             if (await confirmDeleteBuild({ id: build.id, title: build.title, versions: build.versions })) { refreshBuilds(); navigate("/builds"); }
           }}>Delete build…</button>

@@ -185,8 +185,13 @@ async def generators_list():
     return _generators["reply"]
 
 
+def forget_generators() -> None:
+    """Drop the cached registry reply: a template was saved or removed."""
+    _generators.clear()
+
+
 class GenerateRequest(BaseModel):
-    generator: str = Field(max_length=60, pattern=r"^[A-Za-z0-9_-]+$")
+    generator: str = Field(max_length=70, pattern=r"^(?:template:)?[A-Za-z0-9_-]+$")      # a generator, or template:<id>
     params: dict[str, Any] = Field(default_factory=dict)
 
 
