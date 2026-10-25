@@ -1,0 +1,120 @@
+{
+ "leaves": 1163,
+ "domain": "building",
+ "verified": {
+  "z": {
+   "cuts": [
+    -70.0
+   ],
+   "totals": [
+    2
+   ],
+   "combined_checks": {}
+  },
+  "courses": {
+   "cut": 296,
+   "slice": 20,
+   "checks": {
+    "1": {
+     "errors": 0,
+     "components": 205
+    },
+    "2": {
+     "errors": 0,
+     "components": 205
+    },
+    "3": {
+     "errors": 0,
+     "components": 205
+    },
+    "4": {
+     "errors": 0,
+     "components": 205
+    },
+    "5": {
+     "errors": 0,
+     "components": 205
+    },
+    "6": {
+     "errors": 0,
+     "components": 205
+    },
+    "-1": {
+     "errors": 0,
+     "components": 205
+    }
+   }
+  },
+  "include_part_entry_porch": {
+   "errors": 0,
+   "components": 205
+  },
+  "include_part_garden_field": {
+   "errors": 0,
+   "components": 38
+  },
+  "include_part_bench_70_p0114": {
+   "errors": 0,
+   "components": 205
+  },
+  "include_part_flower_box_5_p0115": {
+   "errors": 0,
+   "components": 205
+  },
+  "include_part_ridge_chimney": {
+   "errors": 0,
+   "components": 204
+  },
+  "include_part_fence_25_70_p0182": {
+   "errors": 0,
+   "components": 201
+  },
+  "swap_brick_1x2": {
+   "codes": [
+    "3004",
+    "2877",
+    "98283",
+    "3065"
+   ]
+  },
+  "swap_brick_1x4": {
+   "codes": [
+    "3010",
+    "30137"
+   ]
+  }
+ },
+ "rejected": {
+  "x": [],
+  "z": []
+ },
+ "baseline": {
+  "errors": 0,
+  "components": 205
+ },
+ "corners": {
+  "min": {
+   "params": {
+    "z_delta": 0,
+    "courses_delta": -1
+   },
+   "ok": true,
+   "errors": 0,
+   "components": 205
+  },
+  "max": {
+   "params": {
+    "z_delta": 2,
+    "courses_delta": 6
+   },
+   "ok": true,
+   "errors": 0,
+   "components": 205
+  }
+ },
+ "size": {
+  "z": 2
+ },
+ "import_warnings": 0,
+ "seconds": 1607.4
+}
