@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { collectionApi, type CollectionBrowse, type CollectionPart, type PartDetail } from "../../api";
 import { colourHex } from "../../ldrawColours";
+import ChangeDialog from "./ChangeDialog";
 import PartThumb from "./PartThumb";
 import type { OnChanged } from "./changes";
 
@@ -17,6 +18,7 @@ function PartEditor({ part, onChanged, onSaved }: { part: CollectionPart; onChan
   const [newQty, setNewQty] = useState("1");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [changing, setChanging] = useState<PartDetail["rows"][number] | null>(null);
 
   const load = useCallback(() => collectionApi.part(part.part).then(setDetail, e => setError((e as Error).message)), [part.part]);
   useEffect(() => { void load(); void collectionApi.colours().then(r => setColours(r.colours), () => undefined); }, [load]);
@@ -43,14 +45,15 @@ function PartEditor({ part, onChanged, onSaved }: { part: CollectionPart; onChan
     </form>
     {!detail ? <p className="muted"><span className="spinner" aria-hidden /> Loading…</p> : <>
       <table className="parts-table editor-table">
-        <thead><tr><th scope="col">Colour</th><th scope="col">Source</th><th scope="col" className="num">Qty</th><th scope="col"><span className="sr-only">Remove</span></th></tr></thead>
+        <thead><tr><th scope="col">Colour</th><th scope="col">Source</th><th scope="col" className="num">Qty</th><th scope="col"><span className="sr-only">Change or remove</span></th></tr></thead>
         <tbody>{detail.rows.map(r => <tr key={`${r.source}-${r.colour}`}>
           <td><span className="swatch" style={{ background: colourHex(r.colour) }} aria-hidden /> {r.colour_name}</td>
           <td><Link to={`/parts/${r.source}`}>{r.source_name}</Link> <span className="badge">{r.kind}</span></td>
           <td className="num"><input type="number" min={1} aria-label={`Quantity of ${r.colour_name} in ${r.source_name}`} defaultValue={r.qty} disabled={busy}
             onBlur={e => { const n = Math.floor(Number(e.target.value)); if (n >= 1) void setQty(r.source, r.colour, n, r.qty); else e.target.value = String(r.qty); }}
             onKeyDown={e => e.key === "Enter" && (e.target as HTMLInputElement).blur()} /></td>
-          <td><button type="button" className="danger-text" disabled={busy} aria-label={`Remove ${r.colour_name} from ${r.source_name}`} onClick={() => void setQty(r.source, r.colour, 0, r.qty)}>Remove</button></td>
+          <td><button type="button" disabled={busy} aria-label={`Change ${r.colour_name} in ${r.source_name}`} onClick={() => setChanging(r)}>Change…</button>{" "}
+            <button type="button" className="danger-text" disabled={busy} aria-label={`Remove ${r.colour_name} from ${r.source_name}`} onClick={() => void setQty(r.source, r.colour, 0, r.qty)}>Remove</button></td>
         </tr>)}</tbody>
       </table>
       {detail.maybe.length > 0 && <p className="muted small">{detail.maybe.reduce((n, m) => n + m.qty, 0)} more are “maybe” pieces whose colour is not known yet (see Review); they are not counted above.</p>}
@@ -69,6 +72,9 @@ function PartEditor({ part, onChanged, onSaved }: { part: CollectionPart; onChan
         <button type="submit" disabled={busy || !newColour}>Add</button>
       </form>
     </>}
+    {changing && detail && <ChangeDialog source={changing.source} sourceName={changing.source_name} onChanged={onChanged}
+      lines={[{ part: part.part, colour: changing.colour, colour_name: changing.colour_name, qty: changing.qty, description: detail.description }]}
+      onClose={() => { setChanging(null); void load(); onSaved(); }} />}
   </div>;
 }
 

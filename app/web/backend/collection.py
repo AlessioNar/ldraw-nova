@@ -160,6 +160,51 @@ def _set_qty(data: dict, part: str, colour: int, qty: int, template: dict | None
     return kept
 
 
+def _move(data: dict, op: dict) -> dict | None:
+    """Moves `qty` pieces (default: the whole line) of (part, colour) to another colour and/or another part.
+
+    Merges into a line that already exists; the move is also remembered in `data["corrections"]` so a re-import of the same
+    file can apply it again."""
+    part, colour = _clean_part(op.get("part")), _clean_colour(op.get("colour"))
+    to_part = _clean_part(op["to_part"]) if op.get("to_part") not in (None, "") else part
+    to_colour = _clean_colour(op["to_colour"]) if op.get("to_colour") is not None else colour
+    if (to_part, to_colour) == (part, colour):
+        return None
+    have = _qty_of(data, part, colour)
+    if have <= 0:
+        raise InventoryError(400, f"This source has no {part} in {part_info.colour_name(colour)}")
+    qty = have if op.get("qty") is None else _clean_qty(op.get("qty"), 1)
+    if qty > have:
+        raise InventoryError(400, f"Only {have} of {part} in {part_info.colour_name(colour)} are in this source")
+    if to_part != part:
+        _check_known_part(to_part)
+    rb = {"rb_part": to_part} if to_part != part else {}
+    keep = next((r.get("rb_colour", 0) for r in data["rows"] if _match(r, part, colour)), 0)
+    target_before = _qty_of(data, to_part, to_colour)
+    if target_before + qty > MAX_QTY:
+        raise InventoryError(400, f"A line cannot hold more than {MAX_QTY:,} pieces")
+    corrections_before = copy.deepcopy(data.get("corrections"))
+    from_rows = _set_qty(data, part, colour, have - qty)
+    to_rows = _set_qty(data, to_part, to_colour, target_before + qty, {**rb, "rb_colour": keep})
+    data.setdefault("corrections", []).append({"part": part, "colour": colour, "to_part": to_part, "to_colour": to_colour, "qty": qty})
+    return {"op": "move", "part": part, "colour": colour, "to_part": to_part, "to_colour": to_colour, "qty": qty,
+            "rows_before": from_rows, "to_rows_before": to_rows, "corrections_before": corrections_before}
+
+
+def reapply_corrections(rows: list[dict], corrections: list[dict]) -> list[dict]:
+    """The owner's colour and part fixes applied to the rows of a fresh import (as many pieces as it still has to move)."""
+    data = {"rows": copy.deepcopy(rows)}
+    for c in corrections:
+        have = _qty_of(data, c["part"], c["colour"])
+        qty = min(have, c["qty"])
+        if qty <= 0:
+            continue
+        _set_qty(data, c["part"], c["colour"], have - qty)
+        _set_qty(data, c["to_part"], c["to_colour"], _qty_of(data, c["to_part"], c["to_colour"]) + qty,
+                 {"rb_part": c["to_part"]} if c["to_part"] != c["part"] else None)
+    return data["rows"]
+
+
 def _apply(data: dict, op: Any) -> dict | None:
     """Applies one op to the in-memory source; returns its log entry (with what undo needs) or None for a no-op."""
     if not isinstance(op, dict):
@@ -183,6 +228,8 @@ def _apply(data: dict, op: Any) -> dict | None:
             return None
         rows_before = _set_qty(data, part, colour, after)
         return {"op": kind, "part": part, "colour": colour, "before": before, "after": after, "rows_before": rows_before}
+    if kind == "move":
+        return _move(data, op)
     if kind in ("review_resolve", "review_discard"):
         review = data.setdefault("review", [])
         index = next((i for i, r in enumerate(review) if r.get("id") == op.get("id")), None)
@@ -215,7 +262,8 @@ def apply_ops(source_id: str, ops: Any, note: str = "") -> dict:
     """Applies a list of changes to one source as one undoable batch.
 
     ops: {"op": "add", part, colour, qty} | {"op": "set", part, colour, qty} | {"op": "remove", part, colour} |
-    {"op": "review_resolve", id, colour, qty?} | {"op": "review_discard", id}. Everything is checked before anything is
+    {"op": "review_resolve", id, colour, qty?} | {"op": "review_discard", id} | {"op": "move", part, colour, to_colour?, to_part?, qty?} (change the colour or the part of a
+    line, all of it or `qty` pieces). Everything is checked before anything is
     written, so a bad line changes nothing. Returns {"batch", "changes", "source"} (batch is None for a no-op).
     """
     if not isinstance(ops, list) or not ops:
@@ -248,6 +296,10 @@ def _entry_text(e: dict) -> str:
         return f"Gave {e['qty']} x {e['part']} the colour {part_info.colour_name(e['colour'])}"
     if op == "review_discard":
         return f"Discarded {e['qty']} x {e['part']} (not mine)"
+    if op == "move":
+        what = f"{e['part']} {part_info.colour_name(e['colour'])}"
+        to = f"{e['to_part']} {part_info.colour_name(e['to_colour'])}" if e["to_part"] != e["part"] else part_info.colour_name(e["to_colour"])
+        return f"Changed {e['qty']} x {what} to {to}"
     if op == "replace":
         d = e.get("diff", {})
         return f"Replaced by a new import (+{d.get('added', 0)} -{d.get('removed', 0)} ~{d.get('changed', 0)})"
@@ -295,6 +347,13 @@ def _reverse(data: dict, e: dict) -> None:
         _put_rows(data, e["part"], e["colour"], e["rows_before"])
     if op in ("review_resolve", "review_discard"):
         _restore_review(data, e["review_before"], e["index"])
+    if op == "move":
+        _put_rows(data, e["part"], e["colour"], e["rows_before"])
+        _put_rows(data, e["to_part"], e["to_colour"], e["to_rows_before"])
+        if e["corrections_before"] is None:
+            data.pop("corrections", None)
+        else:
+            data["corrections"] = copy.deepcopy(e["corrections_before"])
     if op == "replace":
         data["rows"] = copy.deepcopy(e["rows_before"])
         for key, value in e["meta_before"].items():
@@ -430,7 +489,8 @@ def preview_diff(token: str, replace: str) -> dict:
     pv = _preview(token)
     old = _replaceable(replace)
     new = pv["parsed"]["data"]
-    d = diff_rows(old.get("rows", []), new.get("rows", []))
+    new_rows = reapply_corrections(new.get("rows", []), old["corrections"]) if old.get("corrections") else new.get("rows", [])
+    d = diff_rows(old.get("rows", []), new_rows)
     old_review, new_review = old.get("review", []), new.get("review", [])
     d["review"] = {"before_items": len(old_review), "after_items": len(new_review),
                    "before_pieces": sum(r["qty"] for r in old_review), "after_pieces": sum(r["qty"] for r in new_review)}
@@ -467,12 +527,15 @@ def replace_source(source_id: str, new: dict, raw: bytes, name: str | None = Non
             for r in data["rows"]:
                 r["qty"] *= copies
             data["set"] = {**old["set"], "num_parts": sum(r["qty"] for r in data["rows"]) // copies}
+        if old.get("corrections"):                    # the owner's colour and part fixes survive a re-import of the same file
+            data["rows"] = reapply_corrections(data["rows"], old["corrections"])
+            data["corrections"] = copy.deepcopy(old["corrections"])
         notes = {(part_key(r["part"]), r["colour"]): r["note"] for r in old.get("rows", []) if r.get("note")}
         for r in data["rows"]:
             if (part_key(r["part"]), r["colour"]) in notes:
                 r["note"] = notes[(part_key(r["part"]), r["colour"])]
         d = diff_rows(old.get("rows", []), data["rows"])
-        meta_keys = ("review", "unmapped_parts", "unmapped_colours", "warnings", "import", "origin", "name", "source_filename")
+        meta_keys = ("corrections", "review", "unmapped_parts", "unmapped_colours", "warnings", "import", "origin", "name", "source_filename")
         csv_before = store.read_csv(source_id, 2 * 1024 * 1024)
         entry = {"op": "replace", "rows_before": old.get("rows", []), "meta_before": {k: old.get(k) for k in meta_keys},
                  "csv_before": csv_before, "diff": {k: d[k] for k in ("added", "removed", "changed", "pieces_before", "pieces_after")}}
@@ -864,6 +927,24 @@ def part_detail(part: str) -> dict:
     desc = part_info.describe(part)
     return {"part": part, "description": desc, "category": part_info.category(part), "size": part_info.size_of(desc),
             "note": get_notes().get(part, ""), "total": sum(r["qty"] for r in rows), "rows": rows, "maybe": maybe}
+
+
+def search_parts(query: str, near: str = "", limit: int = 24) -> dict:
+    """LDraw library parts matching a search ("2x4 brick", "3001"), for choosing the part that replaces a wrong one.
+
+    Same category as `near` first, then exact part numbers, then the rest by part number. Moved and obsolete parts ("~") are left out."""
+    words, sizes = _tokens(query)
+    near_cat = part_info.category(near) if near else ""
+    hits = []
+    for part, (desc, cat) in part_info.meta().items():
+        if desc.startswith(("~", "=", "_")):
+            continue
+        text = f"{part} {desc} {cat}".casefold()
+        if all(w in text for w in words) and all(part_info.size_of(desc) == z for z in sizes):
+            hits.append((0 if part == part_key(query) else 1, 0 if near_cat and cat == near_cat else 1, _natural(part), part, desc, cat))
+    hits.sort()
+    return {"parts": [{"part": h[3], "description": h[4], "category": h[5], "size": part_info.size_of(h[4])} for h in hits[:max(1, min(limit, 60))]],
+            "total": len(hits)}
 
 
 # --- review queue ------------------------------------------------------------

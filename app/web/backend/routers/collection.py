@@ -124,6 +124,13 @@ def collection_note(part: str, body: Note):
         raise failure(exc) from None
 
 
+@router.get("/api/collection/part-search")
+def collection_part_search(q: str = "", near: str = "", limit: int = Query(24, ge=1, le=60)):
+    if not q.strip():
+        return {"parts": [], "total": 0}
+    return collection.search_parts(q[:100], near[:40], limit)
+
+
 @router.get("/api/collection/colours")
 def collection_colours():
     return {"colours": [{"code": c, "name": n} for c, n in sorted(part_info.colour_names().items())]}
