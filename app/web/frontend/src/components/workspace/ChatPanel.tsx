@@ -28,6 +28,7 @@ function ProposalCard({ p, ws }: { p: Proposal; ws: Workspace }) {
   );
 }
 
+const EXAMPLES = ["Build a small house", "Make the roof blue", "Add two more windows"];
 const DEFAULT_OPTIONS = { mode: "agent", permissions: "ask" } as TurnOptions;
 const seconds = (ms: number) => (ms < 950 ? `${Math.max(ms / 1000, 0.1).toFixed(1)} s` : `${Math.round(ms / 1000)} s`);
 const show = (v: unknown) => (typeof v === "object" && v !== null ? JSON.stringify(v) : String(v));
@@ -224,7 +225,11 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
           ? <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} workers={workers} now={now} error={error} scrollerRef={scroller} bottomRef={bottom} fast={fast}
               onScroll={() => { const el = scroller.current; if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} />
           : <div className="ws-chat-empty muted small">
-              {chatId ? "Loading the chat…" : <><p>Say what you want, for example <em>make the roof blue</em>.</p><p>Simple changes are free and happen at once, with an Undo. Bigger ones show their cost first, and the AI only starts when you say so.</p></>}
+              {chatId ? "Loading the chat…" : <><p>Say what you want, or start from an example:</p>
+                <div className="ws-chips" role="group" aria-label="Example prompts">
+                  {EXAMPLES.map((e) => <button key={e} className="ws-chip-btn" disabled={acting} onClick={() => reply(e)}>{e}</button>)}
+                </div>
+                <p>Simple changes are free and happen at once, with an Undo. Bigger ones show their cost first, and the AI only starts when you say so.</p></>}
               {!chatId && error && <div className="banner error">{error}</div>}
               <div ref={bottom} />
             </div>}
