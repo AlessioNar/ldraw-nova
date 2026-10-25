@@ -100,10 +100,9 @@ SQLite appears only here, as read-only reference data and search caches (`ldraw-
 
 ### Backups
 
-`scripts/backup.sh` writes a PostgreSQL dump (`obd-<stamp>.dump`) and a tarball of the data volume (`obd-data-<stamp>.tgz`). The tarball contains only `generated`, `builds`, `inventories` and `chats`. It does **not** contain:
+`scripts/backup.sh` writes a PostgreSQL dump (`obd-<stamp>.dump`), a tarball of the data volume (`obd-data-<stamp>.tgz`) and a tarball of `/config` (`obd-config-<stamp>.tgz`, readable by you only: it holds the API keys in clear text; `BACKUP_CONFIG=0` skips it). The data tarball contains `generated`, `builds`, `inventories`, `templates` and `chats`. It does **not** contain:
 
-- `/config` (API keys and LLM entries): back it up separately; the command is in the header of `scripts/backup.sh`;
-- `templates/` (the person's own templates) and `output/`: copy these yourself if you care;
+- `output/` (the agents' work folders): copy it yourself if you care;
 - `cache/` and `collection-export/`: rebuilt automatically.
 
 Details, restore and the scheduled-backup profile are in [database.md](database.md).

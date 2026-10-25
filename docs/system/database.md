@@ -128,16 +128,16 @@ Rollback while the files are untouched: stop the app, set `LDRAW_NOVA_STORAGE=fi
 
 ### Backup and restore
 
-A full backup is **the database dump plus the data volume**, because model files are not in the database. API keys (`/config`) are in neither.
+A full backup is **the database dump plus the data volume**, because model files are not in the database. API keys (`/config`) have their own private archive.
 
 ```
-bash scripts/backup.sh                          # ./backups/obd-<stamp>.dump + obd-data-<stamp>.tgz
+bash scripts/backup.sh                          # ./backups/obd-<stamp>.dump + obd-data-<stamp>.tgz + obd-config-<stamp>.tgz
 BACKUP_DIR=/mnt/nas/obd bash scripts/backup.sh  # somewhere else
 bash scripts/restore.sh backups/obd-<stamp>.dump          # asks first; stops the app, restores, starts it again
 bash scripts/restore.sh -y backups/obd-<stamp>.dump none  # database only, no question
 ```
 
-- `backup.sh` is safe while the app runs (`pg_dump` takes a snapshot). The tarball covers `generated`, `builds`, `inventories` and `chats` only, not `templates/`, `output/` or `/config`. On Windows run the scripts from Git Bash or WSL.
+- `backup.sh` is safe while the app runs (`pg_dump` takes a snapshot). The data tarball covers `generated`, `builds`, `inventories`, `templates` and `chats`, not `output/`; the config tarball (API keys, private file) covers `/config`, and `restore.sh` unpacks it when it sits next to the dump. On Windows run the scripts from Git Bash or WSL.
 - `restore.sh` **replaces** the database and unpacks the archive over `/data` (same names are overwritten, other files stay). Both scripts read `DB_CONTAINER`, `DATA_VOLUME`, `DB_NAME` and similar from the environment (see their headers).
 - **Scheduled backups are off by default.** Turn them on with `docker compose --profile backup up -d`: one dump a day (newest 7 kept) and one on Sundays (newest 4 kept) in the volume `ldraw-nova-docker_backups` (`app/db/backup-loop.sh`). A backup on the same disk does not survive a lost disk, so copy them out, for example `docker run --rm -v ldraw-nova-docker_backups:/b:ro -v "$PWD/backups":/o postgres:18-alpine cp -r /b/. /o/`.
 - To check a backup, restore it into a throwaway server and compare row counts per table with the live database; the steps are in CUTOVER.md ("Restore drill").
