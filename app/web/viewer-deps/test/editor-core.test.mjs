@@ -304,6 +304,44 @@ test("copyParts / pasteEdits: plain parts come back as adds, offset, turned as b
   assert.deepEqual(C.pasteEdits(C.copyParts(turned, ["t1"]).items, [0, 0, 0])[0].rotation, { axis: "y", degrees: 90 });
 });
 
+test("grid: half-stud steps for nudging and gizmo drags, plates stay 8", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  assert.deepEqual(C.nudgeEdits(nodes, ["top"], "ArrowRight", false, [0, 1], 10)[0].position, [10, -24, 0]);
+  assert.equal(C.snapMove("x", 13, true, 10), 10);
+  assert.equal(C.snapMove("x", 13, true), 20);
+  assert.equal(C.snapMove("y", 13, true, 10), 16);
+  assert.equal(C.snapStep("z", 10), 10);
+  assert.equal(C.snapStep("y", 10), 8);
+});
+
+test("surfaceMove: follows the pointer on the grid, lands on the ground or on top of a part, warns on overlap", () => {
+  const boxes = { "3001.dat": { min: [-20, -24, -10], max: [20, 0, 10] } };
+  const brick = (key, x, y, z) => ({ key, id: key, ref: "3001.dat", position: [x, y, z], matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1], leaf: true, editable: true });
+  const mover = brick("m", 0, 0, 0), wall = brick("w", 100, 0, 0), stack = brick("s", 100, -24, 0);
+  const down = (x, z) => ({ origin: [x, -500, z], direction: [0, 1, 0] });          // looking straight down from above (y points down)
+  // pointer over empty ground, grabbed at the origin: x and z follow in 20s, y stays on the ground (bottom 0)
+  let r = C.surfaceMove(down(47, 33), [0, 0, 0], [mover], [wall], boxes, 0);
+  assert.deepEqual(r.delta, [40, 0, 40]);
+  assert.equal(r.onPart, false);
+  assert.equal(r.overlaps, false);
+  // half-stud grid
+  assert.deepEqual(C.surfaceMove(down(47, 33), [0, 0, 0], [mover], [wall], boxes, 0, 10).delta, [50, 0, 30]);
+  // over the wall: lands on top (the box top, studs included, is at -24; a plate step rounds the studs away)
+  r = C.surfaceMove(down(100, 0), [0, 0, 0], [mover], [wall], boxes, 0);
+  assert.equal(r.onPart, true);
+  assert.deepEqual(r.delta, [100, -24, 0]);
+  assert.equal(r.overlaps, false);
+  // two high
+  r = C.surfaceMove(down(100, 0), [0, 0, 0], [mover], [wall, stack], boxes, 0);
+  assert.deepEqual(r.delta, [100, -48, 0]);
+  // beside the wall but close enough that the boxes cut into each other
+  r = C.surfaceMove(down(79, 0), [0, 0, 0], [mover], [wall], boxes, 0);
+  assert.equal(r.onPart, false);
+  assert.equal(r.overlaps, true);
+  // a ray parallel to the ground that hits nothing: no target
+  assert.equal(C.surfaceMove({ origin: [0, -500, 0], direction: [1, 0, 0] }, [0, 0, 0], [mover], [wall], boxes, 0), null);
+});
+
 // ---- the build workspace canvas ----------------------------------------------------------------
 
 const SUB_MPD = `0 FILE main.ldr

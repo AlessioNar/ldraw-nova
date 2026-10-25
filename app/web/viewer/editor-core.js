@@ -291,8 +291,10 @@ var EditorCore = (function () {
   }
   // A one-brick model is framed small (a third of the view); a bigger model fills more of it, up to 60%.
   const framingFill = radius => Math.min(0.6, Math.max(0.33, 0.33 + (radius - 60) / 300));
-  const snapStep = axis => MOVE_STEP[axis];
-  const snapMove = (axis, distance, snap = true) => clean(snap ? snapTo(distance, MOVE_STEP[axis]) : distance);
+  const snapStep = (axis, grid) => gridStep(axis, grid);
+  // `grid` is the stud grid for x and z (20 = a stud, 10 = half a stud); plates stay 8 on y.
+  const gridStep = (axis, grid) => (axis === 'y' || !grid ? MOVE_STEP[axis] : grid);
+  const snapMove = (axis, distance, snap = true, grid) => clean(snap ? snapTo(distance, gridStep(axis, grid)) : distance);
   const snapRotate = (degrees, snap = true) => clean(snap ? snapTo(degrees, ROTATE_STEP) : degrees);
 
   // ---- edit requests ---------------------------------------------------------
@@ -378,13 +380,12 @@ var EditorCore = (function () {
     const f = Math.abs(fx) > Math.abs(fz) ? [Math.sign(fx), 0] : [0, Math.sign(fz) || 1];       // a tie (the isometric start view) goes to z
     return { f, r: [f[1], -f[0]] };
   }
-  function nudgeEdits(placements, ids, key, shift, forward) {
+  function nudgeEdits(placements, ids, key, shift, forward, stud = 20) {
     if (shift) {
       if (key !== 'ArrowLeft' && key !== 'ArrowRight') return [];
       return rotateEdits(placements, ids, 'y', key === 'ArrowRight' ? 90 : -90);
     }
     const { f, r } = groundAxes(forward);
-    const stud = 20;
     const delta = { ArrowUp: [f[0] * stud, 0, f[1] * stud], ArrowDown: [-f[0] * stud, 0, -f[1] * stud],
                     ArrowRight: [r[0] * stud, 0, r[1] * stud], ArrowLeft: [-r[0] * stud, 0, -r[1] * stud],
                     PageUp: [0, -8, 0], PageDown: [0, 8, 0] }[key];
@@ -423,6 +424,48 @@ var EditorCore = (function () {
     position: add(i.position, toLocal(i, delta, false)).map(clean),
     ...(i.rotation ? { rotation: { axis: i.rotation.axis, degrees: i.rotation.degrees } } : {}),
   }));
+
+
+  // ---- dragging over the model's surface ------------------------------------------------------------
+
+  // The box of a placement in the root's frame: [min, max].
+  function worldBounds(p, box) {
+    const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+    for (const corner of boxCorners(box)) {
+      const w = worldPoint(p, corner);
+      for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], w[k]); max[k] = Math.max(max[k], w[k]); }
+    }
+    return [min, max];
+  }
+
+  // Where the dragged parts go for this pointer ray: x and z follow the pointer on the grid (from where it grabbed them,
+  // `grab`), y lands them on whatever is under the pointer (a plate step; the studs' 4 LDU round away) or on the ground
+  // plane `groundY`. `overlaps` says the moved boxes would cut into another part (boxes are rough, so this only warns).
+  // Returns { delta, onPart, overlaps } or null when the ray finds nothing to stand on.
+  function surfaceMove(ray, grab, moving, others, boxes, groundY, grid = MOVE_STEP.x) {
+    const boundsOf = p => { const b = boxes[p.ref] || boxes[norm(p.ref)]; return b ? worldBounds(p, b) : null; };
+    const mine = moving.map(boundsOf).filter(Boolean);
+    if (!mine.length) return null;
+    const bottom = Math.max(...mine.map(b => b[1][1]));
+    const hit = pickHits(ray, others, boxes)[0];
+    let point, floor;
+    if (hit) { point = add(ray.origin, scale(ray.direction, hit.t)); floor = boundsOf(hit.p)[0][1]; }
+    else {
+      if (Math.abs(ray.direction[1]) < 1e-9) return null;
+      const t = (groundY - ray.origin[1]) / ray.direction[1];
+      if (!(t > 0)) return null;
+      point = add(ray.origin, scale(ray.direction, t));
+      floor = groundY;
+    }
+    const delta = [snapTo(point[0] - grab[0], grid), snapTo(floor - bottom, MOVE_STEP.y), snapTo(point[2] - grab[2], grid)].map(clean);
+    const moved = mine.map(b => [add(b[0], delta), add(b[1], delta)]);
+    const overlaps = others.length * moved.length < 200000 && others.some(o => {
+      const ob = boundsOf(o);
+      return ob && moved.some(m => m[0][0] < ob[1][0] - 1 && m[1][0] > ob[0][0] + 1 && m[0][2] < ob[1][2] - 1 && m[1][2] > ob[0][2] + 1
+                                   && m[0][1] < ob[1][1] - 5 && m[1][1] > ob[0][1] + 5);
+    });
+    return { delta, onPart: !!hit, overlaps };
+  }
 
   const deleteEdits = (placements, ids) => chosen(placements, ids).map(p => ({ op: 'delete', id: entryOf(p), section: p.section }));
 
@@ -836,7 +879,7 @@ var EditorCore = (function () {
 
   return { AXES, invert, mulVec, rotationMatrix, sceneToLdraw, ldrawToScene, directionToLdraw, parsePlacements, parseSections, flatten, widenSelection, describeSelection, entryIds,
            rayBox, pick, pickAll, pickHits, nextHit, deleteTargets, nextSelection, axisParameter, planeAngle, snapMove, snapRotate, fitDistance, snapStep, framingFill, moveEdits, rotateEdits,
-           deleteEdits, nudgeEdits, groundAxes, turnOf, copyParts, pasteEdits, centroid, editsBody, describeParts,
+           deleteEdits, nudgeEdits, worldBounds, surfaceMove, groundAxes, turnOf, copyParts, pasteEdits, centroid, editsBody, describeParts,
            TOOLS, MODES, COMMANDS, effectiveColours, sceneMatrix, diffLeaves, leafRefs, predictEdits, boxSelect, mergeSelection,
            subtreeBox, nextEntryId, placementFor, addEdits, optimisticAdd, applyDelta, tweenNodes, plainFields, recolourEdits, parseCommand, trustedMessage, pieceInfo, keysForIds, matMul };
 })();
