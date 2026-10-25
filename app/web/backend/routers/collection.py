@@ -296,7 +296,7 @@ def set_image_settings():
 @router.put("/api/set-images/settings")
 def set_image_settings_save(body: SetImageSettings):
     """remote_fetch: let the backend download a picture of an owned set from the catalogue source once and cache it on this
-    machine. Off by default; cached pictures are never committed or shared."""
+    machine. On by default; cached pictures are never committed or shared."""
     set_images.set_remote_enabled(body.remote_fetch)
     return set_image_settings()
 
