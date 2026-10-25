@@ -1,0 +1,15 @@
+{
+ "domain": "aircraft",
+ "counts": {
+  "body": 79,
+  "structure": 3,
+  "wing": 32,
+  "detail": 8,
+  "glass": 4,
+  "engine": 11,
+  "wheel": 4
+ },
+ "low_confidence": 1,
+ "seconds": 0.8,
+ "warnings": 0
+}

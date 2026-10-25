@@ -16,10 +16,10 @@ def make(name):
         colour, accent = colour_code(p['colour']), colour_code(p['accent'])
         plan = recipe_plan(name, height=p['height'], colour=colour, accent=accent)
 
-        def role(q):
-            if q['colour'] == 46:
+        def role(q):   # by placement id (the recipe names its accent and light parts), never by colour
+            if q['id'] == 'light':
                 return 'light'
-            return 'accent' if q['colour'] == accent and colour != accent else 'body'
+            return 'accent' if q['id'].startswith('cornice-round') or q['id'] == 'collar' else 'body'
         tag_roles(plan, [('recipe-', role)])
         return plan, []
 

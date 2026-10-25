@@ -1,0 +1,169 @@
+{
+ "leaves": 390,
+ "domain": "building",
+ "verified": {
+  "z": {
+   "cuts": [
+    10.0
+   ],
+   "totals": [
+    2
+   ],
+   "combined_checks": {}
+  },
+  "courses": {
+   "cut": 208,
+   "slice": 8,
+   "checks": {
+    "1": {
+     "errors": 26,
+     "components": 50
+    },
+    "2": {
+     "errors": 26,
+     "components": 51
+    },
+    "-1": {
+     "errors": 26,
+     "components": 50
+    }
+   }
+  },
+  "include_part_chair_p105": {
+   "errors": 26,
+   "components": 49
+  },
+  "include_part_lamp_p144": {
+   "errors": 26,
+   "components": 47
+  },
+  "include_part_plant_p27": {
+   "errors": 26,
+   "components": 41
+  },
+  "include_part_bush_all": {
+   "errors": 26,
+   "components": 42
+  },
+  "swap_brick_1x2": {
+   "codes": [
+    "3004",
+    "2877",
+    "98283",
+    "3065"
+   ]
+  },
+  "swap_brick_1x4": {
+   "codes": [
+    "3010",
+    "30137"
+   ]
+  },
+  "swap_tile_1x2": {
+   "codes": [
+    "3069b",
+    "2412b"
+   ]
+  }
+ },
+ "rejected": {
+  "x": [
+   {
+    "cut": -50.0,
+    "deltas": [
+     2
+    ],
+    "ok": false,
+    "checks": {
+     "2": {
+      "errors": 26,
+      "components": 51
+     }
+    }
+   },
+   {
+    "cut": -50.0,
+    "deltas": [
+     2
+    ],
+    "ok": false,
+    "checks": {
+     "2": {
+      "errors": 27,
+      "components": 50
+     }
+    }
+   },
+   {
+    "cut": -52.0,
+    "deltas": [
+     2
+    ],
+    "ok": false,
+    "checks": {
+     "2": {
+      "errors": 26,
+      "components": 51
+     }
+    }
+   },
+   {
+    "cut": -52.0,
+    "deltas": [
+     2
+    ],
+    "ok": false,
+    "checks": {
+     "2": {
+      "errors": 27,
+      "components": 50
+     }
+    }
+   }
+  ],
+  "z": [
+   {
+    "cut": 10.0,
+    "deltas": [
+     2
+    ],
+    "ok": false,
+    "checks": {
+     "2": {
+      "errors": 26,
+      "components": 51
+     }
+    }
+   }
+  ]
+ },
+ "baseline": {
+  "errors": 26,
+  "components": 50
+ },
+ "corners": {
+  "min": {
+   "params": {
+    "z_delta": 0,
+    "courses_delta": -1
+   },
+   "ok": true,
+   "errors": 26,
+   "components": 50
+  },
+  "max": {
+   "params": {
+    "z_delta": 2,
+    "courses_delta": 1
+   },
+   "ok": true,
+   "errors": 26,
+   "components": 50
+  }
+ },
+ "size": {
+  "z": 2
+ },
+ "import_warnings": 0,
+ "seconds": 276.5
+}

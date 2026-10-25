@@ -1,0 +1,74 @@
+{
+ "leaves": 59,
+ "domain": "vehicle",
+ "verified": {
+  "z": {
+   "cuts": [
+    90.0
+   ],
+   "totals": [
+    1,
+    2,
+    3,
+    4,
+    6
+   ],
+   "combined_checks": {}
+  },
+  "include_part_trailer_p2": {
+   "errors": 0,
+   "components": 1
+  },
+  "swap_tile_1x2": {
+   "codes": [
+    "3069b",
+    "2412b"
+   ]
+  }
+ },
+ "rejected": {
+  "x": [],
+  "z": [
+   {
+    "cut": 15.5,
+    "deltas": [
+     1
+    ],
+    "ok": false,
+    "checks": {
+     "1": {
+      "errors": 0,
+      "components": 7
+     }
+    }
+   }
+  ]
+ },
+ "baseline": {
+  "errors": 0,
+  "components": 4
+ },
+ "corners": {
+  "min": {
+   "params": {
+    "z_delta": 0
+   },
+   "ok": true,
+   "errors": 0,
+   "components": 4
+  },
+  "max": {
+   "params": {
+    "z_delta": 6
+   },
+   "ok": true,
+   "errors": 0,
+   "components": 4
+  }
+ },
+ "size": {
+  "z": 6
+ },
+ "import_warnings": 0,
+ "seconds": 44.8
+}

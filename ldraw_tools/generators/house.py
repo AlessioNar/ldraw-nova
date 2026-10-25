@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 
 from ..architecture import Module, attach_roof, flat_roof, gable, porch, room
-from .base import Generator, colour_param, tag_roles
+from .base import Generator, colour_param, inherit_roles
 from .colours import colour_code
 
 SIDES = ['front', 'back', 'left', 'right']
@@ -108,13 +108,7 @@ def build(p):
         notes.append('porch skipped: it needs a door')
     plan = scene.plan()
     plan['author'] = 'ldraw-nova generators'
-    tag_roles(plan, [
-        ('house-shell', {body: 'wall', trim: 'trim', 70: 'base'}),
-        ('window4', {glass: 'window', trim: 'trim'}),
-        ('door4', {door_colour: 'door', trim: 'trim'}),
-        ('house-roof', lambda q: 'chimney' if q['id'].startswith('chimney') else {roof: 'roof', body: 'wall', trim: 'trim'}.get(q['colour'])),
-        ('porch', {trim: 'porch', roof: 'roof'}),
-    ])
+    inherit_roles(plan)   # leaf roles were stamped at construction (architecture.Module.role), never recovered from colours
     return plan, notes
 
 

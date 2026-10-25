@@ -1,0 +1,15 @@
+{
+ "domain": "building",
+ "counts": {
+  "base": 39,
+  "wall": 225,
+  "roof": 423,
+  "trim": 365,
+  "window": 25,
+  "door": 6,
+  "detail": 41
+ },
+ "low_confidence": 62,
+ "seconds": 6.0,
+ "warnings": 0
+}
