@@ -90,5 +90,5 @@ def test_catalogue_boxes_match_the_library(official):
 
 def test_exported_schema_is_current():
     from pathlib import Path
-    path = Path(__file__).resolve().parents[1] / 'docs/plans/build-grammar/ontology.schema.json'
+    path = Path(__file__).resolve().parents[1] / 'docs/plans/active/build-grammar/ontology.schema.json'
     assert json.loads(path.read_text(encoding='utf-8')) == json.loads(json.dumps(grammar.SCHEMA))

@@ -1,6 +1,6 @@
 """Prompt regression set for the natural-language fast path (NL wave 3, #43).
 
-tests/nl_prompts.json holds the 54 prompts of docs/plans/nl-review/prompts.json plus prompts added for new generators, each with
+tests/nl_prompts.json holds the 54 prompts of docs/plans/active/nl-review/prompts.json plus prompts added for new generators, each with
 the route and generator the model-less path (rules, then the keyword reading) chose when it was recorded. The understanding model
 is stubbed away, so the run is free and deterministic; what it guards is routing and the generator registry, not model quality.
 When a change moves a route on purpose, re-record and review the diff:

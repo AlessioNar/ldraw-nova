@@ -1,6 +1,6 @@
 # My Parts: parts lists, imports, buildable, parts check
 
-Paths are relative to `app/web/backend/` (backend), `ldraw_tools/` (toolkit) and `app/web/frontend/src/` (frontend). The plan for the future collection is `docs/plans/parts-catalogue/PROPOSAL.md`, with the owner decisions at lines 325–331.
+Paths are relative to `app/web/backend/` (backend), `ldraw_tools/` (toolkit) and `app/web/frontend/src/` (frontend). The plan for the future collection is `docs/plans/active/parts-catalogue/PROPOSAL.md`, with the owner decisions at lines 325–331.
 
 ## Parts lists ("inventories")
 
@@ -24,7 +24,7 @@ flowchart LR
   FC -- no --> RV[review items, the 'maybe' pieces<br/>NOT counted as owned]
 ```
 
-- **Rebrickable mapping.** 99.74% of colour uses and about 94% of pieces map by identity, plus 2.6% by alias (`docs/plans/rebrickable-mapping.md`).
+- **Rebrickable mapping.** 99.74% of colour uses and about 94% of pieces map by identity, plus 2.6% by alias (`docs/plans/done/rebrickable-mapping.md`).
 - **Pileometer** is Brickit's export. Its columns are Scan, Part, PartName, Color (a family) and Quantity (`ldraw_tools/inventory.py` `_parse_pileometer`).
 
 ### "Maybe" pieces: colour families to review

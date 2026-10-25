@@ -1,4 +1,4 @@
-"""Make a template from a build: the quality gate, the role preview and the derivation job (docs/plans/build-templates, section 6).
+"""Make a template from a build: the quality gate, the role preview and the derivation job (docs/plans/active/build-templates, section 6).
 
     gate(plan, parts)                                   # is this build sound enough to vary?
     preview(plan, parts, hints=..., corrections=...)    # roles of every part, a role-coloured model, low-confidence parts

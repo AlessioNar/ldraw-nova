@@ -12,7 +12,7 @@ Rebrickable inventory version was used (the highest version of the set).
 Rebrickable terms (read 2026-10-21 on https://rebrickable.com/downloads/): "Free for personal and commercial
 use, provided you acknowledge Rebrickable as your data source. [...] You may automate downloading these
 archives at most once a day." Hence THIS SCRIPT NEVER DOWNLOADS ANYTHING; it only reads files you already
-fetched. See docs/plans/set-catalog.md and ATTRIBUTION.md.
+fetched. See docs/plans/done/set-catalog.md and ATTRIBUTION.md.
 
 Inputs (download by hand, at most once a day, from https://rebrickable.com/downloads/ : either the all-in-one
 ZIP/TAR.GZ, or the per-file https://cdn.rebrickable.com/media/downloads/<name>.csv.gz links; gunzip into one folder):

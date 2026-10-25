@@ -1,5 +1,5 @@
 // The embeddable canvas (editor.html?embed=1) in a real browser, driven from a tiny parent page through the obd:*
-// postMessage protocol of docs/plans/build-workspace/CONTRACT.md. Run against a THROWAWAY app instance:
+// postMessage protocol of docs/plans/done/build-workspace/CONTRACT.md. Run against a THROWAWAY app instance:
 //   docker run -d --init --name obd-ws-canvas-tests -p 127.0.0.1:8825:8000 -v obd-ws-canvas-tests-data:/data <image>
 //   VIEWER_TEST_URL=http://127.0.0.1:8825 PLAYWRIGHT_CHANNEL=chrome npm run test:canvas
 // The parent page is served by the test (page.route) on the app's own origin, so postMessage is same-origin.

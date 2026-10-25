@@ -1423,7 +1423,7 @@
    "name": "Nougat"
   }
  },
- "source": "Rebrickable colors.csv (bulk download) matched to the LDConfig.ldr of the official LDraw library; see docs/plans/rebrickable-mapping.md",
+ "source": "Rebrickable colors.csv (bulk download) matched to the LDConfig.ldr of the official LDraw library; see docs/plans/done/rebrickable-mapping.md",
  "unmapped": [
   "-1",
   "1001",

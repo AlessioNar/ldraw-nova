@@ -82,7 +82,7 @@ The prompt is built by `system_prompt.py` from `prompts/system.md`, in two parts
 - **Rolling breakpoint.** A breakpoint on the latest message caches the history as well (`with_rolling_breakpoint`).
 - **Volatile state goes after the history**, so a file write does not invalidate the cached history (`LDRAW_NOVA_TAIL_AFTER_HISTORY`, default on).
 - **Old bulky tool outputs** (over 2,000 chars and older than 10 steps) are replaced by stubs in batches (`settings.py:65-89`).
-- **Why it matters.** In two early Opus chats (EUR 19 together), **64% of the cost was cache writes**, because the cache kept breaking. A healthy cache would roughly halve that (`docs/plans/swarm-subagents/MEASUREMENTS.md:36-59`; the fixes are in `docs/plans/loop-perf/`).
+- **Why it matters.** In two early Opus chats (EUR 19 together), **64% of the cost was cache writes**, because the cache kept breaking. A healthy cache would roughly halve that (`docs/plans/done/swarm-subagents/MEASUREMENTS.md:36-59`; the fixes are in `docs/plans/done/loop-perf/`).
 
 ## Budgets
 
@@ -95,7 +95,7 @@ The prompt is built by `system_prompt.py` from `prompts/system.md`, in two parts
 
 ## Swarm: cheaper worker models
 
-Code: `subagents.py`, `budget.py`, `worker_isolation.py`, `docs/plans/swarm-subagents/`.
+Code: `subagents.py`, `budget.py`, `worker_isolation.py`, `docs/plans/done/swarm-subagents/`.
 
 - **When it is available.** Delegation is on when a worker model is configured (Settings → worker default) **and** the chat has full permissions, or the person approved the delegation contract. The intended worker is **Haiku 5.5**.
 - **Roles.** Each role has its own tools and step limit:

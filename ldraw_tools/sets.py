@@ -1,7 +1,7 @@
 """Catalog of real LEGO sets: parts lists only, no geometry (data/set-catalog.bin).
 
 Built by tools/build_set_catalog.py from Rebrickable's database downloads (see ATTRIBUTION.md and
-docs/plans/set-catalog.md). Per set: Rebrickable name, year, theme path, piece count and the physical parts
+docs/plans/done/set-catalog.md). Per set: Rebrickable name, year, theme path, piece count and the physical parts
 list as (LDraw part, LDraw colour, qty): spares excluded, minifigs and sub-sets expanded, pieces without an
 LDraw equivalent counted in ``dropped_part`` / ``dropped_colour`` instead of listed.
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-// Line icons from the approved mockup (docs/plans/build-workspace/mockup.html), 24 x 24, stroke = currentColor.
+// Line icons from the approved mockup (docs/plans/done/build-workspace/mockup.html), 24 x 24, stroke = currentColor.
 const S = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 const PATHS: Record<string, ReactNode> = {
   select: <path d="M5 3l14 8-6 2 4 7-3 1-4-7-5 4z" {...S} />,

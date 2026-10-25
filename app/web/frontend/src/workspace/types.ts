@@ -1,4 +1,4 @@
-// Shapes of docs/plans/build-workspace/CONTRACT.md: the W1 endpoints and the W2 canvas messages.
+// Shapes of docs/plans/done/build-workspace/CONTRACT.md: the W1 endpoints and the W2 canvas messages.
 import type { BuildOrigin, Describe } from "../api";
 
 export type MissingLine = { part: string; colour: number | string; need: number; have: number };

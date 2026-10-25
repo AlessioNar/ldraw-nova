@@ -98,7 +98,7 @@ class Pipeline:
         t = time.monotonic()
         generated = None
         if generator is not None and generator.startswith("template:"):
-            from . import templates                  # a model turned into a template (docs/plans/build-templates)
+            from . import templates                  # a model turned into a template (docs/plans/active/build-templates)
             templates.refresh()                      # one the person saved since this worker started
             generated = dict(templates.generate(generator.removeprefix("template:"), params), generator=generator)
             plan = generated["plan"]

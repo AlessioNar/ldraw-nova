@@ -9,7 +9,7 @@
     --data-dir DIR                          the data folder to read (default: LDRAW_NOVA_DATA_DIR or /data)
     --json                                  print the report as JSON
 
-Properties (docs/plans/postgres/PROPOSAL.md section 5):
+Properties (docs/plans/active/postgres/PROPOSAL.md section 5):
 
 * Idempotent: every insert is ON CONFLICT DO NOTHING on the natural key (chat + message id, build + version, ...). A second
   run adds nothing. A JSON file that changed after it was imported is reported (`changed`), never copied over the rows.

@@ -30,8 +30,8 @@ from main import app
 from test_agent import chunk, scripted
 from test_fast_path import HAIKU, HOUSE, REGISTRY, reply
 
-REFERENCE_SQL = next((p for p in (Path(__file__).resolve().parents[i] / "docs/plans/postgres/sql/0001_init.sql" for i in (3, 4))
-                      if p.exists()), Path("/opt/ldraw-nova/docs/plans/postgres/sql/0001_init.sql"))
+REFERENCE_SQL = next((p for p in (Path(__file__).resolve().parents[i] / "docs/plans/active/postgres/sql/0001_init.sql" for i in (3, 4))
+                      if p.exists()), Path("/opt/ldraw-nova/docs/plans/active/postgres/sql/0001_init.sql"))
 
 
 # ---------------------------------------------------------------- Alembic
@@ -87,7 +87,7 @@ def test_concurrent_starts_take_turns(fresh_database):
 
 
 def test_schema_equals_the_reference_sql(pg_admin, pg_template):
-    """The first revision builds the same schema as docs/plans/postgres/sql/0001_init.sql (columns, constraints, indexes)."""
+    """The first revision builds the same schema as docs/plans/active/postgres/sql/0001_init.sql (columns, constraints, indexes)."""
     if not REFERENCE_SQL.exists():
         pytest.skip("reference SQL is not in this environment")
     import os

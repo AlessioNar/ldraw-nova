@@ -1,4 +1,4 @@
-# Vehicles and spaceships as a second kind of build (issue #96, epic #89; design: docs/plans/build-ontology/PROPOSAL.md).
+# Vehicles and spaceships as a second kind of build (issue #96, epic #89; design: docs/plans/active/build-ontology/PROPOSAL.md).
 # A Vehicle is an obd:Build like a Building, made of obd:VehicleComponent parts (Chassis, Body, RunningGear, Cockpit, Wing, Engine).
 # There is no vehicle grammar yet, so nothing is generated from or checked against this file's classes by the app; the first
 # implementations below are the designs in ldraw_tools/vehicles.py (DESIGNS) and the spaceship briefs in ldraw_tools/spaceships.py

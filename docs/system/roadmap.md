@@ -6,27 +6,27 @@ The statuses below are inferred from the plan documents, the code and the git hi
 
 | Area | What | Plan |
 |---|---|---|
-| Reference models packed | 1,821 models as 130 xz shards, verified by sha256 | [models-pack.md](../plans/models-pack.md), [data-audit.md](../plans/data-audit.md) |
-| Rebrickable mapping | Part and colour maps for parts list imports | [rebrickable-mapping.md](../plans/rebrickable-mapping.md) |
-| Agent loop performance | Rolling cache breakpoint, volatile state after history, masking of old tool output | [loop-perf/](../plans/loop-perf/REPORT.md) |
-| 3D editor core | Plan editing, palette, colours, agent handover | [manual-builder/](../plans/manual-builder/README.md) |
-| Chat redesign | Sidebar (since replaced by the app bar), four-control composer, build header, grouped transcript (the doc header still says "nothing implemented") | [chat-redesign/PROPOSAL.md](../plans/chat-redesign/PROPOSAL.md) |
-| Design system | "Blueprint with a hint of Toy box" applied; follows the OS light/dark theme | [design-system/applied](../plans/design-system/applied/README.md) |
-| Deterministic first, core | Generator registry, understanding step, resident build worker with cache, fast path | [deterministic-first/PROPOSAL.md](../plans/deterministic-first/PROPOSAL.md) (tasks 1–3) |
-| Fast path API | `POST /api/describe`, selectable understanding model | [phase2/fast-path.md](../plans/phase2/fast-path.md) |
-| Build workspace | Builds, versions, one draft, always-3D workspace, proposals, editor speed-ups | [build-workspace/](../plans/build-workspace/README.md), [CONTRACT.md](../plans/build-workspace/CONTRACT.md) |
+| Reference models packed | 1,821 models as 130 xz shards, verified by sha256 | [models-pack.md](../plans/done/models-pack.md), [data-audit.md](../plans/done/data-audit.md) |
+| Rebrickable mapping | Part and colour maps for parts list imports | [rebrickable-mapping.md](../plans/done/rebrickable-mapping.md) |
+| Agent loop performance | Rolling cache breakpoint, volatile state after history, masking of old tool output | [loop-perf/](../plans/done/loop-perf/REPORT.md) |
+| 3D editor core | Plan editing, palette, colours, agent handover | [manual-builder/](../plans/done/manual-builder/README.md) |
+| Chat redesign | Sidebar (since replaced by the app bar), four-control composer, build header, grouped transcript (the doc header still says "nothing implemented") | [chat-redesign/PROPOSAL.md](../plans/done/chat-redesign/PROPOSAL.md) |
+| Design system | "Blueprint with a hint of Toy box" applied; follows the OS light/dark theme | [design-system/applied](../plans/done/design-system/applied/README.md) |
+| Deterministic first, core | Generator registry, understanding step, resident build worker with cache, fast path | [deterministic-first/PROPOSAL.md](../plans/done/deterministic-first/PROPOSAL.md) (tasks 1–3) |
+| Fast path API | `POST /api/describe`, selectable understanding model | [phase2/fast-path.md](../plans/done/phase2/fast-path.md) |
+| Build workspace | Builds, versions, one draft, always-3D workspace, proposals, editor speed-ups | [build-workspace/](../plans/done/build-workspace/README.md), [CONTRACT.md](../plans/done/build-workspace/CONTRACT.md) |
 | App shell | Sidebar replaced by a slim app bar; Home is a four-tile menu; My Builds is a card grid of every build | (no plan doc) |
-| Brickit Pileometer import | Including colour-family review | [parts-catalogue/PROPOSAL.md](../plans/parts-catalogue/PROPOSAL.md) (pre-existing part) |
+| Brickit Pileometer import | Including colour-family review | [parts-catalogue/PROPOSAL.md](../plans/active/parts-catalogue/PROPOSAL.md) (pre-existing part) |
 | Security pass and hardening | Firewall, Host allowlist, separate Jev key, hash locks | [security pass](../security/2026-10-24-security-pass.md) |
-| UX journeys | Three audits with ranked friction lists; many fixes delivered since | [journeys/](../plans/journeys/01-first-run-and-building.md) |
-| Sets catalogue data | About 20k sets with a CLI (**not wired into the app**) | [set-catalog.md](../plans/set-catalog.md) |
+| UX journeys | Three audits with ranked friction lists; many fixes delivered since | [journeys/](../plans/done/journeys/01-first-run-and-building.md) |
+| Sets catalogue data | About 20k sets with a CLI (**not wired into the app**) | [set-catalog.md](../plans/done/set-catalog.md) |
 
 ## In progress, or built but not verified
 
 | Area | State | Plan |
 |---|---|---|
-| Swarm of worker models | The code is in (`subagents.py`, budget ledger, isolation, UI cards). **The end-to-end cost/quality run was never done**, and the worker capability measurement was partial. | [swarm-subagents/](../plans/swarm-subagents/README.md), [E2E.md](../plans/swarm-subagents/E2E.md) |
-| NL pipeline quality | The review is done and the fix plan is written. No fixes yet, and the live LLM evaluation has not run. | [nl-review/REVIEW.md](../plans/nl-review/REVIEW.md) |
+| Swarm of worker models | The code is in (`subagents.py`, budget ledger, isolation, UI cards). **The end-to-end cost/quality run was never done**, and the worker capability measurement was partial. | [swarm-subagents/](../plans/done/swarm-subagents/README.md), [E2E.md](../plans/done/swarm-subagents/E2E.md) |
+| NL pipeline quality | The review is done and the fix plan is written. No fixes yet, and the live LLM evaluation has not run. | [nl-review/REVIEW.md](../plans/active/nl-review/REVIEW.md) |
 
 ## Planned (not built)
 

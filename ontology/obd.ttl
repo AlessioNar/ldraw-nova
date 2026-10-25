@@ -1,4 +1,4 @@
-# Build components and parameters as an OWL ontology (issue #92, epic #89; design: docs/plans/build-ontology/PROPOSAL.md).
+# Build components and parameters as an OWL ontology (issue #92, epic #89; design: docs/plans/active/build-ontology/PROPOSAL.md).
 # This file is the source of truth for the component tree and its parameters (range, default, unit, order, the role each
 # component stamps). tools/build_obd.py reads it and checks it against ldraw_tools/grammar/schema.py until #94 generates the schema from it.
 # Parameter IRIs are obd:<group><Key> (obd:wallsThickness); dcterms:identifier holds the JSON key ("thickness"), rdfs:domain the group.

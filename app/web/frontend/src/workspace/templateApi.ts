@@ -1,4 +1,4 @@
-// Client for "Make this a template" (backend/routers/templates_api.py, docs/plans/build-templates section 6).
+// Client for "Make this a template" (backend/routers/templates_api.py, docs/plans/active/build-templates section 6).
 import { request } from "../api";
 
 const base = (id: string) => `/api/builds/${encodeURIComponent(id)}/template`;

@@ -1,4 +1,4 @@
-"""Generator registry: deterministic builders with one interface (see docs/plans/deterministic-first/PROPOSAL.md).
+"""Generator registry: deterministic builders with one interface (see docs/plans/done/deterministic-first/PROPOSAL.md).
 
     from ldraw_tools.generators import get, digest
     result = get('house').generate({'width': 8, 'depth': 6, 'windows': 2})   # plan + resolved params + notes

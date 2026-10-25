@@ -1,4 +1,4 @@
-# Role vocabulary as a SKOS concept scheme (issue #91, epic #89; design: docs/plans/build-ontology/PROPOSAL.md).
+# Role vocabulary as a SKOS concept scheme (issue #91, epic #89; design: docs/plans/active/build-ontology/PROPOSAL.md).
 # This file is the source of truth: ldraw_tools/role_vocab.py is generated from it by tools/build_role_vocab.py.
 # Placeholders to revisit (see the PR): base IRI, licence, and how "floor" is scoped across domains.
 @prefix dcterms: <http://purl.org/dc/terms/> .

@@ -1,5 +1,5 @@
 """The build workspace API: one draft per build (its editor session), versions, regenerate, describe, parts check and
-AI proposals. Contract: docs/plans/build-workspace/CONTRACT.md.
+AI proposals. Contract: docs/plans/done/build-workspace/CONTRACT.md.
 
 The draft is the build's editor session in space `builds` (routers/editor.py); draft.json beside it remembers which
 version it started on and at which revision, so "changes" = revision - base_revision.

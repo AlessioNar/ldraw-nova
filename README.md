@@ -43,7 +43,7 @@ python3 tools/models_pack.py unpack                  # shards -> data/models-ann
 python3 tools/models_pack.py add my-set-12345-1.mpd  # add or replace a model
 ```
 
-`add` refuses files that are not valid `.mpd` or have no `0 !LICENSE` header unless you pass `--licence` (and `--author`). Details: [docs/plans/models-pack.md](docs/plans/models-pack.md).
+`add` refuses files that are not valid `.mpd` or have no `0 !LICENSE` header unless you pass `--licence` (and `--author`). Details: [docs/plans/done/models-pack.md](docs/plans/done/models-pack.md).
 
 ## Development
 

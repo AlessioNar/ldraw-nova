@@ -523,7 +523,7 @@ export type GeneratorEntry = {
 };
 export type GeneratorList = { generators: GeneratorEntry[]; colours: { name: string; code: number }[] };
 
-/** What /api/describe (the fast path's decision engine, docs/plans/phase2/fast-path.md) answers. A 404 means the
+/** What /api/describe (the fast path's decision engine, docs/plans/done/phase2/fast-path.md) answers. A 404 means the
  *  engine is not installed: the Describe box then offers only the AI. */
 export type DescribeEstimate = { eur_low?: number; eur_high?: number; minutes_low?: number; minutes_high?: number; basis?: string };
 export type Describe = {

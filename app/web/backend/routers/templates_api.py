@@ -1,4 +1,4 @@
-"""Make this a template: any good build becomes a parametric starting point (docs/plans/build-templates, section 6).
+"""Make this a template: any good build becomes a parametric starting point (docs/plans/active/build-templates, section 6).
 
     POST /api/builds/{id}/template/check              quality gate + role-coloured preview (with the person's role corrections)
     GET  /api/builds/{id}/template/preview.mpd        the role-coloured model the canvas shows
