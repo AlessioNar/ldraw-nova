@@ -340,10 +340,11 @@
        "interior": {
         "enum": [
          "none",
-         "partition"
+         "partition",
+         "furnished"
         ],
         "default": "none",
-        "description": "Rooms: a partition wall with a doorway on every storey (rectangular footprints)"
+        "description": "Rooms: a partition wall with a doorway on every storey, plus furniture when furnished (rectangular footprints)"
        }
       },
       "default": {
@@ -999,6 +1000,29 @@
         "type": "boolean",
         "default": false,
         "description": "Technic pin bricks in the side walls near the top of every storey, to bolt modules together"
+       },
+       "awning": {
+        "type": "boolean",
+        "default": false,
+        "description": "Shop awning: the front cornice of the ground storey in two alternating stripe colours (needs 2+ storeys)"
+       },
+       "awning_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "red",
+        "description": "Awning stripe"
+       },
+       "awning_alt_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Second awning stripe"
        }
       },
       "default": {
@@ -1016,7 +1040,10 @@
        "flower_colour": "red",
        "fence": false,
        "fence_colour": "white",
-       "connectors": false
+       "connectors": false,
+       "awning": false,
+       "awning_colour": "red",
+       "awning_alt_colour": "white"
       }
      },
      "base": {
@@ -1363,7 +1390,10 @@
      "flower_colour": "red",
      "fence": false,
      "fence_colour": "white",
-     "connectors": false
+     "connectors": false,
+     "awning": false,
+     "awning_colour": "red",
+     "awning_alt_colour": "white"
     },
     "base": {
      "kind": "plate",
@@ -2415,7 +2445,7 @@
     },
     "modular-bakery": {
      "title": "Modular bakery",
-     "description": "Three-storey modular bakery: shop front and glazed door with sign band, arched flats above, balcony, chimney, gable roof.",
+     "description": "Three-storey modular bakery: shop front and glazed door with sign band and striped awning, furnished rooms, arched flats above, chimney, gable roof.",
      "keywords": [
       "modular bakery",
       "modular building",
@@ -2432,7 +2462,7 @@
        "courses": 7,
        "band_projection": 1,
        "band_colour": "white",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "sand red",
@@ -2460,7 +2490,10 @@
        "sign": "fascia",
        "sign_colour": "dark blue",
        "chimney": "right",
-       "connectors": true
+       "connectors": true,
+       "awning": true,
+       "awning_colour": "red",
+       "awning_alt_colour": "white"
       },
       "base": {
        "kind": "modular",
@@ -2488,7 +2521,7 @@
        "courses": 6,
        "band_projection": 1,
        "band_colour": "white",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "tan",
@@ -2542,7 +2575,7 @@
        "courses": 6,
        "band_projection": 1,
        "band_colour": "light grey",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "dark tan",
@@ -2595,7 +2628,7 @@
        "courses": 7,
        "band_projection": 1,
        "band_colour": "dark brown",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "red",

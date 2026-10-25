@@ -311,6 +311,37 @@ def test_partitions_have_a_doorway_and_are_bonded():
     assert not items(build({'storeys': {'interior': 'none'}}), 'partition')
 
 
+def test_furnished_rooms_have_furniture_and_keep_the_doorway_clear():
+    r = modular({'storeys': {'interior': 'furnished'}})
+    assert len(r['canvas'].components()) == 1
+    for label in ('table top', 'bed', 'cupboard', 'counter'):
+        assert items(r, label, role='detail'), label
+    part = lambda i: {c for c in i.cells}
+    wall = {c for i in items(r, 'partition s0') for c in i.cells if i.y0 == 2}
+    z = next(iter(wall))[1]
+    gap = {c for c in range(1, 31)} - {c[0] for c in wall}
+    furniture = [i for i in r['canvas'].items if i.role == 'detail' and i.y0 == 4 and i.label in ('table leg', 'chair seat', 'chair back', 'cupboard', 'counter')]
+    assert not any(c[0] in gap and abs(c[1] - z) <= 1 for i in furniture for c in part(i))
+    assert not items(modular({'storeys': {'interior': 'partition'}}), 'bed')
+
+
+def test_furniture_needs_a_rectangular_footprint():
+    cfg, notes = schema.normalise({'footprint': {'shape': 'L', 'width': 16, 'depth': 12}, 'storeys': {'interior': 'furnished'}, 'roof': {'style': 'flat'}})
+    assert cfg['storeys']['interior'] == 'none' and any('interior-rect' in n for n in notes)
+
+
+def test_awning_stripes_the_front_cornice_in_two_colours():
+    r = build({'footprint': {'width': 16, 'depth': 10}, 'details': {'awning': True, 'awning_colour': 'red', 'awning_alt_colour': 'white'}})
+    assert r['config']['storeys']['band_projection'] == 1
+    stripes = [i for i in r['canvas'].items if i.label == 'band s0' and i.role == 'detail']
+    assert {i.colour for i in stripes} == {4, 15}
+    front = min(c[1] for i in stripes for c in i.cells)
+    assert all(c[1] == front for i in stripes for c in i.cells if c[1] < front + 1) and len(r['canvas'].components()) == 1
+    assert not build({'details': {'awning': True}, 'storeys': {'count': 1}})['config']['details']['awning']
+    porch = build({'details': {'awning': True, 'porch': True}})
+    assert not porch['config']['details']['porch'] and any('awning-fits' in n for n in porch['notes'])
+
+
 # ---------------------------------------------------------------- corners
 
 def test_corner_towers_one_per_selected_corner():
@@ -392,6 +423,7 @@ def test_every_constraint_has_an_enforcing_rule():
         'balcony-storeys': {'storeys': {'count': 1}, 'details': {'balcony': True}},
         'parapet-flat': {'roof': {'style': 'gable', 'parapet': 'plain'}},
         'sign-shop': {'details': {'sign': 'fascia'}, 'storeys': {'courses': 6}},
+        'awning-fits': {'details': {'awning': True}, 'storeys': {'count': 1}},
     }
     for rule, patch in expected.items():
         _, notes = schema.normalise(patch)
@@ -440,6 +472,9 @@ def sweep_cases():
             yield {'corners': {'style': 'towers', 'tower_shape': shape, 'tower_at': at}}
     for style in ('brick', 'timber', 'stone'):
         yield {'walls': {'style': style}, 'corners': {'style': 'pillars'}}
+    for w, d in ((10, 8), (16, 10), (24, 14)):
+        for count in (1, 2, 3):
+            yield {'footprint': {'width': w, 'depth': d}, 'storeys': {'count': count, 'interior': 'furnished'}, 'details': {'awning': True}}
 
 
 @pytest.mark.parametrize('config', list(sweep_cases()), ids=lambda c: json.dumps(c, sort_keys=True)[:80])

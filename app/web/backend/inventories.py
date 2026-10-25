@@ -392,3 +392,36 @@ async def parse_csv(name: str, csv_text: str, include_spares: bool = False, fami
         return {"id": inventory_id, "data": data, "report": out_report, "raw": raw}
     finally:
         await asyncio.to_thread(shutil.rmtree, work, True)
+
+
+async def read_page(raw: bytes) -> dict:
+    """Reads a PDF or photo of a parts list with the toolkit CLI (`inventory read-page`) and stores nothing.
+
+    Returns {"method", "csv", "lines", "warnings", "review_below"}: BrickLink CSV for the normal preview route, and
+    every line with its confidence so the owner can check the doubtful ones first. Missing OCR is a 422 that says what to install."""
+    if len(raw) > MAX_CSV_BYTES:
+        raise InventoryError(413, f"File exceeds the {MAX_CSV_BYTES // (1024 * 1024)} MB limit")
+    work = _store().scratch_dir(".page-")
+    try:
+        work.chmod(0o755)
+        (work / "page").write_bytes(raw)
+        sandbox.give_to_agent(work)
+        sandbox.give_to_agent(work / "page")
+        argv = ["bash", "-c", 'exec "$@" > report.json', "read", str(settings.TOOLKIT_PYTHON), "-m", "ldraw_tools.cli",
+                "inventory", "read-page", "page", "--json"]
+        result = await sandbox.run(argv, work, timeout=IMPORT_TIMEOUT, env_extra=toolkit.environment())
+        if result.timed_out:
+            raise InventoryError(504, "Reading the page took too long")
+        try:
+            report = json.loads((work / "report.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            log.error("parts page read failed (exit %s): %s %s", result.exit_code, exc, result.stderr[-2000:])
+            raise InventoryError(500, "The toolkit could not read the page") from None
+        if result.exit_code != 0 or "lines" not in report:
+            if report.get("error_type") == "ReaderError":
+                raise InventoryError(422, str(report.get("error", "This page cannot be read")))
+            log.error("parts page read failed (exit %s): %s %s", result.exit_code, report.get("error"), result.stderr[-2000:])
+            raise InventoryError(500, "The toolkit could not read the page")
+        return report
+    finally:
+        await asyncio.to_thread(shutil.rmtree, work, True)

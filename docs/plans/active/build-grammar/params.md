@@ -28,7 +28,7 @@ Storeys stacked on the footprint; each is wall courses plus a floor band.
 | `band_projection` | 0..1 | `0` | Studs the floor bands project as a cornice |
 | `eaves` | yes / no | `false` | A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more |
 | `band_colour` | colour name or code | `white` | Floor bands, floors and cornice |
-| `interior` | `none` / `partition` | `none` | Rooms: a partition wall with a doorway on every storey (rectangular footprints) |
+| `interior` | `none` / `partition` / `furnished` | `none` | Rooms: a partition wall with a doorway on every storey, plus furniture when furnished (rectangular footprints) |
 
 #### Walls  (`walls`)
 
@@ -130,6 +130,9 @@ Add-ons.
 | `fence` | yes / no | `false` | Picket fence round the garden at the edge of the base plate, open where the path crosses it |
 | `fence_colour` | colour name or code | `white` | Fence |
 | `connectors` | yes / no | `false` | Technic pin bricks in the side walls near the top of every storey, to bolt modules together |
+| `awning` | yes / no | `false` | Shop awning: the front cornice of the ground storey in two alternating stripe colours (needs 2+ storeys) |
+| `awning_colour` | colour name or code | `red` | Awning stripe |
+| `awning_alt_colour` | colour name or code | `white` | Second awning stripe |
 
 #### Base  (`base`)
 
@@ -170,4 +173,5 @@ Ground.
 | `fence-base` | A fence needs a plain base plate with a margin of 2 studs or more |
 | `flowers-sills` | Flower boxes stand on window sills, so they turn sills on |
 | `gable-window-fits` | A gable-end window needs a gable roof at least 8 studs deep |
+| `awning-fits` | An awning stripes the front cornice of the ground storey: it needs a rectangular footprint and 2 or more storeys, and it takes the place of a porch |
 | `sign-shop` | A fascia sign needs a door and a ground storey of 7 or more courses |

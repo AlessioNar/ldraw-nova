@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .. import buildable
 from ..common import atomic_write, dumps, get_parts
-from .. import importers
+from .. import importers, partslist_reader
 from ..inventory import Inventory, available_inventory, ParseError, check_model, make_inventory, search_owned, slugify, summary
 from .base import Command, positive
 
@@ -66,6 +66,9 @@ def register(commands):
     p.add_argument("--family-colour", action="append", default=[], metavar="FAMILY=CODE",
                    help="Pileometer: LDraw colour for a colour family, e.g. Grays=72 (repeatable)")
     common(p)
+    p = sub.add_parser("read-page", help="Read a parts list from a PDF or a photo (OCR when needed) into reviewable CSV lines; stores nothing")
+    p.add_argument("file")
+    common(p, store=False)
     common(sub.add_parser("list", help="List stored inventories"))
     p = sub.add_parser("show", help="Summarise one inventory")
     p.add_argument("name")
@@ -189,7 +192,7 @@ def buildable_report(args, library, invs):
 
 def run(args, library, parts):
     action = args.inventory_command
-    store = store_dir(args.store)
+    store = store_dir(getattr(args, "store", None))
     lib = parts if parts is not None else (optional_library() if action in {"show", "search"} else None)
 
     def finish(report, text, status=0):
@@ -240,6 +243,9 @@ def run(args, library, parts):
         if result.pileometer:
             report["pileometer"] = result.pileometer
         return finish(report, lines_import(inv, result, path) + [f"  stored: {store / (inv.id + '.json')}"])
+    if action == "read-page":
+        page = partslist_reader.read_file(args.file)
+        return finish(page.to_json(), [f"{page.method}: {len(page.lines)} lines, {sum(l.needs_review for l in page.lines)} to review", *page.warnings])
     if action == "list":
         invs = [Inventory.from_json(json.loads(p.read_text(encoding="utf-8"))) for p in sorted(store.glob("[!.]*.json"))] if store.is_dir() else []
         report = dict(store=str(store), inventories=[dict(id=i.id, name=i.name, pieces=i.total_pieces, distinct_parts=i.distinct_parts,

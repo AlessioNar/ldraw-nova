@@ -189,6 +189,7 @@ export function useWorkspace(id: string) {
     send({ cmd: "select", ids });
   };
   const clearSelection = () => { setSelection([]); if (tabRef.current === "piece") { tabRef.current = prevTab.current; setTabState(prevTab.current); } };
+  const hideParts = () => send({ cmd: "select", ids: [] });   // an empty selection clears it (and frames the whole build)
   const backToDraft = () => { setViewing(null); send({ cmd: "back-to-draft" }); };
   const viewVersion = (version: number) => {
     const row = versions.find((v) => v.version === version);
@@ -276,7 +277,7 @@ export function useWorkspace(id: string) {
     id, phone, detail, notFound, ws, draft, check, tab, tool, mode, colour, selection, viewing, editTick, busy, toast, confirm, sheetOpen, canvasReady, steps,
     versions, changes, latest, nextVersion, empty, baseVersion, readOnly, proposals,
     setTab, setSheetOpen, setConfirm, setToast, setColour: pickColour, recolourSelection, setTool, setMode, addPart, send, registerCanvas, onCanvasEvent,
-    undo, redo, showParts, backToDraft, viewVersion, save, discard, branch, describe, regenerate, keepProposal, dropProposal, previewProposal, say,
+    undo, redo, showParts, hideParts, backToDraft, viewVersion, save, discard, branch, describe, regenerate, keepProposal, dropProposal, previewProposal, say,
     rename: async (title: string) => { const d = await act("rename", () => buildsApi.rename(id, title)); if (d) { setDetail(d); refreshBuilds(); } },
     reloadAll, refreshCheck,
   };

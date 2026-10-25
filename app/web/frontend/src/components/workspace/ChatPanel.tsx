@@ -18,6 +18,12 @@ function ProposalCard({ p, ws }: { p: Proposal; ws: Workspace }) {
     <div className={`ws-ai-card${previewing ? " active" : ""}`}>
       <div className="label">Needs you · review before it joins the draft</div>
       <div className="mono ws-diffline"><span className="ok-text">+ {added} part{added === 1 ? "" : "s"}</span> <span className="muted">· {removed} removed · {moved} moved</span></div>
+      {!!p.summary.parts?.length && (
+        <details className="ws-diff-parts">
+          <summary>What changes, by part</summary>
+          <ul className="mono">{p.summary.parts.map((r) => <li key={r.part}>{r.part}{r.added ? <span className="ok-text"> +{r.added}</span> : null}{r.removed ? <span className="warn-text"> −{r.removed}</span> : null}</li>)}</ul>
+        </details>
+      )}
       <div className="ws-ai-actions">
         <button className="primary" disabled={busy} onClick={() => ws.keepProposal(p)}>Keep in draft</button>
         <button disabled={busy} aria-pressed={previewing} onClick={() => (previewing ? ws.backToDraft() : ws.previewProposal(p))}>{previewing ? "Stop preview" : "Preview"}</button>
@@ -32,6 +38,7 @@ const EXAMPLES = ["Build a small house", "Make the roof blue", "Add two more win
 const summaryOf = (f: NonNullable<Message["_fast_path"]>) => f.history ? "Went back one step"
   : f.route === "generator" ? `Built ${f.title ?? f.generator} from the generator`
   : (f.changes ?? []).map((c) => `${c.label}: ${show(c.from)} → ${show(c.to)}`).join("; ") || "No visible change";
+const TWEAKS = ["Make it bigger", "Make it smaller", "Change the main colour"];   // offered after a build: free, rules-path edits
 const DEFAULT_OPTIONS = { mode: "agent", permissions: "ask" } as TurnOptions;
 const seconds = (ms: number) => (ms < 950 ? `${Math.max(ms / 1000, 0.1).toFixed(1)} s` : `${Math.round(ms / 1000)} s`);
 const show = (v: unknown) => (typeof v === "object" && v !== null ? JSON.stringify(v) : String(v));
@@ -48,6 +55,8 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   const [llmId, setLlmId] = useState<string | null>(null);
   const [hint, setHint] = useState<DescribeHint | null>(null);
   const [typed, setTyped] = useState(false);
+  const [shown, setShown] = useState(false);                                      // "Show them" is on: the clarify's parts are selected on the canvas
+  const [attached, setAttached] = useState(0);                                       // files in the composer: they always go to the AI
   const [acting, setActing] = useState(false);
   const [mode, setMode] = useState<"ai" | "quick">(ws.ws?.chat_mode ?? "quick");   // decided by the server, from the saved chat
   const [flip, setFlip] = useState(false);                                          // this one message goes the other way
@@ -60,6 +69,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   useEffect(() => setChatId((c) => c ?? ws.ws?.chat_id ?? null), [ws.ws?.chat_id]);
   useEffect(() => setMode(ws.ws?.chat_mode ?? "quick"), [ws.ws?.chat_mode]);
   useEffect(() => () => clearTimeout(hintTimer.current), []);
+  useEffect(() => { if (!ws.selection.length) setShown(false); }, [ws.selection.length]);
 
   const reload = useCallback(async () => {
     if (!chatId) return null;
@@ -144,12 +154,19 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     const live = m.id === lastId && !running && !acting;   // only the latest answer may still be undone
     if (f.route === "generator" || f.route === "edit") {
       const summary = summaryOf(f);
+      const rows = f.history || f.route === "generator" ? [] : f.changes ?? [];   // one row per edit when a message made several
       const canUndo = live && !ws.viewing && (ws.draft?.undo_depth ?? 0) > 0 && !ws.busy;
       return (
         <div className="ws-fp" data-route={f.route}>
-          <div className="ws-fp-line"><span>{summary}</span> <span className="ws-meta mono">free · {seconds(f.took_ms)}</span>
+          <div className="ws-fp-line"><span>{rows.length > 1 ? `${rows.length} changes` : summary}</span> <span className="ws-meta mono">free · {seconds(f.took_ms)}</span>
             {canUndo && <button className="ws-fp-undo" onClick={() => undoStep(summary)}>Undo</button>}</div>
+          {rows.length > 1 && <ul className="ws-fp-changes">{rows.map((c, i) => <li key={i}><b>{c.label}</b> <span className="muted">{show(c.from)}</span> → {show(c.to)}</li>)}</ul>}
           {!!f.notes?.length && <ul className="ws-fp-notes">{f.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
+          {live && f.route === "generator" && !f.history && (
+            <div className="ws-chips" role="group" aria-label="Try next">
+              {TWEAKS.map((t) => <button key={t} className="ws-chip-btn" onClick={() => reply(t)}>{t}</button>)}
+            </div>
+          )}
         </div>
       );
     }
@@ -195,7 +212,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       <div className="ws-tray" role="region" aria-label="Needs you">
         <div className="label">Needs you</div>
         <div className="ws-chips" role="group" aria-label="Quick replies">
-          {!!f.highlight?.length && <button className="ws-chip-btn" onClick={() => ws.showParts(f.highlight!)}>Show them</button>}
+          {!!f.highlight?.length && <button className="ws-chip-btn" aria-pressed={shown} onClick={() => { if (shown) { ws.hideParts(); setShown(false); } else { ws.showParts(f.highlight!); setShown(true); } }}>{shown ? "Hide them" : "Show them"}</button>}
           {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}
           {choices.some((c) => c !== "Ask the AI") && <button className="ws-chip-btn pick" onClick={() => reply(choices.find((c) => c !== "Ask the AI")!)}>Just pick for me</button>}
         </div>
@@ -223,8 +240,17 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     </details>
   ) : null;
 
+  // The canvas selection scopes the next quick message ("paint this red"), so the composer says what it is.
+  const names = [...new Set(ws.selection.map((p) => p.name || p.part))];
+  const context = ws.selection.length ? (
+    <div className="ws-context" role="status">
+      <span>{names.length === 1 ? names[0] : "Parts"} · {ws.selection.length} selected</span>
+      <button type="button" className="ws-chip-btn" onClick={() => { ws.hideParts(); setShown(false); }}>Clear</button>
+    </div>
+  ) : null;
+
   const cost = detail?.usage?.cost_eur;
-  const toAi = mode === "ai" ? !flip : flip;
+  const toAi = attached > 0 || (mode === "ai" ? !flip : flip);
   const seg = (
     <span className="ws-seg" role="group" aria-label="Who answers this message">
       <button type="button" aria-pressed={!toAi} onClick={() => setFlip(mode === "ai")}>Quick</button>
@@ -233,7 +259,8 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   );
   // One short cost line next to the switch; the switch itself says who answers.
   let line: ReactNode = <b data-mode="quick">Free · instant</b>;
-  if (toAi) line = <b className="cost" data-mode="ai">Costs apply · it asks before it spends</b>;
+  if (attached > 0) line = <b className="cost" data-mode="ai">{attached === 1 ? "This file goes" : "These files go"} to the AI · costs apply</b>;
+  else if (toAi) line = <b className="cost" data-mode="ai">Costs apply · it asks before it spends</b>;
   else if (typed && hint) {
     if (hint.route === "needs_ai") line = <><b className="cost">Needs the AI{estimateLabel(hint.estimate) ? `, ${estimateLabel(hint.estimate)}` : ""}</b>. Switch to AI to ask.</>;
     else if (hint.route === "clarify") line = "Free. I may ask one question first.";
@@ -259,10 +286,11 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
         {ws.proposals.map((p) => <ProposalCard key={p.id} p={p} ws={ws} />)}
         {tray}
+        {context}
         {session}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
-          onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<>{seg} <span className="ws-hint-line" role="status" aria-live="polite">{line}</span></>}
+          onTextChange={onTextChange} onAttachments={setAttached} onOptions={(o) => { options.current = o; }} hint={<>{seg} <span className="ws-hint-line" role="status" aria-live="polite">{line}</span></>}
           llmId={llmId} onLlmChange={setLlmId} onSend={send} onStop={() => chatId && api.cancel(chatId)} running={running} />
       </div>
     </section>

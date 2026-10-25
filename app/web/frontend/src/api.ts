@@ -355,7 +355,9 @@ export type CollectionOp =
   | { op: "add" | "set"; part: string; colour: number; qty: number }
   | { op: "remove"; part: string; colour: number }
   | { op: "review_resolve"; id: string; colour: number; qty?: number }
-  | { op: "review_discard"; id: string };
+  | { op: "review_discard"; id: string }
+  | { op: "move"; part: string; colour: number; to_colour?: number; to_part?: string; qty?: number };
+export type PartMatch = { part: string; description: string; category: string; size: string };
 export type OpsResult = { batch: number | null; changes: number; source: Inventory; pieces?: number };
 export type HistoryBatch = { batch: number; ts: number; note: string; summary: string; changes: number; kind: "edit" | "replace" | "undo" | "create"; undone: boolean; undoable: boolean };
 export type ReviewItem = { id: string; part: string; description: string; qty: number; note: string; brickit_part: string; candidates: { colour: number; name: string; owned: boolean }[] };
@@ -366,6 +368,8 @@ export type ColumnMapping = { part: string; colour: string; qty: string; system:
 export type NeedsMapping = {
   needs_mapping: { headers: string[]; sample: string[][]; guess: Partial<ColumnMapping>; saved: ColumnMapping | null; signature: string; systems: ColourSystem[] };
 };
+export type PageLine = { part: string; colour: string; qty: number; confidence: number; flags: string[]; text: string; page: number; needs_review: boolean };
+export type PageRead = { method: "pdf-text" | "ocr"; csv: string; lines: PageLine[]; warnings: string[]; review_below: number };
 export type ImportPreview = {
   preview_id: string; name: string; format: string; report: ImportReport; same_name: string | null;
   mapping?: ColumnMapping; mapping_remembered?: boolean;
@@ -405,12 +409,14 @@ export const collectionApi = {
   part: (part: string) => request<PartDetail>(`/api/collection/parts/${encodeURIComponent(part)}`),
   setNote: (part: string, note: string) => request<{ part: string; note: string }>(`/api/collection/parts/${encodeURIComponent(part)}/note`, { method: "PUT", body: json({ note }) }),
   colours: () => request<{ colours: { code: number; name: string }[] }>("/api/collection/colours"),
+  partSearch: (q: string, near = "") => request<{ parts: PartMatch[]; total: number }>(`/api/collection/part-search?${qs({ q, near })}`),
   ops: (source: string, ops: CollectionOp[], note = "") => request<OpsResult>(`/api/collection/sources/${sid(source)}/ops`, { method: "POST", body: json({ ops, note }) }),
   history: (source: string) => request<{ batches: HistoryBatch[]; undo_batch: number | null }>(`/api/collection/sources/${sid(source)}/history`),
   undo: (source: string) => request<{ undone: number; summary: string; source: Inventory }>(`/api/collection/sources/${sid(source)}/undo`, { method: "POST" }),
   review: () => request<{ groups: ReviewGroup[]; items: number; pieces: number }>("/api/collection/review"),
   resolveReview: (body: { source: string; id?: string; family?: string; colour?: number; qty?: number; discard?: boolean }) =>
     request<OpsResult>("/api/collection/review", { method: "POST", body: json(body) }),
+  readPage: (data: string) => request<PageRead>("/api/collection/imports/read-page", { method: "POST", body: json({ data }) }),
   previewImport: (name: string, csv: string, include_spares: boolean, filename: string, family_colours?: Record<string, number>,
                   how?: { format?: string; mapping?: ColumnMapping }) =>
     request<ImportPreview | NeedsMapping>("/api/collection/imports/preview", { method: "POST", body: json({ name, csv, include_spares, filename, family_colours, ...how }) }),

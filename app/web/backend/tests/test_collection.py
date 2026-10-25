@@ -905,3 +905,63 @@ def test_manual_set_rejects_bad_input(client):
         assert client.post("/api/collection/sets/manual", json={**ok, **bad}).status_code == 400, bad
     twice = [client.post("/api/collection/sets/manual", json=ok).json()["inventory"]["id"] for _ in range(2)]
     assert twice[0] != twice[1]
+
+
+# --- changing the colour or the part of imported pieces ----------------------------
+
+def move(part, colour, **to):
+    return {"op": "move", "part": part, "colour": colour, **to}
+
+
+def test_move_splits_a_line_by_colour_and_one_undo_puts_it_back(client):
+    put("brickit", [("3001", 72, 10), ("3003", 4, 2)])
+    r = client.post("/api/collection/sources/brickit/ops", json={"ops": [move("3001", 72, to_colour=19, qty=4)], "note": "Fix"})
+    assert r.status_code == 200 and r.json()["changes"] == 1
+    assert table("brickit") == {("3001", 72): 6, ("3001", 19): 4, ("3003", 4): 2}
+    assert "Changed 4 x 3001 Dark Bluish Grey to Tan" in client.get("/api/collection/sources/brickit/history").json()["batches"][0]["summary"]
+    client.post("/api/collection/sources/brickit/undo")
+    assert table("brickit") == {("3001", 72): 10, ("3003", 4): 2} and "corrections" not in stored("brickit")
+
+
+def test_move_the_whole_line_merges_into_an_existing_line(client):
+    put("b", [("3001", 72, 3), ("3001", 19, 2)])
+    collection.apply_ops("b", [move("3001", 72, to_colour=19)])
+    assert table("b") == {("3001", 19): 5}
+
+
+def test_move_to_another_part_keeps_the_colour_and_bulk_is_one_batch(client):
+    put("b", [("3001", 4, 5), ("3003", 4, 2)])
+    collection.apply_ops("b", [move("3001", 4, to_part="3010", qty=2), move("3003", 4, to_colour=1)])
+    assert table("b") == {("3001", 4): 3, ("3010", 4): 2, ("3003", 1): 2}
+    assert len(client.get("/api/collection/sources/b/history").json()["batches"]) == 1
+    client.post("/api/collection/sources/b/undo")
+    assert table("b") == {("3001", 4): 5, ("3003", 4): 2}
+
+
+def test_move_refuses_more_than_there_is_an_unknown_part_or_colour(client):
+    put("b", [("3001", 4, 5)])
+    for op in (move("3001", 4, to_colour=1, qty=6), move("3001", 4, to_part="nope"), move("3001", 4, to_colour=9999), move("3003", 4, to_colour=1)):
+        assert client.post("/api/collection/sources/b/ops", json={"ops": [op]}).status_code == 400
+    assert collection.apply_ops("b", [move("3001", 4, to_colour=4)])["batch"] is None          # same line: nothing to do
+    assert table("b") == {("3001", 4): 5}
+
+
+def test_a_re_import_applies_the_corrections_again_and_undo_brings_them_back(client, cli):
+    p = preview(client, "Bin", RB)
+    client.post(f"/api/collection/imports/{p['preview_id']}/commit", json={})
+    collection.apply_ops("bin", [move("3001", 4, to_colour=1, qty=3)])
+    q = preview(client, "Bin", RB2)
+    d = client.post(f"/api/collection/imports/{q['preview_id']}/diff", json={"replace": "bin"}).json()
+    assert [(x["colour"], x["after"]) for x in d["lines"]["added"] if x["part"] == "3001"] == []      # the diff sees the corrected rows
+    client.post(f"/api/collection/imports/{q['preview_id']}/commit", json={"replace": "bin"})
+    assert table("bin")[("3001", 4)] == 4 and table("bin")[("3001", 1)] == 3 and len(stored("bin")["corrections"]) == 1
+    client.post("/api/collection/sources/bin/undo")
+    assert table("bin")[("3001", 4)] == 2 and table("bin")[("3001", 1)] == 3
+
+
+def test_part_search_finds_replacement_parts_and_ranks_the_same_category_first(client):
+    r = client.get("/api/collection/part-search", params={"q": "2x4", "near": "3001"}).json()
+    assert [p["part"] for p in r["parts"]] == ["3001", "3001pr0001", "3020"] and r["parts"][0]["size"] == "2x4"
+    assert client.get("/api/collection/part-search", params={"q": "3022"}).json()["parts"][0]["part"] == "3022"
+    assert client.get("/api/collection/part-search", params={"q": "moved"}).json()["parts"] == []         # "~Moved to ..." is hidden
+    assert client.get("/api/collection/part-search", params={"q": " "}).json() == {"parts": [], "total": 0}

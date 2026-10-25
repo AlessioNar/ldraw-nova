@@ -162,10 +162,11 @@
     },
     "interior": {
      "default": "none",
-     "description": "Rooms: a partition wall with a doorway on every storey (rectangular footprints)",
+     "description": "Rooms: a partition wall with a doorway on every storey, plus furniture when furnished (rectangular footprints)",
      "enum": [
       "none",
-      "partition"
+      "partition",
+      "furnished"
      ]
     }
    },
@@ -822,6 +823,29 @@
      "default": false,
      "description": "Technic pin bricks in the side walls near the top of every storey, to bolt modules together",
      "type": "boolean"
+    },
+    "awning": {
+     "default": false,
+     "description": "Shop awning: the front cornice of the ground storey in two alternating stripe colours (needs 2+ storeys)",
+     "type": "boolean"
+    },
+    "awning_colour": {
+     "default": "red",
+     "description": "Awning stripe",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "awning_alt_colour": {
+     "default": "white",
+     "description": "Second awning stripe",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
     }
    },
    "default": {
@@ -839,7 +863,10 @@
     "flower_colour": "red",
     "fence": false,
     "fence_colour": "white",
-    "connectors": false
+    "connectors": false,
+    "awning": false,
+    "awning_colour": "red",
+    "awning_alt_colour": "white"
    }
   },
   "base": {

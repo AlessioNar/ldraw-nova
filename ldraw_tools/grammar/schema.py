@@ -65,7 +65,7 @@ SCHEMA = {
             band_projection=integer(0, 0, 1, 'Studs the floor bands project as a cornice'),
             eaves=flag(False, 'A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more'),
             band_colour=colour('white', 'Floor bands, floors and cornice'),
-            interior=choice('none', ['none', 'partition'], 'Rooms: a partition wall with a doorway on every storey (rectangular footprints)')),
+            interior=choice('none', ['none', 'partition', 'furnished'], 'Rooms: a partition wall with a doorway on every storey, plus furniture when furnished (rectangular footprints)')),
         'walls': group('Walls', 'Wall construction',
             style=choice('brick', ['brick', 'timber', 'stone'], 'brick; half-timber (posts and infill); stone (two-tone random bricks)'),
             thickness=choice(1, [1, 2], 'Wall thickness in studs; 2 uses staggered rows'),
@@ -137,7 +137,10 @@ SCHEMA = {
             flower_colour=colour('red', 'Flowers'),
             fence=flag(False, 'Picket fence round the garden at the edge of the base plate, open where the path crosses it'),
             fence_colour=colour('white', 'Fence'),
-            connectors=flag(False, 'Technic pin bricks in the side walls near the top of every storey, to bolt modules together')),
+            connectors=flag(False, 'Technic pin bricks in the side walls near the top of every storey, to bolt modules together'),
+            awning=flag(False, 'Shop awning: the front cornice of the ground storey in two alternating stripe colours (needs 2+ storeys)'),
+            awning_colour=colour('red', 'Awning stripe'),
+            awning_alt_colour=colour('white', 'Second awning stripe')),
         'base': group('Base', 'Ground',
             kind=choice('plate', ['none', 'plate', 'modular'], 'none, a plate round the building, or a 32x32 modular-building plate with a sidewalk'),
             margin=integer(3, 0, 8, 'Studs of ground around the building'),
@@ -171,6 +174,7 @@ CONSTRAINTS = [
     ('fence-base', 'A fence needs a plain base plate with a margin of 2 studs or more'),
     ('flowers-sills', 'Flower boxes stand on window sills, so they turn sills on'),
     ('gable-window-fits', 'A gable-end window needs a gable roof at least 8 studs deep'),
+    ('awning-fits', 'An awning stripes the front cornice of the ground storey: it needs a rectangular footprint and 2 or more storeys, and it takes the place of a porch'),
     ('sign-shop', 'A fascia sign needs a door and a ground storey of 7 or more courses'),
 ]
 
@@ -263,7 +267,7 @@ def normalise(config):
     if dt['connectors'] and bs['kind'] != 'modular':
         notes.append('connectors are only placed for modular buildings (modular-fits)')
         dt['connectors'] = False
-    if st['interior'] == 'partition' and fp['shape'] != 'rect':
+    if st['interior'] != 'none' and fp['shape'] != 'rect':
         st['interior'] = 'none'
         notes.append('rooms removed: partitions only go into rectangular footprints (interior-rect)')
     if st['eaves'] and fp['shape'] != 'rect':
@@ -306,6 +310,15 @@ def normalise(config):
         if dt['sign'] != 'none':
             dt['sign'] = 'none'
             notes.append('sign removed: it needs a door (sign-shop)')
+    if dt['awning'] and (fp['shape'] != 'rect' or st['count'] < 2):
+        dt['awning'] = False
+        notes.append('awning removed: it needs a rectangular footprint and 2 or more storeys (awning-fits)')
+    if dt['awning'] and not st['band_projection']:
+        st['band_projection'] = 1
+        notes.append('cornice added: the awning is the projecting front cornice (awning-fits)')
+    if dt['awning'] and dt['porch']:
+        dt['porch'] = False
+        notes.append('porch removed: the awning takes its place over the door (awning-fits)')
     if dt['fence'] and (bs['kind'] != 'plate' or bs['margin'] < 2):
         dt['fence'] = False
         notes.append('fence removed: it needs a plain base plate with a margin of 2 or more (fence-base)')
