@@ -27,14 +27,15 @@ export function loadChatDefaults(): TurnOptions {
     if (v.budget_eur === null) out.budget_eur = null;
     else if (typeof v.budget_eur === "number" && v.budget_eur > 0) out.budget_eur = v.budget_eur;
     if (v.worker_model_id === null || typeof v.worker_model_id === "string") out.worker_model_id = v.worker_model_id;
+    if (v.confirm_with_documents === true) out.confirm_with_documents = true;
     if (typeof v.effort === "string") out.effort = v.effort;
     if (typeof v.context_tokens === "number") out.context_tokens = v.context_tokens;
   } catch { /* storage unavailable or corrupt */ }
   return out;
 }
 export function saveChatDefaults(o: TurnOptions) {
-  const { mode, permissions, budget_eur, worker_model_id, effort, context_tokens } = o;
-  try { localStorage.setItem(KEY, JSON.stringify({ mode, permissions, budget_eur: budget_eur ?? null, worker_model_id, effort, context_tokens })); } catch { /* storage unavailable */ }
+  const { mode, permissions, budget_eur, worker_model_id, effort, context_tokens, confirm_with_documents } = o;
+  try { localStorage.setItem(KEY, JSON.stringify({ mode, permissions, budget_eur: budget_eur ?? null, worker_model_id, effort, context_tokens, confirm_with_documents })); } catch { /* storage unavailable */ }
 }
 
 export function budgetLabel(b: number | null | undefined) {
@@ -94,7 +95,9 @@ export default function ChatSettings({ options, onChange, profile, defaultWorker
         <div><select id="set-permissions" aria-label="Permissions" disabled={disabled} value={options.permissions}
           onChange={e => onChange({ ...options, permissions: e.target.value as TurnOptions["permissions"] })}>
           <option value="ask">Ask first</option><option value="full">Full access</option><option value="read_only">Read only</option>
-        </select><p className="muted small">{PERMISSION_HINTS[options.permissions]}</p></div></div>}
+        </select><p className="muted small">{PERMISSION_HINTS[options.permissions]}</p>
+          {options.permissions === "full" && <label className="small"><input type="checkbox" disabled={disabled} checked={options.confirm_with_documents === true}
+            onChange={e => onChange({ ...options, confirm_with_documents: e.target.checked })} /> Still ask before running code when documents are attached</label>}</div></div>}
       <div className="setting-row"><label>Parts<small className="muted">{partsSummary(steering, inventories)}</small></label>
         <PartsControl inventories={inventories} value={steering} onChange={onSteering} disabled={disabled} /></div>
       <div className="setting-row"><label>Workers</label>

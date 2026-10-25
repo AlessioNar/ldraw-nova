@@ -92,7 +92,7 @@ export type EnvironmentState = { variables: EnvironmentVariable[]; jev_source?: 
 export type EnvironmentUpdate = { id?: string; name: string; value: string | null };
 export type DocumentUpload = { name: string; data: string };
 export type ConnectionStatus = "not_tested" | "connected" | "not_connected";
-export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; worker_model_id?: string | null; effort?: string | null; context_tokens?: number | null; budget_eur?: number | null; parts_mode?: PartsMode; inventory_ids?: string[] };
+export type TurnOptions = { mode: "plan" | "agent"; permissions: "ask" | "full" | "read_only"; worker_model_id?: string | null; effort?: string | null; context_tokens?: number | null; budget_eur?: number | null; confirm_with_documents?: boolean; parts_mode?: PartsMode; inventory_ids?: string[] };
 export type ModelProfile = {
   model: string; name: string; context_window: number | null; efforts: string[]; default_effort: string | null; context_budgets: number[];
   max_output_tokens?: number | null; tools?: boolean | null; vision?: boolean | null; reasoning?: boolean | null;
