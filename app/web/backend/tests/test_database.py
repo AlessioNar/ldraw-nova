@@ -41,7 +41,7 @@ def test_upgrade_from_empty_creates_every_table_the_view_and_downgrades(fresh_da
     migrate.upgrade(engine)
     names = set(inspect(engine).get_table_names())
     assert {t.name for t in metadata.sorted_tables} <= names and "alembic_version" in names
-    assert len(metadata.sorted_tables) == 16
+    assert len(metadata.sorted_tables) == 18
     assert "cost_daily" in inspect(engine).get_view_names()
     from alembic.script import ScriptDirectory
     head = ScriptDirectory.from_config(migrate.alembic_config()).get_current_head()
