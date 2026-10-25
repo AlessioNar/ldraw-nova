@@ -49,9 +49,21 @@ async def describe(body: DescribeBody):
 
 @router.get("/api/describe/estimate")
 async def describe_estimate(text: str = Query(default="", max_length=understand.MAX_REQUEST_CHARS * 2),
-                      generator: Optional[str] = Query(default=None, max_length=60)):
-    """Rules-only guess for the composer hint: no model call, no toolkit call, milliseconds. Same route names."""
+                      generator: Optional[str] = Query(default=None, max_length=60),
+                      build_id: Optional[str] = Query(default=None, max_length=80)):
+    """Rules-only guess for the composer hint: no model call, no toolkit call, milliseconds. Same route names.
+
+    With `build_id` the hint sees the build the way the decision will (live generator source or divergence, role edits on
+    any other build, the last change), so the two agree whenever no model is needed."""
+    context = None
+    if build_id:
+        from .workspace_api import hint_context        # lazy: that router imports this package's siblings
+        current, context = hint_context(build_id)
+        generator = current["generator"] if current else None
+        params = (current or {}).get("params") or {}
+    else:
+        params = {}
     if generator and generator_bridge.cached() is None:
         await generator_bridge.ensure()       # cold start only: without the registry no edit rule can name its generator
-    current = {"generator": generator, "params": {}} if generator else None
-    return fast_path.rules_guess(text, current)
+    current = {"generator": generator, "params": params} if generator else None
+    return fast_path.rules_guess(text, current, context)

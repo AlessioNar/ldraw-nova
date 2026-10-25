@@ -22,7 +22,8 @@ function VersionStrip({ ws }: { ws: Workspace }) {
           <button key={v.version} role="tab" className="ws-v" aria-selected={selectedVersion === v.version} onClick={() => ws.viewVersion(v.version)}
             title={`${ORIGIN_LABEL[v.origin]}${v.detail ? `, ${timeAgo(v.detail.created_at)}` : ""}. Click to view it read-only.`}>
             <span className="t"><span className="mono">v{v.version}</span> <span className={`origin-badge origin-${v.origin}`}>{ORIGIN_LABEL[v.origin]}</span></span>
-            <span className="s"><span className="mono">{v.parts.toLocaleString()}</span> parts {miss !== null && <Check ok={miss === 0} />}</span>
+            <span className="s"><span className="mono">{v.parts.toLocaleString()}</span> parts {miss !== null && <Check ok={miss === 0} />}
+              {v.check && <span className={`ws-vcheck ${v.check.status}`} title={v.check.warnings.join(String.fromCharCode(10)) || "Geometry and connection check"}>{v.check.status === "checking" ? "checking…" : v.check.status === "ok" ? "OK" : v.check.status === "warnings" ? `${v.check.warnings.length} warning${v.check.warnings.length === 1 ? "" : "s"}` : "check failed"}</span>}</span>
           </button>
         );
       })}

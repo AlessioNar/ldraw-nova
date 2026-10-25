@@ -84,3 +84,41 @@ def test_removal_of_a_whole_submodel_removes_its_instances():
     names = {s['name'] for s in edited['sections']}
     assert not [p for s in edited['sections'] for step in s['steps'] for p in step if p['ref'].startswith('window4')]
     assert 'house-shell.ldr' in names
+
+
+# ---- from words, on a plan with no roles (an import, a hand-edited build): resolve() classifies, then edits
+
+def _untagged(plan):
+    return json.loads(json.dumps(plan), object_hook=lambda d: {k: v for k, v in d.items() if k != 'role'})
+
+
+def test_resolve_recolours_an_untagged_plan_by_classified_role(official, house):
+    plan = _untagged(house)
+    found = role_edits.resolve(plan, official, [dict(op='recolour', role='roof', colour='blue')])
+    assert found['clarify'] is None and found['ops'] and all(o['op'] == 'recolour' and o['colour'] == 1 for o in found['ops'])
+    assert found['changes'][0]['label'] == 'roof colour' and found['changes'][0]['to'] == 'blue' and found['changes'][0]['count']
+    assert editor.apply(plan, found['ops'])                            # ids and sections are the original plan's
+
+
+def test_resolve_asks_instead_of_guessing(official, house, monkeypatch):
+    from ldraw_tools import roles
+    plan = _untagged(house)
+    unsure = {k: roles.Role('roof', .3, 'test') for k in roles.classify(plan, official) if k != '_domain'}
+    monkeypatch.setattr(roles, 'classify', lambda *a, **k: dict(unsure))
+    ask = role_edits.resolve(plan, official, [dict(op='recolour', role='roof', colour='blue')])
+    assert not ask['ops'] and ask['clarify']['role'] == 'roof' and ask['clarify']['count'] > 5 and ask['clarify']['ids']
+    assert 'might be the roof' in ask['clarify']['question']
+    sure = role_edits.resolve(plan, official, [dict(op='recolour', role='roof', colour='blue')], force=True)
+    assert sure['ops'] and sure['clarify'] is None
+    word = role_edits.resolve(house, official, [dict(op='remove', role='spoiler')])      # a role the model does not have
+    assert not word['ops'] and "can't find a spoiler" in word['clarify']['question'] and word['clarify']['choices']
+
+
+def test_resolve_selection_and_removal(official, house):
+    roofs = [dict(section=n, id=p['id']) for n, p in leaves(house, 'roof')][:2]
+    painted = role_edits.resolve(house, official, [dict(op='recolour', role=None, colour='green')], selection=roofs)
+    assert {o['id'] for o in painted['ops']} == {r['id'] for r in roofs} and painted['changes'][0]['label'] == 'selection colour'
+    nothing = role_edits.resolve(house, official, [dict(op='recolour', role=None, colour='green')])
+    assert not nothing['ops'] and 'Select the parts' in nothing['clarify']['question']
+    gone = role_edits.resolve(house, official, [dict(op='remove', role='chimney')])
+    assert gone['ops'] and all(o['op'] == 'delete' for o in gone['ops']) and gone['changes'][0]['to'] == 'removed'

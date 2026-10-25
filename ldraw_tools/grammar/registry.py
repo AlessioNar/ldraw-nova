@@ -18,7 +18,8 @@ class GrammarGenerator(Generator):
 
     def entry(self):
         out = super().entry()
-        out['presets'] = {k: dict(title=v['title'], description=v['description'], config=copy.deepcopy(v['config']))
+        out['presets'] = {k: dict(title=v['title'], description=v['description'], keywords=list(v['keywords']),
+                                  config=copy.deepcopy(v['config']))
                           for k, v in self.presets.items()}
         return out
 
@@ -28,7 +29,7 @@ def _build(params):
     config, alias = compat.split(params)
     notes = []
     if alias:
-        patch, notes = compat.translate(alias)
+        patch, notes = compat.translate(alias, keep_storeys=config.get('storeys') not in (None, GENERATOR.defaults().get('storeys')))
         config = deep_merge(config, patch)      # house-dialect values win over the group defaults
     result = engine.build(config)
     return result['plan'], notes + result['notes']

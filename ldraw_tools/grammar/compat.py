@@ -40,8 +40,9 @@ def split(params):
     return rest, alias
 
 
-def translate(alias):
-    """(config patch, notes) for house-dialect parameters."""
+def translate(alias, keep_storeys=False):
+    """(config patch, notes) for house-dialect parameters. `keep_storeys`: the configuration already chose its storeys
+    (a preset), so a colour or a width must not reset them to the old house's single storey."""
     cfg, notes = {}, []
 
     def put(group, key, value):
@@ -59,7 +60,7 @@ def translate(alias):
         else:
             put('storeys', 'count', 1)
             put('storeys', 'courses', c)
-    elif alias:
+    elif alias and not keep_storeys:
         put('storeys', 'count', 1)
         put('storeys', 'courses', 6)
     if 'door_side' in alias:

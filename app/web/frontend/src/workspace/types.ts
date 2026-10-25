@@ -8,14 +8,14 @@ export const missingCount = (c: PartsCheckData | null | undefined): number =>
   c ? (Array.isArray(c.missing) ? c.missing.reduce((n, l) => n + Math.max(l.need - l.have, 0), 0) : c.missing) : 0;
 
 export type DraftInfo = { base_version: number; changes: number; revision: number; undo_depth: number; redo_depth: number; updated_at: number };
-export type WsVersion = { version: number; file: string; origin: BuildOrigin; parts: number; changes?: unknown; parts_check?: PartsCheckData | null };
+export type WsVersion = { version: number; file: string; origin: BuildOrigin; parts: number; changes?: unknown; parts_check?: PartsCheckData | null; check?: { status: "checking" | "ok" | "warnings" | "failed"; warnings: string[] } | null };
 export type Proposal = { id: string; created_at: number; summary: { added: number; removed: number; moved: number }; cost_eur: number | null; chat_id: string | null };
 export type WorkspaceData = {
   build?: unknown; versions: WsVersion[]; draft: DraftInfo | null;
   generator: { id: string; params: Record<string, unknown> } | null; proposals: Proposal[]; chat_id: string | null;
   chat_mode?: "ai" | "quick"; agent_chat?: boolean;
 };
-export type DescribeResult = Partial<Describe> & { route: Describe["route"]; draft?: DraftInfo | null; chat_id?: string; took_ms?: number; choices?: string[]; chat_mode?: "ai" | "quick" };
+export type DescribeResult = Partial<Describe> & { route: Describe["route"]; draft?: DraftInfo | null; chat_id?: string; took_ms?: number; choices?: string[]; chat_mode?: "ai" | "quick"; highlight?: string[] };
 export type RegenerateResult = { replaced_manual_edits: boolean; draft?: DraftInfo | null };
 
 // ---- canvas messages (window.postMessage, type prefixed "obd:") ----

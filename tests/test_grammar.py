@@ -588,3 +588,15 @@ def test_course_maps_exist(name):
     assert 'W' in front and 'R' in front or 'T' in front or 't' in front
     assert maps.ascii_course(r['canvas'], 4).strip()
     assert maps.svg_sheet(r['canvas']).startswith('<svg')
+
+
+def test_house_dialect_colours_keep_the_storeys_a_preset_chose():
+    """The fast path sends a preset's configuration plus flat edits ("make the roof blue"): the flat values must not
+    reset the preset's storeys to the old house's single storey; the old flat-only form still means one storey."""
+    from ldraw_tools.grammar.presets import PRESETS
+    house = PRESETS['house']['config']
+    kept = generators.generate('building', {**house, 'roof_colour': 'blue'})
+    stories = lambda r: len({p['at'][1] for s in r['plan']['sections'] for step in s['steps'] for p in step if p.get('role') == 'wall'})
+    legacy = generators.generate('building', dict(roof_colour='blue'))
+    assert stories(kept) > stories(legacy)
+    assert {p['colour'] for s in kept['plan']['sections'] for step in s['steps'] for p in step if p.get('role') == 'roof'} == {1}
