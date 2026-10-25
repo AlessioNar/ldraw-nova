@@ -1,0 +1,23 @@
+# One LEGO set and one CADA set, the same class and the same shape; only the brand differs.
+@prefix brand: <https://alessionar.github.io/open-brick-designer/ns/brand/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix psrc: <https://alessionar.github.io/open-brick-designer/ns/partssource/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <https://example.org/sets/> .
+
+ex:lego-10183-1 a obd:Set ;
+    dcterms:title "Passenger Car" ;
+    obd:brand brand:lego ; obd:setNumber "10183-1" ; obd:year 2007 ;
+    obd:image "https://example.org/img/10183-1.jpg"^^xsd:anyURI ;
+    obd:partsSource psrc:rebrickable ;
+    obd:contains [ a obd:SetPart ; obd:part "3001" ; obd:colour 4 ; obd:quantity 12 ],
+                 [ a obd:SetPart ; obd:part "3023" ; obd:colour 71 ; obd:quantity 4 ] .
+
+ex:cada-c61005w a obd:Set ;
+    dcterms:title "Mini Tow Truck" ;
+    obd:brand brand:cada ; obd:setNumber "C61005W" ; obd:year 2022 ;
+    obd:partsSource psrc:csv-import ;
+    prov:wasDerivedFrom <https://example.org/files/c61005w-parts.csv> ;
+    obd:contains [ a obd:SetPart ; obd:part "3004" ; obd:colour 15 ; obd:quantity 6 ] .

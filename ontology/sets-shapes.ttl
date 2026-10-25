@@ -1,0 +1,28 @@
+# SHACL shapes for sets (issue #118, epic #110): what a set record must state, whatever its brand.
+# Checked by tests/test_sets_ontology.py with pyshacl against ontology/sets.ttl and the samples in tests/fixtures/sets-sample.ttl (toolkit-only).
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix obdsh: <https://alessionar.github.io/open-brick-designer/ns/shapes#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://alessionar.github.io/open-brick-designer/ns/set-shapes> a owl:Ontology ;
+    dcterms:title "Open Brick Designer set shapes"@en ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> .
+
+obdsh:SetShape a sh:NodeShape ; sh:targetClass obd:Set ;
+    sh:property [ sh:path obd:brand ; sh:minCount 1 ; sh:maxCount 1 ; sh:class skos:Concept ; sh:message "A set has one brand, a concept of the brand scheme." ] ;
+    sh:property [ sh:path dcterms:title ; sh:minCount 1 ; sh:message "A set has a name." ] ;
+    sh:property [ sh:path obd:setNumber ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A set has one set number." ] ;
+    sh:property [ sh:path obd:year ; sh:maxCount 1 ; sh:datatype xsd:integer ; sh:message "A set has at most one year, an integer." ] ;
+    sh:property [ sh:path obd:image ; sh:maxCount 1 ; sh:datatype xsd:anyURI ; sh:message "A set has at most one image, a URI." ] ;
+    sh:property [ sh:path obd:partsSource ; sh:maxCount 1 ; sh:class skos:Concept ; sh:message "The source of a parts list is one concept of the parts-source scheme." ] ;
+    sh:property [ sh:path obd:contains ; sh:class obd:SetPart ; sh:message "A set contains set parts." ] .
+
+obdsh:SetPartShape a sh:NodeShape ; sh:targetClass obd:SetPart ;
+    sh:property [ sh:path obd:part ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ; sh:message "A set part names one part." ] ;
+    sh:property [ sh:path obd:colour ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ; sh:message "A set part has one LDraw colour code." ] ;
+    sh:property [ sh:path obd:quantity ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 1 ; sh:message "A set part has a positive quantity." ] .
