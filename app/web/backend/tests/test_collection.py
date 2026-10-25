@@ -799,11 +799,19 @@ def pictures(tmp_path, monkeypatch):
     return downloads
 
 
-def test_set_picture_is_a_placeholder_and_nothing_is_downloaded_until_opted_in(client, catalog, pictures):
+def test_set_picture_is_a_placeholder_and_nothing_is_downloaded_when_switched_off(client, catalog, pictures):
     client.post("/api/collection/sets", json={"set_num": "8448"})
+    client.put("/api/set-images/settings", json={"remote_fetch": False})
     r = client.get("/files/set-image/8448-1")
     assert r.status_code == 200 and r.headers["content-type"] == "image/svg+xml" and r.headers["cache-control"] == "no-store"
     assert pictures == [] and client.get("/api/set-images/settings").json()["remote_fetch"] is False
+
+
+def test_fetching_is_on_by_default_and_the_env_switch_turns_it_off(client, catalog, pictures, monkeypatch):
+    client.post("/api/collection/sets", json={"set_num": "8448"})
+    assert client.get("/api/set-images/settings").json()["remote_fetch"] is True
+    monkeypatch.setenv("LDRAW_NOVA_SET_IMAGE_FETCH", "0")
+    assert client.get("/files/set-image/8448-1").headers["content-type"] == "image/svg+xml" and pictures == []
 
 
 def test_opted_in_fetch_happens_once_for_an_owned_set_and_is_cached(client, catalog, pictures):
@@ -866,6 +874,7 @@ def test_set_with_a_bundled_model_falls_back_to_a_render(client, catalog, pictur
         return out
     monkeypatch.setattr(set_images.render, "render", fake_render)
     client.post("/api/collection/sets", json={"set_num": "8448"})
+    client.put("/api/set-images/settings", json={"remote_fetch": False})
     for _ in range(2):
         r = client.get("/files/set-image/8448-1")
         assert r.headers["content-type"] == "image/png" and r.content == PNG

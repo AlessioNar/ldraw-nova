@@ -54,8 +54,8 @@ files or derivatives. The terms are recorded in `docs/plans/done/set-catalog.md`
 
 ### Set pictures
 
-Pictures of sets are not part of this repository. When the owner switches on remote fetching (Settings, off by default,
-or `LDRAW_NOVA_SET_IMAGE_FETCH=1`), the backend downloads the picture of a set the owner has from Rebrickable's image
+Pictures of sets are not part of this repository. Unless the owner switches off remote fetching (Settings, or
+`LDRAW_NOVA_SET_IMAGE_FETCH=0`), the backend downloads the picture of a set the owner has from Rebrickable's image
 CDN (`cdn.rebrickable.com/media/sets/<set number>.jpg`) once and keeps it under `<data>/cache/set-images/` on that
 machine, for offline use. These cached files are never committed or redistributed. **Images and data from Rebrickable,
 rebrickable.com.** Pictures the owner uploads stay on the owner's machine too.
