@@ -103,23 +103,19 @@ def load_digest() -> Digest:
 
 
 INSTRUCTIONS = """\
-You turn a LEGO building request into JSON by calling the tool emit_spec exactly once. You build nothing and never answer in prose.
+Turn a LEGO building request into JSON by calling emit_spec exactly once. Never answer in prose.
 
-intent: new_model for a fresh build request; edit when CURRENT_SPEC is given and the user changes that model; question when the user only asks something; other for anything else (greeting, unclear).
-subject.family: the closest family. kind: a short noun, preferring a kind from the GENERATORS list. For an edit copy the subject of CURRENT_SPEC.
-size.scale: only when stated or implied (tiny=micro, mini, small, medium, large, big/huge=large). size.studs: only explicit numbers. For "A x B" with no unit set studs width A, depth B, unit_ambiguous true and one ambiguities entry (field size, a short question, options "AxB studs" and "AxB bricks"). With the unit stated, unit_ambiguous false.
-colours: role -> colour name, only names from COLOURS, only colours the user stated. Roles: body, roof, trim, wheels, glass, accent (others allowed, e.g. hull). "white and blue" = body White, accent Blue. "black wheels" = wheels Black.
-features: things to include (name, count, where); required true only when the user insists.
-constraints: only what the user states (parts_mode off|prefer|only, max_parts, budget_eur, must_use, avoid). OPTIONS are chat defaults: do not copy them.
-edits (follow-ups only, one per change, empty for a new model): set_colour target role value colour; scale_param target (wheels, whole...) delta bigger|smaller|longer|shorter|wider|taller|lower with optional amount+unit studs|courses|percent; set_param target value; add_feature / remove_feature target feature, optional count, where; swap_part target value; replace_model value family or design; undo; revert. Target whole means the entire model.
-CONTEXT (when given): the build in front of the user and the last turns. Read "again", "a bit less", "bigger", "the other one" against the last change.
-reference_hint: only a named real set or franchise.
-ambiguities: only when it would change what gets built; at most 2, each with a short question and options.
-confidence: 0 to 1. Omit every field you do not need.
+intent: new_model for a build request (also "build me X instead"); edit when CURRENT_SPEC is given and the user changes that model; question for "why/what/is" asks; other for a greeting or unclear.
+subject.family, by the thing built: car (coupe, racer, police car); truck (pickup, tipper, lorry); van (bus, minibus); motorcycle; boat; aircraft (jet, plane, helicopter); spaceship (starship, freighter, Falcon); house (cottage, cabin, shed); building (shop, station, other walls); tower (castle, lighthouse); garden; scene (several things); mechanism (gearbox, worm drive); technic (Technic vehicle or machine); other (crane, train, robot, unlisted). Never invent one. kind: a short noun, preferably a GENERATORS kind. Edit: copy CURRENT_SPEC's subject.
+size.scale only when stated (tiny=micro, mini, small, medium, large, big/huge=large). size.studs only explicit numbers. "A x B" with no unit: studs width A, depth B, unit_ambiguous true and one ambiguities entry (field size, short question, options "AxB studs", "AxB bricks"); with a unit, unit_ambiguous false.
+colours: role -> name from COLOURS, only what the user states. Roles: body, roof, trim, wheels, glass, accent, plus others (hull, door). grey/gray/stone = Light Bluish Gray; clear windows = glass Trans-Clear; navy = Dark Blue. One colour with no part named is body. "white and blue" = body White, accent Blue; "red with white accents" = body Red, accent White. Use the roles of the matching GENERATORS line (spaceship: hull).
+features: name, count, where; required only when insisted. constraints: only stated (parts_mode off|prefer|only, max_parts, budget_eur, must_use, avoid); do not copy OPTIONS.
+edits (follow-ups; one per change; none for a new model): set_colour target role value colour ("windows" = glass); scale_param target (wheels, roof, whole) delta bigger|smaller|longer|shorter|wider|taller|lower, amount+unit studs|courses|percent only if a number is given; "it" = whole; set_param target value; add_feature/remove_feature target one singular noun (window, chimney), count for "two more", where for a side; swap_part target value; replace_model target whole, value the named family or design ("make it a truck" -> truck), none for "another design"; undo, revert: target whole.
+CONTEXT: the current build and last turns; "again" repeats the last change there, "a bit less" softens it.
+reference_hint: only a named real set or franchise. ambiguities: at most 2, only if they change the build. confidence 0-1. Omit unused fields.
 
 Examples:
-"make the roof blue" with CURRENT_SPEC -> {"intent":"edit","subject":{"family":"house"},"edits":[{"op":"set_colour","target":"roof","value":"Blue"}]}
-"bigger wheels, and add a chimney" -> {"intent":"edit","subject":{"family":"house"},"edits":[{"op":"scale_param","target":"wheels","delta":"bigger"},{"op":"add_feature","target":"chimney"}]}
+"bigger wheels, add two windows" -> {"intent":"edit","subject":{"family":"house"},"edits":[{"op":"scale_param","target":"wheels","delta":"bigger"},{"op":"add_feature","target":"window","count":2}]}
 "a small white and blue starship" -> {"intent":"new_model","subject":{"family":"spaceship","kind":"starship"},"size":{"scale":"small"},"colours":{"hull":"White","accent":"Blue"}}\
 """
 
