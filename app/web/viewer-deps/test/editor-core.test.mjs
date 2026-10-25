@@ -362,6 +362,10 @@ test("parseCommand accepts the contract's commands and refuses the rest", () => 
     { cmd: "view-version", url: "https://evil.test/a.mpd" }, { cmd: "view-version", url: "javascript:alert(1)" }, { cmd: "view-version" }]) {
     assert.throws(() => ok(bad), Error, JSON.stringify(bad));
   }
+  assert.deepEqual(ok({ cmd: "select", ids: ["main.ldr:e1", "sub.ldr:e1"] }), { cmd: "select", ids: ["main.ldr:e1", "sub.ldr:e1"] });
+  for (const bad of [{ cmd: "select" }, { cmd: "select", ids: "e1" }, { cmd: "select", ids: [1] }, { cmd: "select", ids: [""] }, { cmd: "select", ids: Array(501).fill("a") }]) {
+    assert.throws(() => ok(bad), Error, JSON.stringify(bad));
+  }
   assert.throws(() => C.parseCommand({ type: "other", cmd: "undo" }, origin, base));
   assert.throws(() => C.parseCommand(null, origin, base));
   assert.throws(() => ok({ cmd: { toString: () => "undo" } }));
@@ -397,4 +401,14 @@ test("add tool: ground placement, snapping target and the edit batch", () => {
 test("pieceInfo describes a selected part for the parent page", () => {
   const n = C.flatten(SUB_MPD, SUB_PLAN).nodes.find(p => p.key === "e2/r2");
   assert.deepEqual(C.pieceInfo(n, "Tile 1 x 2"), { id: "r2", part: "3068b", name: "Tile 1 x 2", colour: 24, position: [20, 0, 0], rotation: IDENTITY, section: "roof.ldr" });
+});
+
+test("keysForIds finds parts by section:id, in every copy of a sub-model, and a bare id only in the root", () => {
+  const node = (key, section, entryId, parentKey = "", leaf = true) => ({ key, section, entryId, parentKey, leaf });
+  const nodes = [node("e1", "main.ldr", "e1"), node("e2", "main.ldr", "e2"), node("w", "main.ldr", "w", "", false),
+    node("w/e1", "wing.ldr", "e1", "w"), node("v/e1", "wing.ldr", "e1", "v"), node("w/e2", "wing.ldr", "e2", "w")];
+  assert.deepEqual(C.keysForIds(nodes, ["wing.ldr:e1"]), ["w/e1", "v/e1"]);        // both copies, never the root's e1
+  assert.deepEqual(C.keysForIds(nodes, ["Main.ldr:e1", "wing.ldr:e2"]), ["e1", "w/e2"]);
+  assert.deepEqual(C.keysForIds(nodes, ["e1"]), ["e1"]);                            // bare: the root section
+  assert.deepEqual(C.keysForIds(nodes, ["wing.ldr:zz", "nowhere.ldr:e1", "main.ldr:w"]), []);   // unknown, and an instance line is no part
 });

@@ -192,6 +192,18 @@ ALIAS_PATHS = {"width": ("footprint", "width"), "depth": ("footprint", "depth"),
                "porch": ("details", "porch")}
 
 
+# House-dialect settings that a grammar patch to these configuration fields overrides (the grammar lets the flat
+# value win over the group, so the flat one must go when the person addresses the field directly)
+ALIAS_SHADOWS = {"width": {("footprint", "width")}, "depth": {("footprint", "depth")},
+                 "courses": {("storeys", "count"), ("storeys", "courses")}, "door_side": {("openings", "door"), ("openings", "door_position")},
+                 "door_style": {("openings", "door")}, "windows": {("openings", "count"), ("openings", "ground_windows"), ("openings", "upper_windows")},
+                 "window_sides": {("openings", "sides")}, "roof_style": {("roof", "style")}, "roof_tiers": {("roof", "tiers")},
+                 "wall_colour": {("walls", "colour")}, "roof_colour": {("roof", "colour")}, "door_colour": {("openings", "door_colour")},
+                 "glass_colour": {("openings", "glass_colour")}, "chimney_colour": {("details", "chimney_colour")},
+                 "trim_colour": {("openings", "frame_colour"), ("storeys", "band_colour")},
+                 "porch": {("details", "porch")}, "chimney": {("details", "chimney")}}
+
+
 def _effective(params: dict, key: str, default: Any = None) -> Any:
     """A setting's value: the flat param, else (grammar builds) the value inside the nested configuration."""
     if params.get(key) is not None:
@@ -494,6 +506,67 @@ def relative_spec(text: str, last: Optional[dict]) -> Optional[dict]:
     return {"intent": "edit", "subject": {"family": "other"}, "edits": edits, "confidence": 1.0} if edits else None
 
 
+# ---------------------------------------------------------------- the building grammar's own text addressing
+
+def _leaves(patch: dict, prefix: tuple = ()) -> list[tuple[tuple, Any]]:
+    out = []
+    for key, value in patch.items():
+        out += _leaves(value, prefix + (key,)) if isinstance(value, dict) else [(prefix + (key,), value)]
+    return out
+
+
+def _dig(config: dict, path: tuple) -> Any:
+    for key in path:
+        config = config.get(key) if isinstance(config, dict) else None
+    return config
+
+
+def grammar_edit(entry: dict, current: dict, patch: dict, confidence: float = 1.0) -> dict:
+    """An edit decision for a grammar config patch (what nl.apply_text understood) applied over the building's params."""
+    params = copy.deepcopy(current.get("params") or {})
+    leaves = _leaves(patch)
+    touched = {path[:2] for path, _ in leaves if len(path) > 1}
+    for alias, paths in ALIAS_SHADOWS.items():
+        if alias in params and paths & touched:
+            del params[alias]
+    changes = []
+    for path, value in leaves:
+        group = params
+        for key in path[:-1]:
+            group = group.setdefault(key, {})
+        before = group.get(path[-1])
+        group[path[-1]] = value
+        if before != value:
+            changes.append({"param": ".".join(path), "label": " ".join(path).replace("_", " "), "from": before, "to": value})
+    params, notes = clamp(entry, params)
+    return {"route": "edit", "generator": entry["id"], "params": params, "changes": changes, "notes": notes,
+            "confidence": round(confidence, 2), "cost_eur": 0.0, "seconds_estimate": SECONDS.get(entry["id"], DEFAULT_SECONDS)}
+
+
+async def grammar_decision(text: str, current: Optional[dict]) -> Optional[dict]:
+    """The building grammar's text addressing as a fast-path answer, or None when it does not read the WHOLE message
+    (a partly understood request goes on to the understanding step, so nothing is applied half-way)."""
+    entry = _entry(current["generator"]) if current else None
+    if entry is None or entry["id"] != "building" or len(text) > 240 or text.rstrip().endswith("?"):
+        return None
+    nested = {k: v for k, v in (current.get("params") or {}).items() if isinstance(v, dict)}
+    found = await generator_bridge.apply_text(nested, text)
+    if not found or not found.get("understood") or found.get("missed"):
+        return None
+    patch: dict = {}
+    for clause in found["understood"]:
+        patch = _merge(patch, clause["patch"])
+    decision = grammar_edit(entry, current, patch)
+    return decision if decision["changes"] else None
+
+
+def _merge(base: dict, extra: dict) -> dict:
+    out = dict(base)
+    for key, value in extra.items():
+        out[key] = _merge(out[key], value) if isinstance(value, dict) and isinstance(out.get(key), dict) else value
+    return out
+
+
 # ---------------------------------------------------------------- history: the cost and time of real AI builds
 
 _history: dict = {"at": -1e9, "stats": None}
@@ -749,6 +822,13 @@ async def describe(text: str, *, current: Optional[dict] = None, build_id: Optio
     if spec:
         result = understand.Result(spec, "rules")
     else:
+        grammar = await grammar_decision(text, current)
+        if grammar:
+            grammar.update(understanding_cost_eur=0.0, understood_by="grammar", understanding_model=None)
+            if build_id:
+                grammar["build_id"] = build_id
+            await asyncio.to_thread(request_log.record_describe, text, grammar, spec=None, started=started, current=current)
+            return grammar
         if not understand.rules_shortcut(text, current_spec, previous_text):
             params = await understand.model_params(llm_id)
         result = await understand.understand(text, current_spec=current_spec, previous_text=previous_text, params=params,

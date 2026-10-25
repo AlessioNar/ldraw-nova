@@ -706,7 +706,7 @@ var EditorCore = (function () {
 
   const TOOLS = ['select', 'move', 'rotate', 'add', 'paint', 'delete'];
   const MODES = ['edit', 'view', 'player'];
-  const COMMANDS = ['undo', 'redo', 'delete', 'set-tool', 'set-colour', 'add-part', 'set-mode', 'reload', 'view-version', 'back-to-draft', 'focus', 'step'];
+  const COMMANDS = ['undo', 'redo', 'delete', 'set-tool', 'set-colour', 'add-part', 'set-mode', 'reload', 'view-version', 'back-to-draft', 'focus', 'step', 'select'];
 
   const colourId = v => {
     const n = typeof v === 'string' && /^\d+$/.test(v.trim()) ? Number(v) : v;
@@ -750,12 +750,30 @@ var EditorCore = (function () {
       if (!/^https?:$/.test(url.protocol) || url.origin !== origin) throw new Error('view-version only opens a URL on this site');
       return { cmd, url: url.href };
     }
+    if (cmd === 'select') {
+      const ids = data.ids;
+      if (!Array.isArray(ids) || ids.length > 500 || ids.some(i => typeof i !== 'string' || !i || i.length > 200)) throw new Error('select needs a list of up to 500 part ids ("section:id")');
+      return { cmd, ids: ids.slice() };
+    }
     if (cmd === 'step') {
       const n = Number(data.n);
       if (!Number.isInteger(n) || n < 1) throw new Error('step needs a whole step number, starting at 1');
       return { cmd, n };
     }
     return { cmd };
+  }
+
+  // The keys of the parts named by "section:id" ids (the form the server uses; a bare id is that id in the root section),
+  // every copy of a sub-model's part included. Unknown ids are skipped.
+  function keysForIds(nodes, ids) {
+    const sections = new Set(nodes.map(n => norm(n.section)));
+    const wanted = new Set();
+    for (const raw of ids) {
+      const at = raw.indexOf(':');
+      if (at > 0 && sections.has(norm(raw.slice(0, at)))) wanted.add(`${norm(raw.slice(0, at))}:${raw.slice(at + 1)}`);
+      else wanted.add(`:${raw}`);
+    }
+    return nodes.filter(n => n.leaf && (wanted.has(`${norm(n.section)}:${n.entryId}`) || (!n.parentKey && wanted.has(`:${n.entryId}`)))).map(n => n.key);
   }
 
   // The piece the parent is told about (obd:selection): the plan entry with its own (section) position and matrix.
@@ -776,7 +794,7 @@ var EditorCore = (function () {
            rayBox, pick, pickAll, pickHits, nextHit, deleteTargets, nextSelection, axisParameter, planeAngle, snapMove, snapRotate, fitDistance, snapStep, framingFill, moveEdits, rotateEdits,
            deleteEdits, nudgeEdits, centroid, editsBody, describeParts,
            TOOLS, MODES, COMMANDS, effectiveColours, sceneMatrix, diffLeaves, leafRefs, predictEdits, boxSelect, mergeSelection,
-           subtreeBox, nextEntryId, placementFor, addEdits, optimisticAdd, applyDelta, tweenNodes, plainFields, recolourEdits, parseCommand, trustedMessage, pieceInfo, matMul };
+           subtreeBox, nextEntryId, placementFor, addEdits, optimisticAdd, applyDelta, tweenNodes, plainFields, recolourEdits, parseCommand, trustedMessage, pieceInfo, keysForIds, matMul };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = EditorCore;

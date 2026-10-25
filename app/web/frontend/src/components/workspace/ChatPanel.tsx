@@ -157,8 +157,9 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         <div className="ws-fp" data-route="clarify">
           <div className="ws-fp-line"><span>{f.question}</span></div>
           {!!f.notes?.length && <ul className="ws-fp-notes">{f.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
-          {live && !!choices.length && (
+          {live && (!!choices.length || !!f.highlight?.length) && (
             <div className="ws-chips" role="group" aria-label="Quick replies">
+              {!!f.highlight?.length && <button className="ws-chip-btn" onClick={() => ws.showParts(f.highlight!)}>Show them</button>}
               {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}
               {choices.some((c) => c !== "Ask the AI") && <button className="ws-chip-btn pick" onClick={() => reply(choices.find((c) => c !== "Ask the AI")!)}>Just pick for me</button>}
             </div>

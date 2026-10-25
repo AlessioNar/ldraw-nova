@@ -56,6 +56,12 @@ that do not map are listed in `notes`; a message with nothing mappable becomes `
 `"history": "undo" | "revert"` (the build page applies its version history). "Make it a truck instead" returns a `generator` route for the
 new design with the colours carried over.
 
+On a `building` (grammar) build, a message the rules do not answer is first read by the grammar's own text addressing
+(`nl.apply_text`: "three storeys", "arched windows", "a hip roof"), with no model call. Only when it reads the WHOLE message
+(no clause missed, not a question) the answer is an `edit` with `understood_by: "grammar"` and changes named by their
+configuration path (`storeys.count`); otherwise the message goes on to the understanding step as before. House-dialect
+values the patch would be overridden by are dropped from the params.
+
 ### route "needs_ai": ask the person before the paid build
 
 ```json

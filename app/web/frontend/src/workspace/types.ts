@@ -21,7 +21,7 @@ export type RegenerateResult = { replaced_manual_edits: boolean; draft?: DraftIn
 // ---- canvas messages (window.postMessage, type prefixed "obd:") ----
 export type CanvasMode = "edit" | "view" | "player";
 export type Tool = "select" | "move" | "rotate" | "add" | "paint" | "delete";
-export type CanvasPiece = { id: string; part: string; name?: string; colour: number | string; position?: number[]; rotation?: number[] };
+export type CanvasPiece = { id: string; part: string; name?: string; colour: number | string; position?: number[]; rotation?: number[]; section?: string };
 export type CanvasEvent =
   | { type: "obd:ready"; mode: CanvasMode }
   | { type: "obd:selection"; pieces: CanvasPiece[] }
@@ -34,4 +34,5 @@ export type CanvasEvent =
 export type CanvasCommand =
   | { cmd: "undo" } | { cmd: "redo" } | { cmd: "delete" } | { cmd: "reload" } | { cmd: "focus" } | { cmd: "back-to-draft" }
   | { cmd: "set-tool"; tool: Tool } | { cmd: "set-colour"; colour: number } | { cmd: "add-part"; part: string; colour: number }
-  | { cmd: "set-mode"; mode: CanvasMode } | { cmd: "view-version"; url: string } | { cmd: "step"; n: number };
+  | { cmd: "set-mode"; mode: CanvasMode } | { cmd: "view-version"; url: string } | { cmd: "step"; n: number }
+  | { cmd: "select"; ids: string[] };

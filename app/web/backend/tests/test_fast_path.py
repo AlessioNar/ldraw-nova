@@ -415,3 +415,35 @@ def test_estimate_with_a_generator_loads_a_cold_registry(client, provider, monke
     monkeypatch.setattr(generator_bridge, "ensure", ensure)
     body = client.get("/api/describe/estimate", params={"text": "make the roof blue", "generator": "house"}).json()
     assert body["route"] == "edit" and loaded == [1]
+
+
+# ---- the building grammar's own text addressing (#99) ----------------------------------------------------------------
+
+BUILDING = {"generator": "building", "params": {"roof": {"colour": "dark red"}, "roof_colour": "blue", "storeys": {"count": 1}}}
+
+
+def test_grammar_text_edits_the_building_without_a_model_call(provider):
+    result = asyncio.run(fast_path.describe("three storeys with arched windows", current=BUILDING))
+    assert result["route"] == "edit" and result["generator"] == "building" and result["understood_by"] == "grammar"
+    assert result["params"]["storeys"]["count"] == 3 and result["params"]["openings"]["upper_windows"] == "arch"
+    assert {"param": "storeys.count", "label": "storeys count", "from": 1, "to": 3} in result["changes"]
+    assert result["cost_eur"] == 0.0 and not provider.calls
+
+
+def test_grammar_text_drops_a_flat_value_it_would_be_overridden_by(provider):
+    result = asyncio.run(fast_path.describe("a stone wall and a hip roof", current=BUILDING))
+    assert result["route"] == "edit" and result["params"]["roof"]["style"] == "hip"
+    flat = {"generator": "building", "params": {"roof_style": "flat"}}
+    out = asyncio.run(fast_path.describe("hip roof", current=flat))
+    assert "roof_style" not in out["params"] and out["params"]["roof"]["style"] == "hip"      # the flat one would have won
+
+
+def test_grammar_text_that_is_only_partly_understood_goes_to_the_understanding_step(provider):
+    provider.specs["three storeys and sing a song"] = {"intent": "other", "subject": {"family": "other"}}
+    result = asyncio.run(fast_path.describe("three storeys and sing a song", current=BUILDING, llm_id=None))
+    assert result.get("understood_by") != "grammar" and result.get("params", {}).get("storeys", {}).get("count") != 3
+
+
+def test_grammar_text_is_for_the_building_generator_only(provider):
+    assert asyncio.run(fast_path.grammar_decision("three storeys", HOUSE)) is None
+    assert asyncio.run(fast_path.grammar_decision("three storeys?", BUILDING)) is None
