@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import datetime as dt
 import decimal
-import uuid
 from typing import Any, Optional
 
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Computed, ForeignKey, Identity, Index, Integer, MetaData,
                         Numeric, Text, func, text)
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TIMESTAMP, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TIMESTAMP
 from sqlalchemy.sql.naming import conv
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -166,7 +165,9 @@ class PartSource(Base):
     warnings: Mapped[Any] = mapped_column(JSONB, server_default=EMPTY_ARRAY)
     unmapped_parts: Mapped[Any] = mapped_column(JSONB, server_default=EMPTY_ARRAY)
     unmapped_colours: Mapped[Any] = mapped_column(JSONB, server_default=EMPTY_ARRAY)
-    csv_file: Mapped[Optional[str]] = mapped_column(Text)
+    csv_file: Mapped[Optional[str]] = mapped_column(Text)            # unused: the upload is csv_text since revision 0003
+    csv_text: Mapped[Optional[str]] = mapped_column(Text)            # the original upload (<id>.csv), as sent
+    extra: Mapped[Any] = mapped_column(JSONB, server_default=EMPTY_OBJECT)     # top-level keys of the source JSON with no column
     rows_hash: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[dt.datetime] = mapped_column(server_default=NOW)
     updated_at: Mapped[dt.datetime] = mapped_column(server_default=NOW)
@@ -182,6 +183,8 @@ class PartRow(Base):
     qty: Mapped[int] = mapped_column(Integer)
     rb_part: Mapped[Optional[str]] = mapped_column(Text)
     rb_colour: Mapped[Optional[int]] = mapped_column(Integer)
+    pos: Mapped[int] = mapped_column(Integer, server_default="0")              # position in the source's row list
+    extra: Mapped[Optional[Any]] = mapped_column(JSONB)                        # row keys with no column
 
 
 class PartReview(Base):
@@ -196,6 +199,8 @@ class PartReview(Base):
     qty: Mapped[int] = mapped_column(Integer)
     brickit_part: Mapped[Optional[str]] = mapped_column(Text)
     note: Mapped[Optional[str]] = mapped_column(Text)
+    pos: Mapped[int] = mapped_column(Integer, server_default="0")
+    extra: Mapped[Optional[Any]] = mapped_column(JSONB)
 
 
 class PartNote(Base):
@@ -206,25 +211,30 @@ class PartNote(Base):
     updated_at: Mapped[dt.datetime] = mapped_column(server_default=NOW)
 
 
-class PartChange(Base):
-    """Audit trail and undo stack."""
-    __tablename__ = "part_change"
-    __table_args__ = (
-        CheckConstraint("op IN ('add','remove','set','import','replace','resolve','undo')", name="op"),
-        Index("part_change_source_batch", "source_id", "batch"),
-        Index("part_change_part_idx", "source_id", "part", "colour"),
-    )
+class PartLog(Base):
+    """A source's change log (<id>.log.jsonl): one row per entry, grouped in batches; the entry is the whole log line.
+    Replaces the reference schema's part_change (revision 0003): the real entries have integer batches and more ops."""
+    __tablename__ = "part_log"
+    __table_args__ = (Index("part_log_source_batch", "source_id", "batch"),)
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     source_id: Mapped[str] = mapped_column(ForeignKey("part_source.id", ondelete="CASCADE"))
-    batch: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
-    ts: Mapped[dt.datetime] = mapped_column(server_default=NOW)
-    op: Mapped[str] = mapped_column(Text)
-    part: Mapped[Optional[str]] = mapped_column(Text)
-    colour: Mapped[Optional[int]] = mapped_column(Integer)
-    delta: Mapped[Optional[int]] = mapped_column(Integer)
-    qty_before: Mapped[Optional[int]] = mapped_column(Integer)
-    qty_after: Mapped[Optional[int]] = mapped_column(Integer)
-    note: Mapped[Optional[str]] = mapped_column(Text)
+    batch: Mapped[int] = mapped_column(Integer)
+    entry: Mapped[Any] = mapped_column(JSONB)
+
+
+class PartNoteLog(Base):
+    """The change log of the part notes (.collection-notes.log.jsonl)."""
+    __tablename__ = "part_note_log"
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    entry: Mapped[Any] = mapped_column(JSONB)
+
+
+class PartReservation(Base):
+    """A model the owner built holds its parts (.collection-reservations.json); `body` is the reservation record."""
+    __tablename__ = "part_reservation"
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True))        # insertion order
+    body: Mapped[Any] = mapped_column(JSONB)
 
 
 # ---------------------------------------------------------------- cost history and request log

@@ -30,7 +30,7 @@ def load_inventory(store, name):
         path = store / f"{candidate}.json"
         if path.is_file():
             return Inventory.from_json(json.loads(path.read_text(encoding="utf-8")))
-    for path in sorted(store.glob("*.json")) if store.is_dir() else []:
+    for path in sorted(store.glob("[!.]*.json")) if store.is_dir() else []:
         inv = Inventory.from_json(json.loads(path.read_text(encoding="utf-8")))
         if inv.name.casefold() == name.casefold():
             return inv
@@ -241,7 +241,7 @@ def run(args, library, parts):
             report["pileometer"] = result.pileometer
         return finish(report, lines_import(inv, result, path) + [f"  stored: {store / (inv.id + '.json')}"])
     if action == "list":
-        invs = [Inventory.from_json(json.loads(p.read_text(encoding="utf-8"))) for p in sorted(store.glob("*.json"))] if store.is_dir() else []
+        invs = [Inventory.from_json(json.loads(p.read_text(encoding="utf-8"))) for p in sorted(store.glob("[!.]*.json"))] if store.is_dir() else []
         report = dict(store=str(store), inventories=[dict(id=i.id, name=i.name, pieces=i.total_pieces, distinct_parts=i.distinct_parts,
                                                         source_filename=i.source_filename, created_at=i.created_at) for i in invs])
         return finish(report, [f"{i['id']:<24}{i['pieces']:>8} pieces {i['distinct_parts']:>6} parts  {i['source_filename']}" for i in report["inventories"]]
