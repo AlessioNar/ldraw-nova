@@ -388,6 +388,7 @@ def catalog(tmp_path, monkeypatch):
                          ("100-1", "Red Racer", 2005, "Racers", 0, [("3001", 4, 4)]),
                          ("200-1", "Big City Tipper Truck", 2010, "City", 0, [("3003", 14, 1)])])
     monkeypatch.setenv("LDRAW_NOVA_SET_CATALOG", str(path))
+    monkeypatch.setenv("LDRAW_NOVA_LOCAL_SET_CATALOG", str(tmp_path / "no-local.json"))
     set_catalog._load.cache_clear()
     yield path
     set_catalog._load.cache_clear()
@@ -425,6 +426,44 @@ def test_set_source_rows_can_be_edited_and_undone(client, catalog):
     client.post("/api/collection/sources/set-100-1/undo")
     assert table("set-100-1") == {("3001", 4): 4}
     assert client.post("/api/collection/sources/set-100-1/undo").status_code == 409        # the creation is not undoable
+
+
+def write_local(path, sets, fmt="set-catalog-local/1"):
+    path.write_text(json.dumps({"format": fmt, "sets": sets}))
+
+
+LOCAL_SETS = [{"key": "cada:C51026W", "brand": "cada", "set_num": "C51026W", "name": "Red Baron Plane", "year": 2023, "pieces": 1059},
+              {"key": "cada:C61001W", "brand": "cada", "set_num": "C61001W", "name": "Mystery Truck", "year": None, "pieces": None}]
+
+
+def test_local_catalogue_adds_other_brand_sets_by_number_and_name(client, catalog, tmp_path):
+    write_local(tmp_path / "local.json", LOCAL_SETS)
+    os.environ["LDRAW_NOVA_LOCAL_SET_CATALOG"] = str(tmp_path / "local.json")             # monkeypatch in `catalog` restores it
+    set_catalog._load.cache_clear()
+    found = lambda q: [(s["set_num"], s["brand"]) for s in client.get("/api/catalog/sets", params={"query": q}).json()["sets"]]  # noqa: E731
+    assert found("C51026W") == found("red baron") == [("cada:C51026W", "CaDA")]
+    assert {n for n, _ in found("cada")} == {"cada:C51026W", "cada:C61001W"}
+    assert found("c51026w") == [("cada:C51026W", "CaDA")] and found("8448") == [("8448-1", "LEGO")]
+    one = client.get("/api/catalog/sets/C51026W").json()
+    assert (one["set_num"], one["number"], one["brand"], one["num_parts"], one["lines"]) == ("cada:C51026W", "C51026W", "CaDA", 1059, 0)
+    assert client.get("/api/catalog/sets/cada:C51026W").status_code == 200
+    r = client.post("/api/collection/sets", json={"set_num": "C51026W"})
+    assert r.status_code == 200, r.text
+    assert r.json()["set"]["brand"] == "CaDA" and r.json()["inventory"]["name"] == "C51026W Red Baron Plane"
+    assert stored(r.json()["inventory"]["id"])["rows"] == []
+    assert client.post("/api/collection/sets", json={"set_num": "C61001W"}).status_code == 200        # null year and pieces
+
+
+def test_local_catalogue_absent_or_broken_leaves_lego_untouched(client, catalog, tmp_path):
+    bad = tmp_path / "local.json"
+    for content in (None, "not json", json.dumps({"format": "other", "sets": LOCAL_SETS}), json.dumps({"format": "set-catalog-local/1", "sets": [1, {"brand": "x"}]})):
+        if content is not None:
+            bad.write_text(content)
+        os.environ["LDRAW_NOVA_LOCAL_SET_CATALOG"] = str(bad)
+        set_catalog._load.cache_clear()
+        sets = client.get("/api/catalog/sets", params={"query": ""}).json()["sets"]
+        assert [s["set_num"] for s in sets] == ["200-1", "100-1", "8448-1"] and {s["brand"] for s in sets} == {"LEGO"}
+        assert client.get("/api/catalog/sets/C51026W").status_code == 404
 
 
 def test_missing_catalogue_is_a_clear_503(client, monkeypatch, tmp_path):

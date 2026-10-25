@@ -258,7 +258,7 @@ def _catalog() -> set_catalog.Catalog:
 
 
 def _set_json(s: dict) -> dict:
-    return {"set_num": s["set_num"], "name": s["name"], "year": s["year"], "theme": s["theme"], "num_parts": s["num_parts"],
+    return {"set_num": s["set_num"], "number": s["number"], "brand": s["brand"], "name": s["name"], "year": s["year"], "theme": s["theme"], "num_parts": s["num_parts"],
             "mapped_pieces": s["mapped_pieces"], "dropped_pieces": s["dropped_part"] + s["dropped_colour"]}
 
 
