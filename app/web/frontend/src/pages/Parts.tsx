@@ -106,7 +106,7 @@ export default function Parts() {
             <button type="button" className="danger-text" disabled={busy} onClick={() => void remove(current)}>Delete</button>
           </div>
         </header>
-        <InventoryDetailView id={current.id} key={`${current.id}-${version}`} />
+        <InventoryDetailView id={current.id} key={`${current.id}-${version}`} onChanged={changed} />
         <SourceHistory source={current.id} version={version} onChanged={changed} />
       </>}
       {dialogs}{toast}

@@ -355,7 +355,9 @@ export type CollectionOp =
   | { op: "add" | "set"; part: string; colour: number; qty: number }
   | { op: "remove"; part: string; colour: number }
   | { op: "review_resolve"; id: string; colour: number; qty?: number }
-  | { op: "review_discard"; id: string };
+  | { op: "review_discard"; id: string }
+  | { op: "move"; part: string; colour: number; to_colour?: number; to_part?: string; qty?: number };
+export type PartMatch = { part: string; description: string; category: string; size: string };
 export type OpsResult = { batch: number | null; changes: number; source: Inventory; pieces?: number };
 export type HistoryBatch = { batch: number; ts: number; note: string; summary: string; changes: number; kind: "edit" | "replace" | "undo" | "create"; undone: boolean; undoable: boolean };
 export type ReviewItem = { id: string; part: string; description: string; qty: number; note: string; brickit_part: string; candidates: { colour: number; name: string; owned: boolean }[] };
@@ -407,6 +409,7 @@ export const collectionApi = {
   part: (part: string) => request<PartDetail>(`/api/collection/parts/${encodeURIComponent(part)}`),
   setNote: (part: string, note: string) => request<{ part: string; note: string }>(`/api/collection/parts/${encodeURIComponent(part)}/note`, { method: "PUT", body: json({ note }) }),
   colours: () => request<{ colours: { code: number; name: string }[] }>("/api/collection/colours"),
+  partSearch: (q: string, near = "") => request<{ parts: PartMatch[]; total: number }>(`/api/collection/part-search?${qs({ q, near })}`),
   ops: (source: string, ops: CollectionOp[], note = "") => request<OpsResult>(`/api/collection/sources/${sid(source)}/ops`, { method: "POST", body: json({ ops, note }) }),
   history: (source: string) => request<{ batches: HistoryBatch[]; undo_batch: number | null }>(`/api/collection/sources/${sid(source)}/history`),
   undo: (source: string) => request<{ undone: number; summary: string; source: Inventory }>(`/api/collection/sources/${sid(source)}/undo`, { method: "POST" }),
