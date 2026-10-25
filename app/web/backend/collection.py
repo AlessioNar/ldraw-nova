@@ -25,6 +25,7 @@ from typing import Any
 import collection_store as store
 import inventories
 import part_info
+import set_images
 from inventories import InventoryError, LOOSE_ID
 
 LOOSE_NAME = "Loose parts"
@@ -583,6 +584,30 @@ def add_set(set_num: str, copies: int = 1, state: str = "parts", brand: str = DE
     return {"inventory": inventories.summary(data), "set": set_record(data)}
 
 
+def owned_set_nums() -> set[str]:
+    """The catalogue numbers of the sets the owner has, as a cheap lookup (no piece counts)."""
+    found = set()
+    for sid in store.source_ids():
+        try:
+            record = set_record(store.load(sid))
+        except InventoryError:
+            continue
+        if record is not None:
+            found.add(str(record["set_num"]))
+    return found
+
+
+def set_source(source_id: str) -> dict:
+    """The set record of one source, 404 when the source is missing or is not a set."""
+    try:
+        record = set_record(store.load(source_id))
+    except InventoryError:
+        record = None
+    if record is None:
+        raise InventoryError(404, "No such set")
+    return record
+
+
 def owned_sets() -> list[dict]:
     """Every owned set as a record: brand, image, copies, state and piece counts. `reserved` is the set's pieces while it
     is built; `missing` is how many of those the collection no longer covers (other reservations took them);
@@ -607,7 +632,7 @@ def owned_sets() -> list[dict]:
             for r in rows:
                 key = (reservations.part_key(r["part"]), int(r["colour"]))
                 missing += min(int(r["qty"]), max(0, reserved.get(key, 0) - owned.get(key, 0)))
-        found.append({**record, "id": sid, "source_name": data.get("name", sid), "pieces": pieces,
+        found.append({**record, "image": record["image"] or set_images.image_url(record["set_num"]), "id": sid, "source_name": data.get("name", sid), "pieces": pieces,
                       "distinct_parts": len({r["part"] for r in rows}), "reserved": pieces if built else 0,
                       "missing": missing, "on_hand": pieces - missing})
     return found
