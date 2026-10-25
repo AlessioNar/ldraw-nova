@@ -149,7 +149,8 @@ SCHEMA = {
             path_colour=colour('light grey', 'Path'),
             path_width=choice(2, [2, 4], 'Path width'),
             sidewalk=integer(6, 0, 8, 'Modular: studs of sidewalk in front of the building'),
-            lamps=flag(False, 'Modular: two street lamps on the sidewalk')),
+            lamps=flag(False, 'Modular: two street lamps on the sidewalk'),
+            corner=choice('none', ['none', 'left', 'right'], 'Modular: a second sidewalk along this side makes a corner module (two street facades)')),
     },
 }
 
@@ -175,6 +176,7 @@ CONSTRAINTS = [
     ('flowers-sills', 'Flower boxes stand on window sills, so they turn sills on'),
     ('gable-window-fits', 'A gable-end window needs a gable roof at least 8 studs deep'),
     ('awning-fits', 'An awning stripes the front cornice of the ground storey: it needs a rectangular footprint and 2 or more storeys, and it takes the place of a porch'),
+    ('corner-fits', 'A corner module needs a modular base with a sidewalk of 2 or more studs; the building is 32 minus the sidewalk wide, and only the two street sides get windows'),
     ('sign-shop', 'A fascia sign needs a door and a ground storey of 7 or more courses'),
 ]
 
@@ -247,10 +249,17 @@ def normalise(config):
     if fp['shape'] != 'rect' and st['setback']:
         st['setback'] = 0
         notes.append('setback ignored: only rectangular footprints step in (setback-rect)')
+    if bs['corner'] != 'none' and bs['kind'] != 'modular':
+        bs['corner'] = 'none'
+        notes.append('corner removed: only a modular base has street sides (corner-fits)')
+    if bs['corner'] != 'none' and bs['sidewalk'] < 2:
+        bs['sidewalk'] = 2
+        notes.append('sidewalk raised to 2: a corner module has a sidewalk on two sides (corner-fits)')
     if bs['kind'] == 'modular':
-        if fp['width'] != 32:
-            fp['width'] = 32
-            notes.append('width set to 32: a modular building fills its 32 stud module (modular-fits)')
+        span = 32 - (bs['sidewalk'] if bs['corner'] != 'none' else 0)
+        if fp['width'] != span:
+            fp['width'] = span
+            notes.append(f'width set to {span}: a modular building fills its 32 stud module beside the sidewalk (modular-fits)')
         if fp['depth'] > 32 - bs['sidewalk']:
             fp['depth'] = 32 - bs['sidewalk']
             notes.append(f"depth limited to {fp['depth']}: the module is 32 studs deep including the sidewalk (modular-fits)")
@@ -261,6 +270,11 @@ def normalise(config):
             if group[key] != value:
                 group[key] = value
                 notes.append(f'{key} set to {value}: {why} (modular-fits)')
+        if bs['corner'] != 'none':
+            street = [x for x in op['sides'] if x in ('front', bs['corner'])]
+            if street != op['sides']:
+                op['sides'] = street
+                notes.append('windows only on the street sides: the other sides are shared walls (corner-fits)')
         if co['style'] == 'towers':
             co['style'] = 'pillars'
             notes.append('towers replaced by pillars: towers would stick out of the module (modular-fits)')

@@ -22,6 +22,17 @@ obd:baseColour a owl:DatatypeProperty,
     obd:default "green" ;
     obd:order 3 .
 
+obd:baseCorner a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "corner" ;
+    rdfs:comment "Modular: a second sidewalk along this side makes a corner module (two street facades)"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "left" "right" ) ] ;
+    obd:default "none" ;
+    obd:order 9 .
+
 obd:baseKind a owl:DatatypeProperty,
         owl:FunctionalProperty,
         obd:Parameter ;

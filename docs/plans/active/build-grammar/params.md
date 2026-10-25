@@ -148,6 +148,7 @@ Ground.
 | `path_width` | `2` / `4` | `2` | Path width |
 | `sidewalk` | 0..8 | `6` | Modular: studs of sidewalk in front of the building |
 | `lamps` | yes / no | `false` | Modular: two street lamps on the sidewalk |
+| `corner` | `none` / `left` / `right` | `none` | Modular: a second sidewalk along this side makes a corner module (two street facades) |
 
 #### Validity rules
 
@@ -174,4 +175,5 @@ Ground.
 | `flowers-sills` | Flower boxes stand on window sills, so they turn sills on |
 | `gable-window-fits` | A gable-end window needs a gable roof at least 8 studs deep |
 | `awning-fits` | An awning stripes the front cornice of the ground storey: it needs a rectangular footprint and 2 or more storeys, and it takes the place of a porch |
+| `corner-fits` | A corner module needs a modular base with a sidewalk of 2 or more studs; the building is 32 minus the sidewalk wide, and only the two street sides get windows |
 | `sign-shop` | A fascia sign needs a door and a ground storey of 7 or more courses |

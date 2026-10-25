@@ -99,9 +99,11 @@ def band(ctx, st):
                 n = (i + a, j + b)
                 if n not in cells and n not in st.blocked and ctx.canvas.free(n[0], n[1], y):
                     ring.add(n)
-        if ctx.modular:                       # a cornice must not reach into the neighbouring module: front only
-            bx0, bx1, bz0, _ = footprint.bbox(cells)
-            ring = {c for c in ring if c[1] < bz0 and bx0 <= c[0] < bx1}
+        if ctx.modular:                       # a cornice must not reach into the neighbouring module: street sides only
+            bx0, bx1, bz0, bz1 = footprint.bbox(cells)
+            corner = cfg['base']['corner']
+            lo, hi = bx0 - (corner == 'left'), bx1 + (corner == 'right')
+            ring = {c for c in ring if (c[1] < bz0 and lo <= c[0] < hi) or (c[1] < bz1 and ((corner == 'left' and c[0] < bx0) or (corner == 'right' and c[0] >= bx1)))}
         key = ('roof', roof) if main_top and cfg['roof']['style'] == 'flat' else ('trim', trim)
         groups.setdefault(key, set()).update(ring)       # cut together with the slab so plates straddle wall and cornice
         if cfg['details']['awning'] and st.index == 0 and st.kind == 'main':

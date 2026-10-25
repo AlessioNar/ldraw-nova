@@ -19,7 +19,7 @@ def base_plate(ctx):
     m = cfg['margin']
     ctx.base_rect = (x0 - m, z0 - m, x1 - x0 + 2 * m, z1 - z0 + 2 * m)
     if cfg['kind'] == 'modular':               # the 32x32 module: sidewalk in front, the building behind it
-        ctx.base_rect = (x0, z0 - cfg['sidewalk'], 32, 32)
+        ctx.base_rect = (x0 - (cfg['sidewalk'] if cfg['corner'] == 'left' else 0), z0 - cfg['sidewalk'], 32, 32)
     colour = ctx.code(cfg['colour'])
     i0, j0, w, d = ctx.base_rect
     # Two layers of plate strips laid across each other, each strip's joints staggered against the last.
@@ -51,8 +51,17 @@ def sidewalk(ctx):
     lamps = []
     if cfg['lamps']:
         lamps = [(bx0 + 3, bz0 + depth - 2), (bx0 + bw - 4, bz0 + depth - 2)]
-    cells = {(i, j) for i in range(bx0, bx0 + bw) for j in range(bz0, bz0 + depth)} - set(lamps)
+    cells = {(i, j) for i in range(bx0, bx0 + bw) for j in range(bz0, bz0 + depth)}
     kerb = {c for c in cells if c[1] == bz0}
+    corner = cfg['corner']
+    if corner != 'none':                       # the second street runs along the whole side of the module
+        strip = range(bx0, bx0 + depth) if corner == 'left' else range(bx0 + bw - depth, bx0 + bw)
+        cells |= {(i, j) for i in strip for j in range(bz0, bz0 + bd)}
+        kerb |= {(bx0 if corner == 'left' else bx0 + bw - 1, j) for j in range(bz0, bz0 + bd)}
+        if cfg['lamps']:                       # one lamp at the far end of each street
+            lamps = [(bx0 + bw - 4, bz0 + depth - 2), (bx0 + depth - 2, bz0 + bd - 4)] if corner == 'left' else \
+                    [(bx0 + 3, bz0 + depth - 2), (bx0 + bw - depth + 1, bz0 + bd - 4)]
+    cells -= set(lamps)
     for cells_, colour in ((cells - kerb, ctx.code(cfg['path_colour'])), (kerb, ctx.code(72))):
         free = {c for c in cells_ if ctx.canvas.free(c[0], c[1], ctx.y_ground)}
         for (code, i, j, w, d) in parts.cover(ctx, free, 'tile', colour):

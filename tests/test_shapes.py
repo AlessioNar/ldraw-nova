@@ -35,6 +35,7 @@ BREAKING = {
     'flowers-sills': {'details': {'flower_boxes': True}},
     'gable-window-fits': {'roof': {'style': 'hip', 'gable_windows': True}},
     'sign-shop': {'details': {'sign': 'fascia'}, 'storeys': {'courses': 6}},
+    'corner-fits': {'base': {'corner': 'left'}},
     'awning-fits': {'details': {'awning': True}, 'storeys': {'count': 1}},
 }
 

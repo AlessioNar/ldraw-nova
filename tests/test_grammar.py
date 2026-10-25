@@ -325,6 +325,29 @@ def test_furnished_rooms_have_furniture_and_keep_the_doorway_clear():
     assert not items(modular({'storeys': {'interior': 'partition'}}), 'bed')
 
 
+@pytest.mark.parametrize('corner', ['left', 'right'])
+def test_corner_module_has_two_street_sides(corner):
+    r = modular({'base': {'corner': corner}, 'footprint': {'depth': 22}, 'openings': {'door_position': corner}})
+    sw = r['config']['base']['sidewalk']
+    assert r['config']['footprint']['width'] == 32 - sw and r['config']['openings']['sides'] == ['front', corner]
+    cells = {c for i in r['canvas'].items for c in i.cells}
+    xs = {c[0] for c in cells}
+    assert max(xs) - min(xs) + 1 == 32                                  # still one 32 stud module
+    assert len(r['canvas'].components()) == 1
+    walk = [i for i in r['canvas'].items if i.label == 'sidewalk']
+    side_cells = {c for i in walk for c in i.cells if (c[0] < min(xs) + sw if corner == 'left' else c[0] > max(xs) - sw)}
+    assert len(side_cells) >= sw * 22                                   # the second sidewalk runs the depth of the building
+    windows = {i.label.split()[-2] for i in r['canvas'].items if i.role == 'window'}
+    assert windows <= {'front', corner}
+    tech = items(r, code=catalog.TECHNIC_BRICK)
+    assert tech and {i.cells[0][0] for i in tech} == {max(xs) if corner == 'left' else min(xs)}   # bolted on the far side only
+
+
+def test_corner_needs_a_modular_base():
+    cfg, notes = schema.normalise({'base': {'corner': 'left'}})
+    assert cfg['base']['corner'] == 'none' and any('corner-fits' in n for n in notes)
+
+
 def test_furniture_needs_a_rectangular_footprint():
     cfg, notes = schema.normalise({'footprint': {'shape': 'L', 'width': 16, 'depth': 12}, 'storeys': {'interior': 'furnished'}, 'roof': {'style': 'flat'}})
     assert cfg['storeys']['interior'] == 'none' and any('interior-rect' in n for n in notes)
@@ -424,6 +447,7 @@ def test_every_constraint_has_an_enforcing_rule():
         'parapet-flat': {'roof': {'style': 'gable', 'parapet': 'plain'}},
         'sign-shop': {'details': {'sign': 'fascia'}, 'storeys': {'courses': 6}},
         'awning-fits': {'details': {'awning': True}, 'storeys': {'count': 1}},
+        'corner-fits': {'base': {'corner': 'left'}},
     }
     for rule, patch in expected.items():
         _, notes = schema.normalise(patch)
