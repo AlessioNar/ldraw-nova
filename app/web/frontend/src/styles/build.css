@@ -131,3 +131,18 @@ a.wb-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 .tile-line { max-width: 100%; margin-top: auto; }
 .primary-tile { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent), var(--shadow); }
 @media (max-width: 560px) { .tiles { grid-template-columns: 1fr; gap: 10px; } .tile { min-height: 0; padding: 16px; } .tile-line { margin-top: 0; } .home-logo { width: 56px; height: 42px; } }
+
+/* Building grammar editor: preset chips, component tree, per-component form (workspace Settings tab) */
+.bld-editor { display: flex; flex-direction: column; gap: 12px; }
+.bld-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.bld-chip { padding: 3px 10px; font-size: var(--fs-xs); background: var(--surface-2); border-color: var(--border); border-radius: 999px; }
+.bld-tree { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bld-root { margin-right: 4px; }
+.bld-node { position: relative; padding: 4px 10px; font-size: var(--fs-xs); background: var(--surface-2); border-color: var(--border); }
+.bld-node.selected { border-color: var(--accent); background: var(--accent-soft); }
+.bld-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--accent-solid); vertical-align: middle; }
+.bld-form { border: 0; padding: 0; margin: 0; min-width: 0; }
+.bld-form legend { padding: 0; margin-bottom: 6px; }
+.bld-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.bld-fields .gen-hint { display: none; }
+@media (max-width: 560px) { .bld-fields { grid-template-columns: 1fr; } }
