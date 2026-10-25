@@ -776,6 +776,9 @@ def summary_text(report: Report) -> str:
     for key in ("chats_in_files", "builds_in_files"):
         if key in report.extra:
             lines.append(f"  {key}: {report.extra[key]}")
+    if report.extra.get("chat_lists_not_linked"):
+        lines.append("  chats listed in a build.json but not linked to it (the link is the chat's build_id, so not imported): "
+                     + ", ".join(report.extra["chat_lists_not_linked"]))
     for text in report.anomalies:
         lines.append(f"  anomaly: {text}")
     for text in report.mismatches:
