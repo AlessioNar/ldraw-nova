@@ -16,7 +16,7 @@ function ProposalCard({ p, ws }: { p: Proposal; ws: Workspace }) {
   const busy = ws.busy === "proposal";
   return (
     <div className={`ws-ai-card${previewing ? " active" : ""}`}>
-      <div className="label">Review before it joins the draft</div>
+      <div className="label">Needs you · review before it joins the draft</div>
       <div className="mono ws-diffline"><span className="ok-text">+ {added} part{added === 1 ? "" : "s"}</span> <span className="muted">· {removed} removed · {moved} moved</span></div>
       <div className="ws-ai-actions">
         <button className="primary" disabled={busy} onClick={() => ws.keepProposal(p)}>Keep in draft</button>
@@ -211,7 +211,6 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   } else if (!toAi) line = <><b data-mode="quick">Quick changes · free</b> {toggle}</>;
   return (
     <section className="ws-panel ws-ai" role="tabpanel" aria-label="Chat">
-      {ws.proposals.map((p) => <ProposalCard key={p.id} p={p} ws={ws} />)}
       <div className="ws-chat">
         {detail
           ? <MessageList detail={detail} running={running} draft={draft} persisting={persisting} tools={tools} workers={workers} now={now} error={error} scrollerRef={scroller} bottomRef={bottom} fast={fast}
@@ -224,6 +223,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       </div>
       <div className="ws-composer">
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
+        {ws.proposals.map((p) => <ProposalCard key={p.id} p={p} ws={ws} />)}
         {tray}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
