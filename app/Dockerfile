@@ -305,6 +305,8 @@ COPY --from=nova docs/ /opt/ldraw-nova/docs/
 COPY --from=nova examples/ /opt/ldraw-nova/examples/
 COPY --from=nova prompts/ /opt/ldraw-nova/prompts/
 COPY --from=nova *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent /opt/ldraw-nova/
+# The set catalog builder: tests/test_sets.py loads it, and the root tests run in this image
+COPY --from=nova tools/build_set_catalog.py /opt/ldraw-nova/tools/build_set_catalog.py
 RUN --mount=type=cache,target=/root/.cache/uv \
     cd /opt/ldraw-nova && uv sync --locked --no-dev --python "${PYTHON_VERSION}" \
     && mkdir -p .cache && chown agent:agent .cache \
