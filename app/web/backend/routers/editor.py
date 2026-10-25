@@ -54,7 +54,7 @@ MAX_PLAN_BYTES = 5_000_000
 EDITOR_WORKER = os.environ.get("LDRAW_NOVA_EDITOR_WORKER", "1") != "0"
 CLI_OPTIONS = {"--plan": "plan", "--state": "state", "--mpd": "mpd", "--base-revision": "base_revision",
                "--edits": "edits", "--owned": "owned", "--mode": "mode", "--from": "source",
-               "--from-mpd": "from_mpd", "--name": "name"}
+               "--from-mpd": "from_mpd", "--name": "name", "--role-edit": "role_edit"}
 
 EMPTY_PLAN = {"version": 1, "author": "LDraw Nova editor", "sections": [
     {"name": "model.ldr", "description": "Manual editor model", "steps": [[]]}]}
@@ -318,6 +318,28 @@ async def apply_edits(store, chat_id: str, edits: list, base_revision: int, delt
         return await _answer(store, chat_id, report, "edit", delta)
 
 
+async def apply_role_edit(store, chat_id: str, spec: dict) -> dict:
+    """"make the roof blue" on the draft: the toolkit resolves the words (roles of the plan, or the selection) into ops and
+    applies them as ONE undoable batch, answering with the delta view. Nothing changes when the words match nothing or
+    only with low confidence: the answer then has `clarify` (and `applied` False)."""
+    if _session(store, chat_id) is None:
+        not_found("no editor plan for this chat")
+    async with _lock(chat_id):
+        folder, _, _, _ = _paths(store, chat_id)
+        folder.mkdir(parents=True, exist_ok=True)
+        sandbox.give_to_agent(folder)
+        request_path = folder / "role-edit.json"
+        request_path.write_text(json.dumps(spec), encoding="utf-8")
+        sandbox.give_to_agent(request_path)
+        report = await _run(store, chat_id, _arguments(store, chat_id, "role") + ["--role-edit", str(request_path)])
+        _outcome(report, 0)
+        if not report.get("applied"):
+            return {"applied": False, "clarify": report.get("clarify"), "changes": report.get("changes") or [], "notes": report.get("notes") or []}
+        view = await _answer(store, chat_id, report, "edit", True)
+        return {"applied": True, "changes": report.get("changes") or [], "notes": report.get("notes") or [],
+                "view": view if view.get("delta") else None}
+
+
 def _touch(store, chat_id: str, kind: str = "edit", view: Optional[dict] = None) -> None:
     if store.is_build(chat_id):
         workspace.touch_draft(store, chat_id, kind, view if view is not None else _view(store, chat_id))
@@ -482,7 +504,7 @@ async def editor_publish(space: str, chat_id: str, body: EditorPublish):
         sandbox.give_to_agent(target)
     ctx = tools.ToolContext(chat_id, store, lambda *args: None, options=chat.get("options") or {}, origin="editor")
     try:
-        result = await tools.t_publish_model(ctx, str(target), name)
+        result = await tools.t_publish_model(ctx, str(target), name, background_check=build)
     except tools.ToolError as exc:
         raise HTTPException(400, str(exc)) from None
     publish = json.JSONDecoder().raw_decode(result.content)[0]

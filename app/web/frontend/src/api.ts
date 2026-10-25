@@ -495,8 +495,8 @@ export const buildsApi = {
     request<Chat>(`${buildBase(id)}/chat`, { method: "POST", body: json({ llm_model_id, new: isNew }) }),
   describe: (text: string, build_id?: string, current?: { generator: string; params: Record<string, unknown> }) =>
     request<Describe>("/api/describe", { method: "POST", body: json({ text, build_id, current }) }),
-  hint: (text: string, generator?: string) =>
-    request<DescribeHint>(`/api/describe/estimate?text=${encodeURIComponent(text)}${generator ? `&generator=${encodeURIComponent(generator)}` : ""}`),
+  hint: (text: string, generator?: string, buildId?: string) =>
+    request<DescribeHint>(`/api/describe/estimate?text=${encodeURIComponent(text)}${generator ? `&generator=${encodeURIComponent(generator)}` : ""}${buildId ? `&build_id=${encodeURIComponent(buildId)}` : ""}`),
 };
 
 /** "about €1–2" from the estimate a needs_ai answer carries. */

@@ -86,8 +86,8 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     setHint(null);
     const long = text.trim().length >= 3;
     setTyped(long);
-    if (long) hintTimer.current = setTimeout(() => buildsApi.hint(text, generator).then(setHint).catch(() => {}), 350);
-  }, [generator]);
+    if (long) hintTimer.current = setTimeout(() => buildsApi.hint(text, generator, id).then(setHint).catch(() => {}), 350);
+  }, [generator, id]);
 
   const messages = detail?.messages ?? [];
   const lastId = messages.filter((m) => !m._hidden && m.role !== "tool").at(-1)?.id;
@@ -156,6 +156,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       return (
         <div className="ws-fp" data-route="clarify">
           <div className="ws-fp-line"><span>{f.question}</span></div>
+          {!!f.notes?.length && <ul className="ws-fp-notes">{f.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
           {live && !!choices.length && (
             <div className="ws-chips" role="group" aria-label="Quick replies">
               {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}

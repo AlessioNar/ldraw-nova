@@ -167,7 +167,7 @@ def test_regenerate_is_one_undoable_step(client):
 
 
 def test_describe_regenerates_for_generator_and_edit_routes_and_spends_nothing_otherwise(client, monkeypatch):
-    slug = make_build(client, "ws describe", TINY)
+    slug = make_build(client, "ws describe")           # empty: the first generator answer replaces nothing, so it is not asked about
     seen = []
 
     async def fake(text, current=None, build_id=None, **kw):
@@ -210,7 +210,7 @@ def test_describe_turns_are_saved_in_the_build_chat(client, monkeypatch):
     """One history per build: the fast path's turns (text, route, changes, cost 0, timing) land in the attached chat,
     previous_text defaults to the last user message, and the agent later reads the turns as ordinary history."""
     import history
-    slug = make_build(client, "ws chat", TINY)
+    slug = make_build(client, "ws chat")
     seen = []
 
     async def fake(text, current=None, build_id=None, previous_text=None, **kw):

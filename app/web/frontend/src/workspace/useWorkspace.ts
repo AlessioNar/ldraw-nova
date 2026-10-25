@@ -137,6 +137,14 @@ export function useWorkspace(id: string) {
     }
   }, [refreshCheck, say, syncDraft]);
 
+  // A saved version's geometry check finishes after the save returns: look again until it has an answer.
+  const checking = !!ws?.versions.some((v) => v.check?.status === "checking");
+  useEffect(() => {
+    if (!checking) return;
+    const t = setInterval(() => { wsApi.workspace(id).then(setWs).catch(() => {}); }, 4000);
+    return () => clearInterval(t);
+  }, [checking, id]);
+
   // ---- derived ----
   const versions = useMemo<VersionRow[]>(
     () => (ws?.versions ?? []).map((w) => ({ ...w, detail: detail?.versions.find((v) => v.version === w.version) })).sort((a, b) => a.version - b.version),
@@ -215,7 +223,7 @@ export function useWorkspace(id: string) {
 
   /** One chat message through the free fast path. The server saves the turn in the build's chat; the chat shows the result. */
   const describe = async (text: string, previous?: string, quick?: boolean): Promise<DescribeResult> => {
-    const r = await wsApi.describe(id, text, previous, quick);
+    const r = await wsApi.describe(id, text, previous, quick, selection.map((p) => p.id));   // "paint this red" names the canvas selection
     if (r.route === "generator" || r.route === "edit") {
       if (r.draft) setServerDraft(r.draft);
       setViewing(null); await afterBackendChange();

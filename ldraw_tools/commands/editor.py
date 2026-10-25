@@ -218,8 +218,17 @@ def run_editor(args, library, parts):
         _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
         return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, warnings=warnings)
 
-    if args.action == "apply":
-        edits = _read(args.edits)
+    role = None
+    if args.action == "role":
+        # "make the roof blue" on any plan: the words are resolved to ops here, then applied exactly like `apply`
+        from .. import role_edits
+        spec = _read(args.role_edit)
+        role = role_edits.resolve(plan, parts, spec["edits"], selection=spec.get("selection"), force=bool(spec.get("force")))
+        if not role["ops"]:
+            return _report(True, state, applied=False, **{k: role[k] for k in ("changes", "notes", "clarify")})
+        args.edits = None
+    if args.action in ("apply", "role"):
+        edits = role["ops"] if role else _read(args.edits)
         inverses = list(reversed(inverse(plan, edits, parts)))      # undo runs them last-first: a later edit may need an earlier one's part
         candidate = apply(plan, edits, parts)
         rows = _rows(candidate, parts)
@@ -233,7 +242,8 @@ def run_editor(args, library, parts):
         state = {**state, "undo": [*state["undo"], {"forward": edits, "inverse": inverses}], "redo": [],
                  "revision": state["revision"] + 1}
         _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
-        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, short=flagged, delta=plan_delta(plan, candidate))
+        extra = dict(applied=True, changes=role["changes"], notes=role["notes"]) if role else {}
+        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, short=flagged, delta=plan_delta(plan, candidate), **extra)
 
     if args.action == "undo":
         if not state["undo"]:
@@ -282,7 +292,7 @@ def run_request(request, library, parts, idle=None):
     report plus `exit_code` (0 done, 1 refused, 2 failed); the plan and the preview are on disk, so unless
     `full` is set they are left out of the reply. Failures the CLI turns into exit code 2 come back the same way.
     """
-    names = ("action", "plan", "state", "mpd", "base_revision", "edits", "owned", "mode", "source", "from_mpd", "name")
+    names = ("action", "plan", "state", "mpd", "base_revision", "edits", "owned", "mode", "source", "from_mpd", "name", "role_edit")
     args = types.SimpleNamespace(**{k: request.get(k) for k in names})
     args.mode = args.mode or "off"
     if args.action == "warm":
@@ -312,7 +322,7 @@ def register(commands):
     c = commands.add_parser("editor", help="Manual editor sessions: open, apply, undo and redo a chat's plan")
     c.add_argument("--report", help="Also write the JSON report to this file")
     sub = c.add_subparsers(dest="action", required=True)
-    for action in ("open", "replace", "apply", "undo", "redo"):
+    for action in ("open", "replace", "apply", "role", "undo", "redo"):
         s = sub.add_parser(action)
         s.add_argument("--plan", required=True, help="The chat's plan file (output/editor/plan.json)")
         s.add_argument("--state", required=True, help="The session state file beside it")
@@ -325,8 +335,11 @@ def register(commands):
             s.add_argument("--from", dest="source", help="An existing plan file to open (else a one-brick skeleton)")
             s.add_argument("--from-mpd", help="An MPD/LDR model file to import as the plan (instead of --from)")
             s.add_argument("--name", help="A name for the model, used when publishing")
-        if action == "apply":
-            s.add_argument("--edits", required=True, help="JSON file with the list of edit operations")
+        if action == "role":
+            s.add_argument("--role-edit", required=True, help='JSON file {"edits": [...], "selection": [...], "force": bool}')
+        if action in ("apply", "role"):
+            if action == "apply":
+                s.add_argument("--edits", required=True, help="JSON file with the list of edit operations")
             s.add_argument("--owned", help="JSON file [[part, colour, qty], ...] of the chat's inventories")
             s.add_argument("--mode", choices=("off", "prefer", "only"), default="off",
                            help="off: no inventory check; only: refuse a short edit; prefer: flag it")

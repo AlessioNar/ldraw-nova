@@ -85,7 +85,8 @@ def test_home_presets_route_without_any_call(provider):
     assert car["params"]["length"] == ENTRIES["grand-tourer"]["defaults"]["length"]          # "small" = the compact default
     valid(car)
     cottage = describe("A 6 x 8 cottage with a door, two windows and a sloped roof")
-    assert cottage["generator"] == "house" and cottage["params"]["width"] == 6 and cottage["params"]["depth"] == 8
+    assert cottage["generator"] == "building" and cottage["preset"] == "cottage"           # the grammar answers houses now
+    assert cottage["params"]["width"] == 6 and cottage["params"]["depth"] == 8
     assert cottage["params"]["windows"] == 2 and cottage["params"]["door_side"] != "none"
     assert any("studs" in n for n in cottage["notes"])                      # the unit assumption is stated, not asked
     valid(cottage)
@@ -147,7 +148,7 @@ def test_real_world_requests_pick_the_right_generator(provider):
     cases = {"a truck": "tipper-truck", "build a green pickup": "pickup", "yellow delivery van please": "delivery-van",
              "a black touring motorbike": "touring-motorcycle", "a small blue harbour launch": "harbour-launch",
              "white courier jet with red accents": "courier-jet", "Build a small white and blue starship": "starfighter",
-             "a house with a red roof and a chimney": "house"}
+             "a house with a red roof and a chimney": "building"}
     for g in GOLDEN:
         provider.specs[g["prompt"]] = g["expected"]
     for text, generator in cases.items():
@@ -338,7 +339,7 @@ def test_describe_without_any_model_falls_back_to_keywords(client, monkeypatch):
 
 def test_estimate_endpoint_is_rules_only_and_fast(client, provider):
     cases = {"Build a small red car with four black wheels": ("generator", 1.0), "a red pickup": ("generator", None),
-             "Design a harbour crane with a long boom and a cargo dock": ("needs_ai", 1.0), "a steam train": ("needs_ai", None),
+             "Design a harbour crane with a long boom and a cargo dock": ("needs_ai", 1.0), "a steam train": ("clarify", None),
              "hello": ("clarify", None)}
     slowest = 0.0
     for text, (route, confidence) in cases.items():
@@ -351,7 +352,7 @@ def test_estimate_endpoint_is_rules_only_and_fast(client, provider):
     assert slowest < 0.2
     fast = client.get("/api/describe/estimate", params={"text": "a red pickup"}).json()
     assert fast["hint"].startswith("Fast path: free") and fast["took_ms"] < 200 and fast["confidence"] < 1
-    ai = client.get("/api/describe/estimate", params={"text": "a steam train"}).json()
+    ai = client.get("/api/describe/estimate", params={"text": "Design a harbour crane with a long boom and a cargo dock"}).json()
     assert ai["hint"].startswith("AI build: ~€") and ai["estimate"]["minutes_high"] > ai["estimate"]["minutes_low"]
     assert client.get("/api/describe/estimate", params={"text": "make the roof blue", "generator": "house"}).json()["route"] == "edit"
     assert client.get("/api/describe/estimate").json()["route"] == "clarify"
@@ -363,7 +364,8 @@ def test_estimate_without_a_loaded_registry_is_still_instant(client, provider):
     started = time.perf_counter()
     body = client.get("/api/describe/estimate", params={"text": "a red pickup"}).json()
     assert time.perf_counter() - started < 0.2 and body["route"] == "generator"
-    assert client.get("/api/describe/estimate", params={"text": "a steam train"}).json()["route"] == "needs_ai"
+    assert client.get("/api/describe/estimate", params={"text": "Design a harbour crane with a long boom and a cargo dock"}).json()["route"] == "needs_ai"
+    assert client.get("/api/describe/estimate", params={"text": "a steam train"}).json()["route"] == "clarify"       # honest: the rules cannot place it
 
 
 def test_registry_dump_matches_the_toolkit_when_available():
@@ -393,7 +395,7 @@ def test_a_template_wins_only_a_kind_no_generator_owns():
         entry, _ = fast_path.choose({"intent": "new_model", "subject": {"family": "truck", "kind": "flatbed truck"}})
         assert entry["id"] == "template:flatbed-truck"
         entry, _ = fast_path.choose({"intent": "new_model", "subject": {"family": "house", "kind": "cottage"}})
-        assert entry["id"] == "house"
+        assert entry["id"] in ("house", "building")      # a generator before a template (the grammar, which has presets, first)
         params, notes = fast_path.params_from_spec(flatbed, {"subject": {"family": "truck"}, "colours": {"body": "red"}})
         assert params["colour_body"] == "red" and params["z_delta"] == 0
     finally:

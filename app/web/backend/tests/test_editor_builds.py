@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import settings
+import tools
 from main import app
 from store import get_store
 
@@ -76,9 +77,13 @@ def test_save_is_the_next_version_in_my_builds(client, tiny):
     assert body["version"] == 2 and body["file"] == "tiny-build-v2.mpd" and body["message"] == "Saved as v2 in My Builds"
     v2 = settings.GENERATED_DIR / "tiny-build-v2.mpd"
     assert "1 4 60 0 0" in v2.read_text() and "1 4 0 0 0" in tiny.read_text()        # the original is kept
-    # preview and parts list come from the same render publish_model does (which needs a display; the browser check covers it)
-    assert (v2.with_suffix(".png").is_file() and v2.with_suffix(".csv").is_file()) or any(
-        "rendering failed" in w for w in body["publish"]["warnings"])
+    # the save returns after the quick validation; the geometry check and the render (which needs a display; the browser
+    # check covers it) finish in the background and leave their result beside the version
+    import time as _time
+    deadline = _time.monotonic() + 120
+    while (tools.read_check(v2) or {}).get("status", "checking") == "checking" and _time.monotonic() < deadline:
+        _time.sleep(1)
+    assert tools.read_check(v2)["status"] in ("ok", "warnings", "failed")
     listed = {m["file"]: m for m in client.get("/api/models").json()["models"]}
     assert listed["tiny-build-v2.mpd"]["origin"] == "editor" and listed["tiny-build-v1.mpd"]["origin"] is None
     assert [c["id"] for c in get_store().list_chats()] == chats_before

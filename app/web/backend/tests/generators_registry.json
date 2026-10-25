@@ -1291,7 +1291,12 @@
        "chimney": "right",
        "porch": true
       }
-     }
+     },
+     "keywords": [
+      "house",
+      "home",
+      "villa"
+     ]
     },
     "cottage": {
      "title": "Cottage",
@@ -1329,7 +1334,12 @@
       "details": {
        "chimney": "left"
       }
-     }
+     },
+     "keywords": [
+      "cottage",
+      "cabin",
+      "bungalow"
+     ]
     },
     "shop": {
      "title": "Shop with flat roof",
@@ -1368,7 +1378,14 @@
        "sign": "fascia",
        "sign_colour": "dark blue"
       }
-     }
+     },
+     "keywords": [
+      "shop",
+      "store",
+      "bakery",
+      "kiosk",
+      "market"
+     ]
     },
     "townhouse": {
      "title": "Two-storey townhouse",
@@ -1405,7 +1422,12 @@
        "balcony": true,
        "balcony_colour": "dark grey"
       }
-     }
+     },
+     "keywords": [
+      "townhouse",
+      "terrace",
+      "terraced"
+     ]
     },
     "tower": {
      "title": "Tower",
@@ -1451,7 +1473,13 @@
        "colour": "dark green",
        "path_colour": "dark grey"
       }
-     }
+     },
+     "keywords": [
+      "tower",
+      "watchtower",
+      "lighthouse",
+      "keep tower"
+     ]
     },
     "castle-keep": {
      "title": "Castle keep",
@@ -1502,7 +1530,14 @@
        "path_colour": "dark grey",
        "path_width": 4
       }
-     }
+     },
+     "keywords": [
+      "castle",
+      "keep",
+      "fort",
+      "fortress",
+      "stronghold"
+     ]
     },
     "pagoda": {
      "title": "Pagoda (4 tiers)",
@@ -1545,7 +1580,11 @@
        "colour": "dark green",
        "path_colour": "light grey"
       }
-     }
+     },
+     "keywords": [
+      "pagoda",
+      "stupa"
+     ]
     },
     "temple-hall": {
      "title": "Temple hall",
@@ -1593,7 +1632,12 @@
        "path_width": 4,
        "margin": 4
       }
-     }
+     },
+     "keywords": [
+      "temple",
+      "shrine",
+      "pavilion"
+     ]
     },
     "minka": {
      "title": "Japanese farmhouse (minka)",
@@ -1636,7 +1680,12 @@
        "colour": "sand green",
        "path_colour": "dark grey"
       }
-     }
+     },
+     "keywords": [
+      "minka",
+      "ryokan",
+      "dojo"
+     ]
     },
     "gate-tower": {
      "title": "City gate tower",
@@ -1680,7 +1729,12 @@
        "path_colour": "dark grey",
        "path_width": 4
       }
-     }
+     },
+     "keywords": [
+      "gate tower",
+      "city gate",
+      "drum tower"
+     ]
     },
     "tea-room": {
      "title": "Tea room",
@@ -1721,7 +1775,12 @@
        "colour": "sand green",
        "path_colour": "light grey"
       }
-     }
+     },
+     "keywords": [
+      "tea room",
+      "gazebo",
+      "garden pavilion"
+     ]
     },
     "white-pagoda": {
      "title": "Japanese pagoda (3 tiers)",
@@ -1764,7 +1823,11 @@
        "colour": "sand green",
        "path_colour": "dark grey"
       }
-     }
+     },
+     "keywords": [
+      "japanese pagoda",
+      "tahoto"
+     ]
     },
     "siheyuan": {
      "title": "Courtyard house (siheyuan)",
@@ -1805,7 +1868,12 @@
        "path_colour": "light grey",
        "path_width": 4
       }
-     }
+     },
+     "keywords": [
+      "siheyuan",
+      "courtyard house",
+      "hutong"
+     ]
     },
     "barn": {
      "title": "Barn",
@@ -1842,7 +1910,12 @@
        "path_colour": "dark tan",
        "path_width": 4
       }
-     }
+     },
+     "keywords": [
+      "barn",
+      "stable",
+      "shed"
+     ]
     },
     "town-hall": {
      "title": "Town hall",
@@ -1884,7 +1957,14 @@
        "balcony_colour": "white",
        "porch": false
       }
-     }
+     },
+     "keywords": [
+      "town hall",
+      "townhall",
+      "museum",
+      "bank",
+      "library"
+     ]
     },
     "apartment-block": {
      "title": "Apartment block",
@@ -1920,7 +2000,13 @@
        "parapet": "plain",
        "crenel_colour": "light grey"
       }
-     }
+     },
+     "keywords": [
+      "apartment",
+      "flats",
+      "tenement",
+      "office"
+     ]
     },
     "courtyard-fort": {
      "title": "Courtyard fort",
@@ -1978,7 +2064,12 @@
        "path_colour": "dark grey",
        "path_width": 4
       }
-     }
+     },
+     "keywords": [
+      "courtyard fort",
+      "citadel",
+      "bastion"
+     ]
     },
     "lighthouse": {
      "title": "Lighthouse",
@@ -2018,7 +2109,12 @@
        "path_colour": "light grey",
        "margin": 4
       }
-     }
+     },
+     "keywords": [
+      "lighthouse",
+      "beacon",
+      "silo"
+     ]
     },
     "warehouse": {
      "title": "Warehouse",
@@ -2059,7 +2155,13 @@
        "path_colour": "light grey",
        "path_width": 4
       }
-     }
+     },
+     "keywords": [
+      "warehouse",
+      "factory",
+      "garage",
+      "depot"
+     ]
     },
     "manor": {
      "title": "Manor house",
@@ -2109,7 +2211,12 @@
        "path_colour": "light grey",
        "path_width": 4
       }
-     }
+     },
+     "keywords": [
+      "manor",
+      "chateau",
+      "palace"
+     ]
     },
     "modular-bakery": {
      "title": "Modular bakery",
@@ -2161,7 +2268,12 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     }
+     },
+     "keywords": [
+      "modular bakery",
+      "modular building",
+      "modular shop"
+     ]
     },
     "modular-town-hall": {
      "title": "Modular town hall",
@@ -2211,7 +2323,11 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     }
+     },
+     "keywords": [
+      "modular town hall",
+      "modular bank"
+     ]
     },
     "modular-flats": {
      "title": "Modular apartment block",
@@ -2260,7 +2376,11 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     }
+     },
+     "keywords": [
+      "modular flats",
+      "modular apartments"
+     ]
     },
     "modular-tea-house": {
      "title": "Modular tea house",
@@ -2312,7 +2432,11 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     }
+     },
+     "keywords": [
+      "modular tea house",
+      "modular chinese"
+     ]
     }
    }
   },

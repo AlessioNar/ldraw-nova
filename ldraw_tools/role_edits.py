@@ -245,3 +245,86 @@ def apply_with_connectivity_note(plan, edit):
     """Plain `editor.apply` plus a note when a removal may leave parts unsupported (a cheap structural hint)."""
     from . import editor
     return editor.apply(plan, list(edit))
+
+
+# --------------------------------------------------------------------------------------------- from words, on any plan
+
+LOW_CONFIDENCE = 0.5       # the proposal's threshold: below it the person is asked before parts are changed
+
+
+def _name(code):
+    from .generators.colours import NAMES
+    return next((n for n, c in NAMES.items() if c == code), f'colour {code}')
+
+
+def _tagged(plan, parts):
+    """(plan with a role on every placement, {(section, id): confidence}); roles already on the plan count as certain."""
+    import copy
+    from . import roles
+    found = roles.classify(plan, parts)
+    found.pop('_domain', None)
+    out, conf = copy.deepcopy(plan), {}
+    for section in out['sections']:
+        for step in section['steps']:
+            for entry in step:
+                key = (section['name'], entry['id'])
+                if entry.get('role'):
+                    conf[key] = 1.0
+                elif key in found:
+                    entry['role'] = found[key].role
+                    conf[key] = found[key].confidence
+    return out, conf
+
+
+def resolve(plan, parts, edits, *, selection=None, force=False):
+    """Editor ops for "make the roof blue" / "remove the chimney" / "paint this red" on ANY plan, with what to tell the person.
+
+    edits: [{'op': 'recolour'|'remove', 'role': word or None (None = the selection), 'colour': ...}]. Returns a dict with
+    `ops` (an editor batch, empty when nothing is to change), `changes` (label/from/to rows), `notes` and, when the
+    edit should not be applied blindly, `clarify` ({'question', 'choices', 'role', 'count', 'ids'}): an unknown role
+    word, nothing matching, or a role found only with low confidence (unless `force`).
+    """
+    tagged, conf = _tagged(plan, parts)
+    present = role_summary(tagged)
+    ops, changes, notes, touched = [], [], [], set()
+    for edit in edits:
+        word, colour = edit.get('role'), edit.get('colour')
+        remove = edit.get('op') == 'remove'
+        if word in (None, 'selection'):
+            if not selection:
+                return dict(ops=[], changes=[], notes=[], clarify=dict(
+                    question='Select the parts on the canvas first, or say which part: the roof, the walls, the windows.',
+                    choices=[f'make the {r} {colour}' if colour else f'remove the {r}' for r in list(present)[:3]]))
+            found = (remove_selection(tagged, selection) if remove else recolour_selection(tagged, selection, colour))
+            label = 'selection'
+        else:
+            role = _role(tagged, word)
+            targets = _role_targets(tagged, role)
+            if not targets:
+                known = [r for r in present if r not in ('untagged',)][:4]
+                return dict(ops=[], changes=[], notes=[], clarify=dict(
+                    question=f"I can't find a {word} in this model. Which part do you mean?" if known else "I can't tell the parts of this model apart.",
+                    choices=[f'make the {r} {colour}' if colour else f'remove the {r}' for r in known[:3]]))
+            weak = [k for k in targets if conf.get(k, 1.0) < LOW_CONFIDENCE]
+            if len(weak) * 2 >= len(targets) and not force:
+                choices = ['Yes, change them']
+                return dict(ops=[], changes=[], notes=[], clarify=dict(
+                    question=f'I found {len(targets)} parts that might be the {role}. Change them?', choices=choices,
+                    role=role, count=len(targets), ids=sorted(f'{s}:{i}' for s, i in targets)))
+            found = remove_role(tagged, role) if remove else recolour_role(tagged, role, colour)
+            label = role
+        fresh = [op for op in found if (op['section'], op['id']) not in touched]
+        touched.update((op['section'], op['id']) for op in fresh)
+        ops.extend(fresh)
+        notes.extend(found.notes)
+        count = len(found.matched)
+        if not count:
+            continue
+        if remove:
+            changes.append(dict(label=label, **{'from': f'{count} part{"s" if count != 1 else ""}'}, to='removed', count=count))
+        else:
+            by_key = {(s['name'], e['id']): e for s, e in _entries(tagged)}
+            codes = collections.Counter(by_key[k]['colour'] for k in found.matched if k in by_key)
+            old = _name(codes.most_common(1)[0][0]) if codes else None
+            changes.append(dict(label=f'{label} colour', **{'from': old}, to=str(colour), count=count))
+    return dict(ops=ops, changes=changes, notes=notes, clarify=None)
