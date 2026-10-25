@@ -1,5 +1,5 @@
 {
- "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat,ship | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\ntree | garden,scene | tree,oak,oak tree,pine,pine tree,fir,bush,shrub,garden tree | trunk_courses:3-10 colours:foliage_colour,foliage_accent,trunk_colour,flower_colour,ground_colour\nbrick-house | house,building | brick house,red brick house,house on a baseplate | x_delta=0|1|2 courses_delta=0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\nflatbed-truck | truck | flatbed truck,flatbed,flat-bed truck | z_delta=0|1|2|3|4|6 swap_tile_1x2=keep|3069b|2412b include_part_trailer_p2? colours:colour_body,colour_chassis,colour_door,colour_glass,colour_roof,colour_trim,colour_tyre,colour_wheel | template\npassenger-car | train | passenger car,railway carriage,train carriage,coach,train | z_delta=0|1|4 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_padding_all? colours:colour_body,colour_chassis,colour_detail,colour_door,colour_glass,colour_roof,colour_wheel,colour_window | template\nsmall-house | house,building | house with garden,garden house | z_delta=0|2 courses_delta=-1|0|1 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_chair_p105? include_part_lamp_p144? include_part_plant_p27? include_part_bush_all? colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntractor-trailer | truck,tractor | tractor,tractor and trailer,farm tractor | z_delta=-2|0|1|2|3|4|6|8|10|12 swap_brick_1x2=keep|3004|2877|98283|3065 swap_tile_1x2=keep|3069b|2412b colours:colour_body,colour_chassis,colour_glass,colour_roof,colour_tyre,colour_wheel | template\nwillowbank-cottage | house,building | cottage,farmhouse,country cottage | z_delta=0|2 courses_delta=-1|0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 include_part_entry_porch? include_part_garden_field? include_part_bench_70_p0114? include_part_flower_box_5_p0115? include_part_ridge_chimney? include_part_fence_25_70_p0182? colours:colour_base,colour_detail,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template",
+ "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\ntree | garden,scene | tree,oak,oak tree,pine,pine tree,fir,bush,shrub,garden tree | trunk_courses:3-10 colours:foliage_colour,foliage_accent,trunk_colour,flower_colour,ground_colour\nbrick-house | house,building | brick house,red brick house,house on a baseplate | x_delta=0|1|2 courses_delta=0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\nflatbed-truck | truck | flatbed truck,flatbed,flat-bed truck | z_delta=0|1|2|3|4|6 swap_tile_1x2=keep|3069b|2412b include_part_trailer_p2? colours:colour_body,colour_chassis,colour_door,colour_glass,colour_roof,colour_trim,colour_tyre,colour_wheel | template\npassenger-car | train | passenger car,railway carriage,train carriage,coach,train | z_delta=0|1|4 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_padding_all? colours:colour_body,colour_chassis,colour_detail,colour_door,colour_glass,colour_roof,colour_wheel,colour_window | template\nsmall-house | house,building | house with garden,garden house | z_delta=0|2 courses_delta=-1|0|1 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_chair_p105? include_part_lamp_p144? include_part_plant_p27? include_part_bush_all? colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntractor-trailer | truck,tractor | tractor,tractor and trailer,farm tractor | z_delta=-2|0|1|2|3|4|6|8|10|12 swap_brick_1x2=keep|3004|2877|98283|3065 swap_tile_1x2=keep|3069b|2412b colours:colour_body,colour_chassis,colour_glass,colour_roof,colour_tyre,colour_wheel | template\nwillowbank-cottage | house,building | cottage,farmhouse,country cottage | z_delta=0|2 courses_delta=-1|0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 include_part_entry_porch? include_part_garden_field? include_part_bench_70_p0114? include_part_flower_box_5_p0115? include_part_ridge_chimney? include_part_fence_25_70_p0182? colours:colour_base,colour_detail,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntoy-train | train,vehicle | train,steam train,locomotive,steam engine,goods train,freight train,railway,tram | wagons:0-6 colours:loco_colour,wagon_colour,roof_colour,wheel_colour,track_colour\ncargo-ship | boat,ship | ship,cargo ship,container ship,steamer,steamship,tanker,liner,ferry | length:16-40e bays:0-7 colours:hull_colour,stripe_colour,deck_colour,cabin_colour,funnel_colour,cargo_colour,cargo_accent",
  "colours": [
   "azure",
   "beige",
@@ -3441,8 +3441,7 @@
     "boat",
     "launch",
     "motorboat",
-    "speedboat",
-    "ship"
+    "speedboat"
    ],
    "description": "Purpose-made boat hull, open helm with a real seat and steering wheel, navigation lights and life ring.",
    "params": {
@@ -3978,6 +3977,234 @@
     "trunk_colour": "reddish brown",
     "flower_colour": "dark pink",
     "ground_colour": "tan"
+   }
+  },
+  {
+   "id": "toy-train",
+   "title": "Train",
+   "families": [
+    "train",
+    "vehicle"
+   ],
+   "kinds": [
+    "train",
+    "steam train",
+    "locomotive",
+    "steam engine",
+    "goods train",
+    "freight train",
+    "railway",
+    "tram"
+   ],
+   "description": "Steam-style locomotive with a chimney and cab, pulling open wagons with cargo along a stretch of track.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "wagons": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 6,
+      "default": 2,
+      "description": "Open wagons behind the locomotive"
+     },
+     "loco_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Locomotive boiler and cab (colour name or code)",
+      "default": "red"
+     },
+     "wagon_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wagon sides (colour name or code)",
+      "default": "blue"
+     },
+     "roof_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Cab roof, chimney and cargo (colour name or code)",
+      "default": "dark bluish grey"
+     },
+     "wheel_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Wheels and chassis (colour name or code)",
+      "default": "black"
+     },
+     "track_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Track bed (colour name or code)",
+      "default": "tan"
+     }
+    }
+   },
+   "roles": [
+    "base",
+    "rail",
+    "wheel",
+    "chassis",
+    "body",
+    "roof",
+    "chimney",
+    "lamp",
+    "cargo"
+   ],
+   "coverage": [
+    "wagon count",
+    "colours"
+   ],
+   "quality": "Recognisable toy train; wheels are stacked round bricks, not flanged train wheels",
+   "defaults": {
+    "wagons": 2,
+    "loco_colour": "red",
+    "wagon_colour": "blue",
+    "roof_colour": "dark bluish grey",
+    "wheel_colour": "black",
+    "track_colour": "tan"
+   }
+  },
+  {
+   "id": "cargo-ship",
+   "title": "Cargo ship",
+   "families": [
+    "boat",
+    "ship"
+   ],
+   "kinds": [
+    "ship",
+    "cargo ship",
+    "container ship",
+    "steamer",
+    "steamship",
+    "tanker",
+    "liner",
+    "ferry"
+   ],
+   "description": "Seagoing ship with a stepped bow, a deckhouse and funnel aft and bays of stacked containers on deck.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "length": {
+      "type": "integer",
+      "minimum": 16,
+      "maximum": 40,
+      "x-even": true,
+      "default": 24,
+      "description": "Hull length in studs (even)"
+     },
+     "bays": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 7,
+      "default": 3,
+      "description": "Container bays on deck (fewer are built if the hull is too short)"
+     },
+     "hull_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Hull (colour name or code)",
+      "default": "dark blue"
+     },
+     "stripe_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Waterline stripe and deckhouse roof (colour name or code)",
+      "default": "red"
+     },
+     "deck_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Deck (colour name or code)",
+      "default": "dark bluish grey"
+     },
+     "cabin_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Deckhouse (colour name or code)",
+      "default": "white"
+     },
+     "funnel_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Funnel (colour name or code)",
+      "default": "red"
+     },
+     "cargo_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Containers (colour name or code)",
+      "default": "orange"
+     },
+     "cargo_accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Second container colour (colour name or code)",
+      "default": "bright green"
+     }
+    }
+   },
+   "roles": [
+    "hull",
+    "deck",
+    "cabin",
+    "funnel",
+    "cargo"
+   ],
+   "coverage": [
+    "length",
+    "container bays",
+    "colours"
+   ],
+   "quality": "Recognisable cargo ship; the bow is stepped, not sloped",
+   "defaults": {
+    "length": 24,
+    "bays": 3,
+    "hull_colour": "dark blue",
+    "stripe_colour": "red",
+    "deck_colour": "dark bluish grey",
+    "cabin_colour": "white",
+    "funnel_colour": "red",
+    "cargo_colour": "orange",
+    "cargo_accent": "bright green"
    }
   }
  ]

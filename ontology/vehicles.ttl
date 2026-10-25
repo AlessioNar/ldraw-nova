@@ -2,8 +2,8 @@
 # A Vehicle is an obd:Build like a Building, made of obd:VehicleComponent parts (Chassis, Body, RunningGear, Cockpit, Wing, Engine).
 # There is no vehicle grammar yet, so nothing is generated from or checked against this file's classes by the app; the first
 # implementations below are the designs in ldraw_tools/vehicles.py (DESIGNS) and the spaceship briefs in ldraw_tools/spaceships.py
-# (ARCHETYPES), and tests/test_vehicle_ontology.py keeps the two in step. Component classes are not subclasses of the building
-# components, so tools/build_obd.py and the JSON Schema are untouched. Parameter IRIs follow obd.ttl: obd:<group><Key>.
+# (ARCHETYPES), and the train and ship generators in ldraw_tools/generators/transport.py (tests/test_vehicle_ontology.py keeps
+# them in step). Component classes are not subclasses of the building components, so tools/build_obd.py and the JSON Schema are untouched. Parameter IRIs follow obd.ttl: obd:<group><Key>.
 @prefix build: <https://alessionar.github.io/open-brick-designer/ns/build/> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
@@ -32,6 +32,8 @@ obd:Watercraft a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Watercraf
     rdfs:comment "Moulded hull with an open helm."@en .
 obd:Aircraft a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Aircraft"@en ; dcterms:identifier "aircraft" ;
     rdfs:comment "Fuselage, wings and engine pods."@en .
+obd:RailVehicle a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Rail vehicle"@en ; dcterms:identifier "rail" ;
+    rdfs:comment "A locomotive with wagons on one chassis that rests on wheels over a length of track."@en .
 obd:Spaceship a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Spaceship"@en ; dcterms:identifier "spaceship" ;
     rdfs:comment "A fictional craft; propulsion is a design vocabulary, not an engineering simulation."@en .
 
@@ -57,7 +59,7 @@ obd:Engine a owl:Class ; rdfs:subClassOf obd:VehicleComponent ; rdfs:label "Engi
 
 obd:vehicleLength a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
     rdfs:domain obd:Vehicle ;
-    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 40 ] ) ] ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 80 ] ) ] ;
     obd:unit "stud" ; obd:order 1 ; dcterms:identifier "length" ;
     rdfs:comment "Studs along z. Even for a road vehicle."@en .
 
@@ -72,6 +74,18 @@ obd:vehicleWheelbase a owl:DatatypeProperty, owl:FunctionalProperty, obd:Paramet
     rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 30 ] ) ] ;
     obd:unit "stud" ; obd:order 3 ; dcterms:identifier "wheelbase" ;
     rdfs:comment "Studs between the axles. Even."@en .
+
+obd:trainWagons a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:RailVehicle ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 2 ; obd:order 1 ; dcterms:identifier "wagons" ;
+    rdfs:comment "Open wagons behind the locomotive; each adds ten studs to the length."@en .
+
+obd:shipBays a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Watercraft ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 7 ] ) ] ;
+    obd:default 3 ; obd:order 1 ; dcterms:identifier "bays" ;
+    rdfs:comment "Container bays on deck, four studs each; fewer are built when the hull is too short."@en .
 
 obd:runningGearPack a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
     rdfs:domain obd:RunningGear ;
@@ -115,6 +129,13 @@ build:harbour-launch a obd:Watercraft ; dcterms:title "Harbour launch"@en ; obd:
     rdfs:comment "Purpose-made boat hull, open helm with a real seat and steering wheel, navigation lights and life ring."@en .
 build:courier-jet a obd:Aircraft ; dcterms:title "Courier jet"@en ; obd:vehiclePalette "coastal-delivery" ; obd:vehicleLength 26 ;
     rdfs:comment "Matched aircraft nose/glass and tapered rear, swept wings, dedicated engine pods and an equipped cockpit."@en .
+
+# --- First implementations: ldraw_tools/generators/transport.py ----------------------------------------------------------
+
+build:toy-train a obd:RailVehicle ; dcterms:title "Train"@en ; obd:vehicleLength 34 ; obd:trainWagons 2 ;
+    rdfs:comment "Steam-style locomotive with a chimney and cab, pulling open wagons with cargo along a stretch of track."@en .
+build:cargo-ship a obd:Watercraft ; dcterms:title "Cargo ship"@en ; obd:vehicleLength 24 ; obd:shipBays 3 ;
+    rdfs:comment "Seagoing ship with a stepped bow, a deckhouse and funnel aft and bays of stacked containers on deck."@en .
 
 # --- First implementations: ldraw_tools/spaceships.py ARCHETYPES ------------------------------------------------------
 

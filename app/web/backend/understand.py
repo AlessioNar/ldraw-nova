@@ -209,7 +209,9 @@ def normalise(spec: dict) -> tuple[dict, list[str]]:
 ROLES = {"body": "body", "roof": "roof", "wheels": "wheels", "wheel": "wheels", "trim": "trim", "glass": "glass",
          "windows": "glass", "window": "glass", "door": "door", "cab": "cab", "bed": "bed", "chimney": "chimney",
          "hull": "hull", "wings": "wing", "wing": "wing", "accent": "accent", "walls": "body", "wall": "body",
-         "leaves": "foliage", "foliage": "foliage", "trunk": "trunk", "flowers": "flowers"}
+         "leaves": "foliage", "foliage": "foliage", "trunk": "trunk", "flowers": "flowers",
+         "funnel": "funnel", "deck": "deck", "container": "cargo", "containers": "cargo", "loco": "loco", "locomotive": "loco",
+         "wagon": "wagon", "wagons": "wagon", "carriage": "wagon", "carriages": "wagon"}
 _ROLE_RE = "|".join(sorted(ROLES, key=len, reverse=True))
 _RECOLOUR = re.compile(rf"^(?:(?:please|can you|could you|would you|just) )*(?:make|paint|colou?r|turn|change)\s+(?:the\s+)?({_ROLE_RE})\s+(?:to\s+|into\s+)?({_COLOUR_RE})(?:\s+please)?$")
 _UNDO = re.compile(r"^(?:please )?(?:undo|undo that|undo the last change|undo last change|go back)$")
@@ -305,7 +307,7 @@ _CLAUSE_SCALE_NOUN = re.compile(rf"^({_DELTA_RE})\s+(?:the\s+)?(wheels?|roof)$")
 _CLAUSE_SCALE = re.compile(rf"^(?:(?:make|get)\s+)?(?:(?:the\s+)?(wheels?|roof)|(?:{_WHOLE_WORDS}))?\s*(?:{_AMOUNT}\s+)?({_DELTA_RE})(?:\s+by\s+{_AMOUNT})?$")
 _NUMBERS_ALL = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8}
 _COUNT = rf"(\d+|{'|'.join(_NUMBERS_ALL)})"
-_FEATURE_NOUN = r"(door|windows?|porch|chimney|dormer|engines?)"
+_FEATURE_NOUN = r"(door|windows?|porch|chimney|dormer|engines?|wagons?|carriages?)"
 _CLAUSE_FEATURE = re.compile(rf"^(add|remove|delete|drop)\s+(?:(?:{_COUNT})\s+)?(?:(more|fewer)\s+)?(?:the\s+)?{_FEATURE_NOUN}$")
 _CLAUSE_MORE = re.compile(rf"^{_COUNT}\s+(more|fewer)\s+{_FEATURE_NOUN}$")
 _SPLIT = re.compile(r"\s*(?:,|;|\band then\b|\by luego\b|\bthen\b|\band\b|\bplus\b|\bet\b|\by\b|\be\b|\bpoi\b|\bpuis\b)\s*")
@@ -448,6 +450,7 @@ _FAMILIES = [("spaceship", r"space ?ship|starship|spacecraft|starfighter|rocket|
              ("tower", r"tower|castle|lighthouse|windmill"),
              ("house", r"house|cottage|cabin|villa|shed|home|hut"),
              ("building", r"shop|store|museum|station|church|school|building|gatehouse|bakery|hotel"),
+             ("train", r"train|locomotive|steam engine|railway|tram"),
              ("garden", r"garden|park|fountain|playground|tree|oak|pine|bush|shrub")]
 _SCALES = [("micro", r"tiny|micro"), ("mini", r"mini"), ("small", r"small|little"), ("large", r"large|big|huge|giant"), ("medium", r"medium")]
 _NUMBERS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6}
@@ -476,6 +479,9 @@ def heuristic_spec(text: str, current_spec: Optional[dict] = None) -> dict:
     plant = re.search(r"\b(tree|oak|pine|bush|shrub)s?\b", low)
     if plant and family == "garden":                                      # garden family alone has no generator: the kind picks the tree
         spec["subject"]["kind"] = plant.group(1)
+    cars = re.search(rf"\b{_COUNT}\s+(?:wagons?|carriages?)\b", low)
+    if cars and family == "train":
+        spec["features"] = [{"name": "wagons", "count": _count(cars.group(1))}]
     scale = next((s for s, pattern in _SCALES if re.search(rf"\b(?:{pattern})\b", low)), None)
     if scale:
         spec["size"] = {"scale": scale}

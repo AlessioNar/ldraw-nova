@@ -17,6 +17,12 @@ build:capital-ship a obd:Spaceship ;
     rdfs:comment "A clear wedge, hammerhead or elongated spine with layered superstructure and a visible engine cluster."@en ;
     obd:spaceshipArchetype "capital-ship" .
 
+build:cargo-ship a obd:Watercraft ;
+    dcterms:title "Cargo ship"@en ;
+    rdfs:comment "Seagoing ship with a stepped bow, a deckhouse and funnel aft and bays of stacked containers on deck."@en ;
+    obd:shipBays 3 ;
+    obd:vehicleLength 24 .
+
 build:courier-jet a obd:Aircraft ;
     dcterms:title "Courier jet"@en ;
     rdfs:comment "Matched aircraft nose/glass and tapered rear, swept wings, dedicated engine pods and an equipped cockpit."@en ;
@@ -72,6 +78,12 @@ build:touring-motorcycle a obd:Motorcycle ;
     rdfs:comment "Dedicated motorcycle frame and vintage fairing, separate spoked wheels/tyres and a rear luggage rack."@en ;
     obd:vehicleLength 10 ;
     obd:vehiclePalette "heritage-racing" .
+
+build:toy-train a obd:RailVehicle ;
+    dcterms:title "Train"@en ;
+    rdfs:comment "Steam-style locomotive with a chimney and cab, pulling open wagons with cargo along a stretch of track."@en ;
+    obd:trainWagons 2 ;
+    obd:vehicleLength 34 .
 
 obd:Body a owl:Class ;
     rdfs:label "Body"@en ;
@@ -1000,6 +1012,18 @@ obd:setNumber a owl:DatatypeProperty,
     rdfs:domain obd:Set ;
     rdfs:range xsd:string .
 
+obd:shipBays a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "bays" ;
+    rdfs:comment "Container bays on deck, four studs each; fewer are built when the hull is too short."@en ;
+    rdfs:domain obd:Watercraft ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 7 ] ) ] ;
+    obd:default 3 ;
+    obd:order 1 .
+
 obd:storeysBandColour a owl:DatatypeProperty,
         owl:FunctionalProperty,
         obd:ColourParameter ;
@@ -1104,6 +1128,18 @@ obd:storeysTopCourses a owl:DatatypeProperty,
     obd:default 0 ;
     obd:order 3 ;
     obd:unit "course" .
+
+obd:trainWagons a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "wagons" ;
+    rdfs:comment "Open wagons behind the locomotive; each adds ten studs to the length."@en ;
+    rdfs:domain obd:RailVehicle ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 2 ;
+    obd:order 1 .
 
 obd:unit a owl:AnnotationProperty ;
     rdfs:comment "Unit of a numeric parameter: stud, plate or course."@en .
@@ -1544,12 +1580,6 @@ obd:RunningGear a owl:Class ;
     obd:role role:tyre,
         role:wheel .
 
-obd:Watercraft a owl:Class ;
-    rdfs:label "Watercraft"@en ;
-    dcterms:identifier "watercraft" ;
-    rdfs:comment "Moulded hull with an open helm."@en ;
-    rdfs:subClassOf obd:Vehicle .
-
 obd:buildingName a owl:DatatypeProperty,
         owl:FunctionalProperty,
         obd:Parameter ;
@@ -1580,7 +1610,7 @@ obd:vehicleLength a owl:DatatypeProperty,
     rdfs:domain obd:Vehicle ;
     rdfs:range [ a rdfs:Datatype ;
             owl:onDatatype xsd:integer ;
-            owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 40 ] ) ] ;
+            owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 80 ] ) ] ;
     obd:order 1 ;
     obd:unit "stud" .
 
@@ -1630,6 +1660,12 @@ brand: a owl:Ontology,
     skos:definition "Makers of building-brick sets. A new brand is a new concept here."@en ;
     skos:hasTopConcept brand:cada,
         brand:lego .
+
+obd:RailVehicle a owl:Class ;
+    rdfs:label "Rail vehicle"@en ;
+    dcterms:identifier "rail" ;
+    rdfs:comment "A locomotive with wagons on one chassis that rests on wheels over a length of track."@en ;
+    rdfs:subClassOf obd:Vehicle .
 
 role:chassis a skos:Concept ;
     skos:altLabel "chassis"@en,
@@ -1698,6 +1734,12 @@ role:wing a skos:Concept ;
 obd:Build a owl:Class ;
     rdfs:label "Build"@en ;
     rdfs:comment "What a grammar produces from one configuration: a Building here, a Vehicle in vehicles.ttl."@en .
+
+obd:Watercraft a owl:Class ;
+    rdfs:label "Watercraft"@en ;
+    dcterms:identifier "watercraft" ;
+    rdfs:comment "Moulded hull with an open helm."@en ;
+    rdfs:subClassOf obd:Vehicle .
 
 psrc: a owl:Ontology,
         skos:ConceptScheme ;
@@ -1927,11 +1969,6 @@ obd:Corners a owl:Class ;
     obd:role role:tower,
         role:trim .
 
-obd:Vehicle a owl:Class ;
-    rdfs:label "Vehicle"@en ;
-    rdfs:comment "A craft or road vehicle: X is width, -Z is forward, Y=0 is the road, keel or hull floor."@en ;
-    rdfs:subClassOf obd:Build .
-
 obd:Roof a owl:Class ;
     rdfs:label "Roof"@en ;
     dcterms:identifier "roof" ;
@@ -1942,6 +1979,11 @@ obd:Roof a owl:Class ;
     obd:role role:roof,
         role:wall,
         role:window .
+
+obd:Vehicle a owl:Class ;
+    rdfs:label "Vehicle"@en ;
+    rdfs:comment "A craft or road vehicle: X is width, -Z is forward, Y=0 is the road, keel or hull floor."@en ;
+    rdfs:subClassOf obd:Build .
 
 obd:Details a owl:Class ;
     rdfs:label "Details"@en ;

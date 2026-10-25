@@ -1,5 +1,5 @@
 {
- "note": "context: new = no build open; house/car = a generator build is open (params at defaults, as the workspace passes them); nongen = a build made by the AI/import/hand edits, so the workspace passes NO generator. ctx tree = a tree generator build is open. x01-x07: wave 3 additions.",
+ "note": "context: new = no build open; house/car = a generator build is open (params at defaults, as the workspace passes them); nongen = a build made by the AI/import/hand edits, so the workspace passes NO generator. ctx tree = a tree generator build is open. x01-x07: wave 3 additions. tr01-tr08, sh01-sh06: train and ship generators (NL wave 3, #43).",
  "prompts": [
   {
    "id": "n01",
@@ -117,8 +117,8 @@
    "text": "a steam train with three carriages",
    "ctx": "new",
    "expect": {
-    "route": "clarify",
-    "generator": null
+    "route": "generator",
+    "generator": "toy-train"
    }
   },
   {
@@ -128,7 +128,7 @@
    "ctx": "new",
    "expect": {
     "route": "generator",
-    "generator": "harbour-launch"
+    "generator": "cargo-ship"
    }
   },
   {
@@ -599,6 +599,146 @@
    "expect": {
     "route": "generator",
     "generator": "tree"
+   }
+  },
+  {
+   "id": "tr01",
+   "cat": "new",
+   "text": "a red steam train",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "toy-train"
+   }
+  },
+  {
+   "id": "tr02",
+   "cat": "new",
+   "text": "a train with 4 wagons",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "toy-train"
+   }
+  },
+  {
+   "id": "tr03",
+   "cat": "new",
+   "text": "a freight train with two wagons and a green locomotive",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "toy-train"
+   }
+  },
+  {
+   "id": "tr04",
+   "cat": "new",
+   "text": "a locomotive",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "toy-train"
+   }
+  },
+  {
+   "id": "tr05",
+   "cat": "new",
+   "text": "a model train station",
+   "ctx": "new",
+   "expect": {
+    "route": "needs_ai",
+    "generator": null
+   }
+  },
+  {
+   "id": "tr06",
+   "cat": "edit-gen",
+   "text": "add two more wagons",
+   "ctx": "train",
+   "expect": {
+    "route": "edit",
+    "generator": "toy-train"
+   }
+  },
+  {
+   "id": "tr07",
+   "cat": "edit-gen",
+   "text": "make the locomotive blue",
+   "ctx": "train",
+   "expect": {
+    "route": "edit",
+    "generator": "toy-train"
+   }
+  },
+  {
+   "id": "tr08",
+   "cat": "edit-gen",
+   "text": "make the wagons yellow",
+   "ctx": "train",
+   "expect": {
+    "route": "edit",
+    "generator": "toy-train"
+   }
+  },
+  {
+   "id": "sh01",
+   "cat": "new",
+   "text": "a container ship",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "cargo-ship"
+   }
+  },
+  {
+   "id": "sh02",
+   "cat": "new",
+   "text": "a big cargo ship with a red funnel",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "cargo-ship"
+   }
+  },
+  {
+   "id": "sh03",
+   "cat": "new",
+   "text": "an old steam ship",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "cargo-ship"
+   }
+  },
+  {
+   "id": "sh04",
+   "cat": "edit-gen",
+   "text": "make the hull black",
+   "ctx": "ship",
+   "expect": {
+    "route": "edit",
+    "generator": "cargo-ship"
+   }
+  },
+  {
+   "id": "sh05",
+   "cat": "edit-gen",
+   "text": "make it longer",
+   "ctx": "ship",
+   "expect": {
+    "route": "edit",
+    "generator": "cargo-ship"
+   }
+  },
+  {
+   "id": "sh06",
+   "cat": "edit-gen",
+   "text": "make the funnel yellow",
+   "ctx": "ship",
+   "expect": {
+    "route": "edit",
+    "generator": "cargo-ship"
    }
   }
  ]

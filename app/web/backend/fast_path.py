@@ -32,7 +32,7 @@ DEFAULT_ESTIMATE = {"eur_low": 1.0, "eur_high": 2.0, "minutes_low": 15, "minutes
 MIN_HISTORY = 3
 HISTORY_TTL_S = 60
 # Families a generator exists for when the registry is not loaded yet (the estimate endpoint never waits for it).
-STATIC_FAMILIES = {"car", "van", "truck", "motorcycle", "boat", "aircraft", "spaceship", "house", "building"}
+STATIC_FAMILIES = {"car", "van", "truck", "motorcycle", "boat", "aircraft", "spaceship", "house", "building", "train"}
 GENERIC_KINDS = {"model", "vehicle", "building", "thing", "object", "toy"}
 SIZE_PARAMS = ("length", "wingspan", "width", "depth", "trunk_courses")
 WHOLE = ("whole", "model", "it", "", "size")
@@ -42,7 +42,8 @@ ROLE_PARAMS = {"body": ["body", "wall", "hull"], "hull": ["hull", "body", "wall"
                "roof": ["roof"], "trim": ["trim"], "accent": ["accent"], "door": ["door"], "wing": ["wing"],
                "chimney": ["chimney"], "engine": ["engine"], "foliage": ["foliage"], "trunk": ["trunk"], "flowers": ["flower"]}
 FEATURE_WORDS = {"door": "door", "window": "windows", "windows": "windows", "porch": "porch", "chimney": "chimney",
-                 "dormer": "dormer", "engine": "engines", "engines": "engines", "wheel": "wheels", "wheels": "wheels"}
+                 "dormer": "dormer", "engine": "engines", "engines": "engines", "wheel": "wheels", "wheels": "wheels",
+                 "wagon": "wagons", "wagons": "wagons", "carriage": "wagons", "carriages": "wagons"}
 # scale word -> share of the way from the default to the maximum (negative: from the default to the minimum)
 SCALE_SHARE = {"micro": -1.0, "mini": -0.5, "small": 0.0, "medium": 0.3, "large": 0.7}
 BIG_CHANGE = 0.30          # a size change above this share of the current value replaces the model rather than tweaks it
@@ -274,6 +275,8 @@ def _feature_params(entry: dict, spec: dict, notes: list[str]) -> dict:
             out["chimney"] = "right"
         elif param == "engines":
             out["engines"] = count or 2
+        elif param == "wagons":
+            out["wagons"] = count if count is not None else 2
         else:
             out[param] = True
     if "roof_style" in schema and "flat" in " ".join(f.get("name", "") for f in features).casefold():
@@ -436,6 +439,8 @@ def _toggle(schema: dict, wanted: dict, edit: dict, target: str, add: bool, entr
         wanted[param] = add
     elif param == "engines":
         wanted["engines"] = count or (2 if add else 1)
+    elif param == "wagons":
+        wanted["wagons"] = max(0, int(wanted.get("wagons", 0)) + (count or 1) * (1 if add else -1))
     else:
         return False
     return True

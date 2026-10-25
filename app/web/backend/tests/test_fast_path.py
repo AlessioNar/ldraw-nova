@@ -148,7 +148,8 @@ def test_real_world_requests_pick_the_right_generator(provider):
     cases = {"a truck": "tipper-truck", "build a green pickup": "pickup", "yellow delivery van please": "delivery-van",
              "a black touring motorbike": "touring-motorcycle", "a small blue harbour launch": "harbour-launch",
              "white courier jet with red accents": "courier-jet", "Build a small white and blue starship": "starfighter",
-             "a house with a red roof and a chimney": "building"}
+             "a house with a red roof and a chimney": "building",
+             "a steam train": "toy-train", "a cargo ship": "cargo-ship"}
     for g in GOLDEN:
         provider.specs[g["prompt"]] = g["expected"]
     for text, generator in cases.items():
@@ -157,7 +158,7 @@ def test_real_world_requests_pick_the_right_generator(provider):
     house = describe("a house 12 studs wide and 10 deep, 8 courses tall")
     assert (house["params"]["width"], house["params"]["depth"], house["params"]["courses"]) == (12, 10, 8)
     assert describe("a house with a red roof and a chimney")["params"]["chimney"] == "right"
-    for text in ("Build the Millennium Falcon", "a big grey space freighter", "a helicopter", "technic gearbox", "a steam train", "build a red car using only parts I own"):
+    for text in ("Build the Millennium Falcon", "a big grey space freighter", "a helicopter", "technic gearbox", "a space shuttle", "build a red car using only parts I own"):
         assert describe(text)["route"] == "needs_ai", text
     assert describe("hello")["route"] == "clarify" and describe("build something cool")["route"] == "clarify"
 
@@ -339,7 +340,7 @@ def test_describe_without_any_model_falls_back_to_keywords(client, monkeypatch):
 
 def test_estimate_endpoint_is_rules_only_and_fast(client, provider):
     cases = {"Build a small red car with four black wheels": ("generator", 1.0), "a red pickup": ("generator", None),
-             "Design a harbour crane with a long boom and a cargo dock": ("needs_ai", 1.0), "a steam train": ("clarify", None),
+             "Design a harbour crane with a long boom and a cargo dock": ("needs_ai", 1.0), "a hot air balloon": ("clarify", None),
              "hello": ("clarify", None)}
     slowest = 0.0
     for text, (route, confidence) in cases.items():
@@ -365,7 +366,7 @@ def test_estimate_without_a_loaded_registry_is_still_instant(client, provider):
     body = client.get("/api/describe/estimate", params={"text": "a red pickup"}).json()
     assert time.perf_counter() - started < 0.2 and body["route"] == "generator"
     assert client.get("/api/describe/estimate", params={"text": "Design a harbour crane with a long boom and a cargo dock"}).json()["route"] == "needs_ai"
-    assert client.get("/api/describe/estimate", params={"text": "a steam train"}).json()["route"] == "clarify"       # honest: the rules cannot place it
+    assert client.get("/api/describe/estimate", params={"text": "a hot air balloon"}).json()["route"] == "clarify"       # honest: the rules cannot place it
 
 
 def test_registry_dump_matches_the_toolkit_when_available():

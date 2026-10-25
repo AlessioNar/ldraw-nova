@@ -65,7 +65,7 @@ def corner_cases(generator, full=True):
 
 def test_registry_entries_are_uniform_and_valid():
     assert {'house', 'starfighter', 'grand-tourer', 'delivery-van', 'pickup', 'tipper-truck', 'touring-motorcycle',
-            'harbour-launch', 'courier-jet', 'arcade-bay', 'street-lantern', 'tree'} <= set(IDS)
+            'harbour-launch', 'courier-jet', 'arcade-bay', 'street-lantern', 'tree', 'toy-train', 'cargo-ship'} <= set(IDS)
     for generator in generators.REGISTRY.values():
         entry = generator.entry()
         assert entry['id'] and entry['title'] and entry['families'] and entry['kinds'] and entry['roles']
@@ -221,3 +221,18 @@ def test_tree_defaults_match_the_atlas_tree_and_the_trunk_grows_by_courses():
     roles = {p['role'] for s in tall['sections'] for st in s['steps'] for p in st}
     assert roles == {'base', 'trunk', 'foliage', 'flower'}
     assert generators.find(kind='oak tree')[0].id == 'tree'
+
+
+def test_train_grows_by_wagons_and_ship_clamps_its_bays(official):
+    parts = lambda plan: [p for s in plan['sections'] for st in s['steps'] for p in st]
+    depth = lambda plan: max(p['at'][2] for p in parts(plan)) // 20 + 1
+    short, long = (generators.generate('toy-train', dict(wagons=n))['plan'] for n in (0, 4))
+    assert depth(long) - depth(short) == 4 * 10
+    assert {p['role'] for p in parts(long)} == set(generators.get('toy-train').roles)
+    assert generators.find(kind='steam train')[0].id == 'toy-train' and generators.find(kind='container ship')[0].id == 'cargo-ship'
+    result = generators.generate('cargo-ship', dict(length=16, bays=7))
+    assert result['params']['bays'] == 7 and 'bays adjusted to 1' in ' '.join(result['notes'])
+    assert generators.generate('cargo-ship', dict(length=17, bays=0))['notes'] == ['length adjusted to 18 (even)']
+    for plan in (short, long, result['plan']):               # one connected build: nothing floats
+        model = check(official, plan, contacts='all')[1]
+        assert model['optimistic_component_count'] == 1
