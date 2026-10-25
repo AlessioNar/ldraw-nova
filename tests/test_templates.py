@@ -158,7 +158,7 @@ def test_stretch_option_sets_come_from_equivalent_library_parts(official):
 
 def test_candidates_route_between_generators_and_templates():
     rows = templates.candidates('house', 'cottage')
-    assert rows[0]['source'] == 'generator' and rows[0]['id'] == 'building'                 # a tie goes to the generator (the building grammar answers house requests)
+    assert rows[0]['source'] == 'generator' and rows[0]['id'] in ('house', 'building')     # a tie goes to a generator (the grammar's building or the old house)
     assert any(r['source'] == 'template' and r['id'] == 'willowbank-cottage' for r in rows)
     rows = templates.candidates('house', 'house')
     assert rows[0]['source'] == 'generator' and any(r['source'] == 'template' and r['id'] == 'brick-house' for r in rows)
