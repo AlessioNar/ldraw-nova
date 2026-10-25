@@ -4,11 +4,12 @@ The building grammar stamps roles at construction, the generators stamp them, an
 them for everything else. All three read this module, so a role means the same thing in every model and an edit such as
 "make the roof blue" selects the same placements whichever of them produced the plan.
 
-The data is plain (names, descriptions, words, a name -> broader name map) so it can be exported later as a SKOS
-concept scheme: `ROLES` are the concepts, `ALIAS` the `skos:broader` links, `WORDS` the `skos:altLabel`s.
+The data below is generated from `ontology/roles.ttl`, a SKOS concept scheme (`ROLES` are the concepts, `ALIAS` the
+`skos:broader` links, `WORDS` the `skos:altLabel`s). Edit the Turtle and run `python tools/build_role_vocab.py`.
 """
 from __future__ import annotations
 
+# BEGIN GENERATED from ontology/roles.ttl (tools/build_role_vocab.py)
 ROLES = {   # role -> what it covers
     'roof': 'Roof surface: slopes, ridge caps, flat-roof deck, tower cones',
     'wall': 'Load-bearing wall bricks, gable end walls, parapet merlons',
@@ -31,41 +32,86 @@ ROLES = {   # role -> what it covers
 # Roles the building grammar stamps (the others are the classifier's and the generators').
 GRAMMAR_ROLES = ('roof', 'wall', 'window', 'door', 'glass', 'base', 'tower', 'detail', 'trim', 'structure')
 
-# A role name that is an alias of a broader role (a generator's own word, or a specialisation) -> its canonical role.
-# `tower` is a kind of wall: the grammar stamps it so that "the towers" can be addressed on their own, while anything
-# comparing roles across sources (the classifier's scores, role-based edits) folds it into `wall`.
-ALIAS = {'porch': 'trim', 'chimney': 'roof', 'accent': 'trim', 'light': 'detail', 'hull': 'body',
-         'canopy': 'glass', 'wood': 'detail', 'metal': 'trim', 'headlamp': 'detail', 'tail_lamp': 'detail',
-         'tower': 'wall'}
-
-# What a person says -> role (used by role_edits to resolve "the roof", "the windows", "the wheels").
-# A feature word such as "chimney" or "porch" is deliberately absent: it only means something on a plan that has
-# that role (a generator's or the grammar's), and "remove the chimney" must never fall back to "remove the roof".
-WORDS = {
-    'roof': 'roof', 'roofs': 'roof', 'roofing': 'roof', 'wall': 'wall', 'walls': 'wall', 'brickwork': 'wall',
-    'masonry': 'wall', 'tower': 'tower', 'towers': 'tower', 'turret': 'tower', 'turrets': 'tower', 'panes': 'glass',
-    'glazing': 'glass', 'baseplate': 'base', 'ground': 'base', 'cornice': 'trim', 'plinth': 'trim', 'window': 'window',
-    'windows': 'window', 'glass': 'glass', 'windscreen': 'glass', 'windshield': 'glass', 'canopy': 'glass',
-    'door': 'door', 'doors': 'door', 'floor': 'base', 'base': 'base', 'foundation': 'base', 'wheel': 'wheel',
-    'wheels': 'wheel', 'rim': 'wheel', 'rims': 'wheel', 'tyre': 'tyre', 'tyres': 'tyre', 'tire': 'tyre',
-    'tires': 'tyre', 'chassis': 'chassis', 'frame': 'chassis', 'body': 'body', 'bodywork': 'body', 'wing': 'wing',
-    'wings': 'wing', 'engine': 'engine', 'engines': 'engine', 'trim': 'trim', 'details': 'detail', 'detail': 'detail',
+# A role name that is a narrower alias (skos:broader) of a canonical role, e.g. 'tower' -> 'wall'.
+ALIAS = {
+    'accent': 'trim',
+    'canopy': 'glass',
+    'chimney': 'roof',
+    'headlamp': 'detail',
+    'hull': 'body',
+    'light': 'detail',
+    'metal': 'trim',
+    'porch': 'trim',
+    'tail_lamp': 'detail',
+    'tower': 'wall',
+    'wood': 'detail',
 }
 
-# The grammar's natural-language phrasing of its roles ("make the tiles blue"), feature words included, because a
-# grammar plan always has those features' roles.
+# What a person says (skos:altLabel) -> role, used by role_edits.
+WORDS = {
+    'base': 'base',
+    'baseplate': 'base',
+    'body': 'body',
+    'bodywork': 'body',
+    'brickwork': 'wall',
+    'canopy': 'glass',
+    'chassis': 'chassis',
+    'cornice': 'trim',
+    'detail': 'detail',
+    'details': 'detail',
+    'door': 'door',
+    'doors': 'door',
+    'engine': 'engine',
+    'engines': 'engine',
+    'floor': 'base',
+    'foundation': 'base',
+    'frame': 'chassis',
+    'glass': 'glass',
+    'glazing': 'glass',
+    'ground': 'base',
+    'masonry': 'wall',
+    'panes': 'glass',
+    'plinth': 'trim',
+    'rim': 'wheel',
+    'rims': 'wheel',
+    'roof': 'roof',
+    'roofing': 'roof',
+    'roofs': 'roof',
+    'tire': 'tyre',
+    'tires': 'tyre',
+    'tower': 'tower',
+    'towers': 'tower',
+    'trim': 'trim',
+    'turret': 'tower',
+    'turrets': 'tower',
+    'tyre': 'tyre',
+    'tyres': 'tyre',
+    'wall': 'wall',
+    'walls': 'wall',
+    'wheel': 'wheel',
+    'wheels': 'wheel',
+    'window': 'window',
+    'windows': 'window',
+    'windscreen': 'glass',
+    'windshield': 'glass',
+    'wing': 'wing',
+    'wings': 'wing',
+}
+
+# The grammar's phrasing of its roles (skos:hiddenLabel), feature words included.
 GRAMMAR_WORDS = {
-    'roof': ('roof', 'roofing', 'tiles', 'slates', 'thatch'),
-    'wall': ('wall', 'walls', 'brickwork', 'masonry', 'stonework', 'bricks'),
-    'window': ('window', 'windows', 'window frame', 'window frames'),
-    'door': ('door', 'doors', 'gate', 'gates', 'entrance'),
-    'glass': ('glass', 'panes', 'glazing'),
-    'base': ('base', 'baseplate', 'ground', 'grass', 'lawn', 'path', 'pavement'),
+    'roof': ('roof', 'roofing', 'slates', 'thatch', 'tiles'),
+    'wall': ('bricks', 'brickwork', 'masonry', 'stonework', 'wall', 'walls'),
+    'window': ('window', 'window frame', 'window frames', 'windows'),
+    'door': ('door', 'doors', 'entrance', 'gate', 'gates'),
+    'glass': ('glass', 'glazing', 'panes'),
+    'base': ('base', 'baseplate', 'grass', 'ground', 'lawn', 'path', 'pavement'),
     'tower': ('tower', 'towers', 'turret', 'turrets'),
-    'detail': ('detail', 'details', 'chimney', 'porch', 'balcony', 'sign'),
-    'trim': ('trim', 'band', 'bands', 'cornice', 'plinth', 'pillars', 'quoins'),
+    'detail': ('balcony', 'chimney', 'detail', 'details', 'porch', 'sign'),
+    'trim': ('band', 'bands', 'cornice', 'pillars', 'plinth', 'quoins', 'trim'),
     'structure': ('floor', 'floors', 'structure'),
 }
+# END GENERATED
 
 
 def canonical(role):

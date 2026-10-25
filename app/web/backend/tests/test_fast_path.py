@@ -196,9 +196,9 @@ def test_scale_words_move_size_params_around_the_default():
 # ------------------------------------------------------------------ edit route: param diffs
 
 def test_edit_scale_param_from_the_model(provider):
-    provider.specs["4 studs longer"] = {"intent": "edit", "subject": {"family": "car"},
-                                        "edits": [{"op": "scale_param", "target": "whole", "delta": "longer", "amount": 4, "unit": "studs"}]}
-    decision = describe("4 studs longer", CAR)
+    provider.specs["stretch it by four studs"] = {"intent": "edit", "subject": {"family": "car"},
+                                                  "edits": [{"op": "scale_param", "target": "whole", "delta": "longer", "amount": 4, "unit": "studs"}]}
+    decision = describe("stretch it by four studs", CAR)
     assert decision["route"] == "edit"
     assert decision["changes"] == [{"param": "length", "label": "length", "from": 18, "to": 22}]
     assert provider.calls and decision["understanding_cost_eur"] > 0
@@ -209,9 +209,9 @@ def test_edit_scale_param_from_the_model(provider):
 
 
 def test_edit_features_colours_and_unmappable_changes(provider):
-    provider.specs["add a chimney and remove the porch"] = {"intent": "edit", "subject": {"family": "house"}, "edits": [
+    provider.specs["add chimney and remove porch and stairs"] = {"intent": "edit", "subject": {"family": "house"}, "edits": [
         {"op": "add_feature", "target": "chimney"}, {"op": "remove_feature", "target": "porch"}, {"op": "add_feature", "target": "spiral staircase"}]}
-    decision = describe("add a chimney and remove the porch", {"generator": "house", "params": {"porch": True}})
+    decision = describe("add chimney and remove porch and stairs", {"generator": "house", "params": {"porch": True}})
     assert decision["route"] == "edit"
     assert {c["param"]: (c["from"], c["to"]) for c in decision["changes"]} == {"chimney": ("none", "right"), "porch": (True, False)}
     assert any("staircase" in n for n in decision["notes"])                   # applied what maps, said what did not
@@ -415,3 +415,99 @@ def test_estimate_with_a_generator_loads_a_cold_registry(client, provider, monke
     monkeypatch.setattr(generator_bridge, "ensure", ensure)
     body = client.get("/api/describe/estimate", params={"text": "make the roof blue", "generator": "house"}).json()
     assert body["route"] == "edit" and loaded == [1]
+
+
+# ------------------------------------------------------------------ wave 2: broader rules, steps, preview, asking
+
+def test_rules_read_several_edits_in_order_without_a_call(provider):
+    decision = describe("make the roof red and the door white, then add a chimney", HOUSE)
+    assert decision["route"] == "edit" and decision["understanding_cost_eur"] == 0.0
+    changed = {c["param"] for c in decision["changes"]}
+    assert "chimney" in changed
+    valid(decision)
+    assert provider.calls == []
+
+
+def test_rules_resize_and_feature_phrases(provider):
+    longer = describe("make it 4 studs longer", CAR)
+    assert longer["route"] == "edit" and longer["changes"] == [{"param": "length", "label": "length", "from": 18, "to": 22}]
+    assert describe("two more windows", HOUSE)["changes"][0]["to"] == HOUSE["params"]["windows"] + 2
+    assert describe("remove the porch", {"generator": "house", "params": {"porch": True}})["changes"][0]["to"] is False
+    assert provider.calls == []
+
+
+def test_rules_read_italian_spanish_and_french_keywords(provider):
+    for text in ("rendi il tetto rosso", "haz el techo rojo", "peins le toit en rouge"):
+        decision = describe(text, HOUSE)
+        assert decision["route"] == "edit" and decision["changes"][0]["to"] == "red", text
+    assert describe("più lungo", CAR)["changes"][0]["to"] > CAR["params"]["length"]
+    assert provider.calls == []
+
+
+def test_a_clause_the_rules_cannot_read_goes_to_the_model_whole(provider):
+    provider.specs["make the roof red and fast"] = {"intent": "edit", "subject": {"family": "house"},
+                                                    "edits": [{"op": "set_colour", "target": "roof", "value": "Red"}], "confidence": 0.9}
+    describe("make the roof red and fast", HOUSE)
+    assert len(provider.calls) == 1
+
+
+def test_new_model_then_edit_runs_as_ordered_steps(provider):
+    decision = describe("a red car and make it longer")
+    assert decision["route"] == "generator" and decision["generator"] == "grand-tourer"
+    assert decision["params"]["body"] == "red" and decision["params"]["length"] > ENTRIES["grand-tourer"]["defaults"]["length"]
+    assert [s["route"] for s in decision["steps"]] == ["generator", "edit"]
+    assert decision["steps"][1]["changes"][0]["param"] == "length"
+    valid(decision)
+
+
+def test_big_size_change_is_previewed_and_small_ones_are_not(provider):
+    small = describe("make it 2 studs longer", CAR)
+    assert small["route"] == "edit" and "preview" not in small
+    big = describe("make it 10 studs longer", CAR)
+    assert big["route"] == "edit" and big["preview"]["reasons"] and big["changes"]
+    manual = describe("make it 2 studs longer", {**CAR, "manual_edits": True})
+    assert "manual edits" in manual["preview"]["reasons"][0]
+    recolour = describe("make the roof red", {**HOUSE, "manual_edits": False})
+    assert "preview" not in recolour
+
+
+def test_low_confidence_or_ambiguity_asks_with_chips_instead_of_applying(provider):
+    ambiguity = {"field": "size", "question": "Studs or bricks?", "options": ["6x8 studs", "6x8 bricks"]}
+    provider.specs["a 6 x 8 shed please"] = {"intent": "new_model", "subject": {"family": "house", "kind": "cottage"},
+                                             "size": {"studs": {"width": 6, "depth": 8}, "unit_ambiguous": True}, "ambiguities": [ambiguity]}
+    asked = describe("a 6 x 8 shed please")
+    assert asked["route"] == "clarify" and asked["choices"] == ["6x8 studs", "6x8 bricks"] and "params" not in asked
+    provider.specs["something nice"] = {"intent": "new_model", "subject": {"family": "car"}, "confidence": 0.3}
+    assert describe("something nice")["route"] == "clarify"
+
+
+# ---- the building grammar's own text addressing (#99) ----------------------------------------------------------------
+
+BUILDING = {"generator": "building", "params": {"roof": {"colour": "dark red"}, "roof_colour": "blue", "storeys": {"count": 1}}}
+
+
+def test_grammar_text_edits_the_building_without_a_model_call(provider):
+    result = asyncio.run(fast_path.describe("three storeys with arched windows", current=BUILDING))
+    assert result["route"] == "edit" and result["generator"] == "building" and result["understood_by"] == "grammar"
+    assert result["params"]["storeys"]["count"] == 3 and result["params"]["openings"]["upper_windows"] == "arch"
+    assert {"param": "storeys.count", "label": "storeys count", "from": 1, "to": 3} in result["changes"]
+    assert result["cost_eur"] == 0.0 and not provider.calls
+
+
+def test_grammar_text_drops_a_flat_value_it_would_be_overridden_by(provider):
+    result = asyncio.run(fast_path.describe("a stone wall and a hip roof", current=BUILDING))
+    assert result["route"] == "edit" and result["params"]["roof"]["style"] == "hip"
+    flat = {"generator": "building", "params": {"roof_style": "flat"}}
+    out = asyncio.run(fast_path.describe("hip roof", current=flat))
+    assert "roof_style" not in out["params"] and out["params"]["roof"]["style"] == "hip"      # the flat one would have won
+
+
+def test_grammar_text_that_is_only_partly_understood_goes_to_the_understanding_step(provider):
+    provider.specs["three storeys and sing a song"] = {"intent": "other", "subject": {"family": "other"}}
+    result = asyncio.run(fast_path.describe("three storeys and sing a song", current=BUILDING, llm_id=None))
+    assert result.get("understood_by") != "grammar" and result.get("params", {}).get("storeys", {}).get("count") != 3
+
+
+def test_grammar_text_is_for_the_building_generator_only(provider):
+    assert asyncio.run(fast_path.grammar_decision("three storeys", HOUSE)) is None
+    assert asyncio.run(fast_path.grammar_decision("three storeys?", BUILDING)) is None

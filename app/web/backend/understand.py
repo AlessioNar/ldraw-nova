@@ -250,19 +250,147 @@ def _edit_spec(current: Optional[dict], *edits: dict) -> dict:
     return {"intent": "edit", "subject": json.loads(json.dumps(subject)), "edits": list(edits), "confidence": 1.0}
 
 
+# Keyword tables for the rule path only (the model reads any language): the 30-odd words a follow-up is made of, folded
+# onto the English words the patterns below know. Phrases first, then single words.
+_LANG_PHRASES = {
+    "più grande": "bigger", "più piccolo": "smaller", "più lungo": "longer", "più corto": "shorter", "più largo": "wider",
+    "più stretto": "narrower", "più alto": "taller", "più basso": "lower",
+    "más grande": "bigger", "más pequeño": "smaller", "más largo": "longer", "más corto": "shorter", "más ancho": "wider",
+    "más estrecho": "narrower", "más alto": "taller", "más bajo": "lower",
+    "plus grand": "bigger", "plus petit": "smaller", "plus long": "longer", "plus court": "shorter", "plus large": "wider",
+    "plus étroit": "narrower", "plus haut": "taller", "plus bas": "lower",
+    "de nuevo": "again", "ancora una volta": "again", "encore une fois": "again", "otra vez": "again", "un'altra volta": "again",
+    "torna indietro": "undo", "vuelve atrás": "undo", "revenir en arrière": "undo",
+}
+_LANG_WORDS = {
+    **dict.fromkeys(("rosso", "rossa", "rojo", "roja", "rouge"), "red"), **dict.fromkeys(("blu", "azul", "bleu", "bleue"), "blue"),
+    **dict.fromkeys(("verde", "vert", "verte"), "green"), **dict.fromkeys(("giallo", "gialla", "amarillo", "amarilla", "jaune"), "yellow"),
+    **dict.fromkeys(("nero", "nera", "negro", "negra", "noir", "noire"), "black"), **dict.fromkeys(("bianco", "bianca", "blanco", "blanca", "blanc", "blanche"), "white"),
+    **dict.fromkeys(("arancione", "naranja"), "orange"), **dict.fromkeys(("grigio", "grigia", "gris"), "grey"),
+    **dict.fromkeys(("marrone", "marron", "marrón"), "brown"), **dict.fromkeys(("rosa", "rose"), "pink"),
+    **dict.fromkeys(("viola", "violeta", "violet"), "purple"),
+    **dict.fromkeys(("tetto", "techo", "toit"), "roof"), **dict.fromkeys(("porta", "puerta", "porte"), "door"),
+    **dict.fromkeys(("finestra", "finestre", "ventana", "ventanas", "fenêtre", "fenêtres"), "windows"),
+    **dict.fromkeys(("ruota", "ruote", "rueda", "ruedas", "roue", "roues"), "wheels"),
+    **dict.fromkeys(("muro", "muri", "pareti", "pared", "paredes", "mur", "murs"), "walls"),
+    **dict.fromkeys(("corpo", "cuerpo", "corps"), "body"), **dict.fromkeys(("camino", "cheminée", "camino"), "chimney"),
+    **dict.fromkeys(("rendi", "fai", "haz", "rends", "metti", "pon", "mets"), "make"),
+    **dict.fromkeys(("colora", "pinta", "peins"), "paint"), **dict.fromkeys(("cambia", "cambiar", "change", "changer"), "change"),
+    **dict.fromkeys(("aggiungi", "añade", "agrega", "ajoute"), "add"), **dict.fromkeys(("togli", "rimuovi", "quita", "elimina", "retire", "enlève", "supprime"), "remove"),
+    **dict.fromkeys(("annulla", "deshacer", "annuler"), "undo"), **dict.fromkeys(("ancora", "encore"), "again"),
+    **dict.fromkeys(("il", "lo", "la", "el", "los", "las", "le", "les", "gli"), "the"),
+    **dict.fromkeys(("di", "de"), "to"), "en": "into", "più": "more", "más": "more", "plus": "more", "meno": "fewer", "menos": "fewer",
+    "moins": "fewer", **dict.fromkeys(("un", "una", "uno", "une"), "a"), **dict.fromkeys(("due", "dos", "deux"), "two"),
+    **dict.fromkeys(("tre", "tres", "trois"), "three"), **dict.fromkeys(("quattro", "cuatro", "quatre"), "four"),
+}
+_LANG_WORD_RE = re.compile(r"[^\W\d_]+(?:'[^\W\d_]+)?")
+
+
+def english_keywords(key: str) -> str:
+    """The normalised request with the Italian/Spanish/French keywords of the rule path folded onto English."""
+    for phrase, word in _LANG_PHRASES.items():
+        if phrase in key:
+            key = key.replace(phrase, word)
+    return _LANG_WORD_RE.sub(lambda m: _LANG_WORDS.get(m.group(0), m.group(0)), key)
+
+
+_FILLER = r"(?:(?:please|can you|could you|would you|just|now) )*"
+_VERB = r"(?:make|paint|colou?r|turn|change|set)"
+_WHOLE_WORDS = r"it|the model|the whole model|everything|the whole thing"
+_TARGET = rf"(?:the\s+)?({_ROLE_RE})|({_WHOLE_WORDS})"
+_CLAUSE_RECOLOUR = re.compile(rf"^(?:{_VERB}\s+)?(?:{_TARGET})\s+(?:to\s+|into\s+)?({_COLOUR_RE})$")
+_DELTAS = {"bigger": "bigger", "larger": "bigger", "smaller": "smaller", "longer": "longer", "shorter": "shorter", "wider": "wider",
+           "narrower": "narrower", "taller": "taller", "higher": "taller", "lower": "lower"}
+_DELTA_RE = "|".join(_DELTAS)
+_UNITS = {"stud": "studs", "studs": "studs", "course": "courses", "courses": "courses", "%": "percent", "percent": "percent"}
+_AMOUNT = r"(\d+)\s*(studs?|courses?|%|percent)"
+_CLAUSE_SCALE_NOUN = re.compile(rf"^({_DELTA_RE})\s+(?:the\s+)?(wheels?|roof)$")
+_CLAUSE_SCALE = re.compile(rf"^(?:(?:make|get)\s+)?(?:(?:the\s+)?(wheels?|roof)|(?:{_WHOLE_WORDS}))?\s*(?:{_AMOUNT}\s+)?({_DELTA_RE})(?:\s+by\s+{_AMOUNT})?$")
+_NUMBERS_ALL = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8}
+_COUNT = rf"(\d+|{'|'.join(_NUMBERS_ALL)})"
+_FEATURE_NOUN = r"(door|windows?|porch|chimney|dormer|engines?)"
+_CLAUSE_FEATURE = re.compile(rf"^(add|remove|delete|drop)\s+(?:(?:{_COUNT})\s+)?(?:(more|fewer)\s+)?(?:the\s+)?{_FEATURE_NOUN}$")
+_CLAUSE_MORE = re.compile(rf"^{_COUNT}\s+(more|fewer)\s+{_FEATURE_NOUN}$")
+_SPLIT = re.compile(r"\s*(?:,|;|\band then\b|\by luego\b|\bthen\b|\band\b|\bplus\b|\bet\b|\by\b|\be\b|\bpoi\b|\bpuis\b)\s*")
+_MAX_STEPS = 8
+
+
+def _count(word: Optional[str]) -> Optional[int]:
+    if word is None:
+        return None
+    return int(word) if word.isdigit() else _NUMBERS_ALL[word]
+
+
+def _clause_edit(clause: str, last_verb: Optional[str]) -> Optional[dict]:
+    """One edit from one clause of a follow-up, or None. Add/remove clauses carry their verb to the clauses after them."""
+    clause = re.sub(rf"^{_FILLER}", "", clause.strip())
+    found = _CLAUSE_RECOLOUR.match(clause)
+    if found:
+        role, whole, colour = found.groups()
+        return {"op": "set_colour", "target": ROLES[role] if role else "whole", "value": _COLOUR_BY_LOWER[colour]}
+    found = _CLAUSE_SCALE_NOUN.match(clause)
+    if found:
+        return {"op": "scale_param", "target": ROLES[found.group(2)], "delta": _DELTAS[found.group(1)]}
+    found = _CLAUSE_SCALE.match(clause)
+    if found:
+        noun, pre_n, pre_unit, delta, post_n, post_unit = found.groups()
+        amount, unit = (pre_n, pre_unit) if pre_n else (post_n, post_unit)
+        edit = {"op": "scale_param", "target": ROLES[noun] if noun else "whole", "delta": _DELTAS[delta]}
+        if amount:
+            edit.update(amount=int(amount), unit=_UNITS[unit])
+        return edit
+    found = _CLAUSE_FEATURE.match(clause) or (_CLAUSE_FEATURE.match(f"{last_verb} {clause}") if last_verb else None)
+    if found:
+        verb, n, direction, noun = found.groups()
+        edit = {"op": "add_feature" if verb == "add" else "remove_feature", "target": noun}
+        if _count(n) and n not in ("a", "an"):
+            edit["count"] = _count(n)
+        return edit
+    found = _CLAUSE_MORE.match(clause)
+    if found:
+        n, direction, noun = found.groups()
+        return {"op": "add_feature" if direction == "more" else "remove_feature", "target": noun, "count": _count(n)}
+    return None
+
+
+def rules_edits(text: str) -> Optional[list[dict]]:
+    """The ordered edits of a follow-up that rules fully understand, or None when any clause is beyond them.
+
+    "make the roof red and the door white", "2 studs longer, then add a chimney", "two more windows", in English and
+    (keywords only) Italian, Spanish and French. All or nothing: a clause the rules cannot read sends the whole message
+    to the model, so nothing is half applied.
+    """
+    key = english_keywords(_key(text))
+    edits, last_verb = [], None
+    for clause in _SPLIT.split(key):
+        if not clause:
+            continue
+        edit = _clause_edit(clause, last_verb)
+        if edit is None:
+            return None
+        if edit["op"] in ("add_feature", "remove_feature"):
+            last_verb = "add" if edit["op"] == "add_feature" else "remove"
+        edits.append(edit)
+    return edits if edits and len(edits) <= _MAX_STEPS else None
+
+
 def rules_shortcut(text: str, current_spec: Optional[dict] = None, previous_text: Optional[str] = None) -> Optional[dict]:
-    """Trivial cases answered for free: UI presets, undo/revert, 'make the <role> <colour>', 'again'. None otherwise."""
+    """Trivial cases answered for free: UI presets, undo/revert, recolours, resizes and feature changes, 'again'. None otherwise."""
     key = _key(text)
+    ekey = english_keywords(key) if current_spec else key
     if key in PRESETS and not current_spec:
         return json.loads(json.dumps(PRESETS[key]))
-    if _UNDO.match(key):
+    if _UNDO.match(ekey):
         return _edit_spec(current_spec, {"op": "undo", "target": "whole"})
-    if _REVERT.match(key):
+    if _REVERT.match(ekey):
         return _edit_spec(current_spec, {"op": "revert", "target": "whole"})
-    found = _RECOLOUR.match(key)
+    found = _RECOLOUR.match(ekey)
     if found and current_spec:
         return _edit_spec(current_spec, {"op": "set_colour", "target": ROLES[found.group(1)], "value": _COLOUR_BY_LOWER[found.group(2)]})
-    if key in _AGAIN and previous_text and _key(previous_text) not in _AGAIN:
+    edits = rules_edits(ekey) if current_spec else None
+    if edits:
+        return _edit_spec(current_spec, *edits)
+    if ekey in _AGAIN and previous_text and _key(previous_text) not in _AGAIN:
         return rules_shortcut(previous_text, current_spec)       # repeat only what rules themselves understand
     if current_spec and previous_text and key == _key(previous_text):
         return json.loads(json.dumps(current_spec))               # identical message: same spec

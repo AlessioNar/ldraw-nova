@@ -535,6 +535,7 @@ export type Describe = {
 export type FastPathTurn = {
   route: Describe["route"]; title?: string; generator?: string; changes?: Describe["changes"]; notes?: string[]; history?: string;
   question?: string; choices?: string[]; reason?: string; estimate?: DescribeEstimate; cost_eur: number; took_ms: number;
+  highlight?: string[]; // "section:id" of the parts a clarify is about (the canvas can select them)
 };
 export type DescribeHint = { route: Describe["route"]; hint: string; confidence: number; estimate?: DescribeEstimate };
 

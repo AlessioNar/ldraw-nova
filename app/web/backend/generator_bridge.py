@@ -31,6 +31,13 @@ _DUMP = (
     "digest = g.digest() + ('\\n' + t.digest() if t.REGISTRY else '')\n"
     "print(json.dumps({'digest': digest, 'entries': entries, 'colours': sorted(NAMES)}))\n"
 )
+_APPLY_TEXT = (
+    "import json, sys\n"
+    "from ldraw_tools.grammar.nl import apply_text\n"
+    "request = json.load(sys.stdin)\n"
+    "config, understood, missed = apply_text(request['config'], request['text'])\n"
+    "print(json.dumps({'understood': understood, 'missed': missed}))\n"
+)
 _memory: Optional[dict] = None
 _lock: Optional[asyncio.Lock] = None
 
@@ -98,6 +105,20 @@ async def ensure() -> Optional[dict]:
         except Exception as exc:  # noqa: BLE001 - no toolkit (tests, broken install): the fast path simply is unavailable
             log.warning("generator registry unavailable: %s", exc)
     return _memory
+
+
+async def apply_text(config: dict, text: str) -> Optional[dict]:
+    """The building grammar's own text addressing ("three storeys", "arched windows"): {"understood": [{"text", "patch"}],
+    "missed": [clause]} for `text` read against `config`, or None when the toolkit is unavailable. Rules only, no model."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            str(settings.TOOLKIT_PYTHON), "-c", _APPLY_TEXT, cwd=str(settings.TOOLKIT_DIR),
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
+        out, _ = await asyncio.wait_for(proc.communicate(json.dumps({"config": config, "text": text}).encode()), timeout=20)
+        return json.loads(out.decode())
+    except Exception as exc:  # noqa: BLE001 - no toolkit: the request goes on to the understanding step
+        log.warning("grammar text addressing unavailable: %s", exc)
+        return None
 
 
 _warming: Optional[asyncio.Task] = None

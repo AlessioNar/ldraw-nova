@@ -1434,6 +1434,9 @@
       case 'reload': if (state.readonly) { if (parked) parked.stale = true; } else refresh(false, true); break;
       case 'view-version': viewVersion(command.url); break;
       case 'back-to-draft': backToDraft(); break;
+      case 'select':
+        if (state.shown && selecting()) { setSelected(Core.keysForIds(state.shown.placements, command.ids)); frameSelection(); }
+        break;
       case 'focus': if (state.shown) resetView(state.shown); break;
       case 'step':
         if (state.mode === 'player' && playerInstance) playerInstance.showStep(command.n);

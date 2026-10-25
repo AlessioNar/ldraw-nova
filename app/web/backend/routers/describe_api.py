@@ -19,6 +19,7 @@ router = APIRouter()
 class Current(BaseModel):
     generator: str = Field(max_length=60)
     params: dict[str, Any] = Field(default_factory=dict)
+    manual_edits: bool = False        # the canvas has hand edits a change would replace: such a change is previewed first
 
 
 class DescribeBody(BaseModel):
