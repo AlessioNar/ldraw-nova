@@ -299,7 +299,7 @@ def role_rules(text: str, previous_text: Optional[str] = None) -> Optional[dict]
     if key in _AGAIN and previous_text and _key(previous_text) not in _AGAIN:
         return role_rules(previous_text)
     edits = []
-    for position, clause in enumerate(c for c in re.split(r"\s*(?:,|\band\b)\s*", key) if c):
+    for clause in (c for c in re.split(r"\s*(?:,|\band\b)\s*", key) if c):
         found = _PAINT.match(clause) or _BARE.match(clause)
         if found:
             edits.append({"op": "set_colour", "target": _noun(found.group(1)), "value": _COLOUR_BY_LOWER[found.group(2)]})
