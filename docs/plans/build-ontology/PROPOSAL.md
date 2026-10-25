@@ -103,6 +103,7 @@ Migration order, so nothing is ever two sources of truth: #57 lands the single r
 ## Risks and open questions
 
 - Does `pyshacl` run fast enough to validate generation inside the agent loop? Measure on the 20 presets in #93; fall back to keeping the Python rules as the runtime check and SHACL as the CI check if not.
+  - Measured in #93: about 0.3 s per config with `pyshacl` (26 presets in 9 s, most of it loading the graphs). Too slow for the agent loop, so `normalise()` stays the runtime check and the shapes are the CI/toolkit check (`tools/validate_shapes.py`, `tests/test_shapes.py`).
 - Domain-scoped aliases (`floor`): one scheme with `scopeNote`, or one scheme per domain (buildings, vehicles)? Needed before #91 merges; vehicles arrive with #96.
 - A stable base IRI: GitHub Pages path above is a placeholder; a `w3id.org` registration would survive a rename. Owner's call.
 - Licence of the ontology files: the repo's docs are CC BY-SA 4.0 (`ATTRIBUTION.md`); suggest the same for `ontology/` and say so in the `owl:Ontology` header. Template instance data keeps its source licence (CCAL 2.0) per instance.
