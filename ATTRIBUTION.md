@@ -61,3 +61,12 @@ machine, for offline use. These cached files are never committed or redistribute
 rebrickable.com.** Pictures the owner uploads stay on the owner's machine too.
 
 LEGO(R) is a trademark of the LEGO Group of companies, which does not sponsor, authorize or endorse this project.
+
+## CaDA set list (local, not distributed)
+
+`tools/fetch_cada_sets.py` lets the owner fetch the list of CaDA set numbers, names, years and piece counts from
+[Merlins Bricks](https://www.merlinsbricks.com/setdb/brand/cada/) once, into `data/local/set-catalog-local.json`.
+The site is copyrighted (Kai Zimmermann) and publishes no licence, so that list is local user data: the path is
+gitignored, nothing fetched is committed or bundled, and the tool makes three requests per run (robots.txt, the
+brand page, one JSON file), honours robots.txt, and refuses to run twice without `--force`. CaDA is a trademark of
+its owner, which does not sponsor or endorse this project.
