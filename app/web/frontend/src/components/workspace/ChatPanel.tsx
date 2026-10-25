@@ -199,16 +199,20 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
 
   const cost = detail?.usage?.cost_eur;
   const toAi = mode === "ai" ? !flip : flip;
-  const toggle = <button type="button" className="ws-mode-toggle" onClick={() => setFlip((f) => !f)} aria-pressed={flip}>{toAi ? "Quick change instead" : "Ask the AI instead"}</button>;
-  let line: ReactNode = "Simple changes are free and instant. Bigger ones show their cost first.";
-  if (toAi) line = <><b className="cost" data-mode="ai">Talking to the AI · costs apply</b> {toggle}</>;
-  else if (mode === "ai" || (ws.ws?.agent_chat && !typed)) line = <><b data-mode="quick">Quick changes · free</b> {toggle}</>;
+  const seg = (
+    <span className="ws-seg" role="group" aria-label="Who answers this message">
+      <button type="button" aria-pressed={!toAi} onClick={() => setFlip(mode === "ai")}>Quick</button>
+      <button type="button" aria-pressed={toAi} onClick={() => setFlip(mode !== "ai")}>AI</button>
+    </span>
+  );
+  // One short cost line next to the switch; the switch itself says who answers.
+  let line: ReactNode = <b data-mode="quick">Free · instant</b>;
+  if (toAi) line = <b className="cost" data-mode="ai">Costs apply · it asks before it spends</b>;
   else if (typed && hint) {
-    if (hint.route === "needs_ai") line = <><b className="cost">AI{estimateLabel(hint.estimate) ? `, ${estimateLabel(hint.estimate)}` : ""}</b>. It asks before it spends.</>;
+    if (hint.route === "needs_ai") line = <><b className="cost">Needs the AI{estimateLabel(hint.estimate) ? `, ${estimateLabel(hint.estimate)}` : ""}</b>. Switch to AI to ask.</>;
     else if (hint.route === "clarify") line = "Free. I may ask one question first.";
     else line = <b>Free, about 1 s</b>;
-    if (!toAi) line = <><span data-mode="quick">{line}</span> {toggle}</>;
-  } else if (!toAi) line = <><b data-mode="quick">Quick changes · free</b> {toggle}</>;
+  }
   return (
     <section className="ws-panel ws-ai" role="tabpanel" aria-label="Chat">
       <div className="ws-chat">
@@ -227,7 +231,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         {tray}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
-          onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<span className="ws-hint-line" role="status" aria-live="polite">{line}</span>}
+          onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<>{seg} <span className="ws-hint-line" role="status" aria-live="polite">{line}</span></>}
           llmId={llmId} onLlmChange={setLlmId} onSend={send} onStop={() => chatId && api.cancel(chatId)} running={running} />
       </div>
     </section>

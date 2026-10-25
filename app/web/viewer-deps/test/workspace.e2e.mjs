@@ -468,22 +468,23 @@ await step('l. chat mode: quick by default, toggle to the AI per message; the AI
   await canvasReady();
   await composer().waitFor();
   const hint = () => page.locator('.ws-hint-line');
-  await page.waitForFunction(() => /Quick changes · free/.test(document.querySelector('.ws-hint-line')?.textContent ?? ''));
-  assert.equal(await page.getByRole('button', { name: 'Ask the AI instead' }).count(), 1);
-  await page.getByRole('button', { name: 'Ask the AI instead' }).click();
-  assert.match(await hint().innerText(), /Talking to the AI · costs apply/);
-  assert.equal(await page.getByRole('button', { name: 'Quick change instead' }).count(), 1);
-  await page.getByRole('button', { name: 'Quick change instead' }).click();         // back: nothing was sent
-  assert.match(await hint().innerText(), /Quick changes · free/);
+  const on = (name) => page.locator('.ws-seg').getByRole('button', { name, exact: true });
+  assert.equal(await on('Quick').getAttribute('aria-pressed'), 'true');
+  assert.match(await hint().innerText(), /Free/);
+  await on('AI').click();
+  assert.equal(await on('AI').getAttribute('aria-pressed'), 'true');
+  assert.match(await hint().innerText(), /Costs apply/);
+  await on('Quick').click();         // back: nothing was sent
+  assert.equal(await on('Quick').getAttribute('aria-pressed'), 'true');
   // flip once and send: the UI must POST to /api/chats/<id>/messages and must NOT call draft/describe. Both are stubbed.
   const sent = [];
   await page.route('**/api/chats/*/messages', (route) => { sent.push(route.request().postData()); route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
   await page.route('**/draft/describe', (route) => { sent.push('DESCRIBE'); route.abort(); });
   await page.route('**/api/builds/*/chat', (route) => route.request().method() === 'POST' ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'stub-chat' }) }) : route.continue());
-  await page.getByRole('button', { name: 'Ask the AI instead' }).click();
+  await on('AI').click();
   await composer().fill('make the roof green');
   await page.locator('.ws-composer .send-button').click();
-  await page.waitForFunction(() => /Talking to the AI/.test(document.querySelector('.ws-hint-line')?.textContent ?? ''), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForFunction(() => /Costs apply/.test(document.querySelector('.ws-hint-line')?.textContent ?? ''), null, { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(1500);
   assert.ok(!sent.includes('DESCRIBE'), 'the fast path was not asked');
   assert.ok(sent.some((b) => b && b.includes('make the roof green')), 'the message went to the chat (agent) endpoint');
