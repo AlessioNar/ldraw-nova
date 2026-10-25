@@ -12,6 +12,13 @@
 #desktop-note { position: fixed; left: 12px; right: 12px; top: 56px; z-index: 2; padding: 6px 10px; border-radius: var(--radius);
                 background: var(--bar); border: 1px solid var(--btn-border); }
 #desktop-note[hidden] { display: none; }
+#help { position: fixed; right: 12px; bottom: 44px; z-index: 5; width: min(380px, calc(100vw - 24px)); padding: 10px 14px; border-radius: var(--radius);
+        background: var(--bar); border: 1px solid var(--btn-border); font-size: 12.5px; }
+#help[hidden] { display: none; }
+#help-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+#help dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; }
+#help dt { font-family: var(--font-mono); white-space: nowrap; }
+#help dd { margin: 0; opacity: 0.8; }
 body.readonly .editing { display: none; }
 
 #chat-link { font-size: 13px; white-space: nowrap; }
