@@ -70,6 +70,16 @@ def test_scan_builds_then_reuses_the_cache(parts, models, tmp_path):
     assert scan(parts, models, tmp_path, build=False).pending == [] and scan(parts, models, tmp_path / "other", build=False).pending
 
 
+def test_cache_survives_a_re_unpack_that_only_changes_mtimes(parts, models, tmp_path):
+    scan(parts, models, tmp_path)
+    for f in models.iterdir():
+        os.utime(f, ns=(1_000_000_000, 1_000_000_000))
+    again = scan(parts, models, tmp_path)
+    assert (again.built, again.reused) == (0, 6)
+    (models / "plates-1.mpd").write_text(mpd(ref("3022.dat", 14, "0 0 0")))     # different content: rebuilt
+    assert scan(parts, models, tmp_path).built == 1
+
+
 def test_budget_stops_the_build_and_a_rerun_resumes(parts, models, tmp_path):
     seen = []
     part = scan(parts, models, tmp_path, budget=0, progress=lambda done, total: seen.append((done, total)))

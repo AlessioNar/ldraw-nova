@@ -321,6 +321,11 @@ ENV LDRAW_DIR=/opt/ldraw/ldraw LDRAW_NOVA_TOOLKIT_DIR=/opt/ldraw-nova
 RUN cd /opt/ldraw-nova \
     && runuser -u agent -- env XDG_CACHE_HOME=/opt/ldraw-nova/.cache ./ldraw-agent discover search parts wing --engine fts --limit 1 > /dev/null
 
+# Precompute every bundled model's parts list now, so "what can I build" answers on the first request instead of after a
+# warm-up of minutes. Keyed by file content and part names/sizes, so the cache stays valid across restarts and rebuilds.
+RUN cd /opt/ldraw-nova \
+    && runuser -u agent -- ./ldraw-agent inventory buildable --warm --max-build-seconds 3000 > /dev/null
+
 # --- scripts/: the whole folder, on everyone's PATH ----------------------------
 # Whatever is in scripts/ runs from anywhere in the container, by name, for
 # every user (agents too: web/backend/sandbox.py). mpd2glb.sh is the way to
