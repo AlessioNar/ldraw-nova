@@ -167,7 +167,7 @@ CONSTRAINTS = [
     ('porch-door', 'A porch needs a front door'),
     ('balcony-storeys', 'A balcony needs a door and at least 2 storeys'),
     ('parapet-flat', 'Parapets and battlements only exist on flat roofs and tower tops'),
-    ('modular-fits', 'A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang and lift-out floors'),
+    ('modular-fits', 'A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang and lift-out floors; its side walls are shared with the neighbours, so they have no windows'),
     ('interior-rect', 'Interior partitions only go into rectangular footprints'),
     ('eaves-setback', 'Eave roofs round storeys need each upper storey to step in by 1 or more'),
     ('setback-fits', 'The top storey must stay at least 4 studs wide after all setbacks'),
@@ -270,11 +270,11 @@ def normalise(config):
             if group[key] != value:
                 group[key] = value
                 notes.append(f'{key} set to {value}: {why} (modular-fits)')
-        if bs['corner'] != 'none':
-            street = [x for x in op['sides'] if x in ('front', bs['corner'])]
-            if street != op['sides']:
-                op['sides'] = street
-                notes.append('windows only on the street sides: the other sides are shared walls (corner-fits)')
+        open_sides = ('front', bs['corner']) if bs['corner'] != 'none' else ('front', 'back')
+        street = [x for x in op['sides'] if x in open_sides]
+        if street != op['sides']:
+            op['sides'] = street
+            notes.append('windows only on the street sides: the other sides are shared walls (modular-fits)')
         if co['style'] == 'towers':
             co['style'] = 'pillars'
             notes.append('towers replaced by pillars: towers would stick out of the module (modular-fits)')
