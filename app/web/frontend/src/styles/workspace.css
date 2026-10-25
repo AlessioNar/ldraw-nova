@@ -305,3 +305,8 @@
 .ws-seg button { border: 0; border-radius: 0; padding: 1px 10px; font-size: var(--fs-xs); background: none; color: var(--muted); }
 .ws-seg button[aria-pressed="true"] { background: var(--accent, #6b46c1); color: #fff; }
 .ws-fp-chosen b { color: var(--text, inherit); }
+
+/* Session changes: undo/redo and version jumps, folded away until wanted. */
+.ws-session { font-size: var(--fs-xs); }
+.ws-session summary { cursor: pointer; color: var(--muted); }
+.ws-session .ws-ai-actions, .ws-session .ws-session-versions { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
