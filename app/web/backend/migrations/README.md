@@ -1,6 +1,6 @@
 # Migrations (Alembic)
 
-`alembic upgrade head` runs when the app starts (`db/migrate.py`, under a PostgreSQL advisory lock). Models are in `db/models.py`; the first revision is equivalent to `docs/plans/postgres/sql/0001_init.sql` (a test compares the two).
+`alembic upgrade head` runs when the app starts (`db/migrate.py`, under a PostgreSQL advisory lock). Models are in `db/models.py`; the first revision is equivalent to `docs/plans/active/postgres/sql/0001_init.sql` (a test compares the two).
 
 Changing the schema, from `app/web/backend` against a throwaway database:
 

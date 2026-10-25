@@ -1,4 +1,4 @@
-/* Build workspace (/build/:id). Ported from docs/plans/build-workspace/mockup.css with the app's own tokens (theme.css). */
+/* Build workspace (/build/:id). Ported from docs/plans/done/build-workspace/mockup.css with the app's own tokens (theme.css). */
 .ws {
   flex: 1 1 0; min-height: 0; min-width: 0; display: grid; position: relative;
   grid-template-columns: 56px minmax(0, 1fr) 10px var(--ws-panel-w, 344px);

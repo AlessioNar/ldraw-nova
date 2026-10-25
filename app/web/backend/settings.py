@@ -100,7 +100,7 @@ def read_file_max_chars() -> int:
 COALESCE_REASONING = os.environ.get("LDRAW_NOVA_COALESCE_REASONING", "").strip().lower() in ("1", "true", "yes", "on")
 
 
-# Prompt-cache layout of the agent loop (see docs/plans/loop-perf/FIX-cache.md).
+# Prompt-cache layout of the agent loop (see docs/plans/done/loop-perf/FIX-cache.md).
 # A cache breakpoint on the last message of the history, for providers that cache.
 ROLLING_CACHE_BREAKPOINT = os.environ.get("LDRAW_NOVA_ROLLING_CACHE_BREAKPOINT", "1").lower() not in ("0", "false", "no", "off")
 # Send the work listing, NOTES.md and mode note after the history instead of in the system turn. On by default

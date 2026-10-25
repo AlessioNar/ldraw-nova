@@ -33,7 +33,7 @@ REPO = Path(__file__).resolve().parent.parent
 DATA = REPO / "ldraw_tools" / "data"
 OUT_FILE = "bricklink-colours.json"
 RB_FILE = "rebrickable-colours.json"
-SOURCE = "CRAN package legocolors 0.4.0 (MIT, Matthew Leonawicz) BrickLink/LDraw pairs, completed by Rebrickable colour names; see docs/plans/rebrickable-mapping.md"
+SOURCE = "CRAN package legocolors 0.4.0 (MIT, Matthew Leonawicz) BrickLink/LDraw pairs, completed by Rebrickable colour names; see docs/plans/done/rebrickable-mapping.md"
 
 
 def norm_name(s):

@@ -1,6 +1,6 @@
 """POST /api/describe and GET /api/describe/estimate: the fast-path decision. Builds nothing, creates no build.
 
-Contract and examples: docs/plans/phase2/fast-path.md.
+Contract and examples: docs/plans/done/phase2/fast-path.md.
 """
 from __future__ import annotations
 

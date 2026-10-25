@@ -151,7 +151,7 @@ def choose(spec: dict) -> tuple[Optional[dict], str]:
         if (entry["quality"].startswith("Small accent piece") and not by_kind) or not (by_kind or by_family):
             continue
         exact = kind.casefold() in entry["kinds"]
-        template = entry.get("kind") == "template"         # a model turned into a template (docs/plans/build-templates)
+        template = entry.get("kind") == "template"         # a model turned into a template (docs/plans/active/build-templates)
         rows.append((-(by_kind * 4 + by_family * 2 + (entry["families"][0] == family) + exact), template,
                      not entry.get("presets"), len(entry["families"]), position, entry))
     if not rows:
@@ -868,7 +868,7 @@ def context_text(current: Optional[dict], context: Optional[dict]) -> str:
 
 async def describe(text: str, *, current: Optional[dict] = None, build_id: Optional[str] = None,
                    previous_text: Optional[str] = None, llm_id: Optional[str] = None, context: Optional[dict] = None) -> dict:
-    """Understand the request (rules first, else one structured call) and route it. See docs/plans/phase2/fast-path.md.
+    """Understand the request (rules first, else one structured call) and route it. See docs/plans/done/phase2/fast-path.md.
 
     `context` (optional): has_model, parts, roles, diverged, selection, last (the last change), turns (last turns as text).
     Without a live generator source (`current` None) but with a model, edits become role edits of the build's plan."""

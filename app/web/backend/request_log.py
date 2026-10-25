@@ -1,4 +1,4 @@
-"""The request log: local, hashed telemetry about how requests were routed (docs/plans/phase2/nl-review.md, section 7).
+"""The request log: local, hashed telemetry about how requests were routed (docs/plans/done/phase2/nl-review.md, section 7).
 
 One row per describe or estimate request: the route, who decided it (rules or the cheap model), the generator, timing,
 and a short hash of the text. The sentence itself is stored only when the owner turns on `keep_request_text` (off by

@@ -1,6 +1,6 @@
 # The database (PostgreSQL)
 
-Since phase 1 of [the PostgreSQL plan](../plans/postgres/PROPOSAL.md) the app has a PostgreSQL 18 database next to the files. **Today it holds only two things: the request log and the cost history.** Chats, builds and the parts collection are still files; they move in later phases (the tables for them already exist and are empty).
+Since phase 1 of [the PostgreSQL plan](../plans/active/postgres/PROPOSAL.md) the app has a PostgreSQL 18 database next to the files. **Today it holds only two things: the request log and the cost history.** Chats, builds and the parts collection are still files; they move in later phases (the tables for them already exist and are empty).
 
 ## What runs
 
@@ -21,7 +21,7 @@ Dev mode (`docker-compose.dev.yml`) also publishes the database on `127.0.0.1:54
 
 ## Code
 
-`app/web/backend/db/` (engine and session from the password file, `models.py` with every table of [sql/0001_init.sql](../plans/postgres/sql/0001_init.sql), `migrate.py`), `app/web/backend/migrations/` (Alembic, see its README), `usage_log.py` (cost history, `GET /api/costs`), `request_log.py` (describe/estimate telemetry).
+`app/web/backend/db/` (engine and session from the password file, `models.py` with every table of [sql/0001_init.sql](../plans/active/postgres/sql/0001_init.sql), `migrate.py`), `app/web/backend/migrations/` (Alembic, see its README), `usage_log.py` (cost history, `GET /api/costs`), `request_log.py` (describe/estimate telemetry).
 
 - **Request log**: one row per `/api/describe` and `/api/describe/estimate` request (route, who decided, generator, timing, a 12-character hash of the text). The sentence is stored only if `keep_request_text` is on (`PUT /api/request-log/settings`, default off). Rows older than 180 days are deleted at start and daily.
 - **Cost history**: one `usage_event` per model call (planner steps, workers, the understanding call), kept forever, no link to chats (deleting a chat keeps the spend). The per-chat `_usage` in messages is unchanged. `GET /api/costs?from=2026-10-01&to=2026-10-31` returns the `cost_daily` view (per day and kind) with totals.

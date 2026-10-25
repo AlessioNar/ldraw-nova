@@ -1,4 +1,4 @@
-"""Shared euro budget for a chat's planner and its delegated workers (docs/plans/swarm-subagents/04-shared-budget.md).
+"""Shared euro budget for a chat's planner and its delegated workers (docs/plans/done/swarm-subagents/04-shared-budget.md).
 
 Worker steps are not saved in the chat while they run, so the ledger holds what they have spent (`spent`) and
 what each running worker may still spend (its reservation). A finished worker's cost stays in the ledger until

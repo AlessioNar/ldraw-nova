@@ -1,4 +1,4 @@
-"""Role classifier and per-placement generator roles (docs/plans/build-templates)."""
+"""Role classifier and per-placement generator roles (docs/plans/active/build-templates)."""
 import hashlib
 import json
 from pathlib import Path

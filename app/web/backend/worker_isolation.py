@@ -1,4 +1,4 @@
-"""Stray-write guard for delegated workers (docs/plans/swarm-subagents/05-isolation-permissions.md).
+"""Stray-write guard for delegated workers (docs/plans/done/swarm-subagents/05-isolation-permissions.md).
 
 What IS enforced: the file tools (write_file, and path resolution with write=True) refuse any path outside the
 worker's own folder (ToolContext.write_root); run_python starts with that folder as cwd.

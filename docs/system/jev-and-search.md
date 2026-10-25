@@ -108,7 +108,7 @@ flowchart LR
 | One `discover search` (500 candidates) | **about $0.011 and about 8 s** | jev-submodel-discovery-evaluation.md, Summary |
 | Historical cathedral build | 3 searches = 1,500 Jev judgements = 752k tokens = about $0.03 | typesafe-jev-ldraw-assessment.md |
 | A larger pool (3,000 candidates) | about 6× the cost; doubled useful hits on one rare query | jev-submodel-discovery-evaluation.md:104 |
-| How often the agent searches | 10 `discover` calls across 5 recorded chats (about 2 per chat; the engine was not recorded) | docs/plans/loop-perf/analysis-output.md:108 |
+| How often the agent searches | 10 `discover` calls across 5 recorded chats (about 2 per chat; the engine was not recorded) | docs/plans/done/loop-perf/analysis-output.md:108 |
 | **Jev fee per paid build** | **about 2–5 cents**, against EUR 1–2 for the agent run itself | the rows above combined |
 
 **The hidden cost is not Jev, it is the result size.**

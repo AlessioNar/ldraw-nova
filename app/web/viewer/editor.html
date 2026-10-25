@@ -3,7 +3,7 @@
   LDraw 3D editor: the viewer's scene (ldbi, three.js r139) with picking and a move/rotate gizmo.
   Usage: /viewer/editor.html?chat=<chat id>   (or ?build=<slug>, or ?space=chats|builds&id=<id>)
   Embedded in the build workspace: ?space=builds&id=<slug>&embed=1&mode=edit|view|player&theme=dark|light, driven by
-  window.postMessage (obd:command in, obd:* out; docs/plans/build-workspace/CONTRACT.md).
+  window.postMessage (obd:command in, obd:* out; docs/plans/done/build-workspace/CONTRACT.md).
   The plan lives on the server (task 02's /api/chats/<id>/editor endpoints); this page sends an edit
   when a drag ends and shows the model the backend rebuilt. viewer.html stays read-only.
 -->

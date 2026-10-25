@@ -1,6 +1,6 @@
 # What happens when someone types a request
 
-Backend paths are relative to `app/web/backend/`, and frontend paths to `app/web/frontend/src/`. Measured numbers come from `docs/plans/nl-review/REVIEW.md` (warm container, 8 cores, software GL) and `docs/plans/deterministic-first/PROPOSAL.md`. **Caveat:** the NL review could not call the understanding model live (no key), so its LLM numbers are estimates.
+Backend paths are relative to `app/web/backend/`, and frontend paths to `app/web/frontend/src/`. Measured numbers come from `docs/plans/active/nl-review/REVIEW.md` (warm container, 8 cores, software GL) and `docs/plans/done/deterministic-first/PROPOSAL.md`. **Caveat:** the NL review could not call the understanding model live (no key), so its LLM numbers are estimates.
 
 ## The five layers, cheapest first
 

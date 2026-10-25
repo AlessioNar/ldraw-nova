@@ -1,4 +1,4 @@
-"""docs/plans/loop-perf/live_check.py against the real app served by uvicorn, with a mock Anthropic behind it."""
+"""docs/plans/done/loop-perf/live_check.py against the real app served by uvicorn, with a mock Anthropic behind it."""
 import importlib.util
 import os
 import threading

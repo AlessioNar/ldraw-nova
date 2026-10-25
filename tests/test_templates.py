@@ -1,4 +1,4 @@
-"""Templates from builds: derived params, pure generate(), validity of every offered variant (docs/plans/build-templates)."""
+"""Templates from builds: derived params, pure generate(), validity of every offered variant (docs/plans/active/build-templates)."""
 
 import json
 

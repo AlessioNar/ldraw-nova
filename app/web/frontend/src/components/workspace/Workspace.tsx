@@ -12,7 +12,7 @@ import Splitter from "./Splitter";
 import ToolRail from "./ToolRail";
 import TopBar from "./TopBar";
 
-/** /build/:id: the always-editable build workspace (layout per docs/plans/build-workspace/mockup.html). */
+/** /build/:id: the always-editable build workspace (layout per docs/plans/done/build-workspace/mockup.html). */
 export default function Workspace({ id }: { id: string }) {
   const ws = useWorkspace(id);
   const hasGenerator = !!ws.ws?.generator;

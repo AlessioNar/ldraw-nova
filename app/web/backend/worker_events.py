@@ -1,4 +1,4 @@
-"""Live worker events for the UI (docs/plans/swarm-subagents/08-ui.md), sent through the PLANNER's emit.
+"""Live worker events for the UI (docs/plans/done/swarm-subagents/08-ui.md), sent through the PLANNER's emit.
 
 A worker's own context has a silent emit on purpose, so subagents.py calls these three helpers with the
 planner's context. `run_state.Run.emit` keeps the per-worker state, so a reconnecting client's snapshot has it.
