@@ -4,7 +4,7 @@
     python tools/export_ontology.py --check   exit 1 if docs/ns/ is out of date (CI)
 
 Needs rdflib (toolkit-only: `pip install rdflib`); the app never imports this. Each source file is re-serialised
-byte-stably (blank nodes relabelled canonically, subjects sorted, no timestamps), they are also merged into one
+byte-stably (blank nodes relabelled canonically, subjects sorted, no timestamps), the files are also merged into one
 ontology.ttl for loading in a single call, and index.html links them. GitHub Pages serves docs/, so
 https://alessionar.github.io/open-brick-designer/ns/obd.ttl is docs/ns/obd.ttl.
 """
@@ -25,10 +25,12 @@ FILES = {
     'roles.ttl': 'Role vocabulary (SKOS)',
     'shapes.ttl': 'Validity rules (SHACL)',
     'vehicles.ttl': 'Vehicles and spaceships (OWL, SHACL)',
+    'sets.ttl': 'Sets, brands and parts-list sources (OWL, SKOS, PROV-O)',
 }
 MERGED = 'ontology.ttl'
 PREFIXES = {
-    'obd': BASE + 'obd#', 'role': BASE + 'role/', 'build': BASE + 'build/',
+    'obd': BASE + 'obd#', 'role': BASE + 'role/', 'build': BASE + 'build/', 'brand': BASE + 'brand/', 'psrc': BASE + 'partssource/',
+    'prov': 'http://www.w3.org/ns/prov#',
     'owl': 'http://www.w3.org/2002/07/owl#', 'skos': 'http://www.w3.org/2004/02/skos/core#',
     'sh': 'http://www.w3.org/ns/shacl#', 'dcterms': 'http://purl.org/dc/terms/',
 }

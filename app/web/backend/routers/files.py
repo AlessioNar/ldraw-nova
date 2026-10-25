@@ -1,12 +1,15 @@
 """File routes: generated/chat files and the LDraw library."""
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
+import collection
+import set_images
 import settings
 from paths import safe_join
 from .common import file_url, not_found
@@ -26,6 +29,20 @@ def _serve(root: Path, path: str, *, download: bool = False, case_insensitive: b
         media_type = "text/markdown; charset=utf-8"
     return FileResponse(file, media_type=media_type, headers={"Cache-Control": cache, **(headers or {})},
                         filename=file.name if download else None)
+
+
+@router.get("/files/set-image/{set_num}")
+async def set_image(set_num: str):
+    """The picture of a set: the owner's upload, the locally cached catalogue picture, a render of the bundled model, else a
+    neutral placeholder. Declared before the catch-all below. Nothing is downloaded unless remote fetching is switched on."""
+    if not set_images.valid(set_num):
+        not_found()
+    owned = set_num in await asyncio.to_thread(collection.owned_set_nums)
+    path = await set_images.get(set_num, owned)
+    if path is None:
+        return Response(set_images.PLACEHOLDER, media_type="image/svg+xml", headers={"Cache-Control": "no-store"})
+    return FileResponse(path, media_type=set_images.MEDIA_TYPES.get(path.suffix.lstrip("."), "image/png"),
+                        headers={"Cache-Control": "no-cache", "X-Content-Type-Options": "nosniff"})
 
 
 @router.get("/files/{path:path}")
