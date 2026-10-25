@@ -1,0 +1,53 @@
+# Dependency update PRs. Every ecosystem here has a lock or pin file that the
+# build reads, so each one is listed explicitly. Security alerts are separate
+# (enable Dependabot alerts in repo settings); this file controls version PRs.
+#
+# app/requirements.txt is also compiled into app/requirements.lock, which the
+# Dockerfile installs with --require-hashes. A version bump here will fail the
+# image build until requirements.lock is regenerated (see its header).
+version: 2
+updates:
+  # Web app backend (LiteLLM, FastAPI, ...). Pinned with ==.
+  - package-ecosystem: pip
+    directory: /app
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # Toolkit (pyldraw3, numpy, ...). uv.lock is updated, pyproject.toml pins too.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # Web app frontend. Built into static files; only prod deps ship in the image.
+  - package-ecosystem: npm
+    directory: /app/web/frontend
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # Viewer dependencies.
+  - package-ecosystem: npm
+    directory: /app/web/viewer-deps
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # Action versions in .github/workflows. They are pinned to tags (vX.Y.Z).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
