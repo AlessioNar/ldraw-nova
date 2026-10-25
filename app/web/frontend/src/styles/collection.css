@@ -133,3 +133,15 @@ button.chip:hover { border-color: var(--accent); background: var(--accent-soft);
 .shortage-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
 .shortage-table th, .shortage-table td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.25)); }
 a.button.disabled { pointer-events: none; opacity: 0.5; }
+
+/* change colour or part of imported lines */
+.change-section { display: flex; flex-direction: column; gap: 8px; }
+.change-section h3 { margin: 0; font-size: 14px; }
+.colour-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px; max-height: 200px; overflow-y: auto; padding: 2px; }
+.colour-option { display: flex; align-items: center; gap: 4px; text-align: left; padding: 4px 8px; font-size: 13px; }
+.colour-option.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.part-matches { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+.part-matches button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 4px 8px; }
+.part-matches button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.chosen-part { display: flex; align-items: center; gap: 10px; }
+.bulk-bar { display: flex; align-items: center; gap: 12px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--accent-soft); }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { collectionApi, type ColourSystem, type ColumnMapping, type ImportDiff, type ImportPreview, type Inventory, type NeedsMapping } from "../../api";
+import { collectionApi, type ColourSystem, type ColumnMapping, type ImportDiff, type ImportPreview, type Inventory, type NeedsMapping, type PageRead } from "../../api";
 import { colourHex } from "../../ldrawColours";
 import Dialog from "./Dialog";
 import ImportReportView from "./ImportReportView";
@@ -15,6 +15,43 @@ const SYSTEMS: Record<ColourSystem, string> = {
   name: "Colour names (BrickLink or Rebrickable spelling)", bricklink: "BrickLink colour ids", rebrickable: "Rebrickable colour ids", ldraw: "LDraw colour codes",
 };
 type Needed = NeedsMapping["needs_mapping"];
+type Draft = { part: string; colour: string; qty: string; keep: boolean; flags: string[]; text: string };
+
+const isPage = (file: File) => /\.(pdf|png|jpe?g|webp|tiff?|bmp)$/i.test(file.name);
+const cell = (v: string) => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+const pageCsv = (rows: Draft[]) => ["Item No,Color,Qty", ...rows.filter(r => r.keep).map(r => [r.part.trim(), r.colour.trim(), r.qty.trim()].map(cell).join(","))].join("\n");
+const readBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+  reader.onerror = () => reject(new Error("Cannot read this file"));
+  reader.readAsDataURL(file);
+});
+
+/** Lines read from a PDF or photo of a parts list: the doubtful ones come first, unticked, until you have checked them. */
+function PageCheck({ rows, setRows, page, busy, onContinue, onCancel }:
+  { rows: Draft[]; setRows: (r: Draft[]) => void; page: PageRead; busy: boolean; onContinue: () => void; onCancel: () => void }) {
+  const doubtful = rows.filter(r => r.flags.length && !r.keep).length;
+  const set = (i: number, patch: Partial<Draft>) => setRows(rows.map((r, n) => n === i ? { ...r, ...patch } : r));
+  const order = rows.map((_, i) => i).sort((a, b) => Number(rows[b].flags.length > 0) - Number(rows[a].flags.length > 0) || a - b);
+  const kept = rows.filter(r => r.keep && /^\d+$/.test(r.qty.trim()) && r.part.trim()).length;
+  return <div className="parts-form">
+    <p>Read {rows.length} line{rows.length === 1 ? "" : "s"} from the {page.method === "ocr" ? "picture (OCR)" : "PDF text"}.{" "}
+      {doubtful ? <span className="warn-text">{doubtful} uncertain line{doubtful === 1 ? " is" : "s are"} left out until you tick them. Fix the numbers if they are wrong.</span> : <span className="ok-text">Nothing looks doubtful.</span>}</p>
+    {page.warnings.map((w, i) => <p key={i} className="muted small">{w}</p>)}
+    <div className="mapping-sample" role="region" aria-label="Lines read from the page" tabIndex={0}>
+      <table><thead><tr><th>Use</th><th>Qty</th><th>Part</th><th>Colour</th><th>Why check</th></tr></thead>
+        <tbody>{order.map(i => { const r = rows[i]; return <tr key={i}>
+          <td><input type="checkbox" aria-label={`Use ${r.text}`} checked={r.keep} disabled={busy} onChange={e => set(i, { keep: e.target.checked })} /></td>
+          <td><input className="inline-input" size={4} aria-label="Quantity" value={r.qty} disabled={busy} onChange={e => set(i, { qty: e.target.value })} /></td>
+          <td><input className="inline-input" size={9} aria-label="Part number" value={r.part} disabled={busy} onChange={e => set(i, { part: e.target.value })} /></td>
+          <td><input className="inline-input" aria-label="Colour" value={r.colour} disabled={busy} onChange={e => set(i, { colour: e.target.value })} /></td>
+          <td className="muted small">{r.flags.length ? r.flags.join("; ") : ""}<br />“{r.text}”</td></tr>; })}</tbody></table></div>
+    <div className="form-actions">
+      <button type="button" disabled={busy} onClick={onCancel}>Back</button>
+      <button type="button" className="primary" disabled={busy || !kept} onClick={onContinue}>Continue with {kept} line{kept === 1 ? "" : "s"}</button>
+    </div>
+  </div>;
+}
 
 const readText = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -88,7 +125,9 @@ export default function UploadDialog({ onClose, onChanged, sources, replaceId = 
   const [csv, setCsv] = useState("");
   const [name, setName] = useState("");
   const [spares, setSpares] = useState(false);
-  const [phase, setPhase] = useState<"form" | "reading" | "mapping" | "preview" | "committing" | "done">("form");
+  const [phase, setPhase] = useState<"form" | "reading" | "pagecheck" | "mapping" | "preview" | "committing" | "done">("form");
+  const [page, setPage] = useState<PageRead | null>(null);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [needed, setNeeded] = useState<Needed | null>(null);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -112,12 +151,19 @@ export default function UploadDialog({ onClose, onChanged, sources, replaceId = 
     setDragging(false);
     if (!busy) choose(e.dataTransfer.files[0]);
   }
-  async function read(families?: Record<string, number>, how?: { format?: string; mapping?: ColumnMapping }) {
+  async function read(families?: Record<string, number>, how?: { format?: string; mapping?: ColumnMapping }, pageText?: string) {
     if (!file || !name.trim()) return;
     setError("");
     try {
       setPhase("reading");
-      const text = csv || await readText(file);
+      if (pageText === undefined && !csv && isPage(file)) {
+        const found = await collectionApi.readPage(await readBase64(file));
+        setPage(found);
+        setDrafts(found.lines.map(l => ({ part: l.part, colour: l.colour, qty: String(l.qty), keep: !l.needs_review, flags: l.flags, text: l.text })));
+        setPhase("pagecheck");
+        return;
+      }
+      const text = pageText ?? (csv || await readText(file));
       setCsv(text);
       const p = await collectionApi.previewImport(name.trim(), text, spares, file.name, families, how);
       if ("needs_mapping" in p) { setNeeded(p.needs_mapping); setPreview(null); setPhase("mapping"); return; }
@@ -152,7 +198,7 @@ export default function UploadDialog({ onClose, onChanged, sources, replaceId = 
     } catch (e) { setError((e as Error).message); setPhase("preview"); }
   }
 
-  const title = phase === "mapping" ? "Choose the columns" : phase === "preview" || phase === "committing" ? "Review the import" : phase === "done" ? "Imported" : replaceId ? "Replace with a new file" : "Import a file";
+  const title = phase === "pagecheck" ? "Check the lines read from the page" : phase === "mapping" ? "Choose the columns" : phase === "preview" || phase === "committing" ? "Review the import" : phase === "done" ? "Imported" : replaceId ? "Replace with a new file" : "Import a file";
   const label = preview ? (FORMATS[preview.format] ?? preview.format) : "";
   const p = preview?.report.pileometer;
   return <Dialog title={title} label="Import a parts file" busy={busy} wide={phase === "preview" || phase === "committing"} onClose={onClose}>
@@ -165,9 +211,9 @@ export default function UploadDialog({ onClose, onChanged, sources, replaceId = 
         onClick={() => input.current?.click()}
         onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
         {file ? <><strong>{file.name}</strong><span className="muted small">{(file.size / 1024).toLocaleString(undefined, { maximumFractionDigits: 0 })} KB · click to choose another</span></>
-          : <><strong>Drop a file here or click to choose one</strong><span className="muted small">Rebrickable, BrickLink, BrickStore, Brickit Pileometer or any CSV. Up to 25 MB.</span></>}
+          : <><strong>Drop a file here or click to choose one</strong><span className="muted small">Rebrickable, BrickLink, BrickStore, Brickit Pileometer or any CSV; or a PDF or photo of a parts list. Up to 25 MB.</span></>}
       </button>
-      <input ref={input} hidden type="file" aria-label="Parts file" accept=".csv,.xml,.bsx,text/csv,text/plain,text/xml,application/xml" onChange={e => { choose(e.target.files?.[0]); setCsv(""); e.target.value = ""; }} />
+      <input ref={input} hidden type="file" aria-label="Parts file" accept=".csv,.xml,.bsx,.pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp,text/csv,text/plain,text/xml,application/xml,application/pdf,image/*" onChange={e => { choose(e.target.files?.[0]); setCsv(""); e.target.value = ""; }} />
       <label className="field"><span>Name</span>
         <input value={name} maxLength={80} disabled={busy} placeholder="Technic bin" onChange={e => setName(e.target.value)} /></label>
       <label className="check"><input type="checkbox" checked={spares} disabled={busy} onChange={e => setSpares(e.target.checked)} /> Count spare parts</label>
@@ -178,6 +224,8 @@ export default function UploadDialog({ onClose, onChanged, sources, replaceId = 
         <button type="submit" className="primary" disabled={busy || !file || !name.trim()}>Read the file</button>
       </div>
     </form>}
+    {phase === "pagecheck" && page && <PageCheck rows={drafts} setRows={setDrafts} page={page} busy={busy} onCancel={() => { setPhase("form"); setPage(null); }}
+      onContinue={() => { const text = pageCsv(drafts); setCsv(text); void read(undefined, undefined, text); }} />}
     {phase === "mapping" && needed && <MappingForm needed={needed} busy={false} onRead={m => void read(undefined, { mapping: m })}
       onCancel={() => { setPhase("form"); setNeeded(null); }} />}
     {error && phase === "mapping" && <div className="banner error" role="alert">{error}</div>}
