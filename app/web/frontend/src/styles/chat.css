@@ -259,3 +259,8 @@
 .budget-stop p strong { display: block; color: var(--danger); }
 .budget-stop .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .chat-build-link { font-size: var(--fs-sm); max-width: 45%; flex: none; }
+
+/* Parts scope: the toolbar chip and the presets in the settings popover. */
+.parts-chip { max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.parts-presets { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.parts-presets button, .parts-lists .check button.small { font-size: var(--fs-xs); padding: 1px 8px; }
