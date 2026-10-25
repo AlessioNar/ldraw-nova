@@ -37,9 +37,10 @@ def test_prototypes_ship_and_register():
         assert entry['source'].get('author') or entry['source'].get('name')
     assert templates.find('house', 'cottage')[0].id == 'willowbank-cottage'
     assert templates.find('house', 'brick house')[0].id == 'brick-house'
-    assert 'tractor-trailer' in [t.id for t in templates.find(None, 'tractor')]      # derived catalogue models can match too
-    assert 'flatbed-truck' in [t.id for t in templates.find(None, 'flatbed truck')]
+    assert templates.find(None, 'tractor')[0].id == 'tractor-trailer'      # on a tie the closest kind wording wins over derived models
+    assert templates.find(None, 'flatbed truck')[0].id == 'flatbed-truck'
     text = templates.digest()
+    assert 'swap_' not in text and 'include_' not in text and 'colours:colour_' in text      # the digest lists sizes and colours only
     assert all(i in text for i in IDS) and 'template' in text and max(len(line) for line in text.splitlines()) < 700      # one short line per template
 
 

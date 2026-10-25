@@ -13,6 +13,7 @@ Prototype templates ship in ldraw_tools/data/templates/*.json; a person's own li
 from __future__ import annotations
 
 import os
+import types
 from pathlib import Path
 
 from ..generators.base import digest_line
@@ -88,8 +89,9 @@ def find(family=None, kind=None):
     for t in REGISTRY.values():
         score = (family in t.families) * 2 + any(kind and (kind == k or kind in k or k in kind) for k in t.kinds) * 3
         if score:
-            rows.append((-score, t.id))
-    return [REGISTRY[i] for _, i in sorted(rows)]
+            nearest = min((abs(len(k) - len(kind)) for k in t.kinds), default=0)      # on a tie, the closest kind wording
+            rows.append((-score, nearest, t.id))
+    return [REGISTRY[i] for *_, i in sorted(rows)]
 
 
 def candidates(family=None, kind=None):
@@ -112,7 +114,14 @@ def candidates(family=None, kind=None):
 
 def digest():
     """Compact registry text for the understanding prompt, one line per template."""
-    return '\n'.join(digest_line(t) + ' | template' for t in REGISTRY.values())
+    return '\n'.join(digest_line(_compact(t)) + ' | template' for t in REGISTRY.values())
+
+
+def _compact(template):
+    """The template as the prompt sees it: sizes and colours only. Swaps and sub-assembly switches stay in the parameter schema
+    (a request can still set them) but, listed for every shipped template, they would dominate the understanding prompt."""
+    params = {k: v for k, v in template.params.items() if not k.startswith(('swap_', 'include_'))}
+    return types.SimpleNamespace(id=template.id, families=template.families, kinds=template.kinds, params=params)
 
 
 if BUNDLED.is_dir():
