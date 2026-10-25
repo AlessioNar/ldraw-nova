@@ -196,8 +196,31 @@ def get_editor_worker() -> BuildWorker:
     return _editor_worker
 
 
+_template_worker: BuildWorker | None = None
+_template_loop: asyncio.AbstractEventLoop | None = None
+TEMPLATE_TIMEOUT = int(os.environ.get("LDRAW_NOVA_TEMPLATE_TIMEOUT", str(4 * 3600)))
+
+
+def get_template_worker() -> BuildWorker:
+    """A third toolkit process for "Make this a template": a derivation builds and checks every offered value (minutes to
+    most of an hour), which must neither block builds nor edits. One job at a time; a second waits in a short queue."""
+    global _template_worker, _template_loop
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if _template_worker is None or (loop is not None and _template_loop is not loop):
+        if _template_worker is not None:
+            _template_worker.abandon()
+        _template_worker, _template_loop = BuildWorker(max_queue=1, timeout=TEMPLATE_TIMEOUT), loop
+    return _template_worker
+
+
 async def shutdown() -> None:
-    global _worker, _editor_worker, _editor_loop
+    global _worker, _editor_worker, _editor_loop, _template_worker, _template_loop
+    if _template_worker is not None:
+        await _template_worker.close()
+        _template_worker = _template_loop = None
     if _worker is not None:
         await _worker.close()
     if _editor_worker is not None:

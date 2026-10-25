@@ -535,7 +535,7 @@ export type ParamSpec = {
   properties?: Record<string, ParamSpec>; // a group of the building grammar (footprint, roof...)
 };
 export type GeneratorEntry = {
-  id: string; title: string; families: string[]; kinds: string[]; description: string; roles: string[];
+  id: string; title: string; kind?: "template"; families: string[]; kinds: string[]; description: string; roles: string[];
   params: { properties: Record<string, ParamSpec> }; defaults: Record<string, unknown>;
   presets?: Record<string, { title: string; description: string; config: Record<string, unknown> }>; // the building grammar
 };

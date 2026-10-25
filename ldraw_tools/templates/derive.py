@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import collections
 import copy
+import itertools
 import re
 
 import numpy as np
@@ -734,8 +735,12 @@ def _progressive(check, deltas, verdicts):
     return sorted(passed)
 
 
+_tick = [lambda: None]       # told after each candidate version is built and checked (progress for the "Make this a template" job)
+
+
 def _ok(data, params, parts, baseline):
     errors, components = check_plan(build(data, params)[0], parts)
+    _tick[0]()
     return len(errors) <= baseline[0] and components <= baseline[1], dict(errors=len(errors), components=components)
 
 
@@ -745,6 +750,16 @@ def derive(plan, parts, *, id, title, families, kinds, description, source=None,
            log=None):
     """(template data, report) from a plan. `plan` may already carry roles; missing ones are classified."""
     log = log or (lambda *_: None)
+    checked = itertools.count(1)
+    _tick[0] = lambda: log('checked', next(checked))
+    try:
+        return _derive(plan, parts, id=id, title=title, families=families, kinds=kinds, description=description, source=source,
+                       hints=hints, verify=verify, facts=facts, log=log)
+    finally:
+        _tick[0] = lambda: None
+
+
+def _derive(plan, parts, *, id, title, families, kinds, description, source, hints, verify, facts, log):
     facts = facts or roles.PartFacts(parts)
     tagged, tag_report = roles.tag_plan(plan, parts, hints=hints or description, facts=facts)
     leaves = leaves_of(tagged, parts, facts)

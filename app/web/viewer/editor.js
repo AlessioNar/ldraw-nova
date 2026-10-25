@@ -217,7 +217,8 @@
     controls.addEventListener('change', () => scene.render());
     controls.screenSpacePanning = true;
     controls.zoomSpeed = 3;
-    controls.mouseButtons.RIGHT = -1;
+    controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;   // right-drag pans
+    scene.renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
     scene.orbitControls = controls;
     scene.render = function () {
       const close = camera.position.distanceTo(controls.target);
