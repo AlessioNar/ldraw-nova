@@ -11,14 +11,8 @@
     "fence",
     "tree"
   ],
-  "source_sha256": "7d61457487641e59c1b4a79ce4bf8d5a38b4d325d3d71d1a79053ded1396e815",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 531,
-  "model": "farmstead/farmstead.mpd",
-  "plan": "farmstead/scene.plan.json",
-  "guide": "farmstead/README.md",
-  "preview": "farmstead/home.png",
-  "sections": 10
+  "sections": 10,
+  "source_sha256": "7d61457487641e59c1b4a79ce4bf8d5a38b4d325d3d71d1a79053ded1396e815",
+  "checks_passed": true
 }

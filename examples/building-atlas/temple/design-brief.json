@@ -12,14 +12,8 @@
     "planter",
     "tiered-canopy"
   ],
-  "source_sha256": "e781547e89b562fce4254794c804be6f5ea2922c171f845fc3a54513419f9968",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 342,
-  "model": "temple/temple.mpd",
-  "plan": "temple/scene.plan.json",
-  "guide": "temple/README.md",
-  "preview": "temple/home.png",
-  "sections": 4
+  "sections": 4,
+  "source_sha256": "e781547e89b562fce4254794c804be6f5ea2922c171f845fc3a54513419f9968",
+  "checks_passed": true
 }

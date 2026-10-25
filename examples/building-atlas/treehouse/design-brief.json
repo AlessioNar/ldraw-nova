@@ -12,14 +12,8 @@
     "tree",
     "platform"
   ],
-  "source_sha256": "f8bd6b24c219f234bfa943e22630acfb5a74b1e2a558a0cc170df30a0b6ce3c1",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 339,
-  "model": "treehouse/treehouse.mpd",
-  "plan": "treehouse/scene.plan.json",
-  "guide": "treehouse/README.md",
-  "preview": "treehouse/home.png",
-  "sections": 9
+  "sections": 9,
+  "source_sha256": "f8bd6b24c219f234bfa943e22630acfb5a74b1e2a558a0cc170df30a0b6ce3c1",
+  "checks_passed": true
 }
