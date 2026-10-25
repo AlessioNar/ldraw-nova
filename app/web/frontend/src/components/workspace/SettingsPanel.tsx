@@ -17,7 +17,7 @@ export default function SettingsPanel({ ws }: { ws: Workspace }) {
   if (!source) return null;
   return (
     <section className="ws-panel" role="tabpanel" aria-label="Settings">
-      <div className="ws-chat-head"><span className="label">{entry?.title ?? source.id} generator</span><span className="ws-chip mono">no AI</span></div>
+      <div className="ws-chat-head"><span className="label">{entry?.title ?? source.id} {source.id.startsWith("template:") ? "template" : "generator"}</span><span className="ws-chip mono">no AI</span></div>
       <p className="muted small ws-about">Changing a setting does nothing until you press Regenerate. It is free and takes about a second.</p>
       {n > 0 && <div className="banner warn ws-warnbox" role="status">Regenerating replaces your {n} manual {n === 1 ? "edit" : "edits"} with the new settings. Undo brings {n === 1 ? "it" : "them"} back.</div>}
       {error && <div className="banner error">{error}</div>}

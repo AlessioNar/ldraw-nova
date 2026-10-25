@@ -185,7 +185,7 @@ def test_the_build_worker_and_the_registry_dump_know_templates(official, tmp_pat
     assert {'house', 'template:flatbed-truck', 'template:willowbank-cottage'} <= ids and 'template' in registry['digest']
     result = pipeline.Pipeline().run(tmp_path, generator='template:flatbed-truck', params={'z_delta': 2}, name='truck',
                                      geometry=False, glb=False)
-    assert result['ok'] and result['generator']['generator'] == 'flatbed-truck' and result['generator']['params']['z_delta'] == 2
+    assert result['ok'] and result['generator']['generator'] == 'template:flatbed-truck' and result['generator']['params']['z_delta'] == 2
 
 
 def test_a_part_with_no_longer_sibling_gets_a_filler_of_its_family(official):

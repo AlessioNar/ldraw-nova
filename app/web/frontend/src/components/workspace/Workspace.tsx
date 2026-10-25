@@ -8,6 +8,7 @@ import CanvasPane from "./CanvasPane";
 import PartsPanel from "./PartsPanel";
 import PiecePanel from "./PiecePanel";
 import SettingsPanel from "./SettingsPanel";
+import TemplatePanel from "./TemplatePanel";
 import Splitter from "./Splitter";
 import ToolRail from "./ToolRail";
 import TopBar from "./TopBar";
@@ -25,6 +26,7 @@ export default function Workspace({ id }: { id: string }) {
     { tab: "chat", label: "Chat", dot: ws.proposals.length > 0 },
     ...(ws.phone ? [] : [{ tab: "parts" as Tab, label: "Parts" }, { tab: "piece" as Tab, label: "Piece", dot: ws.selection.length > 0 }]),
     ...(hasGenerator ? [{ tab: "settings" as Tab, label: "Settings" }] : []),
+    ...(ws.tab === "template" ? [{ tab: "template" as Tab, label: "Template" }] : []),      // opened from the build menu, gone when left
   ];
   const tab = tabs.some((t) => t.tab === ws.tab) ? ws.tab : tabs[0].tab;
   useEffect(() => { if (tab !== ws.tab) ws.setTab(tab, false); }, [tab, ws]);
@@ -51,6 +53,7 @@ export default function Workspace({ id }: { id: string }) {
         {tab === "piece" && <PiecePanel ws={ws} />}
         {tab === "chat" && <ChatPanel ws={ws} />}
         {tab === "settings" && <SettingsPanel ws={ws} />}
+        {tab === "template" && <TemplatePanel ws={ws} />}
       </aside>
       <BottomBar ws={ws} layout={layout} />
 

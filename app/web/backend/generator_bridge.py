@@ -15,6 +15,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 from typing import Optional
 
 import settings
@@ -25,6 +26,7 @@ _DUMP = (
     "import json\n"
     "from ldraw_tools import generators as g\n"
     "from ldraw_tools import templates as t\n"
+    "t.refresh()\n"
     "from ldraw_tools.generators.colours import NAMES\n"
     "entries = [x.entry() for x in g.REGISTRY.values()]\n"
     "entries += [dict(x.entry(), id='template:' + x.id) for x in t.REGISTRY.values()]\n"
@@ -52,6 +54,8 @@ def _signature() -> str:
         digest = hashlib.sha256()
         for p in files:
             digest.update(p.relative_to(root).as_posix().encode() + b"\0" + p.read_bytes())
+        for p in sorted(settings.TEMPLATES_DIR.glob("*.json")):          # the person's own templates
+            digest.update(b"user/" + p.name.encode() + b"\0" + p.read_bytes())
         return digest.hexdigest()
     except OSError:
         return ""
@@ -92,6 +96,7 @@ async def ensure() -> Optional[dict]:
         try:
             proc = await asyncio.create_subprocess_exec(
                 str(settings.TOOLKIT_PYTHON), "-c", _DUMP, cwd=str(settings.TOOLKIT_DIR),
+                env={**os.environ, "LDRAW_NOVA_TEMPLATES_DIR": str(settings.TEMPLATES_DIR)},
                 stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
             out, _ = await asyncio.wait_for(proc.communicate(), timeout=60)
             data = json.loads(out.decode())
