@@ -129,7 +129,7 @@
         },
         "role": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9_-]+$",
+          "pattern": "^[A-Za-z0-9_-]+(:[A-Za-z0-9_-]+)?$",
           "maxLength": 60
         },
         "ref": {

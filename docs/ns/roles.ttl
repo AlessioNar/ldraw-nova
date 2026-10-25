@@ -12,6 +12,24 @@ role:accent a skos:Concept ;
     skos:inScheme role: ;
     skos:prefLabel "accent"@en .
 
+<https://alessionar.github.io/open-brick-designer/ns/role/body:stripe-a> a skos:Concept ;
+    skos:broader role:body ;
+    skos:definition "First colour group of the body when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "body stripe A"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/role/body:stripe-b> a skos:Concept ;
+    skos:broader role:body ;
+    skos:definition "Second colour group of the body when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "body stripe B"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/role/body:stripe-c> a skos:Concept ;
+    skos:broader role:body ;
+    skos:definition "Third colour group of the body when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "body stripe C"@en .
+
 role:canopy a skos:Concept ;
     skos:broader role:glass ;
     skos:definition "Alias: a generator's own word for glass."@en ;
@@ -58,11 +76,47 @@ role:porch a skos:Concept ;
     skos:inScheme role: ;
     skos:prefLabel "porch"@en .
 
+<https://alessionar.github.io/open-brick-designer/ns/role/roof:stripe-a> a skos:Concept ;
+    skos:broader role:roof ;
+    skos:definition "First colour group of the roof when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "roof stripe A"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/role/roof:stripe-b> a skos:Concept ;
+    skos:broader role:roof ;
+    skos:definition "Second colour group of the roof when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "roof stripe B"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/role/roof:stripe-c> a skos:Concept ;
+    skos:broader role:roof ;
+    skos:definition "Third colour group of the roof when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "roof stripe C"@en .
+
 role:tail_lamp a skos:Concept ;
     skos:broader role:detail ;
     skos:definition "Alias: a generator's own word for detail."@en ;
     skos:inScheme role: ;
     skos:prefLabel "tail_lamp"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/role/wall:stripe-a> a skos:Concept ;
+    skos:broader role:wall ;
+    skos:definition "First colour group of the wall when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wall stripe A"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/role/wall:stripe-b> a skos:Concept ;
+    skos:broader role:wall ;
+    skos:definition "Second colour group of the wall when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wall stripe B"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/role/wall:stripe-c> a skos:Concept ;
+    skos:broader role:wall ;
+    skos:definition "Third colour group of the wall when it is striped in several colours"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wall stripe C"@en .
 
 role:wood a skos:Concept ;
     skos:broader role:detail ;
@@ -148,14 +202,6 @@ role:base a skos:Concept ;
     skos:scopeNote "\"floor\" is an altLabel here (the classifier and vehicles read it as the ground plane); the building grammar reads it as role:structure via a hidden label. Scoping per domain is an open question (PROPOSAL.md)."@en ;
     obd:order 6 .
 
-role:body a skos:Concept ;
-    skos:altLabel "body"@en,
-        "bodywork"@en ;
-    skos:definition "Vehicle or craft body: cabin, hull, fuselage"@en ;
-    skos:inScheme role: ;
-    skos:prefLabel "body"@en ;
-    obd:order 10 .
-
 role:door a skos:Concept ;
     skos:altLabel "door"@en,
         "doors"@en ;
@@ -205,35 +251,13 @@ role:glass a skos:Concept ;
     skos:prefLabel "glass"@en ;
     obd:order 5 .
 
-role:roof a skos:Concept ;
-    skos:altLabel "roof"@en,
-        "roofing"@en,
-        "roofs"@en ;
-    skos:definition "Roof surface: slopes, ridge caps, flat-roof deck, tower cones"@en ;
-    skos:hiddenLabel "roof"@en,
-        "roofing"@en,
-        "slates"@en,
-        "thatch"@en,
-        "tiles"@en ;
+role:body a skos:Concept ;
+    skos:altLabel "body"@en,
+        "bodywork"@en ;
+    skos:definition "Vehicle or craft body: cabin, hull, fuselage"@en ;
     skos:inScheme role: ;
-    skos:prefLabel "roof"@en ;
-    obd:order 1 .
-
-role:wall a skos:Concept ;
-    skos:altLabel "brickwork"@en,
-        "masonry"@en,
-        "wall"@en,
-        "walls"@en ;
-    skos:definition "Load-bearing wall bricks, gable end walls, parapet merlons"@en ;
-    skos:hiddenLabel "bricks"@en,
-        "brickwork"@en,
-        "masonry"@en,
-        "stonework"@en,
-        "wall"@en,
-        "walls"@en ;
-    skos:inScheme role: ;
-    skos:prefLabel "wall"@en ;
-    obd:order 2 .
+    skos:prefLabel "body"@en ;
+    obd:order 10 .
 
 role:trim a skos:Concept ;
     skos:altLabel "cornice"@en,
@@ -264,6 +288,36 @@ role:detail a skos:Concept ;
     skos:inScheme role: ;
     skos:prefLabel "detail"@en ;
     obd:order 14 .
+
+role:roof a skos:Concept ;
+    skos:altLabel "roof"@en,
+        "roofing"@en,
+        "roofs"@en ;
+    skos:definition "Roof surface: slopes, ridge caps, flat-roof deck, tower cones"@en ;
+    skos:hiddenLabel "roof"@en,
+        "roofing"@en,
+        "slates"@en,
+        "thatch"@en,
+        "tiles"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "roof"@en ;
+    obd:order 1 .
+
+role:wall a skos:Concept ;
+    skos:altLabel "brickwork"@en,
+        "masonry"@en,
+        "wall"@en,
+        "walls"@en ;
+    skos:definition "Load-bearing wall bricks, gable end walls, parapet merlons"@en ;
+    skos:hiddenLabel "bricks"@en,
+        "brickwork"@en,
+        "masonry"@en,
+        "stonework"@en,
+        "wall"@en,
+        "walls"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wall"@en ;
+    obd:order 2 .
 
 role: a owl:Ontology,
         skos:ConceptScheme ;

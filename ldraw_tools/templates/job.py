@@ -77,7 +77,7 @@ def run_make(request, pipeline):
         hints=request.get('hints', ''), corrections=request.get('corrections'), progress=tell)
     tell('pictures', 'Rendering the extreme values')
     _thumbnails(pipeline, data, knobs, jobdir)
-    result = dict(template=data, knobs=knobs, rejected=rejected, roles=data['roles'], coverage=data['coverage'],
+    result = dict(template=data, knobs=knobs, rejected=rejected, roles=data['roles'], stripes=data.get('subroles', {}), coverage=data['coverage'],
                   quality=data['quality'], report={k: v for k, v in report.items() if k in ('leaves', 'domain', 'baseline', 'size', 'corners', 'corrected')})
     _write(jobdir / 'result.json', result)
     tell('done', 'Finished')

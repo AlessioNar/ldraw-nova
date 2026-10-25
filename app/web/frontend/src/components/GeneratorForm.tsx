@@ -5,7 +5,7 @@ import { colourHex } from "../ldrawColours";
 const PREVIEW_DELAY_MS = 600;
 export type Params = Record<string, unknown>;
 
-export const humanise = (name: string) => name.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+export const humanise = (name: string) => name.replace(/[_:-]/g, " ").replace(/^./, (c) => c.toUpperCase());
 const isColour = (spec: ParamSpec) => spec["x-colour"] === true;
 const isInteger = (spec: ParamSpec) => spec.type === "integer" && spec.minimum != null && spec.maximum != null;
 
@@ -113,11 +113,13 @@ export default function GeneratorForm({ generator, colours, initial, submitLabel
 
   const entries = useMemo(() => Object.entries(generator.params.properties), [generator]);
   const plain = entries.filter(([, s]) => !isColour(s));
-  const coloured = entries.filter(([, s]) => isColour(s));
+  const coloured = entries.filter(([, s]) => isColour(s) && !s["x-parent"]);
+  // a role striped in several colours (issue #220): one colour per stripe, folded under the role's own colour
+  const stripes = (role: string) => entries.filter(([, s]) => isColour(s) && s["x-parent"] === role.replace(/^colour_/, ""));
   const set = (name: string) => (v: unknown) => setParams((p) => ({ ...p, [name]: v }));
   const field = ([name, spec]: [string, ParamSpec]) => (
     <div className={`gen-field${spec.type === "boolean" ? " inline" : ""}`} key={name}>
-      <label htmlFor={`gen-${name}`} title={spec.description}>{humanise(name)}</label>
+      <label htmlFor={`gen-${name}`} title={spec.description}>{spec["x-label"] ? humanise(spec["x-label"]) : humanise(name)}</label>
       <Control name={name} spec={spec} value={params[name] ?? spec.default} colours={colours} onChange={set(name)} />
       {spec.description && <span className="gen-hint muted">{spec.description}</span>}
     </div>
@@ -130,7 +132,18 @@ export default function GeneratorForm({ generator, colours, initial, submitLabel
         <div className="gen-fields">{plain.map(field)}</div>
         {coloured.length > 0 && <>
           <div className="label gen-group">Colours</div>
-          <div className="gen-fields">{coloured.map(field)}</div>
+          <div className="gen-fields">{coloured.map((entry) => {
+            const sub = stripes(entry[0]);
+            return sub.length === 0 ? field(entry) : (
+              <div className="gen-with-stripes" key={entry[0]}>
+                {field(entry)}
+                <details className="gen-stripes">
+                  <summary className="small">{sub.length} stripe colours</summary>
+                  <div className="gen-fields">{sub.map(field)}</div>
+                </details>
+              </div>
+            );
+          })}</div>
         </>}
         {error && <div className="banner error">{error}</div>}
         <div className="gen-actions">

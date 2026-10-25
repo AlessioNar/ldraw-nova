@@ -16,7 +16,7 @@ import re
 
 import numpy as np
 
-from .. import roles
+from .. import role_vocab, roles, subroles
 from ..builder import build_plan
 from ..editor import import_mpd
 from ..geometry import analyze_geometry
@@ -167,12 +167,15 @@ def leaves_of(plan, parts, facts):
         key = leaf['key']
         base = (key[0], key[1].rsplit('-', 1)[0] if key not in stored and '-' in key[1] else key[1])
         role = stored.get(key) or stored.get(base) or 'structure'
+        sub = role if role in role_vocab.SUBROLES else None       # a stripe is a leaf of its role with a colour group (issue #220)
+        role = role_vocab.SUBROLES.get(role, role)
         lo, hi = leaf['bounds']
         # every submodel instance above the part, outermost first: (path key, readable name)
         groups = [('/'.join(i for _, i in leaf['chain'][:k + 1]), _group_name(leaf['chain'][k][1], leaf['chain'][k + 1][0]),
                    leaf['chain'][k + 1][0]) for k in range(len(leaf['chain']) - 1)]
         counter[role] += 1
         out.append(dict(id=f'l{n:04d}', ref=leaf['ref'], colour=int(leaf['colour']), role=role, groups=groups,
+                        **(dict(sub=sub) if sub else {}),
                         at=[round(float(v), 6) for v in leaf['origin']], matrix=[[round(float(v), 6) for v in row] for row in leaf['mat']],
                         box=[[round(float(v), 3) for v in lo], [round(float(v), 3) for v in hi]],
                         ub=round(float(-hi[1]), 3), ut=round(float(-lo[1]), 3), kind=leaf['facts']['kind']))
@@ -747,21 +750,25 @@ def _ok(data, params, parts, baseline):
 # ----------------------------------------------------------------------------------------------------- derive
 
 def derive(plan, parts, *, id, title, families, kinds, description, source=None, hints='', verify=True, facts=None,
-           log=None):
-    """(template data, report) from a plan. `plan` may already carry roles; missing ones are classified."""
+           log=None, stripes=True):
+    """(template data, report) from a plan. `plan` may already carry roles; missing ones are classified.
+
+    stripes: split a role striped in several colours into per-colour sub-roles (issue #220); off when the caller did it.
+    """
     log = log or (lambda *_: None)
     checked = itertools.count(1)
     _tick[0] = lambda: log('checked', next(checked))
     try:
         return _derive(plan, parts, id=id, title=title, families=families, kinds=kinds, description=description, source=source,
-                       hints=hints, verify=verify, facts=facts, log=log)
+                       hints=hints, verify=verify, facts=facts, log=log, stripes=stripes)
     finally:
         _tick[0] = lambda: None
 
 
-def _derive(plan, parts, *, id, title, families, kinds, description, source, hints, verify, facts, log):
+def _derive(plan, parts, *, id, title, families, kinds, description, source, hints, verify, facts, log, stripes):
     facts = facts or roles.PartFacts(parts)
     tagged, tag_report = roles.tag_plan(plan, parts, hints=hints or description, facts=facts)
+    tagged = subroles.split_stripes(tagged) if stripes else tagged
     leaves = leaves_of(tagged, parts, facts)
     fam = Families(parts, facts)
     report = dict(leaves=len(leaves), domain=tag_report['domain'], verified={}, rejected={})
@@ -772,6 +779,15 @@ def _derive(plan, parts, *, id, title, families, kinds, description, source, hin
         colour_counts[l['role']][l['colour']] += 1
     data['colours'] = {r: c.most_common(1)[0][0] for r, c in sorted(colour_counts.items())}
     data['roles'] = sorted(colour_counts)
+    striped = collections.defaultdict(set)
+    for l in leaves:
+        if l.get('sub'):
+            striped[l['role']].add(l['sub'])
+    if striped:                                           # a stripe's colour is its group's single colour
+        data['subroles'] = {r: sorted(s) for r, s in sorted(striped.items())}
+        for l in leaves:
+            if l.get('sub'):
+                data['colours'][l['sub']] = l['colour']
     baseline = check_plan(build(copy.deepcopy(data), {})[0], parts) if verify else (10 ** 6, 10 ** 6)
     baseline = (len(baseline[0]), baseline[1]) if verify else baseline
     report['baseline'] = dict(errors=baseline[0], components=baseline[1])
@@ -891,8 +907,13 @@ def compact(data):
 def _params(data, leaves):
     params = {}
     for role in data['roles']:
-        params[f'colour_{role}'] = {'type': ['string', 'integer'], 'x-colour': True, 'default': data['colours'][role],
-                                    'description': f'Colour of the {role} parts (colour name or LDraw code)'}
+        params[subroles.param_name(role)] = {'type': ['string', 'integer'], 'x-colour': True, 'default': data['colours'][role],
+                                             'description': f'Colour of the {role} parts (colour name or LDraw code)'}
+        for sub in data.get('subroles', {}).get(role, ()):
+            params[subroles.param_name(sub)] = {
+                'type': ['string', 'integer'], 'x-colour': True, 'default': data['colours'][sub], 'x-parent': role,
+                'x-label': subroles.label(sub),
+                'description': f'Colour of the {subroles.label(sub)} parts, set after the colour of all {role} parts'}
     for axis, spec in data.get('repeat', {}).items():
         names = collections.Counter(l['role'] for l in leaves if l['id'] in set(spec['inside']))
         params[f'{axis}_repeat'] = {'enum': sorted({0, *spec['counts']}), 'default': 0, 'x-axis': axis,
@@ -919,6 +940,7 @@ def _params(data, leaves):
 
 def _coverage(data):
     out = ['colours by role']
+    out += [f'a colour per {r} stripe' for r in data.get('subroles', {})]
     out += [f'length along {a.upper()}' for a in data['stretch']]
     out += [f'repeat a section along {a.upper()}' for a in data.get('repeat', {})]
     if data['courses']:

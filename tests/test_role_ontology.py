@@ -21,7 +21,9 @@ def test_role_vocab_is_in_sync_with_the_skos_scheme(gen):
 
 
 def test_scheme_content(gen):
-    roles, grammar_roles, alias, words, _ = gen.load()
+    roles, grammar_roles, alias, words, _, subroles = gen.load()
     assert alias['tower'] == 'wall' and alias['hull'] == 'body'
     assert set(grammar_roles) <= set(roles) and set(alias.values()) <= set(roles)
     assert set(words.values()) <= set(roles)
+    assert subroles['wall:stripe-a'] == 'wall' and 'wall:stripe-a' not in alias
+    assert set(subroles.values()) <= set(roles) and not set(subroles) & set(roles)

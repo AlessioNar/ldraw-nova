@@ -11,7 +11,7 @@ from __future__ import annotations
 import copy
 import re
 
-from .. import role_edits, role_vocab, roles
+from .. import role_edits, role_vocab, roles, subroles
 from ..builder import build_plan
 from . import derive
 from .core import from_data
@@ -27,6 +27,8 @@ MAX_REASONS = 5
 ROLE_PALETTE = {'roof': 4, 'wall': 19, 'window': 1, 'door': 70, 'base': 2, 'wheel': 14, 'tyre': 0, 'chassis': 72, 'body': 25,
                 'glass': 11, 'wing': 22, 'engine': 26, 'trim': 15, 'detail': 13, 'structure': 71}
 FALLBACK_COLOUR = 71
+# Stripes of one role are shown in different colours so the person can tell the colour groups apart (a is the role's own).
+STRIPE_PALETTE = {'a': None, 'b': 14, 'c': 3}
 LOW_CONFIDENCE = 0.5
 MAX_LOW = 60
 
@@ -79,9 +81,11 @@ def apply_corrections(plan, corrections):
     index = {(s['name'], e['id']): e for s, e in _placements(out)}
     applied = 0
     for item in corrections or ():
-        role = role_vocab.canonical(str(item.get('role', '')).strip().lower()) if item.get('role') else None
+        role = str(item.get('role', '')).strip().lower() if item.get('role') else None
+        if role not in role_vocab.SUBROLES:                 # a stripe is a role of its own; other names fold into their role
+            role = role_vocab.canonical(role) if role else None
         entry = index.get((item.get('section') or root, item.get('id')))
-        if entry is not None and role in roles.ROLES:
+        if entry is not None and role_vocab.is_role(role):
             entry['role'] = role
             applied += 1
     return out, applied
@@ -91,8 +95,19 @@ def prepare(plan, parts, *, hints='', corrections=None, facts=None):
     """(plan with a role on every part, report): the person's corrections first, the classifier for the rest."""
     corrected, applied = apply_corrections(plan, corrections)
     tagged, report = roles.tag_plan(corrected, parts, hints=hints, facts=facts)
+    root = tagged['sections'][0]['name']
+    fixed = {(c.get('section') or root, c.get('id')) for c in corrections or ()}     # the person's click is never moved
+    tagged = subroles.split_stripes(tagged, keep=fixed)
     report['corrected'] = applied
+    report['stripes'] = subroles.stripes_of(tagged)
     return tagged, report
+
+
+def role_colour(role):
+    """Preview colour of a role or sub-role (LDraw code)."""
+    parent = role_vocab.SUBROLES.get(role)
+    base = ROLE_PALETTE.get(roles.canonical(parent or role or 'structure'), FALLBACK_COLOUR)
+    return (STRIPE_PALETTE.get(role.rsplit('-', 1)[-1]) or base) if parent else base
 
 
 def recoloured(plan):
@@ -101,7 +116,7 @@ def recoloured(plan):
     sections = {s['name'].casefold() for s in out['sections']}
     for _, entry in _placements(out):
         if entry['ref'].casefold() not in sections:
-            entry['colour'] = ROLE_PALETTE.get(roles.canonical(entry.get('role') or 'structure'), FALLBACK_COLOUR)
+            entry['colour'] = role_colour(entry.get('role') or 'structure')
     return out
 
 
@@ -122,7 +137,8 @@ def preview(plan, parts, *, hints='', corrections=None):
                         colour=entry['colour']))
     text = build_plan(recoloured(tagged), parts, validate=False)[0]
     return dict(domain=report['domain'], roles=summary, low_confidence=low, low_total=len(report['low_confidence']),
-                palette={r: ROLE_PALETTE.get(r, FALLBACK_COLOUR) for r in summary}, vocabulary=list(roles.ROLES),
+                palette={r: role_colour(r) for r in summary}, vocabulary=[*roles.ROLES, *role_vocab.SUBROLES],
+                stripes=report['stripes'],
                 corrected=report['corrected'], mpd=text)
 
 
@@ -234,7 +250,7 @@ def make(plan, parts, *, id, title, kinds, families=('generic',), description=''
 
     data, report = derive.derive(tagged, parts, id=id, title=title, families=list(families), kinds=list(kinds),
                                  description=description or title, source=source or {}, hints=hints or description or title,
-                                 facts=facts, log=log)
+                                 facts=facts, log=log, stripes=False)      # prepare() already split the stripes
     report['corrected'] = tag_report['corrected']
     knobs, rejected = knobs_of(data, report)
     return derive.compact(data), report, knobs, rejected

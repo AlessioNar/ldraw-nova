@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 
 import jsonschema
 
+from .. import subroles
 from ..generators.colours import colour_code
 from ..role_edits import GLASSY_ROLES, TRANSPARENT
 
@@ -213,12 +214,13 @@ def build(data, params):
                 copy_['at'][1] -= height * k
                 leaves[copy_['id']] = copy_
     # 6. colours by role
-    for role, default in data.get('colours', {}).items():
-        value = params.get(f'colour_{role}', default)
+    # a role's own knob recolours all of it, stripes included; a stripe's knob then overrides its colour group (issue #220)
+    for role, default in sorted(data.get('colours', {}).items(), key=lambda kv: ':' in kv[0]):
+        value = params.get(subroles.param_name(role), default)
         if value == default:
             continue
         for leaf in leaves.values():
-            if leaf.get('role') == role:
+            if leaf.get('sub' if ':' in role else 'role') == role:
                 glass = role in GLASSY_ROLES or leaf['colour'] in TRANSPARENT
                 leaf['colour'] = colour_code(value, glass=glass)
     return _plan(data, leaves), notes
@@ -238,7 +240,7 @@ def _plan(data, leaves):
         if not _identity(leaf['matrix']):
             entry['matrix'] = _rows(leaf['matrix'])
         if leaf.get('role'):
-            entry['role'] = leaf['role']
+            entry['role'] = leaf.get('sub') or leaf['role']
         current.append(entry)
     steps.append(current)
     name = f"{data['id']}.ldr"

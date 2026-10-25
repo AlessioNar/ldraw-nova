@@ -5,7 +5,7 @@ them for everything else. All three read this module, so a role means the same t
 "make the roof blue" selects the same placements whichever of them produced the plan.
 
 The data below is generated from `ontology/roles.ttl`, a SKOS concept scheme (`ROLES` are the concepts, `ALIAS` the
-`skos:broader` links, `WORDS` the `skos:altLabel`s). Edit the Turtle and run `python tools/build_role_vocab.py`.
+`skos:broader` links, `SUBROLES` the per-colour sub-roles, `WORDS` the `skos:altLabel`s). Edit the Turtle and run `python tools/build_role_vocab.py`.
 """
 from __future__ import annotations
 
@@ -45,6 +45,19 @@ ALIAS = {
     'tail_lamp': 'detail',
     'tower': 'wall',
     'wood': 'detail',
+}
+
+# Per-colour sub-roles of a role (skos:broader, named '<role>:<suffix>'): a striped wall is wall:stripe-a, wall:stripe-b...
+SUBROLES = {
+    'body:stripe-a': 'body',
+    'body:stripe-b': 'body',
+    'body:stripe-c': 'body',
+    'roof:stripe-a': 'roof',
+    'roof:stripe-b': 'roof',
+    'roof:stripe-c': 'roof',
+    'wall:stripe-a': 'wall',
+    'wall:stripe-b': 'wall',
+    'wall:stripe-c': 'wall',
 }
 
 # What a person says (skos:altLabel) -> role, used by role_edits.
@@ -115,8 +128,18 @@ GRAMMAR_WORDS = {
 
 
 def canonical(role):
-    """The broader role a role name stands for ('tower' -> 'wall', 'hull' -> 'body'); any other name is its own."""
-    return ALIAS.get(role, role)
+    """The broader role a role name stands for ('tower' -> 'wall', 'hull' -> 'body', 'wall:stripe-a' -> 'wall'); any other name is its own."""
+    return ALIAS.get(role) or SUBROLES.get(role) or role
+
+
+def subroles_of(role):
+    """The per-colour sub-roles of a role in their fixed order ('wall' -> ('wall:stripe-a', 'wall:stripe-b', 'wall:stripe-c')); () for none."""
+    return tuple(s for s, parent in sorted(SUBROLES.items()) if parent == role)
+
+
+def is_role(name):
+    """True for a role name or a sub-role name of the vocabulary."""
+    return name in ROLES or name in SUBROLES
 
 
 def role_for_word(word):
