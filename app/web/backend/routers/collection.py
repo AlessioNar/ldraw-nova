@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
@@ -17,6 +17,7 @@ import part_images
 import part_info
 import quick_add
 import set_catalog
+import set_images
 from inventories import InventoryError
 
 router = APIRouter()
@@ -257,7 +258,7 @@ def _catalog() -> set_catalog.Catalog:
 
 
 def _set_json(s: dict) -> dict:
-    return {"set_num": s["set_num"], "name": s["name"], "year": s["year"], "theme": s["theme"], "num_parts": s["num_parts"],
+    return {"set_num": s["set_num"], "number": s["number"], "brand": s["brand"], "name": s["name"], "year": s["year"], "theme": s["theme"], "num_parts": s["num_parts"],
             "mapped_pieces": s["mapped_pieces"], "dropped_pieces": s["dropped_part"] + s["dropped_colour"]}
 
 
@@ -281,6 +282,54 @@ def sets_get(set_num: str):
 def sets_owned():
     """The sets the owner has, as records with brand, image, copies and piece counts."""
     return {"sets": collection.owned_sets()}
+
+
+class SetImageSettings(BaseModel):
+    remote_fetch: bool
+
+
+@router.get("/api/set-images/settings")
+def set_image_settings():
+    return {"remote_fetch": set_images.remote_enabled(), "source": "Rebrickable (rebrickable.com)"}
+
+
+@router.put("/api/set-images/settings")
+def set_image_settings_save(body: SetImageSettings):
+    """remote_fetch: let the backend download a picture of an owned set from the catalogue source once and cache it on this
+    machine. Off by default; cached pictures are never committed or shared."""
+    set_images.set_remote_enabled(body.remote_fetch)
+    return set_image_settings()
+
+
+@router.post("/api/sets/{source_id}/image")
+async def set_image_upload(source_id: str, request: Request):
+    """Upload your own picture of an owned set (any brand). The body is the image itself: PNG, JPEG or WebP, at most 2 MB."""
+    try:
+        record = collection.set_source(source_id)
+    except InventoryError as exc:
+        raise failure(exc) from None
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > set_images.MAX_BYTES:
+        raise HTTPException(413, "The picture is larger than 2 MB")
+    data = bytearray()
+    async for chunk in request.stream():
+        data += chunk
+        if len(data) > set_images.MAX_BYTES:
+            raise HTTPException(413, "The picture is larger than 2 MB")
+    try:
+        set_images.save_upload(record["set_num"], bytes(data))
+    except set_images.ImageError as exc:
+        raise HTTPException(exc.status, str(exc)) from None
+    return {"set_num": record["set_num"], "image": set_images.image_url(record["set_num"])}
+
+
+@router.delete("/api/sets/{source_id}/image")
+def set_image_remove(source_id: str):
+    try:
+        record = collection.set_source(source_id)
+    except InventoryError as exc:
+        raise failure(exc) from None
+    return {"removed": set_images.remove_upload(record["set_num"])}
 
 
 @router.post("/api/collection/sets")

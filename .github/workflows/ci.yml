@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [master]
+  workflow_dispatch:      # Actions tab > CI > Run workflow: runs the image job on any branch
 
 # A newer push to the same PR/branch makes the older run pointless, and the
 # image job is expensive.
@@ -76,6 +77,9 @@ jobs:
   # LeoCAD / the LDraw library can run. Real network access is required: the
   # image downloads LeoCAD, the LDraw library, bun, mpd2glb, uv, jev-rerank...
   image:
+    # Not on pull requests: the build pulls many base images and download stages, and runs into Docker Hub
+    # rate limits. It runs on pushes to master and on manual dispatch.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
