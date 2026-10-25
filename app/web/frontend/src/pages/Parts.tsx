@@ -76,7 +76,7 @@ export default function Parts() {
 
   const dialogs = <>
     {dialog?.kind === "quick" && <QuickAddDialog onClose={() => setDialog(null)} onChanged={changed} />}
-    {dialog?.kind === "set" && <AddSetDialog onClose={() => setDialog(null)} onChanged={changed} />}
+    {dialog?.kind === "set" && <AddSetDialog onClose={() => setDialog(null)} onChanged={changed} onImportParts={id => setDialog({ kind: "import", replace: id })} />}
     {dialog?.kind === "export" && <ExportDialog scope={dialog.scope} name={dialog.name} onClose={() => setDialog(null)} />}
     {dialog?.kind === "import" && <UploadDialog sources={sources ?? []} replaceId={dialog.replace} onClose={() => setDialog(null)} onChanged={changed} />}
   </>;
@@ -100,7 +100,7 @@ export default function Parts() {
           </form> : <div><h1>{current.name}</h1><p className="muted small">
             {current.kind === "set" && current.set ? `Set ${current.set.set_num} · ${current.set.copies} ${current.set.copies === 1 ? "copy" : "copies"} · ` : current.kind === "loose" ? "Manual and quick adds · " : `${current.source_filename ?? "No source file"} · `}added {timeAgo(current.created_at)}</p></div>}
           <div className="head-actions">
-            {(current.kind ?? "import") === "import" && <button type="button" disabled={busy} onClick={() => setDialog({ kind: "import", replace: current.id })}>Replace file</button>}
+            {((current.kind ?? "import") === "import" || (current.kind === "set" && current.set?.manual)) && <button type="button" disabled={busy} onClick={() => setDialog({ kind: "import", replace: current.id })}>{current.kind === "set" ? "Import parts" : "Replace file"}</button>}
             <button type="button" disabled={busy} onClick={() => setDialog({ kind: "export", scope: `source:${current.id}`, name: current.name })}>Export</button>
             <button type="button" disabled={busy || renaming || current.kind === "loose"} onClick={() => { setDraft(current.name); setRenaming(true); }}>Rename</button>
             <button type="button" className="danger-text" disabled={busy} onClick={() => void remove(current)}>Delete</button>

@@ -83,7 +83,7 @@ function MappingForm({ needed, busy, onRead, onCancel }: { needed: Needed; busy:
  *  replaces a list); nothing is stored until Import. */
 export default function UploadDialog({ onClose, onChanged, sources, replaceId = "" }:
   { onClose: () => void; onChanged: OnChanged; sources: Inventory[]; replaceId?: string }) {
-  const replaceable = sources.filter(s => (s.kind ?? "import") === "import" && !s.virtual);
+  const replaceable = sources.filter(s => ((s.kind ?? "import") === "import" || (s.kind === "set" && s.set?.manual)) && !s.virtual);
   const [file, setFile] = useState<File | null>(null);
   const [csv, setCsv] = useState("");
   const [name, setName] = useState("");
