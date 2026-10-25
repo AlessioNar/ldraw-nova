@@ -11,7 +11,7 @@ from pathlib import Path
 from leocad_render import DATA_DIR, GENERATED_DIR, OUTPUT_DIR
 
 __all__ = [
-    "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "INVENTORIES_DIR", "WEB_DIRS",
+    "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "INVENTORIES_DIR", "COLLECTION_EXPORT_DIR", "WEB_DIRS",
     "CONFIG_DIR", "LDRAW_DIR", "INDEX_DIR", "STATIC_DIR",
     "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
     "COALESCE_REASONING",
@@ -24,6 +24,8 @@ __all__ = [
 #   inventories/        the user's parts inventories: <id>.json + the uploaded <id>.csv — never served
 CHATS_DIR = DATA_DIR / "chats"
 INVENTORIES_DIR = Path(os.environ.get("LDRAW_NOVA_INVENTORIES_DIR", DATA_DIR / "inventories"))
+# With the collection on PostgreSQL: the derived JSON copy of it that the toolkit CLI reads (`--store`); never the original files.
+COLLECTION_EXPORT_DIR = Path(os.environ.get("LDRAW_NOVA_COLLECTION_EXPORT_DIR", DATA_DIR / "collection-export"))
 
 # Top-level folders of /data the web UI may serve. output/ is agent-only.
 WEB_DIRS = ("generated", "chats")

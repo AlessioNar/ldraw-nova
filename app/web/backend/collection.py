@@ -63,8 +63,12 @@ def _save(data: dict) -> None:
     store.save(data)
 
 
-_read_log = store.read_log
-_append_log = store.append_log
+def _read_log(source_id: str) -> list[dict]:
+    return store.read_log(source_id)
+
+
+def _append_log(source_id: str, new: list[dict]) -> None:
+    store.append_log(source_id, new)
 
 
 def _next_batch(entries: list[dict]) -> int:

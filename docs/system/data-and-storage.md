@@ -25,7 +25,8 @@ Models, parts lists, editor state and agent work folders are **files** on two Do
 | `/data/chats/<chat-id>/` | In files mode `chat.json`, `messages.jsonl` (with `_usage` per step), `models.jsonl`, `workers/<id>.jsonl`; always `renders/`, `workspace/` | yes |
 | `/data/_migration/` | Reports of the JSON importer (`report-<time>.json`) | no |
 | `/data/output/<chat-id>/` | The agent's work folder: scripts, plans, `NOTES.md`, renders | **no** (never served; reached only through the artifact API) |
-| `/data/inventories/` | Parts lists: `<id>.json` and `<id>.csv` | via API |
+| `/data/inventories/` | Parts lists: `<id>.json` and `<id>.csv` (files mode, or the frozen backup after the collection import) | via API |
+| `/data/collection-export/` | PostgreSQL mode only: derived JSON copy of the collection that the toolkit CLI reads | regenerated |
 
 - Paths come from `app/web/backend/settings.py:21-33`.
 - A new empty volume is seeded with 2 showcase models.
