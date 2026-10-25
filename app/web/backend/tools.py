@@ -20,6 +20,7 @@ from typing import Awaitable, Callable
 from urllib.parse import quote
 
 import sandbox
+import collection_store
 import settings
 import toolkit
 import builds
@@ -280,7 +281,7 @@ async def parts_check(ctx: ToolContext, model: Path) -> tuple[dict | None, str]:
         ctx.emit("progress", {"summary": "Checking the model against your parts inventory."})
         report = model.parent / "parts-check.json"
         argv = ["./ldraw-agent", "inventory", "check", str(model), ids, "--mode", mode, "--json",
-                "--store", str(settings.INVENTORIES_DIR), "--report", str(report)]
+                *collection_store.cli_store_args(), "--report", str(report)]
         run = await run_command(ctx, argv, 600)           # exit 1 = short in "only" mode
         data = json.loads(report.read_text(encoding="utf-8")) if report.is_file() else {}
         if run.exit_code not in (0, 1) or not isinstance(data, dict) or data.get("error") or "short" not in data:
@@ -315,7 +316,7 @@ async def t_my_parts(ctx: ToolContext, query: str = "", colour: int | None = Non
         raise ToolError("query must be a string and limit an integer")
     limit = max(1, min(limit, parts_steering.MAX_SEARCH_RESULTS))
     argv = ["./ldraw-agent", "inventory", "search", parts_steering.id_list(chosen), "--limit", str(limit + 1), "--json",
-            "--store", str(settings.INVENTORIES_DIR), *(["--colour", str(colour)] if colour is not None else [])]
+            *collection_store.cli_store_args(), *(["--colour", str(colour)] if colour is not None else [])]
     if query.strip():
         argv += ["--", query.strip()[:200]]               # after --: a query starting with "-" is not an option
     run = await run_command(ctx, argv, 120)
@@ -349,7 +350,7 @@ async def t_buildable_models(ctx: ToolContext, query: str = "", limit: int = par
     report = ctx.work_dir / "buildable-models.json"
     report.unlink(missing_ok=True)
     argv = ["./ldraw-agent", "inventory", "buildable", parts_steering.id_list(invs), "--cache-only", f"--limit={limit}", "--json",
-            "--store", str(settings.INVENTORIES_DIR), "--report", str(report),
+            *collection_store.cli_store_args(), "--report", str(report),
             *([f"--max-missing-share={max_missing_share}"] if max_missing_share is not None else []),
             *([f"--query={query.strip()[:100]}"] if query.strip() else [])]
     run = await run_command(ctx, argv, 120)

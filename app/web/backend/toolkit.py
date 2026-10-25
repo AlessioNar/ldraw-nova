@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import collection_store
 import settings
 import sandbox
 import environment_config
@@ -93,7 +94,7 @@ def environment() -> dict[str, str]:
         "XDG_CACHE_HOME": str(source / ".cache"),
         "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1",
         "LDRAW_DIR": env.get("LDRAW_DIR") or env.get("LDRAWDIR") or str(settings.LDRAW_DIR),
-        "LDRAW_NOVA_INVENTORY_DIR": str(settings.INVENTORIES_DIR),
+        **collection_store.cli_environment(),
     }
 
 
