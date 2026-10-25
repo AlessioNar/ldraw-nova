@@ -71,7 +71,7 @@ ontology/
   obd.ttl            owl:Ontology header, component classes, parameters (#92)
   roles.ttl          SKOS concept scheme (#91)
   shapes.ttl         SHACL shapes (#93)
-  templates.ttl      reference builds with PROV-O (#95)
+  templates.ttl      reference builds with PROV-O (#95) (generated from ldraw_tools/data/templates/*.json by tools/build_templates_ttl.py; shapes in templates-shapes.ttl)
   context.jsonld     JSON-LD context for turning a plan into a graph for SHACL
 ```
 
