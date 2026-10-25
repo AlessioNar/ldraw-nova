@@ -1,6 +1,6 @@
 # The database (PostgreSQL)
 
-Since phase 1 of [the PostgreSQL plan](../plans/postgres/PROPOSAL.md) the app has a PostgreSQL 18 database next to the files. **It holds the request log and the cost history, and, since phase 2, the chats, builds, drafts and proposals** (once they were imported, see "Storage: database or files" below). The parts collection is still files; it moves in a later phase (its tables exist and are empty). Model files, editor state and agent work folders are files either way.
+Since phase 1 of [the PostgreSQL plan](../plans/postgres/PROPOSAL.md) the app has a PostgreSQL 18 database next to the files. **It holds the request log and the cost history, and, since phase 2, the chats, builds, drafts and proposals** (once they were imported, see "Storage: database or files" below). The parts collection moved in phase 2b (see "The parts collection" below). Model files, editor state and agent work folders are files either way.
 
 ## What runs
 
@@ -36,7 +36,7 @@ What lives where in PostgreSQL mode:
 
 ## Importing the JSON files
 
-`app/web/backend/migrate_json.py` reads the files in `/data` and writes the tables. The JSON files are only read: they stay as a frozen backup (rollback = run the previous image on the same volume, or `--export` first to keep what was done since). The parts collection (`inventories/`) is not part of it.
+`app/web/backend/migrate_json.py` reads the files in `/data` and writes the tables. The JSON files are only read: they stay as a frozen backup (rollback = run the previous image on the same volume, or `--export` first to keep what was done since). The parts collection (`inventories/`) has its own importer (next section).
 
 ```
 docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json              # dry run: rolled back, prints counts and anomalies
@@ -54,6 +54,24 @@ Take a backup first (`bash scripts/backup.sh`), then restart the app so `auto` p
 - Every run is a row in `import_run` (counts, anomalies, per-entity file size and mtime); a successful commit + verify writes `app_setting['json_import']` and a report to `/data/_migration/report-<time>.json`.
 - **First start**: `LDRAW_NOVA_DB_IMPORT=auto` runs dry run, commit and verify by itself when the files hold chats or builds and no import is recorded. The default is `manual` (never).
 - **Export** (`--export DIR`): the inverse mapping, writing the same JSON layout (`chats/<id>/chat.json`, `messages.jsonl`, `models.jsonl`, `workers/`; `builds/<slug>/build.json`, `models.jsonl`, `draft.json`, `proposals/`) from the database; an existing file is never overwritten without `--force`.
+
+## The parts collection
+
+`collection_store.py` is the only module the collection feature uses for its data; it picks a backend once per start: `collection_files.py` (the JSON files in `/data/inventories/`) or `collection_pg.py` (PostgreSQL). PostgreSQL is used when `storage.py` says so **and** the collection is in it: `LDRAW_NOVA_STORAGE=postgres` always; `auto` once the collection import below was committed and verified (`app_setting['collection_import'].done`), or when there are no source files to import. Until then `auto` keeps the collection on its files, so cutting over is explicit.
+
+Tables (Alembic revision `0003` completes the reference schema): `part_source` (metadata columns, `csv_text` = the original upload, `extra` = any other top-level key), `part_row` (exact rows, with their order and extra keys), `part_review` (the "maybe" pieces), `part_log` (the change log: one row per log line, the whole entry as jsonb; replaces the reference `part_change`, whose uuid batches and fixed ops did not fit the real entries and which was never written), `part_note` + `part_note_log`, `part_reservation` (reservations; built sets are `part_source.set_info->state`), remembered CSV mappings in `app_setting['collection_import_mappings']`. A source dict loads back exactly as the file had it (keys come in jsonb order, `kind` is always present, `created_at` has microsecond precision).
+
+**The toolkit CLI never reads the database.** In PostgreSQL mode every commit also updates a derived JSON copy in `COLLECTION_EXPORT_DIR` (default `/data/collection-export/`: `<id>.json` per source in the file format, `.collection-reservations.json`, `.collection-notes.json`), and the whole copy is regenerated at start (stale files removed, unchanged files not rewritten). `collection_store.cli_store_args()` / `cli_environment()` / `scratch_dir()` point `inventory ...`, `buildable` and the import preview at it, so the agent sandbox sees the same data without database access. The original `inventories/` files are never touched in this mode: they stay as the frozen backup.
+
+Importer (`migrate_collection.py`, also `python -m migrate_json --collection ...`; same modes as `migrate_json`): `--dry-run` (default, rolled back), `--commit` (import one transaction per source, verify, mark done, write the derived copy), `--verify`, `--export DIR` (the inverse, never overwriting without `--force`). It imports sources with rows, review pieces, uploads and change logs, the notes and their log, reservations and CSV mappings; idempotent (an existing source is kept, a differing file is reported); verify compares per source row count, piece total, review items, upload and log length, then notes and reservations, and tolerates sources edited in the app since (`edited_since_import`). A repeated part+colour row in a file is added up and reported; a source whose name equals another's (case-insensitive) is skipped and reported.
+
+```
+docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json --collection              # dry run
+docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json --collection --commit     # import, verify, mark done, derived copy
+docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json --collection --verify
+```
+
+Then restart the app (`docker compose restart ldraw-nova-app`) so the collection switches.
 
 ## The password never reaches agent code
 

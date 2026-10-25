@@ -6,7 +6,7 @@ Paths are relative to `app/web/backend/` (backend), `ldraw_tools/` (toolkit) and
 
 A **parts list** is one imported file of owned bricks. The code calls these "inventories".
 
-- **Storage**: `/data/inventories/<id>.json` holds the parsed rows `{part, colour, qty, rb_part, rb_colour}` plus import notes. `<id>.csv` is the original upload. There is no database.
+- **Storage**: `/data/inventories/<id>.json` holds the parsed rows `{part, colour, qty, rb_part, rb_colour}` plus import notes. `<id>.csv` is the original upload. Since phase 2b the same data can live in PostgreSQL (see database.md, "The parts collection"); `collection_store.py` is the one module that switches between the two.
 - **API**: `GET/POST /api/inventories`, `GET/PATCH/DELETE /api/inventories/{id}`, `PUT .../family-colours` (`routers/inventories.py`).
 - **UI**: `pages/Parts.tsx`, with the tabs "Parts lists" and "What can I build?" (`components/parts/`).
 
