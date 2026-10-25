@@ -1,0 +1,1652 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix role: <https://alessionar.github.io/open-brick-designer/ns/role/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+obd:baseColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "colour" ;
+    rdfs:comment "Ground"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "green" ;
+    obd:order 3 .
+
+obd:baseKind a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "kind" ;
+    rdfs:comment "none, a plate round the building, or a 32x32 modular-building plate with a sidewalk"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "plate" "modular" ) ] ;
+    obd:default "plate" ;
+    obd:order 1 .
+
+obd:baseLamps a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "lamps" ;
+    rdfs:comment "Modular: two street lamps on the sidewalk"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 8 .
+
+obd:baseMargin a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "margin" ;
+    rdfs:comment "Studs of ground around the building"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 8 ] ) ] ;
+    obd:default 3 ;
+    obd:order 2 ;
+    obd:unit "stud" .
+
+obd:basePath a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "path" ;
+    rdfs:comment "Path from the door to the edge"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range xsd:boolean ;
+    obd:default true ;
+    obd:order 4 .
+
+obd:basePathColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "path_colour" ;
+    rdfs:comment "Path"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "light grey" ;
+    obd:order 5 .
+
+obd:basePathWidth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "path_width" ;
+    rdfs:comment "Path width"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( 2 4 ) ] ;
+    obd:default 2 ;
+    obd:order 6 ;
+    obd:unit "stud" .
+
+obd:baseSidewalk a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "sidewalk" ;
+    rdfs:comment "Modular: studs of sidewalk in front of the building"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 8 ] ) ] ;
+    obd:default 6 ;
+    obd:order 7 ;
+    obd:unit "stud" .
+
+obd:cornersPillarColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "pillar_colour" ;
+    rdfs:comment "Pillar/quoin colour"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 2 .
+
+obd:cornersStyle a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "style" ;
+    rdfs:comment "plain interlocking corners, coloured pillars, or corner towers"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "plain" "pillars" "towers" ) ] ;
+    obd:default "plain" ;
+    obd:order 1 .
+
+obd:cornersTowerAt a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tower_at" ;
+    rdfs:comment "Which corners get a tower"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "all" "front" "back" "left" "right" "diagonal" ) ] ;
+    obd:default "all" ;
+    obd:order 7 .
+
+obd:cornersTowerColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "tower_colour" ;
+    rdfs:comment "Tower walls"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "light grey" ;
+    obd:order 9 .
+
+obd:cornersTowerExtraCourses a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tower_extra_courses" ;
+    rdfs:comment "Courses the tower rises above the top storey band"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 12 ] ) ] ;
+    obd:default 4 ;
+    obd:order 6 ;
+    obd:unit "course" .
+
+obd:cornersTowerProud a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tower_proud" ;
+    rdfs:comment "Studs the tower sticks out of the corner"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 2 ] ) ] ;
+    obd:default 1 ;
+    obd:order 5 ;
+    obd:unit "stud" .
+
+obd:cornersTowerRoof a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tower_roof" ;
+    rdfs:comment "Flat with battlements, or cone/pyramid"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "flat" "cone" ) ] ;
+    obd:default "flat" ;
+    obd:order 8 .
+
+obd:cornersTowerRoofColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "tower_roof_colour" ;
+    rdfs:comment "Tower cone/pyramid"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "dark red" ;
+    obd:order 10 .
+
+obd:cornersTowerShape a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tower_shape" ;
+    rdfs:comment "Square tower (any size) or round tower (4x4 round bricks)"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "square" "round" ) ] ;
+    obd:default "square" ;
+    obd:order 3 .
+
+obd:cornersTowerSize a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tower_size" ;
+    rdfs:comment "Square tower size in studs (round towers are 4)"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 4 ;
+    obd:order 4 ;
+    obd:unit "stud" .
+
+obd:cornersTowerSlits a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tower_slits" ;
+    rdfs:comment "Arrow slits in the tower"@en ;
+    rdfs:domain obd:Corners ;
+    rdfs:range xsd:boolean ;
+    obd:default true ;
+    obd:order 11 .
+
+obd:default a owl:AnnotationProperty ;
+    rdfs:comment "Default value of a parameter."@en .
+
+obd:detailsBalcony a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "balcony" ;
+    rdfs:comment "Balcony over the door (needs 2+ storeys)"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 6 .
+
+obd:detailsBalconyColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "balcony_colour" ;
+    rdfs:comment "Balcony floor and railing"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 7 .
+
+obd:detailsChimney a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "chimney" ;
+    rdfs:comment "Chimney on the ridge (gable/hip)"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "left" "centre" "right" ) ] ;
+    obd:default "none" ;
+    obd:order 1 .
+
+obd:detailsChimneyColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "chimney_colour" ;
+    rdfs:comment "Chimney bricks"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "dark grey" ;
+    obd:order 2 .
+
+obd:detailsChimneyCourses a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "chimney_courses" ;
+    rdfs:comment "Chimney height in courses"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 2 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 3 ;
+    obd:order 3 ;
+    obd:unit "course" .
+
+obd:detailsConnectors a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "connectors" ;
+    rdfs:comment "Technic pin bricks in the side walls near the top of every storey, to bolt modules together"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 15 .
+
+obd:detailsFence a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "fence" ;
+    rdfs:comment "Picket fence round the garden at the edge of the base plate, open where the path crosses it"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 13 .
+
+obd:detailsFenceColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "fence_colour" ;
+    rdfs:comment "Fence"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 14 .
+
+obd:detailsFlowerBoxes a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "flower_boxes" ;
+    rdfs:comment "Flower boxes on the window sills (turns sills on)"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 10 .
+
+obd:detailsFlowerColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "flower_colour" ;
+    rdfs:comment "Flowers"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "red" ;
+    obd:order 12 .
+
+obd:detailsPlanterColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "planter_colour" ;
+    rdfs:comment "Planter boxes"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "reddish brown" ;
+    obd:order 11 .
+
+obd:detailsPorch a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "porch" ;
+    rdfs:comment "Pillared porch over the door"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 4 .
+
+obd:detailsPorchColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "porch_colour" ;
+    rdfs:comment "Porch pillars and floor"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 5 .
+
+obd:detailsSign a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "sign" ;
+    rdfs:comment "Shop sign band above the ground floor"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "fascia" ) ] ;
+    obd:default "none" ;
+    obd:order 8 .
+
+obd:detailsSignColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "sign_colour" ;
+    rdfs:comment "Sign band colour"@en ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "red" ;
+    obd:order 9 .
+
+obd:footprintCourtDepth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "court_depth" ;
+    rdfs:comment "Courtyard: depth of the open yard"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 2 ] [ xsd:maxInclusive 20 ] ) ] ;
+    obd:default 4 ;
+    obd:order 9 ;
+    obd:unit "stud" .
+
+obd:footprintCourtWidth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "court_width" ;
+    rdfs:comment "Courtyard: width of the open yard"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 2 ] [ xsd:maxInclusive 24 ] ) ] ;
+    obd:default 4 ;
+    obd:order 8 ;
+    obd:unit "stud" .
+
+obd:footprintDepth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "depth" ;
+    rdfs:comment "Studs along z"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 32 ] ) ] ;
+    obd:default 8 ;
+    obd:order 3 ;
+    obd:unit "stud" .
+
+obd:footprintNotchCorner a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "notch_corner" ;
+    rdfs:comment "L: which corner is cut away"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "back-right" "back-left" "front-right" "front-left" ) ] ;
+    obd:default "back-right" ;
+    obd:order 6 .
+
+obd:footprintNotchDepth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "notch_depth" ;
+    rdfs:comment "L/U: depth of the cut-out"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 2 ] [ xsd:maxInclusive 16 ] ) ] ;
+    obd:default 4 ;
+    obd:order 5 ;
+    obd:unit "stud" .
+
+obd:footprintNotchSide a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "notch_side" ;
+    rdfs:comment "U: which side the notch opens to"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "back" "front" ) ] ;
+    obd:default "back" ;
+    obd:order 7 .
+
+obd:footprintNotchWidth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "notch_width" ;
+    rdfs:comment "L/U: width of the cut-out"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 2 ] [ xsd:maxInclusive 20 ] ) ] ;
+    obd:default 4 ;
+    obd:order 4 ;
+    obd:unit "stud" .
+
+obd:footprintShape a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "shape" ;
+    rdfs:comment "rect, L, U (two wings round a notch) or courtyard (ring round an open yard)"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "rect" "L" "U" "courtyard" ) ] ;
+    obd:default "rect" ;
+    obd:order 1 .
+
+obd:footprintWidth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "width" ;
+    rdfs:comment "Studs along x (the front width)"@en ;
+    rdfs:domain obd:Footprint ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 40 ] ) ] ;
+    obd:default 12 ;
+    obd:order 2 ;
+    obd:unit "stud" .
+
+obd:openingsAboveDoor a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "above_door" ;
+    rdfs:comment "A window above the door on upper floors"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range xsd:boolean ;
+    obd:default true ;
+    obd:order 12 .
+
+obd:openingsCount a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "count" ;
+    rdfs:comment "Windows per facade (0 = as many as fit)"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 12 ] ) ] ;
+    obd:default 0 ;
+    obd:order 10 .
+
+obd:openingsDoor a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "door" ;
+    rdfs:comment "Door leaf style (4 studs wide, 6 courses tall)"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "plain" "smooth" "glazed" "barred" ) ] ;
+    obd:default "plain" ;
+    obd:order 1 .
+
+obd:openingsDoorColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "door_colour" ;
+    rdfs:comment "Door leaf"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "reddish brown" ;
+    obd:order 4 .
+
+obd:openingsDoorFacade a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "door_facade" ;
+    rdfs:comment "Facade the door is on"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "front" "back" "left" "right" ) ] ;
+    obd:default "front" ;
+    obd:order 2 .
+
+obd:openingsDoorPosition a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "door_position" ;
+    rdfs:comment "Where the door sits along the facade"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "centre" "left" "right" ) ] ;
+    obd:default "centre" ;
+    obd:order 3 .
+
+obd:openingsFrameColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "frame_colour" ;
+    rdfs:comment "Window and door frames"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 5 .
+
+obd:openingsGlassColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "glass_colour" ;
+    rdfs:comment "Glass"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "clear" ;
+    obd:order 6 .
+
+obd:openingsGroundWindows a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "ground_windows" ;
+    rdfs:comment "Window kind on the ground floor (wide = two 4-stud windows side by side)"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "rect" "small" "tall" "arch" "slit" "wide" ) ] ;
+    obd:default "tall" ;
+    obd:order 7 .
+
+obd:openingsKeystoneColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "keystone_colour" ;
+    rdfs:comment "Keystone"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "light grey" ;
+    obd:order 18 .
+
+obd:openingsKeystones a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "keystones" ;
+    rdfs:comment "Arch windows: a keystone brick in the course above the arch"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 17 .
+
+obd:openingsRhythm a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "rhythm" ;
+    rdfs:comment "Spacing: minimum pier 1, 2 or 3 studs between openings"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "dense" "regular" "sparse" ) ] ;
+    obd:default "regular" ;
+    obd:order 9 .
+
+obd:openingsShutterColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "shutter_colour" ;
+    rdfs:comment "Shutters"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "dark green" ;
+    obd:order 16 .
+
+obd:openingsShutters a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "shutters" ;
+    rdfs:comment "Coloured shutter bricks on both sides of every rect, small, tall and wide window"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 15 .
+
+obd:openingsSides a owl:DatatypeProperty,
+        obd:Parameter ;
+    dcterms:identifier "sides" ;
+    rdfs:comment "Facades that get windows"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "front" "back" "left" "right" ) ] ;
+    obd:default ( "front" "back" "left" "right" ) ;
+    obd:order 11 .
+
+obd:openingsSillColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "sill_colour" ;
+    rdfs:comment "Window sills"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 14 .
+
+obd:openingsSills a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "sills" ;
+    rdfs:comment "Projecting sill plate under every rect, small, tall and wide window that has a wall course below it"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 13 .
+
+obd:openingsUpperWindows a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "upper_windows" ;
+    rdfs:comment "Window kind on upper floors"@en ;
+    rdfs:domain obd:Openings ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "rect" "small" "tall" "arch" "slit" "wide" ) ] ;
+    obd:default "tall" ;
+    obd:order 8 .
+
+obd:order a owl:AnnotationProperty ;
+    rdfs:comment "Display order of a component, or of a parameter within its component."@en .
+
+obd:role a owl:ObjectProperty ;
+    rdfs:comment "A role (concept of the role scheme) the component's placements carry."@en ;
+    rdfs:domain obd:Component ;
+    rdfs:range skos:Concept .
+
+obd:roofColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "colour" ;
+    rdfs:comment "Roof slopes / deck"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "dark red" ;
+    obd:order 2 .
+
+obd:roofCrenelColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "crenel_colour" ;
+    rdfs:comment "Parapet and merlon colour"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "tan" ;
+    obd:order 12 .
+
+obd:roofFinial a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "finial" ;
+    rdfs:comment "Hip roofs: a cone finial on the peak"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 7 .
+
+obd:roofGableWindows a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "gable_windows" ;
+    rdfs:comment "Gable roofs: a small window in each gable end"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 13 .
+
+obd:roofGap a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "gap" ;
+    rdfs:comment "Battlement gap width"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 2 ] ) ] ;
+    obd:default 1 ;
+    obd:order 10 ;
+    obd:unit "stud" .
+
+obd:roofMerlon a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "merlon" ;
+    rdfs:comment "Battlement merlon width"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 2 ] ) ] ;
+    obd:default 1 ;
+    obd:order 9 ;
+    obd:unit "stud" .
+
+obd:roofOverhang a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "overhang" ;
+    rdfs:comment "Eave overhang in studs"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 1 ] ) ] ;
+    obd:default 1 ;
+    obd:order 4 ;
+    obd:unit "stud" .
+
+obd:roofParapet a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "parapet" ;
+    rdfs:comment "Flat roofs: parapet or battlements"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "plain" "battlement" ) ] ;
+    obd:default "none" ;
+    obd:order 8 .
+
+obd:roofParapetCourses a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "parapet_courses" ;
+    rdfs:comment "Parapet height in courses"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 2 ] ) ] ;
+    obd:default 1 ;
+    obd:order 11 ;
+    obd:unit "course" .
+
+obd:roofRidge a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "ridge" ;
+    rdfs:comment "Ridge direction (auto = along the longer side)"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "auto" "x" "z" ) ] ;
+    obd:default "auto" ;
+    obd:order 3 .
+
+obd:roofStyle a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "style" ;
+    rdfs:comment "gable, hip, flat deck (with optional parapet), or none"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "gable" "hip" "flat" "none" ) ] ;
+    obd:default "gable" ;
+    obd:order 1 .
+
+obd:roofTiers a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "tiers" ;
+    rdfs:comment "Slope courses; 0 = as steep as the depth allows"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 9 ] ) ] ;
+    obd:default 0 ;
+    obd:order 6 ;
+    obd:unit "course" .
+
+obd:roofVerge a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "verge" ;
+    rdfs:comment "Gable-end overhang in studs"@en ;
+    rdfs:domain obd:Roof ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 1 ] ) ] ;
+    obd:default 0 ;
+    obd:order 5 ;
+    obd:unit "stud" .
+
+obd:storeysBandColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "band_colour" ;
+    rdfs:comment "Floor bands, floors and cornice"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 8 .
+
+obd:storeysBandProjection a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "band_projection" ;
+    rdfs:comment "Studs the floor bands project as a cornice"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 1 ] ) ] ;
+    obd:default 0 ;
+    obd:order 6 ;
+    obd:unit "stud" .
+
+obd:storeysCount a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "count" ;
+    rdfs:comment "Number of storeys"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 2 ;
+    obd:order 1 .
+
+obd:storeysCourses a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "courses" ;
+    rdfs:comment "Wall height of each storey in brick courses (a door needs 6)"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 3 ] [ xsd:maxInclusive 14 ] ) ] ;
+    obd:default 6 ;
+    obd:order 2 ;
+    obd:unit "course" .
+
+obd:storeysEaves a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "eaves" ;
+    rdfs:comment "A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 7 .
+
+obd:storeysFloors a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "floors" ;
+    rdfs:comment "Fill the interior with floor plates (off = ring bands only)"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range xsd:boolean ;
+    obd:default true ;
+    obd:order 5 .
+
+obd:storeysInterior a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "interior" ;
+    rdfs:comment "Rooms: a partition wall with a doorway on every storey (rectangular footprints)"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "partition" ) ] ;
+    obd:default "none" ;
+    obd:order 9 .
+
+obd:storeysSetback a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "setback" ;
+    rdfs:comment "Studs each upper storey steps in on every side (rect footprints)"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 3 ] ) ] ;
+    obd:default 0 ;
+    obd:order 4 ;
+    obd:unit "stud" .
+
+obd:storeysTopCourses a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "top_courses" ;
+    rdfs:comment "Courses of the top storey; 0 = same as the others"@en ;
+    rdfs:domain obd:Storeys ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 14 ] ) ] ;
+    obd:default 0 ;
+    obd:order 3 ;
+    obd:unit "course" .
+
+obd:unit a owl:AnnotationProperty ;
+    rdfs:comment "Unit of a numeric parameter: stud, plate or course."@en .
+
+obd:wallsAccentColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "accent_colour" ;
+    rdfs:comment "Accent course colour"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "red" ;
+    obd:order 9 .
+
+obd:wallsAccentEvery a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "accent_every" ;
+    rdfs:comment "Every n-th course in the accent colour (0 = none)"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 0 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 0 ;
+    obd:order 8 ;
+    obd:unit "course" .
+
+obd:wallsAltColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "alt_colour" ;
+    rdfs:comment "Second colour (stone mix, timber infill accent)"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "light grey" ;
+    obd:order 4 .
+
+obd:wallsColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "colour" ;
+    rdfs:comment "Main wall colour"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "tan" ;
+    obd:order 3 .
+
+obd:wallsPlinth a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "plinth" ;
+    rdfs:comment "First course in a plinth colour"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 6 .
+
+obd:wallsPlinthColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "plinth_colour" ;
+    rdfs:comment "Plinth colour"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "dark grey" ;
+    obd:order 7 .
+
+obd:wallsStyle a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "style" ;
+    rdfs:comment "brick; half-timber (posts and infill); stone (two-tone random bricks)"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "brick" "timber" "stone" ) ] ;
+    obd:default "brick" ;
+    obd:order 1 .
+
+obd:wallsThickness a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "thickness" ;
+    rdfs:comment "Wall thickness in studs; 2 uses staggered rows"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( 1 2 ) ] ;
+    obd:default 1 ;
+    obd:order 2 ;
+    obd:unit "stud" .
+
+obd:wallsTimberColour a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:ColourParameter ;
+    dcterms:identifier "timber_colour" ;
+    rdfs:comment "Timber posts and corner studs"@en ;
+    rdfs:domain obd:Walls ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "reddish brown" ;
+    obd:order 5 .
+
+role:accent a skos:Concept ;
+    skos:broader role:trim ;
+    skos:definition "Alias: a generator's own word for trim."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "accent"@en .
+
+role:canopy a skos:Concept ;
+    skos:broader role:glass ;
+    skos:definition "Alias: a generator's own word for glass."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "canopy"@en .
+
+role:chimney a skos:Concept ;
+    skos:broader role:roof ;
+    skos:definition "Alias: a generator's own word for roof."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "chimney"@en .
+
+role:grammar a skos:OrderedCollection ;
+    skos:memberList ( role:roof role:wall role:window role:door role:glass role:base role:tower role:detail role:trim role:structure ) ;
+    skos:prefLabel "roles stamped by the building grammar"@en .
+
+role:headlamp a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "headlamp"@en .
+
+role:hull a skos:Concept ;
+    skos:broader role:body ;
+    skos:definition "Alias: a generator's own word for body."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "hull"@en .
+
+role:light a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "light"@en .
+
+role:metal a skos:Concept ;
+    skos:broader role:trim ;
+    skos:definition "Alias: a generator's own word for trim."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "metal"@en .
+
+role:porch a skos:Concept ;
+    skos:broader role:trim ;
+    skos:definition "Alias: a generator's own word for trim."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "porch"@en .
+
+role:tail_lamp a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "tail_lamp"@en .
+
+role:wood a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wood"@en .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#BalconyStoreys> a sh:NodeShape ;
+    dcterms:identifier "balcony-storeys" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A balcony needs a door and at least 2 storeys (balcony-storeys)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsBalcony true . ?op obd:openingsDoor ?door . ?st obd:storeysCount ?count . FILTER (?door = \"none\" || ?count < 2) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#BuildingShape> a sh:NodeShape ;
+    rdfs:comment "A building has exactly one component of each kind, and a name."@en ;
+    sh:property [ sh:maxCount 1 ;
+            sh:minCount 1 ;
+            sh:path obd:buildingName ],
+        [ sh:message "A building has exactly one Base." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Base ] ],
+        [ sh:message "A building has exactly one Details." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Details ] ],
+        [ sh:message "A building has exactly one Corners." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Corners ] ],
+        [ sh:message "A building has exactly one Footprint." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Footprint ] ],
+        [ sh:message "A building has exactly one Walls." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Walls ] ],
+        [ sh:message "A building has exactly one Storeys." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Storeys ] ],
+        [ sh:message "A building has exactly one Roof." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Roof ] ],
+        [ sh:message "A building has exactly one Openings." ;
+            sh:path [ sh:inversePath obd:partOf ] ;
+            sh:qualifiedMaxCount 1 ;
+            sh:qualifiedMinCount 1 ;
+            sh:qualifiedValueShape [ sh:class obd:Openings ] ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#ChimneyPitched> a sh:NodeShape ;
+    dcterms:identifier "chimney-pitched" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A chimney needs a gable or hip roof (chimney-pitched)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?rf obd:roofStyle ?style . ?dt obd:detailsChimney ?chimney . FILTER (?style NOT IN (\"gable\",\"hip\") && ?chimney != \"none\") }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#DoorHeight> a sh:NodeShape ;
+    dcterms:identifier "door-height" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A door is 6 courses tall, so the ground storey needs 6 or more courses (door-height)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?st obd:storeysCourses ?courses . ?op obd:openingsDoor ?door . FILTER (?door != \"none\" && ?courses < 6) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#EavesRect> a sh:NodeShape ;
+    dcterms:identifier "eaves-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Eave roofs only go round rectangular storeys (eaves-rect)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysEaves true . FILTER (?shape != \"rect\") }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#EavesSetback> a sh:NodeShape ;
+    dcterms:identifier "eaves-setback" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Eave roofs round storeys need a cornice (band projection) and each upper storey to step in by 1 or more (eaves-setback)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?st obd:storeysEaves true ; obd:storeysBandProjection ?band ; obd:storeysSetback ?setback ; obd:storeysCount ?count . FILTER (?band < 1 || (?count > 1 && ?setback < 1)) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#FenceBase> a sh:NodeShape ;
+    dcterms:identifier "fence-base" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A fence needs a plain base plate with a margin of 2 studs or more (fence-base)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?dt obd:detailsFence true . ?bs obd:baseKind ?kind ; obd:baseMargin ?margin . FILTER (?kind != \"plate\" || ?margin < 2) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#FlowersSills> a sh:NodeShape ;
+    dcterms:identifier "flowers-sills" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Flower boxes stand on window sills, so they turn sills on (flowers-sills)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsFlowerBoxes true . ?op obd:openingsSills false . }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#GableWindowFits> a sh:NodeShape ;
+    dcterms:identifier "gable-window-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A gable-end window needs a gable roof at least 8 studs deep (gable-window-fits)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?rf obd:roofGableWindows true ; obd:roofStyle ?style ; obd:roofOverhang ?overhang . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . BIND (IF(?w < ?d, ?w, ?d) AS ?m) FILTER (?style != \"gable\" || ?m + 2*?overhang < 8) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#InteriorRect> a sh:NodeShape ;
+    dcterms:identifier "interior-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Interior partitions only go into rectangular footprints (interior-rect)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysInterior \"partition\" . FILTER (?shape != \"rect\") }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#ModularFits> a sh:NodeShape ;
+    dcterms:identifier "modular-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors (modular-fits)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?rf obd:roofVerge ?verge ; obd:roofOverhang ?overhang . ?st obd:storeysEaves ?eaves ; obd:storeysFloors ?floors . ?co obd:cornersStyle ?corners . ?dt obd:detailsConnectors ?connectors . FILTER ((?kind = \"modular\" && (?w != 32 || ?d > 32-?sidewalk || ?verge != 0 || ?overhang != 0 || ?eaves || !?floors || ?corners = \"towers\")) || (?kind != \"modular\" && ?connectors)) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#NotchFits> a sh:NodeShape ;
+    dcterms:identifier "notch-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "L and U notches and courtyards must leave at least 4 studs of wall (notch-fits)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?wl a obd:Walls ; obd:partOf $this . ?fp obd:footprintShape ?shape ; obd:footprintWidth ?w ; obd:footprintDepth ?d ; obd:footprintNotchWidth ?nw ; obd:footprintNotchDepth ?nd ; obd:footprintCourtWidth ?cw ; obd:footprintCourtDepth ?cd . ?wl obd:wallsThickness ?t . FILTER ((?shape = \"L\" && (?nw > ?w-4 || ?nd > ?d-4)) || (?shape = \"U\" && (?nw > IF(?w-8 > 2, ?w-8, 2) || ?nd > ?d-4)) || (?shape = \"courtyard\" && (?cw > ?w-2*(?t+1) || ?cd > ?d-2*(?t+1)))) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#ParapetFlat> a sh:NodeShape ;
+    dcterms:identifier "parapet-flat" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Parapets and battlements only exist on flat roofs; a towered flat roof has battlements (parapet-flat)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?rf obd:roofStyle ?style ; obd:roofParapet ?parapet . ?co obd:cornersStyle ?corners . FILTER ((?style != \"flat\" && ?parapet != \"none\") || (?style = \"flat\" && ?parapet = \"none\" && ?corners = \"towers\")) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#PitchedNeedsRect> a sh:NodeShape ;
+    dcterms:identifier "pitched-needs-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Gable and hip roofs need a rectangular footprint (pitched-needs-rect)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?rf obd:roofStyle ?style . FILTER (?style IN (\"gable\",\"hip\") && ?shape != \"rect\") }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#PorchDoor> a sh:NodeShape ;
+    dcterms:identifier "porch-door" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A porch needs a front door (porch-door)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsPorch true . ?op obd:openingsDoor ?door ; obd:openingsDoorFacade ?facade . FILTER (?door = \"none\" || ?facade != \"front\") }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#SetbackFits> a sh:NodeShape ;
+    dcterms:identifier "setback-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "The top storey must stay at least 4 studs wide after all setbacks (setback-fits)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?wl a obd:Walls ; obd:partOf $this . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?st obd:storeysSetback ?setback ; obd:storeysCount ?count . ?wl obd:wallsThickness ?t . BIND (IF(?w < ?d, ?w, ?d) AS ?m) FILTER (?setback > 0 && ?m - 2*?setback*(?count-1) < 2+2*?t) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#SetbackRect> a sh:NodeShape ;
+    dcterms:identifier "setback-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Setbacks only apply to rectangular footprints (setback-rect)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysSetback ?setback . FILTER (?shape != \"rect\" && ?setback > 0) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#SignShop> a sh:NodeShape ;
+    dcterms:identifier "sign-shop" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A fascia sign needs a door and a ground storey of 7 or more courses (sign-shop)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsSign ?sign . ?op obd:openingsDoor ?door . ?st obd:storeysCourses ?courses . FILTER (?sign != \"none\" && (?door = \"none\" || ?courses < 7)) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#ThickWalls> a sh:NodeShape ;
+    dcterms:identifier "thick-walls" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Wall thickness t needs a footprint at least 2t+2 studs wide and deep (thick-walls)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?wl a obd:Walls ; obd:partOf $this . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?wl obd:wallsThickness ?t . FILTER (?w < 2*?t+2 || ?d < 2*?t+2) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes#TowersFlat> a sh:NodeShape ;
+    dcterms:identifier "towers-flat" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "Corner towers need a flat main roof (towers-flat)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?co obd:cornersStyle \"towers\" . ?rf obd:roofStyle ?style . FILTER (?style IN (\"gable\",\"hip\")) }" ] ;
+    sh:targetClass obd:Building .
+
+<https://alessionar.github.io/open-brick-designer/ns/obd> a owl:Ontology ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:title "Open Brick Designer build components"@en ;
+    owl:imports role: .
+
+obd:buildingName a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "name" ;
+    rdfs:comment "Model name"@en ;
+    rdfs:domain obd:Building ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:string ;
+            owl:withRestrictions ( [ xsd:maxLength 60 ] [ xsd:pattern "^[A-Za-z0-9 _.-]*$" ] ) ] ;
+    obd:default "building" ;
+    obd:order 1 .
+
+role:chassis a skos:Concept ;
+    skos:altLabel "chassis"@en,
+        "frame"@en ;
+    skos:definition "Vehicle frame, axles, undercarriage"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "chassis"@en ;
+    obd:order 9 .
+
+role:engine a skos:Concept ;
+    skos:altLabel "engine"@en,
+        "engines"@en ;
+    skos:definition "Engines, thrusters, propellers"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "engine"@en ;
+    obd:order 12 .
+
+role:tyre a skos:Concept ;
+    skos:altLabel "tire"@en,
+        "tires"@en,
+        "tyre"@en,
+        "tyres"@en ;
+    skos:definition "Tyres"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "tyre"@en ;
+    obd:order 8 .
+
+role:wheel a skos:Concept ;
+    skos:altLabel "rim"@en,
+        "rims"@en,
+        "wheel"@en,
+        "wheels"@en ;
+    skos:definition "Wheels and rims"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wheel"@en ;
+    obd:order 7 .
+
+role:wing a skos:Concept ;
+    skos:altLabel "wing"@en,
+        "wings"@en ;
+    skos:definition "Wings and tail surfaces"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wing"@en ;
+    obd:order 11 .
+
+role:body a skos:Concept ;
+    skos:altLabel "body"@en,
+        "bodywork"@en ;
+    skos:definition "Vehicle or craft body: cabin, hull, fuselage"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "body"@en ;
+    obd:order 10 .
+
+role:tower a skos:Concept ;
+    skos:altLabel "tower"@en,
+        "towers"@en,
+        "turret"@en,
+        "turrets"@en ;
+    skos:broader role:wall ;
+    skos:definition "Corner tower bodies (round bricks, tower walls) and tower caps; a kind of wall, see ALIAS"@en ;
+    skos:hiddenLabel "tower"@en,
+        "towers"@en,
+        "turret"@en,
+        "turrets"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "tower"@en ;
+    obd:order 13 .
+
+role:base a skos:Concept ;
+    skos:altLabel "base"@en,
+        "baseplate"@en,
+        "floor"@en,
+        "foundation"@en,
+        "ground"@en ;
+    skos:definition "Baseplate, ground, paths"@en ;
+    skos:hiddenLabel "base"@en,
+        "baseplate"@en,
+        "grass"@en,
+        "ground"@en,
+        "lawn"@en,
+        "path"@en,
+        "pavement"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "base"@en ;
+    skos:scopeNote "\"floor\" is an altLabel here (the classifier and vehicles read it as the ground plane); the building grammar reads it as role:structure via a hidden label. Scoping per domain is an open question (PROPOSAL.md)."@en ;
+    obd:order 6 .
+
+role:door a skos:Concept ;
+    skos:altLabel "door"@en,
+        "doors"@en ;
+    skos:definition "Door frame and door leaf, gates"@en ;
+    skos:hiddenLabel "door"@en,
+        "doors"@en,
+        "entrance"@en,
+        "gate"@en,
+        "gates"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "door"@en ;
+    obd:order 4 .
+
+role:structure a skos:Concept ;
+    skos:definition "Interior floors and hidden supports"@en ;
+    skos:hiddenLabel "floor"@en,
+        "floors"@en,
+        "structure"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "structure"@en ;
+    obd:order 16 .
+
+role:glass a skos:Concept ;
+    skos:altLabel "canopy"@en,
+        "glass"@en,
+        "glazing"@en,
+        "panes"@en,
+        "windscreen"@en,
+        "windshield"@en ;
+    skos:definition "Transparent panes"@en ;
+    skos:hiddenLabel "glass"@en,
+        "glazing"@en,
+        "panes"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "glass"@en ;
+    obd:order 5 .
+
+role:roof a skos:Concept ;
+    skos:altLabel "roof"@en,
+        "roofing"@en,
+        "roofs"@en ;
+    skos:definition "Roof surface: slopes, ridge caps, flat-roof deck, tower cones"@en ;
+    skos:hiddenLabel "roof"@en,
+        "roofing"@en,
+        "slates"@en,
+        "thatch"@en,
+        "tiles"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "roof"@en ;
+    obd:order 1 .
+
+role:window a skos:Concept ;
+    skos:altLabel "window"@en,
+        "windows"@en ;
+    skos:definition "Window frames and arch/slit infill that belongs to a window"@en ;
+    skos:hiddenLabel "window"@en,
+        "window frame"@en,
+        "window frames"@en,
+        "windows"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "window"@en ;
+    obd:order 3 .
+
+role:wall a skos:Concept ;
+    skos:altLabel "brickwork"@en,
+        "masonry"@en,
+        "wall"@en,
+        "walls"@en ;
+    skos:definition "Load-bearing wall bricks, gable end walls, parapet merlons"@en ;
+    skos:hiddenLabel "bricks"@en,
+        "brickwork"@en,
+        "masonry"@en,
+        "stonework"@en,
+        "wall"@en,
+        "walls"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wall"@en ;
+    obd:order 2 .
+
+role:detail a skos:Concept ;
+    skos:altLabel "detail"@en,
+        "details"@en ;
+    skos:definition "Chimney, porch, balcony, steps, sign, shutters, flower boxes, fences, crenellation extras"@en ;
+    skos:hiddenLabel "balcony"@en,
+        "chimney"@en,
+        "detail"@en,
+        "details"@en,
+        "porch"@en,
+        "sign"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "detail"@en ;
+    obd:order 14 .
+
+obd:partOf a owl:FunctionalProperty,
+        owl:ObjectProperty ;
+    rdfs:comment "The building a component belongs to."@en ;
+    rdfs:domain obd:Component ;
+    rdfs:range obd:Building .
+
+obd:Base a owl:Class ;
+    rdfs:label "Base"@en ;
+    dcterms:identifier "base" ;
+    rdfs:comment "Ground"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 8 ;
+    obd:partOf obd:Building ;
+    obd:role role:base .
+
+role:trim a skos:Concept ;
+    skos:altLabel "cornice"@en,
+        "plinth"@en,
+        "trim"@en ;
+    skos:definition "Bands between storeys, cornices, corner pillars, plinth, window sills, keystones"@en ;
+    skos:hiddenLabel "band"@en,
+        "bands"@en,
+        "cornice"@en,
+        "pillars"@en,
+        "plinth"@en,
+        "quoins"@en,
+        "trim"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "trim"@en ;
+    obd:order 15 .
+
+obd:Component a owl:Class ;
+    rdfs:label "Component"@en ;
+    rdfs:comment "A construction stage of a building; it is part of exactly one Building and stamps placements with its roles."@en .
+
+obd:Footprint a owl:Class ;
+    rdfs:label "Footprint"@en ;
+    dcterms:identifier "footprint" ;
+    rdfs:comment "Plan shape of the ground floor"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 1 ;
+    obd:partOf obd:Building .
+
+obd:Storeys a owl:Class ;
+    rdfs:label "Storeys"@en ;
+    dcterms:identifier "storeys" ;
+    rdfs:comment "Storeys stacked on the footprint; each is wall courses plus a floor band"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 2 ;
+    obd:partOf obd:Building ;
+    obd:role role:structure,
+        role:trim .
+
+obd:Walls a owl:Class ;
+    rdfs:label "Walls"@en ;
+    dcterms:identifier "walls" ;
+    rdfs:comment "Wall construction"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 3 ;
+    obd:partOf obd:Building ;
+    obd:role role:trim,
+        role:wall .
+
+obd:Corners a owl:Class ;
+    rdfs:label "Corners"@en ;
+    dcterms:identifier "corners" ;
+    rdfs:comment "Building corners"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 5 ;
+    obd:partOf obd:Building ;
+    obd:role role:tower,
+        role:trim .
+
+obd:Roof a owl:Class ;
+    rdfs:label "Roof"@en ;
+    dcterms:identifier "roof" ;
+    rdfs:comment "Roof or top finish"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 6 ;
+    obd:partOf obd:Building ;
+    obd:role role:roof,
+        role:wall,
+        role:window .
+
+obd:Details a owl:Class ;
+    rdfs:label "Details"@en ;
+    dcterms:identifier "details" ;
+    rdfs:comment "Add-ons"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 7 ;
+    obd:partOf obd:Building ;
+    obd:role role:detail .
+
+obd:Openings a owl:Class ;
+    rdfs:label "Openings"@en ;
+    dcterms:identifier "openings" ;
+    rdfs:comment "Doors and windows, sized from real parts"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 4 ;
+    obd:partOf obd:Building ;
+    obd:role role:door,
+        role:glass,
+        role:trim,
+        role:window .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes> a owl:Ontology ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:title "Open Brick Designer build validity shapes"@en ;
+    owl:imports <https://alessionar.github.io/open-brick-designer/ns/obd> ;
+    sh:declare [ sh:namespace "https://alessionar.github.io/open-brick-designer/ns/obd#"^^xsd:anyURI ;
+            sh:prefix "obd" ] .
+
+obd:ColourParameter a owl:Class ;
+    rdfs:label "Colour parameter"@en ;
+    rdfs:comment "The value is an LDraw colour name or code (x-colour in the JSON Schema)."@en ;
+    rdfs:subClassOf obd:Parameter .
+
+obd:LdrawColour a rdfs:Datatype ;
+    rdfs:label "LDraw colour name or code"@en ;
+    owl:unionOf ( xsd:string xsd:integer ) .
+
+role: a owl:Ontology,
+        skos:ConceptScheme ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:title "Open Brick Designer role vocabulary"@en ;
+    skos:definition "What a placement is for, independent of its part number or colour."@en ;
+    skos:hasTopConcept role:base,
+        role:body,
+        role:chassis,
+        role:detail,
+        role:door,
+        role:engine,
+        role:glass,
+        role:roof,
+        role:structure,
+        role:trim,
+        role:tyre,
+        role:wall,
+        role:wheel,
+        role:window,
+        role:wing .
+
+obd:Building a owl:Class ;
+    rdfs:label "Building"@en ;
+    rdfs:comment "One grammar configuration: a footprint carrying storeys, walls, openings, corners, a roof, details and a base."@en ;
+    obd:order 0 .
+
+obd:Parameter a owl:Class ;
+    rdfs:label "Parameter"@en ;
+    rdfs:subClassOf rdf:Property .
+
