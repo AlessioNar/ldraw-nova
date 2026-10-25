@@ -34,6 +34,8 @@ Studs (x right, z back; the front is the low-z side) and plates (1 brick = 3 pla
 
 **Details.** `chimney` stands on plates in the ridge; `porch` is a floor, two pillars of 1x1 bricks and a canopy of plates and tiles; `balcony` is a floor cut together with the first band (so its plates straddle wall and balcony and hold on) with a row of round 1x1 rails; `sign` turns the top ground-floor course on the front into a coloured band.
 
+**Detail (#52).** All off by default. `openings.sills` replaces the wall under a rect, small, tall or wide window with two plates and a 2xN plate whose outer half overhangs the wall by one stud. `openings.shutters` recolours the wall bricks either side of a window for its height. `openings.keystones` recolours the two bricks in the course above an arch. `details.flower_boxes` puts a two-plate planter with 1x1 round-plate flowers on each overhanging sill (and turns sills on). `details.fence` runs 1x1 posts under 1x3 rails round the edge of the base plate, open wherever the path already stands. `roof.gable_windows` leaves a 2x2 window in each gable end of a gable roof. Every piece stands on studs of the wall, sill or base plate, so the model stays one piece. Not built: 33 degree slopes, dormers, inverted-slope eaves, finer round towers.
+
 **Modular buildings.** `base.kind = modular` makes the module: a 32x32 plate (two crossed layers) with a tiled sidewalk and kerb in front (`sidewalk`, optional `lamps`), the building behind it. The rules keep everything inside the module (`modular-fits`): width 32, depth at most 32 minus the sidewalk, no roof overhang, no towers or eave roofs, a cornice only on the front. Floors are full plates that lift out (each rests on the storey below by studs only), `storeys.interior = partition` builds a bonded partition wall with a 4-stud doorway on every storey, and `details.connectors` puts two Technic bricks (with pin holes) into each side wall, near the top of every storey, so neighbouring modules can be pinned together.
 
 **Base.** Two layers of plate strips laid across each other (a base of one layer would be loose plates); `path` is tiles from the door to the edge.
@@ -51,8 +53,8 @@ Every placement carries one `role` (vocabulary in `ldraw_tools/grammar/roles.py`
 | `glass` | transparent panes |
 | `base` | base plates and path |
 | `tower` | tower bodies, tower floor slabs, tower caps |
-| `detail` | chimney, porch, balcony, sign band |
-| `trim` | floor bands, cornice, corner pillars, plinth, accent courses, timber posts, arch sills |
+| `detail` | chimney, porch, balcony, sign band, shutters, flower boxes, fence |
+| `trim` | floor bands, cornice, corner pillars, plinth, accent courses, timber posts, arch sills, window sills, keystones |
 | `structure` | hidden supports (reserved; floors take the band's `trim` role) |
 
 Roles are a property of the construction, not a guess from colour or part number, so "make the roof blue" selects `role == roof` whatever the roof is made of.

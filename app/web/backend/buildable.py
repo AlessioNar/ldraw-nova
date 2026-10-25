@@ -144,6 +144,7 @@ async def ranked(ids: list[str], *, limit: int = DEFAULT_LIMIT, min_parts: int =
         args.append(f"--query={query.strip()[:MAX_QUERY_CHARS]}")
     if substitute:
         args.append("--substitute-colours")
+    args.append("--available")          # rank what is free: owned minus built sets and reservations
     async with _ranking:
         report = await _cli(args, RANK_TIMEOUT)
     if report["pending"]:

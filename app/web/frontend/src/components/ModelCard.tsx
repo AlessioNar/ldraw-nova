@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { downloadGlb, downloadUrl, timeAgo, type ChatModel, type ModelFile, type ViewerMode } from "../api";
 import { useApp } from "../context";
@@ -9,6 +9,7 @@ type Props = {
   showChats?: boolean;
   onDelete?: () => Promise<void>;
   onEdit?: () => Promise<void>;      // My Builds: open the model in the 3D editor
+  extraActions?: ReactNode;          // My Builds: "I built this" and friends
   buildId?: string;                  // My Builds: the build this file is a version of; the card links to its page
 };
 
@@ -20,7 +21,7 @@ function DownloadIcon() {
   );
 }
 
-export default function ModelCard({ model, showChats = false, onDelete, onEdit, buildId }: Props) {
+export default function ModelCard({ model, showChats = false, onDelete, onEdit, buildId, extraActions }: Props) {
   const { openViewer } = useApp();
   const open = (mode: ViewerMode = "viewer") =>
     model.model_url &&
@@ -137,6 +138,7 @@ export default function ModelCard({ model, showChats = false, onDelete, onEdit, 
               Info
             </button>
           )}
+          {extraActions}
           {buildId && <Link className="button primary-link" to={`/build/${buildId}`} title="Open this model's build: versions, settings, editor and chats">Open build</Link>}
           <span className="model-viewer-actions" role="group" aria-label="View model">
             <button onClick={() => open()} disabled={!model.model_url}>

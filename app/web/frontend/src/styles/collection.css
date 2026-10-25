@@ -126,3 +126,10 @@ button.chip:hover { border-color: var(--accent); background: var(--accent-soft);
   .set-result { grid-template-columns: 60px minmax(0, 1fr); }
   .set-result > :nth-child(n+3) { display: none; }
 }
+
+.reserved-list { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 6px; }
+.reserved-list li { display: flex; align-items: center; gap: 8px; }
+.reserved-list li > .ellipsis { flex: 1; min-width: 0; }
+.shortage-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.shortage-table th, .shortage-table td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.25)); }
+a.button.disabled { pointer-events: none; opacity: 0.5; }

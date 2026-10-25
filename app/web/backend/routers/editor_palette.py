@@ -118,8 +118,9 @@ def _selection(store, key: str, chat: dict) -> tuple[str, dict, str]:
     """(mode, owned map, inventory id list). A chat uses the inventories it selected; a build (the workspace)
     uses the person's whole collection, exact rows only, as "prefer": owned and used are shown, nothing is refused."""
     if store.is_build(key):
-        owned, signature = workspace.owned_parts()
+        _, signature = workspace.owned_parts()
         ids = ",".join(part.split(":")[0] for part in signature.split("|") if part)
+        owned, _ = workspace.available_parts(key.removeprefix(store.build_key("")))     # minus what other models hold
         return ("prefer" if ids else "off"), owned, ids
     mode, inventories = parts_steering.selection(chat.get("options") or {})
     return (mode if inventories else "off"), owned_map(inventories), parts_steering.id_list(inventories)

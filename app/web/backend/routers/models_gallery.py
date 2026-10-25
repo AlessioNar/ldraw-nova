@@ -17,6 +17,7 @@ import builds
 import gallery
 import glb
 import render
+import reservations as parts_reservations
 import settings
 from leocad_render import MODEL_SUFFIXES
 from paths import safe_join
@@ -55,7 +56,9 @@ async def models_delete(filename: str):
             or model.suffix.lower() not in MODEL_SUFFIXES or model.is_symlink()
             or not model.is_file()):
         not_found("Model not found")
-    return {"deleted": delete_model_file(model)}
+    deleted = delete_model_file(model)
+    parts_reservations.release_model(model.name)       # a deleted model no longer holds parts
+    return {"deleted": deleted}
 
 
 def delete_model_file(model: Path) -> list[str]:

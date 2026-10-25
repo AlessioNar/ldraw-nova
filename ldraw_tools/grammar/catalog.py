@@ -15,6 +15,7 @@ TILE2 = {2: '3068b', 4: '87079'}
 SLOPE45 = {1: '3040b', 2: '3039', 3: '3038', 4: '3037'}
 CORNER45 = '3045'
 ROUND_BRICK_1 = '3062b'
+ROUND_PLATE_1 = '4073'
 ROUND_BRICK_4 = '87081'
 ROUND_PLATE_4 = '60474'
 CONE_4 = '3943b'
@@ -69,6 +70,7 @@ TECHNIC_BRICK = '3700'
 _add(TECHNIC_BRICK, _bar(2))
 _add(CORNER45, Part('', (-0.5, 1.5, -1.5, 0.5), 3, ((0.0, 0.0),)))
 _add(ROUND_BRICK_1, _bar(1))
+_add(ROUND_PLATE_1, _bar(1, h=1))
 _add(ROUND_BRICK_4, _bar(4, 4))
 _add(ROUND_PLATE_4, _bar(4, 4, 1))
 _add(CONE_4, Part('', (-2, 2, -2, 2), 6, ()))

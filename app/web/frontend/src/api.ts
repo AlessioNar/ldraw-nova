@@ -410,6 +410,35 @@ export const collectionApi = {
     request<OpsResult & { pieces: number }>("/api/collection/quick-add", { method: "POST", body: json({ items }) }),
 };
 
+// --- reservations and shortage lists: parts held by models and sets the owner built ---
+
+export type ShortageLine = {
+  part: string; colour: number; colour_name: string; description: string; needed: number; owned: number; reserved: number;
+  available: number; missing: number; maybe: number; substitutes: { colour: number; colour_name: string; available: number }[];
+  missing_with_substitutes?: number;
+};
+export type Shortage = { mode: "exact" | "substitute"; needed: number; covered: number; missing: number; lines: ShortageLine[]; missing_with_substitutes?: number };
+export type Reservation = {
+  id: string; model: string; build: string; chat: string | null; state: string; created_at: number; pieces: number; distinct_parts: number;
+  short_pieces: number; short: { part: string; colour: number; colour_name: string; reserved: number; owned: number; short: number }[];
+};
+export type BuiltSet = { source: string; name: string; pieces: number };
+
+export const reservationsApi = {
+  list: () => request<{ reservations: Reservation[]; built_sets: BuiltSet[] }>("/api/collection/reservations"),
+  reserve: (model: string, chat?: string) =>
+    request<{ reservation: Omit<Reservation, "short" | "short_pieces" | "pieces" | "distinct_parts">; shortage: Shortage }>("/api/collection/reservations", { method: "POST", body: json({ model, chat }) }),
+  release: (id: string) => request<{ released: string; model: string | null }>(`/api/collection/reservations/${sid(id)}`, { method: "DELETE" }),
+  setSetState: (source: string, state: "parts" | "built") =>
+    request<{ inventory: Inventory }>(`/api/collection/sources/${sid(source)}/set-state`, { method: "PUT", body: json({ state }) }),
+  shortage: (model: string, mode: "exact" | "substitute" = "exact") =>
+    request<Shortage & { model: string }>(`/api/collection/shortage?${qs({ model, mode })}`),
+  exportUrl: (model: string, format: "csv" | "text", mode: "exact" | "substitute" = "exact") =>
+    `/api/collection/shortage/export?${qs({ model, format, mode })}`,
+  exportText: (model: string, mode: "exact" | "substitute" = "exact") =>
+    fetch(`/api/collection/shortage/export?${qs({ model, format: "text", mode })}`).then(r => r.text()),
+};
+
 /** A bundled set model (data/models-annotated) as the 3D viewer can load it. */
 export const referenceModelUrl = (file: string) => `/reference-models/${encodeURIComponent(file)}`;
 

@@ -275,7 +275,7 @@ async def workspace_get(build_id: str):
     record = _check(store, build_id)
     key = store.build_key(build_id)
     index = builds.Index(store)
-    owned, signature = workspace.owned_parts()
+    owned, signature = workspace.available_parts(build_id)
     rows = []
     for row in builds.version_rows(store, build_id, index=index):
         path = settings.GENERATED_DIR / row["file"]
@@ -540,7 +540,8 @@ async def draft_parts_check(build_id: str):
     session = _session(store, store.build_key(build_id))
     if session is None:
         not_found("there is no draft")
-    return workspace.check(workspace.rows_usage(session[1].get("used")))
+    owned, signature = workspace.available_parts(build_id)
+    return workspace.check(workspace.rows_usage(session[1].get("used")), owned, signature)
 
 
 # --- proposals --------------------------------------------------------------------------------------------------------

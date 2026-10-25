@@ -402,6 +402,48 @@
      "type": "boolean",
      "default": true,
      "description": "A window above the door on upper floors"
+    },
+    "sills": {
+     "type": "boolean",
+     "default": false,
+     "description": "Projecting sill plate under every rect, small, tall and wide window that has a wall course below it"
+    },
+    "sill_colour": {
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true,
+     "default": "white",
+     "description": "Window sills"
+    },
+    "shutters": {
+     "type": "boolean",
+     "default": false,
+     "description": "Coloured shutter bricks on both sides of every rect, small, tall and wide window"
+    },
+    "shutter_colour": {
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true,
+     "default": "dark green",
+     "description": "Shutters"
+    },
+    "keystones": {
+     "type": "boolean",
+     "default": false,
+     "description": "Arch windows: a keystone brick in the course above the arch"
+    },
+    "keystone_colour": {
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true,
+     "default": "light grey",
+     "description": "Keystone"
     }
    },
    "default": {
@@ -421,7 +463,13 @@
      "left",
      "right"
     ],
-    "above_door": true
+    "above_door": true,
+    "sills": false,
+    "sill_colour": "white",
+    "shutters": false,
+    "shutter_colour": "dark green",
+    "keystones": false,
+    "keystone_colour": "light grey"
    }
   },
   "corners": {
@@ -633,6 +681,11 @@
      "x-colour": true,
      "default": "tan",
      "description": "Parapet and merlon colour"
+    },
+    "gable_windows": {
+     "type": "boolean",
+     "default": false,
+     "description": "Gable roofs: a small window in each gable end"
     }
    },
    "default": {
@@ -647,7 +700,8 @@
     "merlon": 1,
     "gap": 1,
     "parapet_courses": 1,
-    "crenel_colour": "tan"
+    "crenel_colour": "tan",
+    "gable_windows": false
    }
   },
   "details": {
@@ -727,6 +781,43 @@
      "default": "red",
      "description": "Sign band colour"
     },
+    "flower_boxes": {
+     "type": "boolean",
+     "default": false,
+     "description": "Flower boxes on the window sills (turns sills on)"
+    },
+    "planter_colour": {
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true,
+     "default": "reddish brown",
+     "description": "Planter boxes"
+    },
+    "flower_colour": {
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true,
+     "default": "red",
+     "description": "Flowers"
+    },
+    "fence": {
+     "type": "boolean",
+     "default": false,
+     "description": "Picket fence round the garden at the edge of the base plate, open where the path crosses it"
+    },
+    "fence_colour": {
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true,
+     "default": "white",
+     "description": "Fence"
+    },
     "connectors": {
      "type": "boolean",
      "default": false,
@@ -743,6 +834,11 @@
     "balcony_colour": "white",
     "sign": "none",
     "sign_colour": "red",
+    "flower_boxes": false,
+    "planter_colour": "reddish brown",
+    "flower_colour": "red",
+    "fence": false,
+    "fence_colour": "white",
     "connectors": false
    }
   },

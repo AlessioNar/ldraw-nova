@@ -600,3 +600,93 @@ def test_house_dialect_colours_keep_the_storeys_a_preset_chose():
     legacy = generators.generate('building', dict(roof_colour='blue'))
     assert stories(kept) > stories(legacy)
     assert {p['colour'] for s in kept['plan']['sections'] for step in s['steps'] for p in step if p.get('role') == 'roof'} == {1}
+
+
+# ---------------------------------------------------------------- detail and roof variety (#52)
+
+DETAIL = {'openings': {'sills': True, 'shutters': True}, 'details': {'flower_boxes': True, 'fence': True}}
+
+
+def test_detail_options_are_off_by_default():
+    r = build()
+    assert not items(r, label='window sill') and not items(r, label='fence') and not items(r, label='gable window')
+
+
+def test_sills_sit_under_windows_and_overhang_the_wall():
+    r = build({'openings': {'sills': True}})
+    sills = items(r, label='window sill')
+    assert sills and {i.role for i in sills} == {'trim'}
+    assert any(i.code == catalog.PLATE2[2] for i in sills)       # the overhanging top plate
+    assert len(r['canvas'].components()) == 1
+
+
+def test_shutters_recolour_the_piers_beside_windows():
+    plain, shut = build(), build({'openings': {'shutters': True, 'shutter_colour': 'dark green'}})
+    green = shut['config']['openings']['shutter_colour']
+    assert not [i for i in plain['canvas'].items if i.role == 'detail']
+    assert [i for i in shut['canvas'].items if i.role == 'detail' and i.label.startswith('wall')]
+    assert len(shut['canvas'].components()) == 1 and green
+
+
+def test_flower_boxes_turn_sills_on_and_stand_on_them():
+    r = build({'details': {'flower_boxes': True}})
+    assert r['config']['openings']['sills'] and any('flower boxes' in n or 'sills turned on' in n for n in r['notes'])
+    boxes, flowers = items(r, label='flower box'), items(r, label='flowers')
+    assert boxes and flowers and {i.role for i in boxes + flowers} == {'detail'}
+    assert len(r['canvas'].components()) == 1
+
+
+def test_fence_surrounds_the_garden_and_leaves_the_path_open():
+    r = build({'details': {'fence': True}})
+    posts = items(r, label='fence post')
+    assert posts and items(r, label='fence rail')
+    assert len(r['canvas'].components()) == 1
+    path = {c for i in items(r, label='path') for c in i.cells}
+    assert not path & {c for i in posts for c in i.cells}
+
+
+def test_fence_needs_a_plate_with_margin():
+    r = build({'details': {'fence': True}, 'base': {'kind': 'none'}})
+    assert not r['config']['details']['fence'] and any('fence-base' in n for n in r['notes'])
+
+
+def test_keystones_crown_arch_windows():
+    base = {'openings': {'ground_windows': 'arch', 'upper_windows': 'arch'}, 'storeys': {'courses': 7}}
+    plain = build(base)
+    key = build({**base, 'openings': {**base['openings'], 'keystones': True, 'keystone_colour': 'red'}})
+    reds = lambda r: [i for i in r['canvas'].items if i.role == 'trim' and i.colour == 4 and i.label.startswith('wall')]
+    assert not reds(plain) and reds(key)
+    assert len(key['canvas'].components()) == 1
+
+
+def test_gable_windows_fill_both_gable_ends():
+    r = build({'footprint': {'width': 16, 'depth': 10}, 'roof': {'gable_windows': True}})
+    wins = items(r, label='gable window')
+    assert len(wins) == 2 and {i.role for i in wins} == {'window'}
+    assert len(r['canvas'].components()) == 1
+
+
+@pytest.mark.parametrize('depth', [6, 8, 9, 10, 12, 14])
+def test_gable_windows_across_depths(depth):
+    r = build({'footprint': {'width': 16, 'depth': depth}, 'roof': {'gable_windows': True, 'verge': 1}})
+    assert len(r['canvas'].components()) == 1
+
+
+@pytest.mark.parametrize('cfg', [
+    DETAIL,
+    {**DETAIL, 'walls': {'thickness': 2}},
+    {**DETAIL, 'walls': {'style': 'timber'}, 'openings': {'sills': True, 'shutters': True, 'ground_windows': 'rect', 'upper_windows': 'small'}},
+    {**DETAIL, 'openings': {'sills': True, 'shutters': True, 'ground_windows': 'wide', 'rhythm': 'dense'}},
+    {**DETAIL, 'storeys': {'count': 3, 'courses': 7}, 'details': {'flower_boxes': True, 'fence': True, 'porch': True, 'balcony': True}},
+    {**DETAIL, 'roof': {'style': 'hip'}, 'details': {'flower_boxes': True, 'fence': True, 'chimney': 'left'}},
+    {**DETAIL, 'roof': {'style': 'gable', 'gable_windows': True, 'ridge': 'z'}, 'footprint': {'width': 12, 'depth': 18}},
+    {**DETAIL, 'footprint': {'shape': 'L', 'width': 16, 'depth': 12}, 'roof': {'style': 'flat'}},
+])
+def test_detail_combinations_stay_one_piece(cfg):
+    r = build(cfg)
+    assert len(r['canvas'].components()) == 1
+
+
+def test_detail_presets_are_registered():
+    for name in ('cottage-garden', 'arched-townhouse'):
+        assert name in PRESETS

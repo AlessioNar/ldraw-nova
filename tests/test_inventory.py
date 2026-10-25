@@ -211,3 +211,17 @@ def test_cli_import_error_and_help(tmp_path):
     assert r.returncode == 2 and "header" in json.loads(r.stdout)["error"]
     h = run_cli("--help")
     assert h.returncode == 0 and "inventory" in h.stdout
+
+
+def test_available_inventory_subtracts_built_sets_and_reservations(tmp_path):
+    from ldraw_tools.inventory import Row, available_inventory
+    own = Inventory(id="own", name="own", rows=[Row("3001", 4, 10), Row("3003", 1, 2)])
+    built = Inventory(id="set", name="set", kind="set", set={"state": "built"}, rows=[Row("3001", 4, 3)])
+    taken_apart = Inventory(id="set2", name="set2", kind="set", set={"state": "parts"}, rows=[Row("3003", 1, 2)])
+    res = tmp_path / ".collection-reservations.json"
+    res.write_text(json.dumps({"reservations": [{"id": "r", "rows": [["3001", 4, 5], ["3003", 1, 9]]}]}))
+    free = available_inventory([own, built, taken_apart], res)
+    assert combine([free]).get(("3003", 1), 0) == 0 and combine([free])[("3001", 4)] == 10 + 3 - 3 - 5
+    assert combine([available_inventory([own], tmp_path / "missing.json")]) == {("3001", 4): 10, ("3003", 1): 2}
+    res.write_text("not json")
+    assert combine([available_inventory([own], res)]) == {("3001", 4): 10, ("3003", 1): 2}
