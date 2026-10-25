@@ -10,7 +10,7 @@ from ldraw_tools.builder import build_plan, check_schema
 from ldraw_tools.geometry import analyze_geometry
 from ldraw_tools.templates import derive
 
-IDS = ['small-house', 'flatbed-truck', 'willowbank-cottage', 'passenger-car']
+IDS = ['small-house', 'flatbed-truck', 'willowbank-cottage', 'passenger-car', 'brick-house', 'tractor-trailer']
 
 
 def parts_of(plan):
@@ -36,6 +36,8 @@ def test_prototypes_ship_and_register():
         assert t.resolve({}) == t.defaults()
         assert entry['source'].get('author') or entry['source'].get('name')
     assert templates.find('house', 'cottage')[0].id == 'willowbank-cottage'
+    assert templates.find('house', 'brick house')[0].id == 'brick-house'
+    assert templates.find(None, 'tractor')[0].id == 'tractor-trailer'
     assert templates.find(None, 'flatbed truck')[0].id == 'flatbed-truck'
     text = templates.digest()
     assert all(i in text for i in IDS) and 'template' in text and len(text) < 4000
@@ -88,8 +90,9 @@ def test_every_knob_changes_the_plan_in_the_way_it_says():
             elif name == 'courses_delta':
                 taller = parts_of(t.generate({name: max(spec['enum'])})['plan'])
                 assert len(taller) > len(base)
-                shorter = parts_of(t.generate({name: min(spec['enum'])})['plan'])
-                assert len(shorter) < len(base)
+                if min(spec['enum']) < 0:                     # dropping a course is offered only where it verified
+                    shorter = parts_of(t.generate({name: min(spec['enum'])})['plan'])
+                    assert len(shorter) < len(base)
             elif name.endswith('_delta'):
                 longer = t.generate({name: max(spec['enum'])})['plan']
                 # the same parts, longer ones and moved ones; a part with no longer sibling gets a filler after it
@@ -105,10 +108,11 @@ def test_every_knob_changes_the_plan_in_the_way_it_says():
 
 
 def test_role_edits_work_on_template_output():
-    plan = templates.generate('willowbank-cottage')['plan']
-    ops = role_edits.recolour_role(plan, 'roof', 'blue')
-    edited = editor.apply(plan, ops)
-    assert {p['colour'] for p in parts_of(edited) if p['role'] == 'roof'} == {1}
+    for tid in ('willowbank-cottage', 'brick-house'):
+        plan = templates.generate(tid)['plan']
+        ops = role_edits.recolour_role(plan, 'roof', 'blue')
+        edited = editor.apply(plan, ops)
+        assert {p['colour'] for p in parts_of(edited) if p['role'] == 'roof'} == {1}
 
 
 def test_flatbed_truck_variants_are_valid_and_not_less_connected(official):
@@ -156,6 +160,8 @@ def test_candidates_route_between_generators_and_templates():
     rows = templates.candidates('house', 'cottage')
     assert rows[0]['source'] == 'generator' and rows[0]['id'] == 'house'                    # a tie goes to the generator
     assert any(r['source'] == 'template' and r['id'] == 'willowbank-cottage' for r in rows)
+    rows = templates.candidates('house', 'house')
+    assert rows[0]['source'] == 'generator' and any(r['source'] == 'template' and r['id'] == 'brick-house' for r in rows)
     top = templates.candidates('truck', 'flatbed truck')[0]
     assert (top['source'], top['id']) == ('template', 'flatbed-truck')                      # the exact kind only a template has
     assert templates.candidates('garden', 'zzz')[0]['source'] == 'generator'               # family-only match still routes

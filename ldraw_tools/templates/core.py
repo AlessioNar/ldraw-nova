@@ -96,10 +96,11 @@ def _identity(matrix):
     return all(abs(matrix[i][j] - (i == j)) < 1e-9 for i in range(3) for j in range(3))
 
 
-def _turn(matrix):
-    """World matrix of a part given a quarter turn about its own vertical axis (see derive.QUARTER)."""
-    m = matrix
-    return [[-row[2], row[1], row[0]] for row in m]
+def _turn(matrix, turn=1):
+    """World matrix of a part given a quarter turn about its own vertical axis (+1: derive.QUARTER, -1: its inverse)."""
+    if turn > 0:
+        return [[-row[2], row[1], row[0]] for row in matrix]
+    return [[row[2], row[1], -row[0]] for row in matrix]
 
 
 def _lengthen(leaf, entry):
@@ -107,7 +108,7 @@ def _lengthen(leaf, entry):
     code, move, *rest = entry
     leaf['ref'] = code + '.dat'
     if rest and rest[0]:                                   # the library models it with its long side across
-        leaf['matrix'] = _turn(leaf['matrix'])
+        leaf['matrix'] = _turn(leaf['matrix'], rest[0])
     return move, (rest[1:4] if len(rest) >= 4 else None)
 
 
@@ -119,7 +120,7 @@ def _filler(leaf, filler, index):
     twin['ref'] = code + '.dat'
     twin['at'][index] += offset
     if turned:
-        twin['matrix'] = _turn(twin['matrix'])
+        twin['matrix'] = _turn(twin['matrix'], turned)
     return twin
 
 

@@ -71,7 +71,7 @@ KINDS = [   # first match wins; matched against the lower-cased library descript
     ('windscreen', r'windscreen|windshield|canopy|cockpit|^glass'),
     ('window', r'window|shutter'),
     ('door', r'(^|\s)door(?!\s*(handle|knob))|^garage|\bgate\b'),
-    ('wing', r'\bwing\b|aileron|rudder|stabili[sz]er|tailplane|\bflap\b'),
+    ('wing', r'\bwing\b|aileron|rudder|stabili[sz]er|tail ?plane|\bflap\b'),
     ('engine', r'engine|exhaust|propeller|rotor|thruster|turbine|\bmotor\b|\bjet\b|nozzle'),
     ('wedgeplate', r'^(wedge plate|plate special|plate, round corner)|^wedge\b.*plate'),
     ('slope', r'^(slope|roof|wedge|cone)|\bslope\b|curved top|brick, curved'),
@@ -116,6 +116,7 @@ DOMAIN_WORDS = {
 }
 
 
+PORCH_NAME = re.compile(r'porch|balcony|railing|fence|awning|stair')
 SPECIFIC = {'roof', 'window', 'door', 'wheel', 'wing', 'engine', 'glass'}   # names that are surer than geometry
 NAMED_IN = {   # a "wing roof" of a cottage is no aircraft wing: a name only counts in a domain where that role exists
     'building': {'roof', 'window', 'door', 'glass'},
@@ -418,7 +419,16 @@ def _score_group(leaves, transparent, domain, sections, root, use_names):
         return max(abs(lo[a] - centre_xz[span_axis]), abs(hi[a] - centre_xz[span_axis]))
     bulky = [edge(lf) for lf in leaves if lf['facts']['kind'] in ('brick', 'slope', 'vehicle', 'windscreen')]
     body_half = float(np.percentile(bulky, 40)) if bulky else None    # most bricks and slopes sit in the fuselage
-    ctx = dict(roof_start=roof_start, wheel_top=wheel_top, wheel_mid=wheel_mid, glass_top=glass_top, body_half=body_half)
+    roof_colours = set()
+    if domain == 'building':
+        # A stepped brick gable has no slopes: a colour that only appears in the top of the model is the roof.
+        body = [lf for lf in solid if lf['facts']['kind'] not in ('slope', 'tile', 'plate') and rel(lf)[0] < .62]
+        upper = collections.Counter(lf['colour'] for lf in solid if rel(lf)[0] >= .62 and lf['facts']['kind'] != 'slope')
+        below = {lf['colour'] for lf in body} | {lf['colour'] for lf in solid if rel(lf)[0] < .4}
+        glassy = {lf['colour'] for i, lf in enumerate(leaves) if transparent[i]}
+        roof_colours = {c for c, n in upper.items() if n >= 3 and c not in below and c not in glassy}
+    ctx = dict(roof_start=roof_start, wheel_top=wheel_top, wheel_mid=wheel_mid, glass_top=glass_top, body_half=body_half,
+               roof_colours=roof_colours)
 
     out = [_score(leaf, transparent[i], domain, rel(leaf), share(leaf), lateral(leaf), ctx, edge(leaf), sections, root,
                   use_names) for i, leaf in enumerate(leaves)]
@@ -444,8 +454,12 @@ def _building_trim(leaves, found, transparent):
         for i in walls:
             if leaves[i]['colour'] != main:
                 courses[(leaves[i]['colour'], round(-leaves[i]['bounds'][1][1] / 4))].append(i)
-        for members in courses.values():
-            if len(members) >= 3:
+        levels = collections.defaultdict(set)     # how many brick courses each contrasting colour spans
+        for (colour, _), members in courses.items():
+            levels[colour] |= {round(-leaves[i]['bounds'][1][1] / 24) for i in members}
+        for (colour, _), members in courses.items():
+            # a band or a plinth is one or two courses; a wall built in two or three colours (stripes) stays wall
+            if len(members) >= 3 and len(levels[colour]) <= 2:
                 for i in members:
                     found[i] = Role('trim', .5, 'course in a contrasting colour (band, plinth)')
     return found
@@ -497,6 +511,9 @@ def _score(leaf, glassy, domain, rel_h, share, lateral, ctx, edge, sections, roo
     # 2. what the part's place in the model says, and 3. what the submodel it sits in is called; the surer one wins
     if domain == 'building':
         geo = _building(kind, desc, bottom, top, mid, share, ctx['roof_start'])
+        if leaf['colour'] in ctx['roof_colours'] and bottom >= .6 and kind in ('brick', 'plate', 'tile', 'other', 'wedgeplate') \
+                and geo.role != 'roof':
+            geo = Role('roof', .65, 'colour that only the top of the building has')
     elif domain == 'vehicle':
         geo = _vehicle(kind, desc, bottom, top, mid, share, ctx['wheel_top'], ctx['glass_top'], ctx['wheel_mid'])
     elif domain == 'aircraft':
@@ -513,6 +530,8 @@ def _score(leaf, glassy, domain, rel_h, share, lateral, ctx, edge, sections, roo
             named = _name_role(text)
             if named in SPECIFIC and named in NAMED_IN[domain] and .85 > geo.confidence:   # generic names measured worse than geometry
                 return Role(named, .85, f'inside "{text[:40]}"')
+            if domain == 'building' and named == 'trim' and PORCH_NAME.search(text) and .8 > geo.confidence:
+                return Role('trim', .8, f'inside "{text[:40]}"')                       # porch, fence, balcony: never wall
     return geo
 
 

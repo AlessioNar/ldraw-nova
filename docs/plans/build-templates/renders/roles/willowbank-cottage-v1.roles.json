@@ -1,10 +1,10 @@
 {
  "domain": "building",
  "counts": {
-  "base": 43,
+  "base": 39,
   "wall": 225,
   "roof": 423,
-  "trim": 361,
+  "trim": 365,
   "window": 25,
   "door": 6,
   "detail": 41

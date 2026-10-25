@@ -4,17 +4,14 @@
  "verified": {
   "z": {
    "cuts": [
-    70.0
+    90.0
    ],
    "totals": [
     1,
     2,
     3,
     4,
-    6,
-    8,
-    10,
-    12
+    6
    ],
    "combined_checks": {}
   },
@@ -62,7 +59,7 @@
   },
   "max": {
    "params": {
-    "z_delta": 12
+    "z_delta": 6
    },
    "ok": true,
    "errors": 0,
@@ -70,8 +67,8 @@
   }
  },
  "size": {
-  "z": 12
+  "z": 6
  },
  "import_warnings": 0,
- "seconds": 27.9
+ "seconds": 44.8
 }

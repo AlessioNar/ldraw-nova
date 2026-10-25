@@ -9,7 +9,7 @@
   "notes": [],
   "geometry_errors": 26,
   "components": 50,
-  "seconds": 23.4
+  "seconds": 23.1
  },
  "small-house-z+2": {
   "parts": 411,
@@ -21,7 +21,7 @@
   "notes": [],
   "geometry_errors": 26,
   "components": 50,
-  "seconds": 18.7
+  "seconds": 19.9
  },
  "small-house-courses+1": {
   "parts": 398,
@@ -33,7 +33,7 @@
   "notes": [],
   "geometry_errors": 26,
   "components": 50,
-  "seconds": 17.4
+  "seconds": 16.5
  },
  "small-house-courses-1": {
   "parts": 382,
@@ -45,7 +45,7 @@
   "notes": [],
   "geometry_errors": 26,
   "components": 50,
-  "seconds": 16.7
+  "seconds": 16.4
  },
  "small-house-red-roof-no-bushes": {
   "parts": 361,
@@ -57,7 +57,7 @@
   "notes": [],
   "geometry_errors": 26,
   "components": 39,
-  "seconds": 17.1
+  "seconds": 15.5
  },
  "flatbed-truck-source": {
   "parts": 59,
@@ -65,23 +65,23 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 4,
-  "seconds": 3.4
+  "seconds": 3.6
  },
- "flatbed-truck-z+6": {
-  "parts": 60,
+ "flatbed-truck-z+3": {
+  "parts": 62,
   "errors": [],
   "notes": [],
   "geometry_errors": 0,
   "components": 4,
   "seconds": 2.1
  },
- "flatbed-truck-z+12-red": {
-  "parts": 61,
+ "flatbed-truck-z+6-red": {
+  "parts": 62,
   "errors": [],
   "notes": [],
   "geometry_errors": 0,
   "components": 4,
-  "seconds": 2.7
+  "seconds": 2.2
  },
  "flatbed-truck-no-trailer": {
   "parts": 37,
@@ -89,7 +89,7 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 1,
-  "seconds": 1.7
+  "seconds": 1.6
  },
  "passenger-car-source": {
   "parts": 389,
@@ -97,7 +97,7 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 28,
-  "seconds": 14.8
+  "seconds": 15.0
  },
  "passenger-car-z+4": {
   "parts": 394,
@@ -105,7 +105,7 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 28,
-  "seconds": 14.4
+  "seconds": 15.1
  },
  "passenger-car-z+4-blue": {
   "parts": 394,
@@ -113,7 +113,7 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 28,
-  "seconds": 13.8
+  "seconds": 13.5
  },
  "willowbank-cottage-source": {
   "parts": 1163,
@@ -121,7 +121,7 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 205,
-  "seconds": 87.6
+  "seconds": 90.8
  },
  "willowbank-cottage-z+2": {
   "parts": 1197,
@@ -129,7 +129,7 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 205,
-  "seconds": 83.8
+  "seconds": 84.7
  },
  "willowbank-cottage-courses+3": {
   "parts": 1223,
@@ -137,7 +137,7 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 205,
-  "seconds": 79.2
+  "seconds": 80.9
  },
  "willowbank-cottage-recoloured-no-porch-chimney-field": {
   "parts": 914,
@@ -145,7 +145,55 @@
   "notes": [],
   "geometry_errors": 0,
   "components": 37,
-  "seconds": 53.8
+  "seconds": 54.5
+ },
+ "brick-house-source": {
+  "parts": 107,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 1,
+  "seconds": 4.8
+ },
+ "brick-house-taller-blue-roof": {
+  "parts": 134,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 1,
+  "seconds": 4.2
+ },
+ "brick-house-wider-embossed": {
+  "parts": 117,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 1,
+  "seconds": 4.0
+ },
+ "tractor-trailer-source": {
+  "parts": 57,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 13,
+  "seconds": 2.8
+ },
+ "tractor-trailer-z+12-red": {
+  "parts": 61,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 13,
+  "seconds": 2.2
+ },
+ "tractor-trailer-z-2": {
+  "parts": 57,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 13,
+  "seconds": 2.0
  },
  "edit-4956-house-roof-blue": {
   "parts": 618,
@@ -156,7 +204,7 @@
   "notes": [
    "recolour_role ['roof', 'blue']: 262 ops, 262 matched; "
   ],
-  "seconds": 5.7
+  "seconds": 5.4
  },
  "edit-4956-house-source": {
   "parts": 618,
@@ -165,7 +213,7 @@
    "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
   ],
   "notes": [],
-  "seconds": 2.0
+  "seconds": 2.1
  },
  "edit-4993-truck-body-lime": {
   "parts": 637,
@@ -177,7 +225,7 @@
   "notes": [
    "recolour_role ['body', 'lime']: 73 ops, 73 matched; "
   ],
-  "seconds": 8.2
+  "seconds": 8.8
  },
  "edit-4993-truck-source": {
   "parts": 637,
@@ -187,7 +235,7 @@
    "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
   ],
   "notes": [],
-  "seconds": 2.4
+  "seconds": 2.3
  },
  "edit-31045-aircraft-wings-red": {
   "parts": 141,
@@ -195,12 +243,42 @@
   "notes": [
    "recolour_role ['wing', 'red']: 21 ops, 30 matched; "
   ],
-  "seconds": 2.6
+  "seconds": 2.5
  },
  "edit-31045-aircraft-source": {
   "parts": 141,
   "errors": [],
   "notes": [],
+  "seconds": 1.6
+ },
+ "edit-544-house-source": {
+  "parts": 108,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.7
+ },
+ "edit-544-house-roof-green-door-red": {
+  "parts": 108,
+  "errors": [],
+  "notes": [
+   "recolour_role ['roof', 'dark green']: 32 ops, 32 matched; ",
+   "recolour_role ['door', 'red']: 1 ops, 1 matched; "
+  ],
+  "seconds": 1.5
+ },
+ "edit-31049-plane-source": {
+  "parts": 133,
+  "errors": [],
+  "notes": [],
+  "seconds": 2.8
+ },
+ "edit-31049-plane-wings-red-body-white": {
+  "parts": 133,
+  "errors": [],
+  "notes": [
+   "recolour_role ['wing', 'red']: 53 ops, 55 matched; ",
+   "recolour_role ['body', 'white']: 33 ops, 44 matched; "
+  ],
   "seconds": 1.6
  }
 }

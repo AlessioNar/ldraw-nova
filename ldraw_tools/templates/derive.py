@@ -105,40 +105,45 @@ def _same(a, b, tol=0.6):
 
 
 # A quarter turn about the vertical axis, as a local transform: a 2 x 3 brick turned this way fills the place of a 2 x 2
-# brick lengthened along its local z. Boxes below are expressed in the original part's local frame.
+# brick lengthened along its local z. Boxes below are expressed in the original part's local frame. Only plain flat
+# families may turn: a slope, a window or a curved brick has a front.
 QUARTER = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]])
+TURNABLE = {'Brick N x M', 'Plate N x M', 'Tile N x M'}
 
 
-def _turned(box):
-    """Box of a part placed with QUARTER, in the frame it is placed in (x' = z, z' = -x)."""
+def _turned(box, turn=1):
+    """Box of a part turned a quarter (turn +1: x' = z, z' = -x; turn -1: x' = -z, z' = x), in the frame it is placed in."""
     lo, hi = box
-    return np.array([[lo[2], lo[1], -hi[0]], [hi[2], hi[1], -lo[0]]])
+    if turn > 0:
+        return np.array([[lo[2], lo[1], -hi[0]], [hi[2], hi[1], -lo[0]]])
+    return np.array([[-hi[2], lo[1], lo[0]], [-lo[2], hi[1], hi[0]]])
 
 
 def candidate_for(fam, facts, leaf_code, axis_j, delta_studs):
     """Library part equal to leaf_code but `delta_studs` longer along local axis j (0 = x, 2 = z).
 
-    Returns (code, box in the leaf's local frame, turned) or None; `turned` means the new part is placed with a
-    quarter turn (QUARTER) because the library models it with its long side on the other axis.
+    Returns (code, box in the leaf's local frame, turn) or None; `turn` is 0, or +1/-1 when the new part is placed
+    with a quarter turn because the library models it with its long side on the other axis.
     """
     desc = facts.get(leaf_code + '.dat')['desc']
     base = _box(facts, leaf_code)
     other = [i for i in range(3) if i != axis_j]
+    turns = (0, 1, -1) if family_key(desc) in TURNABLE else (0,)
     options = []
     for code in fam.members(desc):
         if not CLEAN_CODE.match(code) and code != leaf_code:
             continue
-        for turned in (False, True):
-            box = _turned(_box(facts, code)) if turned else _box(facts, code)
+        for turn in turns:
+            box = _turned(_box(facts, code), turn) if turn else _box(facts, code)
             if not all(_same(box[0][i], base[0][i]) and _same(box[1][i], base[1][i]) for i in other):
                 continue
             if _same((box[1][axis_j] - box[0][axis_j]) - (base[1][axis_j] - base[0][axis_j]), delta_studs * STUD):
-                options.append((turned, code != leaf_code, len(code), code, box))
+                options.append((turn != 0, code != leaf_code, len(code), code, box, turn))
                 break
     if not options:
         return None
     options.sort(key=lambda o: o[:4])
-    return options[0][3], options[0][4], options[0][0]
+    return options[0][3], options[0][4], options[0][5]
 
 
 # ------------------------------------------------------------------------------------------------ flattening
@@ -200,7 +205,7 @@ def _extensions(leaf, axis, j, fam, facts, deltas):
     """{delta studs: entry} to make a part `delta` studs longer along world `axis`, its min edge fixed in world space
     whatever the part's local origin is. An entry is (code, origin move, turned) for the same part in another length
     (turned = 1: placed with a quarter turn), or, when the library has no such length (a 1 x 3 brick has no 1 x 5),
-    (code, 0, 0, filler code, filler origin offset, filler turned): the part stays and a filler of the same family
+    (code, 0, 0, filler code, filler origin offset, filler turn): the part stays and a filler of the same family
     and cross-section closes the gap after it (1 x 3 + 1 x 2). Fillers are only used to lengthen."""
     code = leaf['ref'].casefold().removesuffix('.dat')
     sign = 1 if leaf['matrix'][axis][j] > 0 else -1
@@ -210,20 +215,20 @@ def _extensions(leaf, axis, j, fam, facts, deltas):
     for d in deltas:
         found = fam.cached(code, j, d, lambda c=code, jj=j, dd=d: candidate_for(fam, facts, c, jj, dd))
         if found is not None:
-            new_code, box, turned = found
+            new_code, box, turn = found
             dpos = (base[0][j] - box[0][j]) if sign > 0 else (box[1][j] - base[1][j])
-            options[d] = (new_code, round(float(dpos), 4), int(turned))
+            options[d] = (new_code, round(float(dpos), 4), int(turn))
             continue
         if d <= 0:
             continue
         filler = fam.cached(code, j, d - length, lambda c=code, jj=j, dd=d - length: candidate_for(fam, facts, c, jj, dd))
         if filler is None:
             continue
-        f_code, f_box, f_turned = filler
+        f_code, f_box, f_turn = filler
         # the filler's min edge (world) goes where the part's max edge is
         edge = base[1][j] if sign > 0 else -base[0][j]
         offset = edge - (f_box[0][j] if sign > 0 else -f_box[1][j])
-        options[d] = (code, 0.0, 0, f_code, round(float(offset), 4), int(f_turned))
+        options[d] = (code, 0.0, 0, f_code, round(float(offset), 4), int(f_turn))
     return options
 
 
@@ -397,6 +402,8 @@ class _Seams:
                 shift.append(l['id'])
             else:
                 left += 1
+        if allowed and len(extend) < 3:      # one or two parts bridge the gap: a long bare bridge is not a design
+            allowed = {d for d in allowed if abs(d) <= 4}
         if not allowed or len(extend) < 2 or min(left, len(shift)) < max(2, 0.15 * len(self.solid)):
             return None          # a cut at the model's edge would only lengthen a few loose parts
         for l in (self.free if scenery_follows else ()):
@@ -620,7 +627,9 @@ def course_candidates(leaves):
         above = [l for l in mass if l['ub'] >= cut - tol and l not in slice_]
         main = sum(l['role'] in SLICE_ROLES for l in slice_)
         band = sum(l['role'] == 'trim' for l in slice_)          # a band between storeys is a course of the wall too
-        if len(slice_) < 4 or not above or main + band < 0.6 * len(slice_) or any(l['role'] in NO_SLICE_ROLES for l in slice_):
+        stepped = [l for l in slice_ if l['role'] == 'roof' and l['kind'] == 'brick']   # the steps of a brick gable
+        if len(slice_) < 4 or not above or main + band + len(stepped) < 0.6 * len(slice_) or \
+                any(l['role'] in NO_SLICE_ROLES and l not in stepped for l in slice_):
             continue
         out.append((len(slice_), cut, [l['id'] for l in slice_], [l['id'] for l in above], main / len(slice_)))
     if not out:
