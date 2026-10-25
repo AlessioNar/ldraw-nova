@@ -7,11 +7,11 @@ Every generator is a pure function of its parameters, so (id, params) is a valid
 """
 from __future__ import annotations
 
-from . import building, house, recipes, scenery, spaceship, transport, vehicles
+from . import building, furniture, house, recipes, scenery, spaceship, transport, vehicles
 from .base import Generator, digest as _digest, tag_roles  # noqa: F401
 from .colours import colour_code, colour_names  # noqa: F401
 
-REGISTRY = {g.id: g for g in [building.GENERATOR, house.GENERATOR, *vehicles.GENERATORS, spaceship.GENERATOR, *recipes.GENERATORS, scenery.GENERATOR, *transport.GENERATORS]}
+REGISTRY = {g.id: g for g in [building.GENERATOR, house.GENERATOR, *vehicles.GENERATORS, spaceship.GENERATOR, *recipes.GENERATORS, scenery.GENERATOR, *transport.GENERATORS, *furniture.GENERATORS]}
 
 
 def get(generator_id):
@@ -36,5 +36,5 @@ def find(family=None, kind=None):
 
 
 def digest():
-    """Compact registry text for the understanding prompt (stays under 1,500 tokens)."""
+    """Compact registry text for the understanding prompt (stays under 1,700 tokens)."""
     return _digest(REGISTRY.values())

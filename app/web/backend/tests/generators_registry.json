@@ -1,5 +1,5 @@
 {
- "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\ntree | garden,scene | tree,oak,oak tree,pine,pine tree,fir,bush,shrub,garden tree | trunk_courses:3-10 colours:foliage_colour,foliage_accent,trunk_colour,flower_colour,ground_colour\nbrick-house | house,building | brick house,red brick house,house on a baseplate | x_delta=0|1|2 courses_delta=0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\nflatbed-truck | truck | flatbed truck,flatbed,flat-bed truck | z_delta=0|1|2|3|4|6 swap_tile_1x2=keep|3069b|2412b include_part_trailer_p2? colours:colour_body,colour_chassis,colour_door,colour_glass,colour_roof,colour_trim,colour_tyre,colour_wheel | template\npassenger-car | train | passenger car,railway carriage,train carriage,coach,train | z_delta=0|1|4 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_padding_all? colours:colour_body,colour_chassis,colour_detail,colour_door,colour_glass,colour_roof,colour_wheel,colour_window | template\nsmall-house | house,building | house with garden,garden house | z_delta=0|2 courses_delta=-1|0|1 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_chair_p105? include_part_lamp_p144? include_part_plant_p27? include_part_bush_all? colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntractor-trailer | truck,tractor | tractor,tractor and trailer,farm tractor | z_delta=-2|0|1|2|3|4|6|8|10|12 swap_brick_1x2=keep|3004|2877|98283|3065 swap_tile_1x2=keep|3069b|2412b colours:colour_body,colour_chassis,colour_glass,colour_roof,colour_tyre,colour_wheel | template\nwillowbank-cottage | house,building | cottage,farmhouse,country cottage | z_delta=0|2 courses_delta=-1|0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 include_part_entry_porch? include_part_garden_field? include_part_bench_70_p0114? include_part_flower_box_5_p0115? include_part_ridge_chimney? include_part_fence_25_70_p0182? colours:colour_base,colour_detail,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntoy-train | train,vehicle | train,steam train,locomotive,steam engine,goods train,freight train,railway,tram | wagons:0-6 colours:loco_colour,wagon_colour,roof_colour,wheel_colour,track_colour\ncargo-ship | boat,ship | ship,cargo ship,container ship,steamer,steamship,tanker,liner,ferry | length:16-40e bays:0-7 colours:hull_colour,stripe_colour,deck_colour,cabin_colour,funnel_colour,cargo_colour,cargo_accent",
+ "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\ntree | garden,scene | tree,oak,oak tree,pine,pine tree,fir,bush,shrub,garden tree | trunk_courses:3-10 colours:foliage_colour,foliage_accent,trunk_colour,flower_colour,ground_colour\ntoy-train | train,vehicle | train,steam train,locomotive,steam engine,goods train,freight train,railway,tram | wagons:0-6 colours:loco_colour,wagon_colour,roof_colour,wheel_colour,track_colour\ncargo-ship | boat,ship | ship,cargo ship,container ship,steamer,steamship,tanker,liner,ferry | length:16-40e bays:0-7 colours:hull_colour,stripe_colour,deck_colour,cabin_colour,funnel_colour,cargo_colour,cargo_accent\nstool | furniture | stool,footstool | courses:1-4 colours:seat_colour,leg_colour\nchair | furniture | chair,armchair | back_courses:1-4 colours:seat_colour,frame_colour\ndining-table | furniture | table,desk | width:2-8 depth:2-6 leg_courses:1-3 colours:top_colour,leg_colour\nbed | furniture | bed,bunk,cot | width:3-6 length:6-10 colours:frame_colour,mattress_colour,pillow_colour\nsofa | furniture | sofa,couch,settee,loveseat,bench | width:4-10 depth:3-5 colours:frame_colour,cushion_colour\nbookshelf | furniture | bookshelf,bookcase,shelf,shelves,cabinet,cupboard | width:3-8 shelves:1-4 books? colours:frame_colour,book_colour",
  "colours": [
   "azure",
   "beige",
@@ -4205,6 +4205,424 @@
     "funnel_colour": "red",
     "cargo_colour": "orange",
     "cargo_accent": "bright green"
+   }
+  },
+  {
+   "id": "stool",
+   "title": "Stool",
+   "families": [
+    "furniture"
+   ],
+   "kinds": [
+    "stool",
+    "footstool"
+   ],
+   "description": "Round stool: a stack of round 2x2 bricks under a round plate seat.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "courses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4,
+      "default": 2,
+      "description": "Height in round-brick courses (1 is a footstool, 4 a bar stool)"
+     },
+     "seat_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Seat (colour name or code)",
+      "default": "red"
+     },
+     "leg_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Stem (colour name or code)",
+      "default": "dark bluish grey"
+     }
+    }
+   },
+   "roles": [
+    "leg",
+    "seat"
+   ],
+   "coverage": [
+    "height",
+    "colours"
+   ],
+   "quality": "Reads as a stool at minifigure scale",
+   "defaults": {
+    "courses": 2,
+    "seat_colour": "red",
+    "leg_colour": "dark bluish grey"
+   }
+  },
+  {
+   "id": "chair",
+   "title": "Chair",
+   "families": [
+    "furniture"
+   ],
+   "kinds": [
+    "chair",
+    "armchair"
+   ],
+   "description": "Chair on four round-brick legs with a 2x2 seat and a brick back.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "back_courses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4,
+      "default": 2,
+      "description": "Height of the back in brick courses"
+     },
+     "seat_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Seat (colour name or code)",
+      "default": "red"
+     },
+     "frame_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Legs and back (colour name or code)",
+      "default": "reddish brown"
+     }
+    }
+   },
+   "roles": [
+    "leg",
+    "seat",
+    "back"
+   ],
+   "coverage": [
+    "back height",
+    "colours"
+   ],
+   "quality": "Reads as a chair at minifigure scale",
+   "defaults": {
+    "back_courses": 2,
+    "seat_colour": "red",
+    "frame_colour": "reddish brown"
+   }
+  },
+  {
+   "id": "dining-table",
+   "title": "Table",
+   "families": [
+    "furniture"
+   ],
+   "kinds": [
+    "table",
+    "desk"
+   ],
+   "description": "Table or desk: a two-layer plate top on four round-brick legs.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "width": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 8,
+      "default": 6,
+      "description": "Top width in studs"
+     },
+     "depth": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 6,
+      "default": 4,
+      "description": "Top depth in studs"
+     },
+     "leg_courses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3,
+      "default": 2,
+      "description": "Leg height in brick courses (1 is a coffee table)"
+     },
+     "top_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Tabletop (colour name or code)",
+      "default": "reddish brown"
+     },
+     "leg_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Legs (colour name or code)",
+      "default": "dark brown"
+     }
+    }
+   },
+   "roles": [
+    "leg",
+    "top"
+   ],
+   "coverage": [
+    "width",
+    "depth",
+    "height",
+    "colours"
+   ],
+   "quality": "Reads as a table or desk at minifigure scale",
+   "defaults": {
+    "width": 6,
+    "depth": 4,
+    "leg_courses": 2,
+    "top_colour": "reddish brown",
+    "leg_colour": "dark brown"
+   }
+  },
+  {
+   "id": "bed",
+   "title": "Bed",
+   "families": [
+    "furniture"
+   ],
+   "kinds": [
+    "bed",
+    "bunk",
+    "cot"
+   ],
+   "description": "Bed on four posts: a plate base with a head and foot board, a mattress and a pillow.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "width": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 6,
+      "default": 4,
+      "description": "Width in studs (3-4 single, 5-6 double)"
+     },
+     "length": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 10,
+      "default": 8,
+      "description": "Length in studs"
+     },
+     "frame_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Frame and boards (colour name or code)",
+      "default": "reddish brown"
+     },
+     "mattress_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Mattress (colour name or code)",
+      "default": "light bluish grey"
+     },
+     "pillow_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Pillow (colour name or code)",
+      "default": "white"
+     }
+    }
+   },
+   "roles": [
+    "leg",
+    "frame",
+    "headboard",
+    "mattress",
+    "pillow"
+   ],
+   "coverage": [
+    "width",
+    "length",
+    "colours"
+   ],
+   "quality": "Reads as a bed at minifigure scale",
+   "defaults": {
+    "width": 4,
+    "length": 8,
+    "frame_colour": "reddish brown",
+    "mattress_colour": "light bluish grey",
+    "pillow_colour": "white"
+   }
+  },
+  {
+   "id": "sofa",
+   "title": "Sofa",
+   "families": [
+    "furniture"
+   ],
+   "kinds": [
+    "sofa",
+    "couch",
+    "settee",
+    "loveseat",
+    "bench"
+   ],
+   "description": "Sofa: a plate base with arms, a two-course back and a cushion seat.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "width": {
+      "type": "integer",
+      "minimum": 4,
+      "maximum": 10,
+      "default": 8,
+      "description": "Width in studs (4-5 a loveseat)"
+     },
+     "depth": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 5,
+      "default": 4,
+      "description": "Depth in studs, back included"
+     },
+     "frame_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Base, arms and back (colour name or code)",
+      "default": "dark bluish grey"
+     },
+     "cushion_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Seat cushion (colour name or code)",
+      "default": "blue"
+     }
+    }
+   },
+   "roles": [
+    "frame",
+    "back",
+    "cushion"
+   ],
+   "coverage": [
+    "width",
+    "depth",
+    "colours"
+   ],
+   "quality": "Reads as a sofa at minifigure scale",
+   "defaults": {
+    "width": 8,
+    "depth": 4,
+    "frame_colour": "dark bluish grey",
+    "cushion_colour": "blue"
+   }
+  },
+  {
+   "id": "bookshelf",
+   "title": "Bookshelf",
+   "families": [
+    "furniture"
+   ],
+   "kinds": [
+    "bookshelf",
+    "bookcase",
+    "shelf",
+    "shelves",
+    "cabinet",
+    "cupboard"
+   ],
+   "description": "Open shelving: boards between brick uprights, with an optional row of books on each shelf.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "width": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 8,
+      "default": 4,
+      "description": "Width in studs"
+     },
+     "shelves": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4,
+      "default": 3,
+      "description": "Compartments, one above the other"
+     },
+     "books": {
+      "type": "boolean",
+      "default": true,
+      "description": "A row of books on every shelf"
+     },
+     "frame_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Boards and uprights (colour name or code)",
+      "default": "reddish brown"
+     },
+     "book_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Books (colour name or code)",
+      "default": "dark red"
+     }
+    }
+   },
+   "roles": [
+    "board",
+    "upright",
+    "book"
+   ],
+   "coverage": [
+    "width",
+    "shelves",
+    "books",
+    "colours"
+   ],
+   "quality": "Reads as a bookshelf at minifigure scale",
+   "defaults": {
+    "width": 4,
+    "shelves": 3,
+    "books": true,
+    "frame_colour": "reddish brown",
+    "book_colour": "dark red"
    }
   }
  ]

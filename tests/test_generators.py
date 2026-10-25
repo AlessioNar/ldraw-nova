@@ -65,7 +65,8 @@ def corner_cases(generator, full=True):
 
 def test_registry_entries_are_uniform_and_valid():
     assert {'house', 'starfighter', 'grand-tourer', 'delivery-van', 'pickup', 'tipper-truck', 'touring-motorcycle',
-            'harbour-launch', 'courier-jet', 'arcade-bay', 'street-lantern', 'tree', 'toy-train', 'cargo-ship'} <= set(IDS)
+            'harbour-launch', 'courier-jet', 'arcade-bay', 'street-lantern', 'tree', 'toy-train', 'cargo-ship',
+            'stool', 'chair', 'dining-table', 'bed', 'sofa', 'bookshelf'} <= set(IDS)
     for generator in generators.REGISTRY.values():
         entry = generator.entry()
         assert entry['id'] and entry['title'] and entry['families'] and entry['kinds'] and entry['roles']
@@ -78,8 +79,8 @@ def test_registry_entries_are_uniform_and_valid():
 def test_digest_stays_under_the_token_budget():
     text = generators.digest()
     assert all(i in text for i in IDS)
-    assert len(text) / 3 < 1500  # a pessimistic 3 characters per token
-    assert len(text) < 4500
+    assert len(text) / 3 < 1700  # a pessimistic 3 characters per token (1,500 until the furniture designs, #199)
+    assert len(text) < 5100
 
 
 def test_bad_parameters_are_rejected():
@@ -195,7 +196,7 @@ def test_cli_generate_lists_digests_and_writes_a_plan(tmp_path, capsys):
     assert status == 0 and ids[0] == 'building' and 'house' in ids      # the grammar answers house requests; the old generator stays
     assert run('list', '--kind', 'pickup truck')[0][0]['id'] == 'pickup'
     digest, _ = run('digest')
-    assert digest['approx_tokens'] < 1500
+    assert digest['approx_tokens'] < 1700
     assert run('colours', 'dark grey', 'red')[0] == {'dark grey': 72, 'red': 4}
     target = tmp_path / 'h.json'
     report, status = run('plan', 'house', '--param', 'width=10', '--param', 'door_side=right', '--no-check', '--output', str(target))

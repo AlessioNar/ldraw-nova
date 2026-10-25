@@ -13,7 +13,7 @@
       "required": ["family"],
       "additionalProperties": false,
       "properties": {
-        "family": {"enum": ["car", "truck", "van", "motorcycle", "boat", "aircraft", "spaceship", "train", "house", "building", "tower", "garden", "technic", "mechanism", "scene", "other"]},
+        "family": {"enum": ["car", "truck", "van", "motorcycle", "boat", "aircraft", "spaceship", "train", "furniture", "house", "building", "tower", "garden", "technic", "mechanism", "scene", "other"]},
         "kind": {"type": "string", "maxLength": 60, "description": "free noun, e.g. 'cottage', 'tipper truck', 'starfighter'"},
         "style": {"type": "array", "items": {"type": "string", "maxLength": 30}, "maxItems": 6, "description": "e.g. ['classic','sporty']"}
       }

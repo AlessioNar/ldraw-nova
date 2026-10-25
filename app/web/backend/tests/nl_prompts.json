@@ -1,5 +1,5 @@
 {
- "note": "context: new = no build open; house/car = a generator build is open (params at defaults, as the workspace passes them); nongen = a build made by the AI/import/hand edits, so the workspace passes NO generator. ctx tree = a tree generator build is open. x01-x07: wave 3 additions. tr01-tr08, sh01-sh06: train and ship generators (NL wave 3, #43).",
+ "note": "context: new = no build open; house/car = a generator build is open (params at defaults, as the workspace passes them); nongen = a build made by the AI/import/hand edits, so the workspace passes NO generator. ctx tree = a tree generator build is open. x01-x07: wave 3 additions. tr01-tr08, sh01-sh06: train and ship generators (NL wave 3, #43). fu01-fu15: furniture generators (#199).",
  "prompts": [
   {
    "id": "n01",
@@ -739,6 +739,156 @@
    "expect": {
     "route": "edit",
     "generator": "cargo-ship"
+   }
+  },
+  {
+   "id": "fu01",
+   "cat": "new",
+   "text": "a wooden chair",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "chair"
+   }
+  },
+  {
+   "id": "fu02",
+   "cat": "new",
+   "text": "a dining table",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "dining-table"
+   }
+  },
+  {
+   "id": "fu03",
+   "cat": "new",
+   "text": "a double bed",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "bed"
+   }
+  },
+  {
+   "id": "fu04",
+   "cat": "new",
+   "text": "a blue sofa",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "sofa"
+   }
+  },
+  {
+   "id": "fu05",
+   "cat": "new",
+   "text": "a bookshelf with books",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "bookshelf"
+   }
+  },
+  {
+   "id": "fu06",
+   "cat": "new",
+   "text": "a bar stool",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "stool"
+   }
+  },
+  {
+   "id": "fu07",
+   "cat": "new",
+   "text": "a small desk",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "dining-table"
+   }
+  },
+  {
+   "id": "fu08",
+   "cat": "new",
+   "text": "a couch",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "sofa"
+   }
+  },
+  {
+   "id": "fu09",
+   "cat": "new",
+   "text": "a bedroom",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "fu10",
+   "cat": "new",
+   "text": "a kitchen table and four chairs",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "fu11",
+   "cat": "edit-gen",
+   "text": "make the seat green",
+   "ctx": "chair",
+   "expect": {
+    "route": "edit",
+    "generator": "chair"
+   }
+  },
+  {
+   "id": "fu12",
+   "cat": "edit-gen",
+   "text": "make it wider",
+   "ctx": "table",
+   "expect": {
+    "route": "edit",
+    "generator": "dining-table"
+   }
+  },
+  {
+   "id": "fu13",
+   "cat": "edit-gen",
+   "text": "make the mattress blue",
+   "ctx": "bed",
+   "expect": {
+    "route": "edit",
+    "generator": "bed"
+   }
+  },
+  {
+   "id": "fu14",
+   "cat": "edit-gen",
+   "text": "make it taller",
+   "ctx": "shelf",
+   "expect": {
+    "route": "edit",
+    "generator": "bookshelf"
+   }
+  },
+  {
+   "id": "fu15",
+   "cat": "edit-gen",
+   "text": "make the cushion yellow",
+   "ctx": "sofa",
+   "expect": {
+    "route": "edit",
+    "generator": "sofa"
    }
   }
  ]

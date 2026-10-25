@@ -106,7 +106,7 @@ INSTRUCTIONS = """\
 Turn a LEGO building request into JSON by calling emit_spec exactly once. Never answer in prose.
 
 intent: new_model for a build request (also "build me X instead"); edit when CURRENT_SPEC is given and the user changes that model; question for "why/what/is" asks; other for a greeting or unclear.
-subject.family, by the thing built: car (coupe, racer, police car); truck (pickup, tipper, lorry); van (bus, minibus); motorcycle; boat; aircraft (jet, plane, helicopter); spaceship (starship, freighter, Falcon); train (steam train, locomotive); house (cottage, cabin, shed); building (shop, station, other walls); tower (castle, lighthouse); garden; scene (several things); mechanism (gearbox, worm drive); technic (Technic vehicle or machine); other (crane, robot, unlisted). Never invent one. kind: a short noun, preferably a GENERATORS kind. Edit: copy CURRENT_SPEC's subject.
+subject.family, by the thing built: car (coupe, racer, police car); truck (pickup, tipper, lorry); van (bus, minibus); motorcycle; boat; aircraft (jet, plane, helicopter); spaceship (starship, freighter, Falcon); train (steam train, locomotive); furniture (chair, table, bed, sofa, bookshelf, stool); house (cottage, cabin, shed); building (shop, station, other walls); tower (castle, lighthouse); garden; scene (several things); mechanism (gearbox, worm drive); technic (Technic vehicle or machine); other (crane, robot, unlisted). Never invent one. kind: a short noun, preferably a GENERATORS kind. Edit: copy CURRENT_SPEC's subject.
 size.scale only when stated (tiny=micro, mini, small, medium, large, big/huge=large). size.studs only explicit numbers. "A x B" with no unit: studs width A, depth B, unit_ambiguous true and one ambiguities entry (field size, short question, options "AxB studs", "AxB bricks"); with a unit, unit_ambiguous false.
 colours: role -> name from COLOURS, only what the user states. Roles: body, roof, trim, wheels, glass, accent, plus others (hull, door). grey/gray/stone = Light Bluish Gray; clear windows = glass Trans-Clear; navy = Dark Blue. One colour with no part named is body. "white and blue" = body White, accent Blue; "red with white accents" = body Red, accent White. Use the roles of the matching GENERATORS line (spaceship: hull).
 features: name, count, where; required only when insisted. constraints: only stated (parts_mode off|prefer|only, max_parts, budget_eur, must_use, avoid); do not copy OPTIONS.
@@ -211,7 +211,9 @@ ROLES = {"body": "body", "roof": "roof", "wheels": "wheels", "wheel": "wheels", 
          "hull": "hull", "wings": "wing", "wing": "wing", "accent": "accent", "walls": "body", "wall": "body",
          "leaves": "foliage", "foliage": "foliage", "trunk": "trunk", "flowers": "flowers",
          "funnel": "funnel", "deck": "deck", "container": "cargo", "containers": "cargo", "loco": "loco", "locomotive": "loco",
-         "wagon": "wagon", "wagons": "wagon", "carriage": "wagon", "carriages": "wagon"}
+         "wagon": "wagon", "wagons": "wagon", "carriage": "wagon", "carriages": "wagon",
+         "seat": "seat", "legs": "leg", "leg": "leg", "stem": "leg", "tabletop": "top", "top": "top", "frame": "frame", "back": "back", "backrest": "back",
+         "cushion": "cushion", "cushions": "cushion", "mattress": "mattress", "pillow": "pillow", "books": "book", "book": "book"}
 _ROLE_RE = "|".join(sorted(ROLES, key=len, reverse=True))
 _RECOLOUR = re.compile(rf"^(?:(?:please|can you|could you|would you|just) )*(?:make|paint|colou?r|turn|change)\s+(?:the\s+)?({_ROLE_RE})\s+(?:to\s+|into\s+)?({_COLOUR_RE})(?:\s+please)?$")
 _UNDO = re.compile(r"^(?:please )?(?:undo|undo that|undo the last change|undo last change|go back)$")
@@ -438,6 +440,15 @@ def role_rules(text: str, previous_text: Optional[str] = None) -> Optional[dict]
     return {"intent": "edit", "subject": {"family": "other"}, "edits": edits, "confidence": 1.0} if edits else None
 
 
+_FURNITURE = r"chair|armchair|stool|table|desk|bed|sofa|couch|settee|loveseat|bench|bookshelf|bookcase|shelf|shelves|cabinet|cupboard"
+_PLACE = re.compile(rf"\b(?:for|on|in|at|under|beside|near|by|next to|inside|from)\s+(?:my|your|our|the|a|an)\s+(?:\w+\s+)?(?:{_FURNITURE})s?\b")
+
+
+def furniture_subject(low: str) -> str:
+    """The request without furniture named only as a place ("something nice for my desk"), which is not what is asked for."""
+    return _PLACE.sub(" ", low)
+
+
 _FAMILIES = [("spaceship", r"space ?ship|starship|spacecraft|starfighter|rocket|shuttle|freighter"),
              ("motorcycle", r"motor ?bike|motorcycle|bike|scooter"),
              ("aircraft", r"plane|jet|aeroplane|airplane|helicopter|aircraft"),
@@ -451,6 +462,7 @@ _FAMILIES = [("spaceship", r"space ?ship|starship|spacecraft|starfighter|rocket|
              ("house", r"house|cottage|cabin|villa|shed|home|hut"),
              ("building", r"shop|store|museum|station|church|school|building|gatehouse|bakery|hotel"),
              ("train", r"train|locomotive|steam engine|railway|tram"),
+             ("furniture", _FURNITURE),
              ("garden", r"garden|park|fountain|playground|tree|oak|pine|bush|shrub")]
 _SCALES = [("micro", r"tiny|micro"), ("mini", r"mini"), ("small", r"small|little"), ("large", r"large|big|huge|giant"), ("medium", r"medium")]
 _NUMBERS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6}
@@ -474,7 +486,9 @@ def heuristic_spec(text: str, current_spec: Optional[dict] = None) -> dict:
         if edits:
             return {**_edit_spec(current_spec, *edits), "confidence": 0.3}
         return {"intent": "other", "subject": json.loads(json.dumps(current_spec.get("subject") or {"family": "other"})), "confidence": 0.1}
-    family = next((f for f, pattern in _FAMILIES if re.search(rf"\b(?:{pattern})s?\b", low)), "other")
+    family = next((f for f, pattern in _FAMILIES if re.search(rf"\b(?:{pattern})s?\b", furniture_subject(low))), "other")
+    if family == "furniture" and len(set(re.findall(rf"\b({_FURNITURE})s?\b", furniture_subject(low)))) > 1:
+        family = "other"                                                  # "a sofa and a coffee table" is two builds: no single generator
     spec: dict = {"intent": "new_model", "subject": {"family": family}, "confidence": 0.3}
     plant = re.search(r"\b(tree|oak|pine|bush|shrub)s?\b", low)
     if plant and family == "garden":                                      # garden family alone has no generator: the kind picks the tree
