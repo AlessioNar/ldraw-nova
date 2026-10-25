@@ -32,7 +32,7 @@ def test_prototypes_ship_and_register():
         entry = t.entry()
         assert entry['kind'] == 'template' and entry['families'] and entry['kinds'] and entry['roles']
         jsonschema.Draft202012Validator.check_schema(entry['params'])
-        assert any(k.startswith('colour_') for k in entry['params'])      # colours by role: always
+        assert any(k.startswith('colour_') for k in entry['params']['properties'])      # colours by role: always
         assert t.resolve({}) == t.defaults()
         assert entry['source'].get('author') or entry['source'].get('name')
     assert templates.find('house', 'cottage')[0].id == 'willowbank-cottage'
@@ -64,8 +64,9 @@ def test_colour_by_role_changes_only_that_role():
         after = {p['id']: p for p in parts_of(t.generate({f'colour_{role}': value})['plan'])}
         assert set(base) == set(after)
         for i, p in base.items():
-            assert (after[i]['colour'] == (10 if value == 'bright green' else 1)) == (p['role'] == role) or p['role'] == role
-            if p['role'] != role:
+            if p['role'] == role:
+                assert after[i]['colour'] == (10 if value == 'bright green' else 1)
+            else:
                 assert after[i]['colour'] == p['colour']
 
 

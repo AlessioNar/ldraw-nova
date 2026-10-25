@@ -14,9 +14,9 @@ Owner's direction, restated: the generators are too few, hand-coded and rigid. A
 | Template runtime | `generate(params) -> plan`, pure and fast (no parts library), same surface as a generator | `ldraw_tools/templates/core.py`, `__init__.py` |
 | Registry and routing | Templates appear next to the generators as `template:<id>` for the fast path; the build worker builds them; a generator wins every tie | `app/web/backend/generator_bridge.py`, `fast_path.choose`, `ldraw_tools/pipeline.py` |
 
-Measured (details in section 3): on generator models the classifier gets **78.7 %** of placements right from geometry and part descriptions alone (**84.5 %** on the physical roles, leaving out generator colour slots such as "accent"), up from 75.1 % / 80.6 % on the interrupted branch; wings went from 65 % to 98 %, base from 71 % to 100 %, glass from 88 % to 100 %, chassis from 77 % to 83 %. Its confidence is calibrated: placements scored 0.8-1.0 were right 150/150 times. On 24 reference models it agrees with what their authors' submodel names imply on 44 % of parts (proxy labels, see 3.2) and picks the right object type for 22/24.
+Measured (details in section 3): on generator models the classifier gets **81.1 %** of placements right from geometry and part descriptions alone (**87.1 %** on the physical roles, leaving out generator colour slots such as "accent"), up from 75.1 % / 80.6 % on the interrupted branch; wings went from 65 % to 98 %, base from 71 % to 100 %, glass from 88 % to 100 %, chassis from 77 % to 83 %, trim from 14 % to 33 %. Its confidence is calibrated: placements scored 0.8-1.0 were right 150/150 times. On 24 reference models it agrees with what their authors' submodel names imply on 44 % of parts (proxy labels, see 3.2) and picks the right object type for 22/24.
 
-The four prototype templates (section 4) are derived without a line of model-specific code: a reference house (LEGO 5891), a reference truck (4915), the owner's Willowbank Cottage, and a reference railway car (10183). Each has colours per role, at least one verified length or height knob, optional sub-assemblies and part swaps, and `generate()` takes 2-40 ms.
+The four prototype templates (section 4) are derived without a line of model-specific code: a reference house (LEGO 5891), a reference truck (4915), the owner's Willowbank Cottage, and a reference railway car (10183). Each has colours per role, at least one verified length or height knob, optional sub-assemblies and part swaps, and `generate()` takes 2-30 ms.
 
 ## 2. How it works
 
@@ -63,25 +63,25 @@ Scripts: `eval_roles.py` (generator ground truth), `eval_reference.py` (referenc
 
 | Mode | Accuracy | Physical roles only |
 |---|---|---|
-| parts + geometry (submodel names ignored) | 75.1 % -> **78.7 %** | 80.6 % -> **84.5 %** |
-| + submodel names | 73.6 % -> 77.2 % | 79.0 % -> 82.9 % |
-| + names + a family hint (what the understanding step knows) | 74.2 % -> 77.6 % | 79.2 % -> 82.9 % |
+| parts + geometry (submodel names ignored) | 75.1 % -> **81.1 %** | 80.6 % -> **87.1 %** |
+| + submodel names | 73.6 % -> 79.6 % | 79.0 % -> 85.5 % |
+| + names + a family hint (what the understanding step knows) | 74.2 % -> 80.0 % | 79.2 % -> 85.5 % |
 
-"Physical roles only" leaves out placements whose generator role is a colour slot (`accent`, `metal`, `wood`): a stripe on a wing is a wing to the classifier and an accent to the generator. Submodel names make things slightly worse on generator models because their submodels are named after construction steps (`hall-roof` holds the gable walls too), which is why names only override geometry for specific roles and only in a domain where the role exists.
+"Physical roles only" leaves out placements whose generator role is a colour slot (`accent`, `metal`, `wood`): a stripe on a wing is a wing to the classifier and an accent to the generator. Submodel names make things slightly worse on generator models (all of it on the house: 324 -> 309 of 373) because the house generator's `house-roof` submodel also holds the gable walls, which is why names only override geometry for specific roles and only in a domain where the role exists.
 
 Per role (parts + geometry):
 
 | role | before | after | | role | before | after |
 |---|---|---|---|---|---|---|
 | base | 10/14 | **14/14** | | roof | 116/174 | 117/174 |
-| body | 254/270 | 257/270 | | trim | 17/123 | 17/123 |
+| body | 254/270 | 257/270 | | trim | 17/123 | **41/123** |
 | chassis | 53/69 | **57/69** | | tyre | 10/10 | 10/10 |
 | detail | 24/33 | 24/33 | | wall | 170/184 | 170/184 |
 | door | 6/6 | 6/6 | | wheel | 10/10 | 10/10 |
 | engine | 6/6 | 6/6 | | window | 13/13 | 13/13 |
 | glass | 15/17 | **17/17** | | wing | 43/66 | **65/66** |
 
-Main confusions left: `trim -> wall` 32 (porch columns and the trim ring on top of a wall are bricks in the wall band), `trim -> wing` 30 (generator accent plates on wings: a label artefact), `roof -> body` 30 (the delivery van's two-tone upper body is "roof" to the generator), `trim -> body` 24, `roof -> trim` 16. `trim` is the weak role (14 %): to the generators it is a colour slot as much as a place. Calibration: confidence 0.8-1.0 right 150/150, 0.6-0.8 right 81 %, 0.4-0.6 right 73 %; below 0.4 rarely used and usually wrong (0/16), which is what `tag_plan`'s low-confidence list is for.
+Main confusions left: `trim -> wing` 30 (generator accent plates on wings: a label artefact), `roof -> body` 30 (the delivery van's two-tone upper body is "roof" to the generator), `trim -> body` 24 (accent tiles on cars), `roof -> trim` 16, `wall -> trim` 14 (gable base plates). `trim` stays the weak role (33 %): to the generators it is a colour slot as much as a place. Calibration: confidence 0.8-1.0 right 150/150, 0.6-0.8 right 86 %, 0.4-0.6 right 74 %; below 0.4 rarely used and usually wrong (0/16), which is what `tag_plan`'s low-confidence list is for.
 
 ### 3.2 Reference models (24 models: 9 buildings, 9 road/rail vehicles, 6 aircraft and spacecraft)
 
@@ -95,7 +95,7 @@ The reference library has no per-part labels. Its authors do name submodels ("Ro
 | wheel | 7 % | 19 % |
 | roof | 56 % | 58 % |
 
-Main confusions: `roof -> wall` 213 (gable triangles built into "Roof" submodels: arguably right, the roof colour should not repaint the gable), `roof -> body` 110 (a house in a scene classified as a vehicle, see below), `door -> chassis/body` 115 (car doors built from plates), `wheel -> chassis` 53 (bogies), `window -> roof` 48 (dormer windows in "Roof" submodels). The two object-type misses are scenes where the house and the car overlap in plan (a car parked under a carport), so they are one object to the scene splitter.
+Main confusions: `roof -> wall` 202 (bricks in "Roof" submodels below the roof line: gable walls and supports, arguably walls), `roof -> body` 110 (a house in a scene classified as a vehicle, see below), `door -> chassis/body` 115 (car doors built from plates), `wheel -> chassis` 53 (bogies), `window -> roof` 48 (dormer windows in "Roof" submodels). The two object-type misses are scenes the splitter cannot separate: in 5771 the car stands inside the house's footprint, so the two overlap in plan; in 5766 the cabin and the boat are one submodel, and the boat's hull outvotes the cabin.
 
 The role-coloured renders in `renders/roles/` (section 5) are the better check for reference models.
 
@@ -104,7 +104,7 @@ The role-coloured renders in `renders/roles/` (section 5) are the better check f
 1. `~Moved to` stubs are followed to the real part, and `=` / `_` alias parts are classified like their base part (they were `other`).
 2. Scenes: the root's sub-assemblies are merged into objects when their footprints overlap; when objects of different types stand apart (a house and a truck), each is scored in its own frame and vocabulary.
 3. Aircraft: a plate is a wing when it reaches beyond the fuselage (the typical half-width of the bricks and slopes), not when it is "far from the centre line".
-4. Buildings: plates in the bottom layer are base; tiles on top of a flat roof are roof.
+4. Buildings: plates in the bottom layer are base; tiles on top of a flat roof are roof; bricks standing outside the house (garden walls, gate posts, tree trunks) and wall courses in a contrasting colour (a band between storeys, a plinth) are trim, as in the building grammar, so "make the walls white" leaves the garden and the bands alone.
 5. Vehicles and aircraft: transparent slopes and bricks are glass (only small transparent plates and tiles are lamps); bricks above the glazing are roof; train wheels are wheels (they were "details"); bogies, buffers and couplings are chassis; big wheels no longer turn the cab front into chassis (only flat parts, or parts starting below the axles, are chassis level with the wheels); door parts are doors on vehicles too.
 6. Boats count as vehicles (a hull part decides).
 
@@ -116,7 +116,7 @@ Derived by `derive_templates.py` from `templates.spec.json`; stored in `ldraw_to
 |---|---|---|---|---|---|---|
 | `small-house` | LEGO 5891 Small House, by Marc Giraudet (CCAL 2.0); house-like reference model | 390 | colours of 6 roles (base, door, roof, trim, wall, window); depth **+2 studs** (`z_delta`); wall courses **-1..+1** (`courses_delta`); 4 optional groups (chair, lamp, plant, both bushes); 3 part swaps (1x2 bricks: plain, grille, embossed, clear; 1x4 bricks: plain, log; 1x2 tiles: grooved, grille) | width (the two cuts found along x add a collision with a neighbouring part at +2 studs; every other cut crosses a door, a window or an inverted slope with no longer sibling); +2 courses (one more disconnected part than the source); the swing (its axle assembly rests on it, so it is not offered on its own) | 4.6 min | 9 ms |
 | `flatbed-truck` | LEGO 4915 Flat Bed, by Ken Drew (CCAL 2.0); vehicle | 59 | colours of 8 roles (body, chassis, door, glass, roof, trim, tyre, wheel); trailer length **+1..+4, +6, +8, +10, +12 studs** (`z_delta`; +5, +7, +9, +11 have no part set); the trailer (`include_part_trailer_p2`); 1x2 tile swap | width; shorter (no shorter siblings across the cut); the cab alone | 0.5 min | 2 ms |
-| `willowbank-cottage` | the owner's Willowbank Cottage (building atlas build in `app/data/generated/`) | 1,163 | COTTAGE-VARIES | COTTAGE-CANNOT | COTTAGE-TIME | COTTAGE-MS |
+| `willowbank-cottage` | the owner's Willowbank Cottage (building atlas build in `app/data/generated/`) | 1,163 | colours of 7 roles (base, detail, door, roof, trim, wall, window); depth **+2 studs** (`z_delta`); wall courses **-1..+6** (`courses_delta`, the extreme combination with +2 depth also verified); 6 optional groups (entry porch, ridge chimney, vegetable field, bench, two fence runs); 2 part swaps (1x2 and 1x4 bricks) | width (no cut along x avoids the windows, dormer and porch); depth +4 (failed the check); the two trees (at most six optional groups are offered, and the derivation stops there) | 27 min | 26 ms |
 | `passenger-car` | LEGO 10183 passenger car, by Bert Van Raemdonck (CCAL 2.0); one more from the reference library | 389 | colours of 8 roles (body, chassis, detail, door, glass, roof, wheel, window); length **+1 and +4 studs** (`z_delta`: a seam that steps around the window panels and closes the gaps with filler bricks); the four end-platform filler panels (`include_part_padding_all`); 3 part swaps | +2, +3 (no common set of longer parts at the chosen seam); width; a second seam (it shares parts with the first) | 1.6 min | 10 ms |
 
 What the knobs do, in the template's own terms (`ldraw_tools/templates/core.py`):
@@ -142,7 +142,7 @@ Rendering worked in this environment: LeoCAD 21.06 (`apt install leocad`) under 
 | **Willowbank Cottage** | **Aircraft 31045** | **House with truck 4954 (a scene)** |
 | ![](renders/roles/willowbank-cottage-v1-home.png) | ![](renders/roles/31045-1_Aircraft-home.png) | ![](renders/roles/4954-1_House-with-Truck-home.png) |
 
-What they show: roofs, walls, windows, doors and bases come out right on houses (the gable triangles count as wall, so "make the roof blue" leaves them alone; the 4956 chimney counts as roof); wheels, tyres, glass and bogies come out right on vehicles; the truck's grille and bumper are "chassis" because they sit level with very large wheels; on the passenger car the window strip between the panes is body. The same pictures for three generator models (roles removed first) are `generator-*-home.png`.
+What they show: roofs, walls, windows, doors and bases come out right on houses (on 4956 the gable ends inside the roof zone and the chimney count as roof, so "make the roof blue" repaints them too, see below); wheels, tyres, glass and bogies come out right on vehicles; the truck's grille and bumper are "chassis" because they sit level with very large wheels; on the passenger car the window strip between the panes is body. The same pictures for three generator models (roles removed first) are `generator-*-home.png`.
 
 **Template variants** (`renders/variants/`, before and after):
 
@@ -150,8 +150,10 @@ What they show: roofs, walls, windows, doors and bases come out right on houses 
 |---|---|---|
 | ![](renders/variants/flatbed-truck-source.png) flatbed truck | ![](renders/variants/flatbed-truck-z+6.png) `z_delta: 6` | ![](renders/variants/flatbed-truck-z+12-red.png) `z_delta: 12`, body, door, trim red |
 | ![](renders/variants/passenger-car-source.png) passenger car | ![](renders/variants/passenger-car-z+4.png) `z_delta: 4` (a stepped seam; the gaps are closed with filler bricks) | ![](renders/variants/passenger-car-z+4-blue.png) `z_delta: 4`, blue body, grille bricks |
-| ![](renders/variants/small-house-source.png) small house | SMALL-HOUSE-VARIANT-1 | SMALL-HOUSE-VARIANT-2 |
-| ![](renders/variants/willowbank-cottage-source.png) Willowbank Cottage | COTTAGE-VARIANT-1 | COTTAGE-VARIANT-2 |
+| ![](renders/variants/small-house-source.png) small house | ![](renders/variants/small-house-z+2.png) `z_delta: 2` (the arch, its pillar and the back garden wall move with the house) | ![](renders/variants/small-house-courses+1.png) `courses_delta: 1` |
+| ![](renders/variants/small-house-courses-1.png) `courses_delta: -1` | ![](renders/variants/small-house-red-roof-no-bushes.png) red roof, tan walls, no bushes, no lamp | |
+| ![](renders/variants/willowbank-cottage-source.png) Willowbank Cottage | ![](renders/variants/willowbank-cottage-z+2.png) `z_delta: 2` | ![](renders/variants/willowbank-cottage-courses+3.png) `courses_delta: 3` |
+| ![](renders/variants/willowbank-cottage-recoloured-no-porch-chimney-field.png) dark red roof, white walls, no porch, chimney or vegetable field | | |
 
 **Role edits on imported reference models** (no template, no generator: import, classify, `role_edits`, `editor.apply`):
 
@@ -209,7 +211,7 @@ How the two fit together: a grammar building has exact roles, so it is the ideal
 - **Knob combinations** are verified at the extremes, not exhaustively.
 - **Sizes are coarse.** One length knob per axis, and the cut position is the solver's choice, not the person's ("make the trailer longer" and "make the cab longer" are the same knob today).
 - **Validation is the toolkit's.** "Connected" means the toolkit's optimistic contact graph, and the reference sources themselves carry errors (5891 has 26 validation errors as shipped); a template promises no regression, not perfection.
-- **Classifier**: `trim` is weak (14 % against generator labels), gable walls in roof submodels are walls, car doors made of plates are body, scenes where objects overlap are one object.
+- **Classifier**: `trim` is weak (33 % against generator labels), gable walls in roof submodels are walls, car doors made of plates are body, scenes where objects overlap are one object.
 - **Derivation is slow on big models** (the cottage, 1,163 parts, takes tens of minutes): every check is a full build plus geometry analysis.
 - **Licensing**: reference models are CCAL 2.0 redistributable; the template keeps author and licence, but shipping derived templates from many sets is an owner decision (question 3).
 
@@ -219,7 +221,7 @@ How the two fit together: a grammar building has exact roles, so it is the ideal
 1. Role edits in the workspace on any build (REVIEW wave 1, item 1): `draft/describe` resolves `set_colour`/`remove_feature` edits with `role_edits` when the build has no live generator source or the draft diverged; the canvas selection becomes `selection`; low-confidence roles are shown as chips the person can correct (2-3 d).
 2. Templates in routing: the bridge already lists them; teach `params_from_spec` the size words for `x_delta`/`z_delta`/`courses_delta`/`*_repeat` and the feature words for `include_*`; show "starting from: Flatbed truck (4915), by <author>" in the result (1-2 d).
 3. Derivation as a background job in the build worker with progress, cached by (model hash, toolkit version); per-person template folder; "Make this a template" card (2-3 d).
-4. Run the backend test suite in the container (it needs the app's dependencies, not available here) and add the two routing cases (cottage -> generator, flatbed truck -> template).
+4. Run the backend suite once in the container. Here it ran in a throwaway environment with the app's locked dependencies: the same 18 failures as on master (tests that need the container: LeoCAD with a display, mpd2glb, the baked library and its indexes), and the new routing test (`test_a_template_wins_only_a_kind_no_generator_owns`) passes.
 
 **Wave 2: more models, better knobs (about 6-10 days).**
 1. Derive templates for the best 50-100 reference models (by part count, `source_checks_passed`, subject demand); spot-check renders; prune knobs that look wrong.

@@ -420,8 +420,35 @@ def _score_group(leaves, transparent, domain, sections, root, use_names):
     body_half = float(np.percentile(bulky, 40)) if bulky else None    # most bricks and slopes sit in the fuselage
     ctx = dict(roof_start=roof_start, wheel_top=wheel_top, wheel_mid=wheel_mid, glass_top=glass_top, body_half=body_half)
 
-    return [_score(leaf, transparent[i], domain, rel(leaf), share(leaf), lateral(leaf), ctx, edge(leaf), sections, root,
-                   use_names) for i, leaf in enumerate(leaves)]
+    out = [_score(leaf, transparent[i], domain, rel(leaf), share(leaf), lateral(leaf), ctx, edge(leaf), sections, root,
+                  use_names) for i, leaf in enumerate(leaves)]
+    return _building_trim(leaves, out, transparent) if domain == 'building' else out
+
+
+def _building_trim(leaves, found, transparent):
+    """Two building rules that need the whole picture: bricks standing outside the house (a garden wall, a gate post,
+    a tree trunk) are trim, not wall; and a course of wall bricks in a contrasting colour (a band between storeys,
+    a plinth) is trim, as in the building grammar. "Make the walls white" then leaves both alone."""
+    roofs = [lf['bounds'] for lf, r in zip(leaves, found) if r.role == 'roof']
+    if roofs:
+        x0, z0 = min(b[0][0] for b in roofs), min(b[0][2] for b in roofs)
+        x1, z1 = max(b[1][0] for b in roofs), max(b[1][2] for b in roofs)
+        for i, (lf, r) in enumerate(zip(leaves, found)):
+            lo, hi = lf['bounds']
+            if r.role == 'wall' and (min(hi[0], x1) - max(lo[0], x0) <= 1 or min(hi[2], z1) - max(lo[2], z0) <= 1):
+                found[i] = Role('trim', .55, 'outside the building (garden wall, post)')
+    walls = [i for i, r in enumerate(found) if r.role == 'wall' and not transparent[i]]
+    if len(walls) >= 10:
+        main = collections.Counter(leaves[i]['colour'] for i in walls).most_common(1)[0][0]
+        courses = collections.defaultdict(list)
+        for i in walls:
+            if leaves[i]['colour'] != main:
+                courses[(leaves[i]['colour'], round(-leaves[i]['bounds'][1][1] / 4))].append(i)
+        for members in courses.values():
+            if len(members) >= 3:
+                for i in members:
+                    found[i] = Role('trim', .5, 'course in a contrasting colour (band, plinth)')
+    return found
 
 
 def _entry_key(plan, key):

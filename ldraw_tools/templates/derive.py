@@ -619,13 +619,15 @@ def course_candidates(leaves):
         slice_ = [l for l in mass if l['ub'] >= cut - COURSE - tol and l['ut'] <= cut + tol and l['ub'] <= cut - COURSE + tol]
         above = [l for l in mass if l['ub'] >= cut - tol and l not in slice_]
         main = sum(l['role'] in SLICE_ROLES for l in slice_)
-        if len(slice_) < 4 or not above or main < 0.6 * len(slice_) or any(l['role'] in NO_SLICE_ROLES for l in slice_):
+        band = sum(l['role'] == 'trim' for l in slice_)          # a band between storeys is a course of the wall too
+        if len(slice_) < 4 or not above or main + band < 0.6 * len(slice_) or any(l['role'] in NO_SLICE_ROLES for l in slice_):
             continue
-        out.append((len(slice_), cut, [l['id'] for l in slice_], [l['id'] for l in above]))
+        out.append((len(slice_), cut, [l['id'] for l in slice_], [l['id'] for l in above], main / len(slice_)))
     if not out:
         return []
     mid = np.median([l['ub'] for l in mass])
-    out.sort(key=lambda r: (abs(r[1] - mid), -r[0]))
+    out.sort(key=lambda r: (r[4] < 0.6, abs(r[1] - mid), -r[0]))      # plain wall courses first, then bands
+    out = [r[:4] for r in out]
     return out[:MAX_CANDIDATES]
 
 

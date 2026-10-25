@@ -27,7 +27,7 @@
  "top_confusions": [
   [
    "roof -> wall",
-   213
+   202
   ],
   [
    "roof -> body",
@@ -58,6 +58,10 @@
    41
   ],
   [
+   "roof -> trim",
+   38
+  ],
+  [
    "engine -> body",
    36
   ],
@@ -66,12 +70,8 @@
    33
   ],
   [
-   "roof -> trim",
-   27
-  ],
-  [
-   "engine -> chassis",
-   27
+   "door -> trim",
+   30
   ]
  ],
  "per_model": {
@@ -79,7 +79,7 @@
    "scored": 78,
    "agree": "41/78 = 0.53",
    "domain": "building",
-   "seconds": 8.7
+   "seconds": 9.7
   },
   "31038-1_Automn.mpd": {
    "scored": 17,
@@ -109,7 +109,7 @@
    "scored": 35,
    "agree": "18/35 = 0.51",
    "domain": "building",
-   "seconds": 2.1
+   "seconds": 2.3
   },
   "5766-1.mpd": {
    "scored": 92,
@@ -121,7 +121,7 @@
    "scored": 234,
    "agree": "84/234 = 0.36",
    "domain": "vehicle",
-   "seconds": 3.6
+   "seconds": 3.9
   },
   "5891-1_Holiday-House.mpd": {
    "scored": 36,
@@ -133,13 +133,13 @@
    "scored": 28,
    "agree": "9/28 = 0.32",
    "domain": "vehicle",
-   "seconds": 1.6
+   "seconds": 1.7
   },
   "10183-1_Tram-2.mpd": {
    "scored": 64,
    "agree": "29/64 = 0.45",
    "domain": "vehicle",
-   "seconds": 2.0
+   "seconds": 1.8
   },
   "10183-1_Passenger-car.mpd": {
    "scored": 116,
@@ -157,67 +157,67 @@
    "scored": 102,
    "agree": "41/102 = 0.40",
    "domain": "vehicle",
-   "seconds": 5.1
+   "seconds": 4.7
   },
   "5867-1.mpd": {
    "scored": 35,
    "agree": "0/35 = 0.00",
    "domain": "vehicle",
-   "seconds": 1.2
+   "seconds": 1.4
   },
   "5767-1.mpd": {
    "scored": 60,
    "agree": "0/60 = 0.00",
    "domain": "vehicle",
-   "seconds": 2.1
+   "seconds": 2.2
   },
   "60018-1.mpd": {
    "scored": 15,
    "agree": "6/15 = 0.40",
    "domain": "vehicle",
-   "seconds": 1.1
+   "seconds": 1.3
   },
   "744-1_Truck.mpd": {
    "scored": 11,
    "agree": "1/11 = 0.09",
    "domain": "vehicle",
-   "seconds": 3.9
+   "seconds": 4.2
   },
   "31045-1_Aircraft.mpd": {
    "scored": 29,
    "agree": "18/29 = 0.62",
    "domain": "aircraft",
-   "seconds": 0.5
+   "seconds": 0.4
   },
   "31049-1_Single-Engine-Airplane.mpd": {
    "scored": 44,
    "agree": "28/44 = 0.64",
    "domain": "aircraft",
-   "seconds": 1.1
+   "seconds": 1.3
   },
   "31092-1.mpd": {
    "scored": 30,
    "agree": "8/30 = 0.27",
    "domain": "aircraft",
-   "seconds": 1.0
+   "seconds": 1.1
   },
   "6745-1_Harrier-Jet.mpd": {
    "scored": 47,
    "agree": "28/47 = 0.60",
    "domain": "aircraft",
-   "seconds": 0.8
+   "seconds": 0.6
   },
   "6891-1.mpd": {
    "scored": 21,
    "agree": "8/21 = 0.38",
    "domain": "aircraft",
-   "seconds": 2.2
+   "seconds": 1.8
   },
   "5892-1.mpd": {
    "scored": 110,
    "agree": "58/110 = 0.53",
    "domain": "aircraft",
-   "seconds": 3.5
+   "seconds": 3.2
   }
  }
 }
