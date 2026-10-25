@@ -17,8 +17,6 @@ import json
 import logging
 import re
 import shutil
-import tempfile
-import threading
 from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
