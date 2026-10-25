@@ -36,6 +36,8 @@ Scope: the Chat tab of the build workspace (`ChatPanel.tsx`, `MessageList.tsx`, 
 
 **J7 Undo and roll back.** Session changes list: per-change Undo/Redo and "Go back to version N", replacing last-message-only Undo.
 
+**J8 Choose and release parts.** The person decides which parts the build may use: all of My Parts, loose parts only, specific sets or sources, or no limit. The picker sits in the composer or the Needs you tray and feeds the owned-parts and prefer modes and the reservations. A built or reserved set can be disassembled into the pool for this build, from the chat ("use the parts from my fire station") or a chip, which updates the set's state and reservations. After a build the result says where the parts came from (loose parts, which sets, extra to buy).
+
 ## Out of scope
 
 Phone layout, a canvas banner for previews, and the older standalone agent chat page.
