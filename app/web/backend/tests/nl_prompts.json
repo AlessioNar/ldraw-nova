@@ -1,0 +1,605 @@
+{
+ "note": "context: new = no build open; house/car = a generator build is open (params at defaults, as the workspace passes them); nongen = a build made by the AI/import/hand edits, so the workspace passes NO generator. ctx tree = a tree generator build is open. x01-x07: wave 3 additions.",
+ "prompts": [
+  {
+   "id": "n01",
+   "cat": "new",
+   "text": "a small red car",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "grand-tourer"
+   }
+  },
+  {
+   "id": "n02",
+   "cat": "new",
+   "text": "build me a blue pickup truck",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "pickup"
+   }
+  },
+  {
+   "id": "n03",
+   "cat": "new",
+   "text": "a cosy little blue house",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "building"
+   }
+  },
+  {
+   "id": "n04",
+   "cat": "new",
+   "text": "a 10 x 8 house with a chimney and a porch",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "building"
+   }
+  },
+  {
+   "id": "n05",
+   "cat": "new",
+   "text": "a big yellow school bus",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "delivery-van"
+   }
+  },
+  {
+   "id": "n06",
+   "cat": "new",
+   "text": "a white and blue starship",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "starfighter"
+   }
+  },
+  {
+   "id": "n07",
+   "cat": "new",
+   "text": "a motorbike",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "touring-motorcycle"
+   }
+  },
+  {
+   "id": "n08",
+   "cat": "new",
+   "text": "a green sailing boat",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "harbour-launch"
+   }
+  },
+  {
+   "id": "n09",
+   "cat": "coverage",
+   "text": "a helicopter",
+   "ctx": "new",
+   "expect": {
+    "route": "needs_ai",
+    "generator": null
+   }
+  },
+  {
+   "id": "n10",
+   "cat": "coverage",
+   "text": "a tall tower with battlements",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "building"
+   }
+  },
+  {
+   "id": "n11",
+   "cat": "coverage",
+   "text": "a medieval castle",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "building"
+   }
+  },
+  {
+   "id": "n12",
+   "cat": "coverage",
+   "text": "a steam train with three carriages",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "n13",
+   "cat": "coverage",
+   "text": "a cargo ship",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "harbour-launch"
+   }
+  },
+  {
+   "id": "n14",
+   "cat": "coverage",
+   "text": "an oak tree",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "tree"
+   }
+  },
+  {
+   "id": "n15",
+   "cat": "coverage",
+   "text": "a sofa and a coffee table",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "n16",
+   "cat": "coverage",
+   "text": "a Ferrari F40",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "n17",
+   "cat": "coverage",
+   "text": "a friendly robot",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "n18",
+   "cat": "coverage",
+   "text": "a lighthouse",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "building"
+   }
+  },
+  {
+   "id": "n19",
+   "cat": "coverage",
+   "text": "a red fire truck",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "tipper-truck"
+   }
+  },
+  {
+   "id": "n20",
+   "cat": "coverage",
+   "text": "a windmill",
+   "ctx": "new",
+   "expect": {
+    "route": "needs_ai",
+    "generator": null
+   }
+  },
+  {
+   "id": "v01",
+   "cat": "vague",
+   "text": "something nice for my desk",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "v02",
+   "cat": "vague",
+   "text": "build something",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "v03",
+   "cat": "vague",
+   "text": "surprise me",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "v04",
+   "cat": "vague",
+   "text": "a cool thing for my son who likes dinosaurs",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "e01",
+   "cat": "edit-gen",
+   "text": "make the roof blue",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e02",
+   "cat": "edit-gen",
+   "text": "make it bigger",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e03",
+   "cat": "edit-gen",
+   "text": "add a chimney",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e04",
+   "cat": "edit-gen",
+   "text": "add a porch and a dormer",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e05",
+   "cat": "edit-gen",
+   "text": "two more windows",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e06",
+   "cat": "edit-gen",
+   "text": "make the walls white and the roof green",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e07",
+   "cat": "edit-gen",
+   "text": "paint the door yellow",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e08",
+   "cat": "edit-gen",
+   "text": "make it taller",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "e09",
+   "cat": "edit-gen",
+   "text": "make it a bit more rustic",
+   "ctx": "house",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "e10",
+   "cat": "edit-gen",
+   "text": "make it longer",
+   "ctx": "car",
+   "expect": {
+    "route": "edit",
+    "generator": "grand-tourer"
+   }
+  },
+  {
+   "id": "e11",
+   "cat": "edit-gen",
+   "text": "make the wheels red",
+   "ctx": "car",
+   "expect": {
+    "route": "edit",
+    "generator": "grand-tourer"
+   }
+  },
+  {
+   "id": "e12",
+   "cat": "edit-gen",
+   "text": "make it a truck instead",
+   "ctx": "car",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "g01",
+   "cat": "edit-nongen",
+   "text": "make the roof blue",
+   "ctx": "nongen",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "g02",
+   "cat": "edit-nongen",
+   "text": "remove the chimney",
+   "ctx": "nongen",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "g03",
+   "cat": "edit-nongen",
+   "text": "make it bigger",
+   "ctx": "nongen",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "g04",
+   "cat": "edit-nongen",
+   "text": "make the wheels red",
+   "ctx": "nongen",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "m01",
+   "cat": "multi",
+   "text": "a red car and make it longer",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "grand-tourer"
+   }
+  },
+  {
+   "id": "m02",
+   "cat": "multi",
+   "text": "make the roof blue and add a chimney",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "m03",
+   "cat": "multi",
+   "text": "a house with a garden and a tree next to it",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "building"
+   }
+  },
+  {
+   "id": "t01",
+   "cat": "typo",
+   "text": "a smal red cr",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "t02",
+   "cat": "typo",
+   "text": "mak the roof bleu",
+   "ctx": "house",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "t03",
+   "cat": "typo",
+   "text": "a hous with a chimny",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "i01",
+   "cat": "italian",
+   "text": "una casa rossa con il tetto blu",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "i02",
+   "cat": "italian",
+   "text": "fai il tetto blu",
+   "ctx": "house",
+   "expect": {
+    "route": "edit",
+    "generator": "house"
+   }
+  },
+  {
+   "id": "i03",
+   "cat": "italian",
+   "text": "una macchina gialla",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "f01",
+   "cat": "followup",
+   "text": "a bit less",
+   "ctx": "house",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "f02",
+   "cat": "followup",
+   "text": "the other way",
+   "ctx": "house",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "f03",
+   "cat": "followup",
+   "text": "how many parts is this?",
+   "ctx": "house",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "f04",
+   "cat": "followup",
+   "text": "hello",
+   "ctx": "new",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "f05",
+   "cat": "followup",
+   "text": "now do the same in red",
+   "ctx": "house",
+   "expect": {
+    "route": "clarify",
+    "generator": null
+   }
+  },
+  {
+   "id": "x01",
+   "cat": "new",
+   "text": "a tall oak tree",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "tree"
+   }
+  },
+  {
+   "id": "x02",
+   "cat": "new",
+   "text": "a small bush",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "tree"
+   }
+  },
+  {
+   "id": "x03",
+   "cat": "new",
+   "text": "a tree with pink flowers",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "tree"
+   }
+  },
+  {
+   "id": "x05",
+   "cat": "edit-gen",
+   "text": "make the leaves yellow",
+   "ctx": "tree",
+   "expect": {
+    "route": "edit",
+    "generator": "tree"
+   }
+  },
+  {
+   "id": "x06",
+   "cat": "edit-gen",
+   "text": "make it taller",
+   "ctx": "tree",
+   "expect": {
+    "route": "edit",
+    "generator": "tree"
+   }
+  },
+  {
+   "id": "x07",
+   "cat": "new",
+   "text": "a pine tree",
+   "ctx": "new",
+   "expect": {
+    "route": "generator",
+    "generator": "tree"
+   }
+  }
+ ]
+}
