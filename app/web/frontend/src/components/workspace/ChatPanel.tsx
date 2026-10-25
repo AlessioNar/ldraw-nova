@@ -18,6 +18,12 @@ function ProposalCard({ p, ws }: { p: Proposal; ws: Workspace }) {
     <div className={`ws-ai-card${previewing ? " active" : ""}`}>
       <div className="label">Needs you · review before it joins the draft</div>
       <div className="mono ws-diffline"><span className="ok-text">+ {added} part{added === 1 ? "" : "s"}</span> <span className="muted">· {removed} removed · {moved} moved</span></div>
+      {!!p.summary.parts?.length && (
+        <details className="ws-diff-parts">
+          <summary>What changes, by part</summary>
+          <ul className="mono">{p.summary.parts.map((r) => <li key={r.part}>{r.part}{r.added ? <span className="ok-text"> +{r.added}</span> : null}{r.removed ? <span className="warn-text"> −{r.removed}</span> : null}</li>)}</ul>
+        </details>
+      )}
       <div className="ws-ai-actions">
         <button className="primary" disabled={busy} onClick={() => ws.keepProposal(p)}>Keep in draft</button>
         <button disabled={busy} aria-pressed={previewing} onClick={() => (previewing ? ws.backToDraft() : ws.previewProposal(p))}>{previewing ? "Stop preview" : "Preview"}</button>

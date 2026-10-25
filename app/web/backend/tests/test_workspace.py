@@ -336,7 +336,8 @@ def test_a_chat_publish_becomes_a_proposal_accepted_as_one_undo_step(client):
     listed = client.get(f"/api/builds/{slug}/proposals").json()["proposals"]
     assert len(listed) == 1
     proposal = listed[0]
-    assert proposal["summary"] == {"added": 1, "removed": 0, "moved": 0} and proposal["chat_id"] == chat["id"]
+    assert {k: proposal["summary"][k] for k in ("added", "removed", "moved")} == {"added": 1, "removed": 0, "moved": 0} and proposal["chat_id"] == chat["id"]
+    assert sum(row["added"] for row in proposal["summary"]["parts"]) == 1
     assert set(proposal) >= {"id", "created_at", "summary", "cost_eur", "chat_id"}
     assert (get_store().builds_dir / slug / "proposals" / f"{proposal['id']}.mpd").is_file()
     ws = client.get(f"/api/builds/{slug}/workspace").json()

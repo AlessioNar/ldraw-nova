@@ -314,3 +314,4 @@
 
 /* What the canvas selection is, above the composer. */
 .ws-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-xs); color: var(--muted); }
+.ws-diff-parts { font-size: var(--fs-xs); } .ws-diff-parts ul { margin: 2px 0 0; padding-left: 16px; }

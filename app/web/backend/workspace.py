@@ -190,7 +190,16 @@ def diff_summary(before: str, after: str) -> dict:
         for (name, ref, colour, _), qty in counter.items():
             pairs.setdefault((name, ref, colour), [0, 0])[side] += qty
     moved = sum(min(a, b) for a, b in pairs.values())
-    return {"added": sum(fresh.values()) - moved, "removed": sum(gone.values()) - moved, "moved": moved}
+    # what changed, by part: moved placements cancel out, so only real additions and removals are listed
+    by_part: dict = {}
+    for (name, ref, colour), (out, into) in pairs.items():
+        net = into - out
+        if net:
+            row = by_part.setdefault(ref.removesuffix(".dat"), [0, 0])
+            row[0 if net > 0 else 1] += abs(net)
+    parts = sorted(({"part": part, "added": a, "removed": r} for part, (a, r) in by_part.items()),
+                   key=lambda row: (-(row["added"] + row["removed"]), row["part"]))[:12]
+    return {"added": sum(fresh.values()) - moved, "removed": sum(gone.values()) - moved, "moved": moved, "parts": parts}
 
 
 # --- the parts check -----------------------------------------------------------------------------------------
