@@ -55,9 +55,10 @@ def test_importers_detect_the_format_of_an_upload():
     assert importers.detect("Part,Color,Quantity\n3001,4,1\n") == "rebrickable-csv"
     assert importers.detect("inventory_id,part_num,color_id,quantity,is_spare\n1,3001,4,1,f\n") == "rebrickable-csv"
     assert importers.detect(PILE) == "brickit-pileometer"
-    assert importers.detect("Item No,Color,Qty,Condition\n3001,Red,1,N\n") is None
+    assert importers.detect("Item No,Color,Qty,Condition\n3001,Red,1,N\n") == "bricklink-csv"
+    assert importers.detect("Brick,Shade,Count\n3001,Red,1\n") is None
     assert importers.detect("") is None and importers.detect(b"\xef\xbb\xbfPart;Color;Quantity\n3001;4;1\n") == "rebrickable-csv"
-    assert set(importers.FORMATS) == {"rebrickable-csv", "brickit-pileometer"}
+    assert set(importers.FORMATS) == {"rebrickable-csv", "brickit-pileometer", "bricklink-xml", "brickstore-bsx", "bricklink-csv", "generic-csv"}
 
 
 def test_parse_tags_the_origin_and_keeps_the_original_errors():

@@ -145,6 +145,31 @@ def reservations_signature() -> str:
     return f"{stat.st_mtime_ns}:{stat.st_size}"
 
 
+# --- remembered column mappings of generic CSV imports ------------------------------
+
+MAPPINGS_FILE = ".collection-import-mappings.json"      # dot-prefixed: never an inventory id
+
+
+def read_import_mappings() -> dict[str, dict[str, str]]:
+    """{header signature: {part, colour, qty, system}} the owner confirmed before."""
+    try:
+        data = json.loads((settings.INVENTORIES_DIR / MAPPINGS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    found = data.get("mappings") if isinstance(data, dict) else None
+    if not isinstance(found, dict):
+        return {}
+    return {k: v for k, v in found.items() if isinstance(k, str) and isinstance(v, dict) and all(isinstance(x, str) for x in v.values())}
+
+
+def write_import_mapping(signature: str, mapping: dict[str, str]) -> None:
+    mappings = read_import_mappings()
+    mappings[signature] = mapping
+    for old in list(mappings)[:-50]:                    # a spreadsheet habit is a handful of layouts, not hundreds
+        del mappings[old]
+    atomic_write(settings.INVENTORIES_DIR / MAPPINGS_FILE, _dump({"schema": 1, "mappings": mappings}))
+
+
 # --- CLI bridge: how the sandboxed toolkit finds the store ---------------------------
 
 def cli_store_args() -> list[str]:

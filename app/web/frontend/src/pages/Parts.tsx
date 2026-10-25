@@ -4,6 +4,7 @@ import { collectionApi, inventoryApi, timeAgo, type Inventory } from "../api";
 import AddPartsMenu, { type AddWay } from "../components/parts/AddPartsMenu";
 import AddSetDialog from "../components/parts/AddSetDialog";
 import BuildablePanel from "../components/parts/BuildablePanel";
+import ExportDialog from "../components/parts/ExportDialog";
 import CollectionView from "../components/parts/CollectionView";
 import InventoryDetailView from "../components/parts/InventoryDetailView";
 import QuickAddDialog from "../components/parts/QuickAddDialog";
@@ -16,7 +17,7 @@ import type { OnChanged } from "../components/parts/changes";
 
 type View = "collection" | "sources" | "review" | "reserved" | "build";
 const VIEWS: View[] = ["collection", "sources", "review", "reserved", "build"];
-type Dialog = null | { kind: AddWay; replace?: string };
+type Dialog = null | { kind: AddWay; replace?: string } | { kind: "export"; scope: string; name: string };
 type Notice = { text: string; source?: string } | null;
 
 /** My Parts: the collection (every source added together), its sources, the review queue, what can I build; and one source's parts at /parts/:id. */
@@ -75,6 +76,7 @@ export default function Parts() {
   const dialogs = <>
     {dialog?.kind === "quick" && <QuickAddDialog onClose={() => setDialog(null)} onChanged={changed} />}
     {dialog?.kind === "set" && <AddSetDialog onClose={() => setDialog(null)} onChanged={changed} />}
+    {dialog?.kind === "export" && <ExportDialog scope={dialog.scope} name={dialog.name} onClose={() => setDialog(null)} />}
     {dialog?.kind === "import" && <UploadDialog sources={sources ?? []} replaceId={dialog.replace} onClose={() => setDialog(null)} onChanged={changed} />}
   </>;
   const toast = notice && <div className="parts-notice" role="status">
@@ -98,6 +100,7 @@ export default function Parts() {
             {current.kind === "set" && current.set ? `Set ${current.set.set_num} · ${current.set.copies} ${current.set.copies === 1 ? "copy" : "copies"} · ` : current.kind === "loose" ? "Manual and quick adds · " : `${current.source_filename ?? "No source file"} · `}added {timeAgo(current.created_at)}</p></div>}
           <div className="head-actions">
             {(current.kind ?? "import") === "import" && <button type="button" disabled={busy} onClick={() => setDialog({ kind: "import", replace: current.id })}>Replace file</button>}
+            <button type="button" disabled={busy} onClick={() => setDialog({ kind: "export", scope: `source:${current.id}`, name: current.name })}>Export</button>
             <button type="button" disabled={busy || renaming || current.kind === "loose"} onClick={() => { setDraft(current.name); setRenaming(true); }}>Rename</button>
             <button type="button" className="danger-text" disabled={busy} onClick={() => void remove(current)}>Delete</button>
           </div>
@@ -112,7 +115,9 @@ export default function Parts() {
   return <div className="page parts-page">
     <header className="page-head"><div><h1>My Parts</h1>
       <p className="muted">Your collection: every source added together. In a chat, choose Prefer or Only my parts and the agent designs with them.</p></div>
-      <div className="head-actions"><AddPartsMenu onPick={way => setDialog({ kind: way })} /></div></header>
+      <div className="head-actions">
+        <button type="button" disabled={!real.length} onClick={() => setDialog({ kind: "export", scope: "collection", name: "your collection" })}>Export</button>
+        <AddPartsMenu onPick={way => setDialog({ kind: way })} /></div></header>
     {error && <div className="banner error" role="alert">{error}</div>}
     {!sources && !error && <p className="muted"><span className="spinner" aria-hidden /> Loading…</p>}
     {sources && <>

@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 import collection
+import collection_export
 import inventories
 import part_images
 import part_info
@@ -36,6 +37,8 @@ class NewPreview(BaseModel):
     include_spares: Optional[bool] = False
     family_colours: Optional[dict] = None
     filename: Optional[str] = ""
+    format: Optional[str] = ""          # override the detected format
+    mapping: Optional[dict] = None      # generic CSV: {part, colour, qty, system}
 
 
 class Diff(BaseModel):
@@ -172,7 +175,8 @@ def collection_review_resolve(body: ResolveReview):
 @router.post("/api/collection/imports/preview")
 async def import_preview(body: NewPreview):
     try:
-        return await collection.preview_import(body.name, body.csv, bool(body.include_spares), body.family_colours, body.filename or "")
+        return await collection.preview_import(body.name, body.csv, bool(body.include_spares), body.family_colours, body.filename or "",
+                                               body.format or "", body.mapping)
     except InventoryError as exc:
         raise failure(exc) from None
 
@@ -191,6 +195,55 @@ def import_commit(preview_id: str, body: Commit):
         return collection.commit_import(preview_id, body.name, body.replace)
     except InventoryError as exc:
         raise failure(exc) from None
+
+
+# --- exports -------------------------------------------------------------------
+
+class ExportLines(BaseModel):
+    format: str
+    lines: list[dict]
+    name: Optional[str] = "parts"
+
+
+def _export_summary(built: dict) -> dict:
+    return {k: v for k, v in built.items() if k != "body"}
+
+
+@router.get("/api/collection/export/formats")
+def export_formats():
+    return {"formats": [{"id": k, "title": v[0]} for k, v in collection_export.FORMATS.items()]}
+
+
+@router.get("/api/collection/export/preview")
+def export_preview(format: str, scope: str = "collection"):
+    """What the file would hold and what it cannot: counts and the omitted lines with the reason."""
+    try:
+        return _export_summary(collection_export.export(format, scope))
+    except InventoryError as exc:
+        raise failure(exc) from None
+
+
+@router.get("/api/collection/export")
+def export_download(format: str, scope: str = "collection"):
+    try:
+        built = collection_export.export(format, scope)
+    except InventoryError as exc:
+        raise failure(exc) from None
+    return Response(built["body"], media_type=f"{built['media_type']}; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{built["filename"]}"', "X-Export-Omitted": str(built["omitted_lines"])})
+
+
+@router.post("/api/collection/export/lines")
+def export_lines(body: ExportLines, download: bool = False):
+    """Exports lines the caller already has (a shortage list: {part, colour (LDraw), qty}); download=true answers with the file."""
+    try:
+        built = collection_export.build(body.format, collection_export.clean_lines(body.lines), (body.name or "parts")[:60])
+    except InventoryError as exc:
+        raise failure(exc) from None
+    if not download:
+        return {**_export_summary(built), "body": built["body"]}
+    return Response(built["body"], media_type=f"{built['media_type']}; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{built["filename"]}"', "X-Export-Omitted": str(built["omitted_lines"])})
 
 
 # --- sets ----------------------------------------------------------------------

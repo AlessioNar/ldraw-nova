@@ -4,7 +4,7 @@ export type AddWay = "quick" | "set" | "import";
 const WAYS: { id: AddWay; title: string; hint: string }[] = [
   { id: "quick", title: "Quick add", hint: "type “20 red 2x4 bricks”" },
   { id: "set", title: "Add a set", hint: "by number or name (8448, tipper truck)" },
-  { id: "import", title: "Import a file", hint: "Brickit / Pileometer, Rebrickable CSV" },
+  { id: "import", title: "Import a file", hint: "Rebrickable, BrickLink, BrickStore, Brickit, any CSV" },
 ];
 
 /** The one entry point for every way parts come in. */
