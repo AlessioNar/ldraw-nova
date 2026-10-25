@@ -1,6 +1,7 @@
 """BrickLink XML, BrickStore BSX, BrickLink CSV and generic CSV importers."""
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -117,3 +118,16 @@ def test_format_override_beats_detection():
     assert table(r) == {("3001", 4): 2}
     with pytest.raises(ParseError, match="Unknown import format"):
         importers.parse("x", format="nope")
+
+
+def test_cada_parts_list_imports_through_the_bricklink_route():
+    text = (FIX / "cada-parts.xml").read_text(encoding="utf-8")
+    library = SimpleNamespace(by_code={code: f"Part {code}" for code in ("3001", "3003", "3020", "3022")})   # as in the app: only parts LDraw has
+    r = importers.parse(text, filename="cada-parts.xml", library=library)
+    assert r.origin == {"format": "bricklink-xml", "file": "cada-parts.xml"}
+    assert table(r) == {("3001", 4): 12, ("3003", 71): 4, ("3022", 0): 6}
+    assert sorted((u["rb_part"], u["qty"]) for u in r.unmapped_parts) == [("99999zz", 2), ("cadagear01", 3)]
+    assert all(u["reason"] == "no LDraw part with this number" for u in r.unmapped_parts)
+    assert [(u["rb_colour"], u["part"], u["qty"]) for u in r.unmapped_colours] == [("99999", "3020", 5)]
+    owned = sum(row.qty for row in r.rows)
+    assert owned + sum(u["qty"] for u in r.unmapped_parts) + sum(u["qty"] for u in r.unmapped_colours) == r.total_pieces == 32
