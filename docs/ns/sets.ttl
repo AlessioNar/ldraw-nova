@@ -1,0 +1,130 @@
+@prefix brand: <https://alessionar.github.io/open-brick-designer/ns/brand/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix psrc: <https://alessionar.github.io/open-brick-designer/ns/partssource/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+obd:brand a owl:FunctionalProperty,
+        owl:ObjectProperty ;
+    rdfs:comment "The brand (concept of the brand scheme) that makes the set."@en ;
+    rdfs:domain obd:Set ;
+    rdfs:range skos:Concept .
+
+obd:colour a owl:DatatypeProperty,
+        owl:FunctionalProperty ;
+    rdfs:comment "LDraw colour code of a set part."@en ;
+    rdfs:domain obd:SetPart ;
+    rdfs:range xsd:integer .
+
+obd:contains a owl:ObjectProperty ;
+    rdfs:comment "A line of the set's parts list."@en ;
+    rdfs:domain obd:Set ;
+    rdfs:range obd:SetPart .
+
+obd:image a owl:DatatypeProperty,
+        owl:FunctionalProperty ;
+    rdfs:comment "Preview image of the set."@en ;
+    rdfs:domain obd:Set ;
+    rdfs:range xsd:anyURI .
+
+obd:part a owl:DatatypeProperty,
+        owl:FunctionalProperty ;
+    rdfs:comment "LDraw part number of a set part (3001)."@en ;
+    rdfs:domain obd:SetPart ;
+    rdfs:range xsd:string .
+
+obd:partsSource a owl:ObjectProperty ;
+    rdfs:comment "Kind of source (concept of the parts-source scheme) the parts list was taken from."@en ;
+    rdfs:domain obd:Set ;
+    rdfs:range skos:Concept .
+
+obd:quantity a owl:DatatypeProperty,
+        owl:FunctionalProperty ;
+    rdfs:comment "How many of the part in that colour the set holds."@en ;
+    rdfs:domain obd:SetPart ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:onDatatype xsd:integer ;
+            owl:withRestrictions ( [ xsd:minInclusive 1 ] ) ] .
+
+obd:setNumber a owl:DatatypeProperty,
+        owl:FunctionalProperty ;
+    rdfs:comment "Number the brand prints on the box, with the version suffix when it has one (10183-1)."@en ;
+    rdfs:domain obd:Set ;
+    rdfs:range xsd:string .
+
+obd:year a owl:DatatypeProperty,
+        owl:FunctionalProperty ;
+    rdfs:comment "Year of release."@en ;
+    rdfs:domain obd:Set ;
+    rdfs:range xsd:integer .
+
+<https://alessionar.github.io/open-brick-designer/ns/sets> a owl:Ontology ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:title "Open Brick Designer sets and brands"@en ;
+    owl:imports <https://alessionar.github.io/open-brick-designer/ns/obd> .
+
+brand:cada a skos:Concept ;
+    skos:altLabel "CaDA"@en,
+        "Cada"@en,
+        "Double Eagle"@en,
+        "cada"@en ;
+    skos:inScheme brand: ;
+    skos:prefLabel "CADA"@en .
+
+brand:lego a skos:Concept ;
+    skos:altLabel "LEGO®"@en,
+        "Lego"@en,
+        "lego"@en ;
+    skos:inScheme brand: ;
+    skos:prefLabel "LEGO"@en .
+
+psrc:csv-import a skos:Concept ;
+    skos:altLabel "CSV"@en,
+        "parts list file"@en ;
+    skos:definition "Imported from a parts-list file (Rebrickable or BrickLink CSV)."@en ;
+    skos:inScheme psrc: ;
+    skos:prefLabel "CSV import"@en .
+
+psrc:manual a skos:Concept ;
+    skos:altLabel "manual"@en ;
+    skos:definition "Typed in by hand."@en ;
+    skos:inScheme psrc: ;
+    skos:prefLabel "Manual entry"@en .
+
+psrc:rebrickable a skos:Concept ;
+    skos:altLabel "Rebrickable"@en ;
+    skos:definition "Taken from the Rebrickable catalogue (rebrickable.com)."@en ;
+    skos:inScheme psrc: ;
+    skos:prefLabel "Rebrickable catalogue"@en .
+
+brand: a owl:Ontology,
+        skos:ConceptScheme ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:title "Open Brick Designer brands"@en ;
+    skos:definition "Makers of building-brick sets. A new brand is a new concept here."@en ;
+    skos:hasTopConcept brand:cada,
+        brand:lego .
+
+psrc: a owl:Ontology,
+        skos:ConceptScheme ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:title "Open Brick Designer parts-list sources"@en ;
+    skos:definition "Where a set's parts list came from."@en ;
+    skos:hasTopConcept psrc:csv-import,
+        psrc:manual,
+        psrc:rebrickable .
+
+obd:SetPart a owl:Class ;
+    rdfs:label "Set part"@en ;
+    rdfs:comment "One line of a set's parts list: a part in a colour, with a quantity."@en .
+
+obd:Set a owl:Class ;
+    rdfs:label "Set"@en ;
+    rdfs:comment "A boxed set of any brand: a name, a brand, a set number, a year, an image and the parts it contains."@en ;
+    rdfs:subClassOf prov:Entity .
+

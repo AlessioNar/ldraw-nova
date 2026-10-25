@@ -1,0 +1,126 @@
+# Vehicles and spaceships as a second kind of build (issue #96, epic #89; design: docs/plans/build-ontology/PROPOSAL.md).
+# A Vehicle is an obd:Build like a Building, made of obd:VehicleComponent parts (Chassis, Body, RunningGear, Cockpit, Wing, Engine).
+# There is no vehicle grammar yet, so nothing is generated from or checked against this file's classes by the app; the first
+# implementations below are the designs in ldraw_tools/vehicles.py (DESIGNS) and the spaceship briefs in ldraw_tools/spaceships.py
+# (ARCHETYPES), and tests/test_vehicle_ontology.py keeps the two in step. Component classes are not subclasses of the building
+# components, so tools/build_obd.py and the JSON Schema are untouched. Parameter IRIs follow obd.ttl: obd:<group><Key>.
+@prefix build: <https://alessionar.github.io/open-brick-designer/ns/build/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix obdsh: <https://alessionar.github.io/open-brick-designer/ns/shapes#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix role: <https://alessionar.github.io/open-brick-designer/ns/role/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://alessionar.github.io/open-brick-designer/ns/vehicles> a owl:Ontology ;
+    dcterms:title "Open Brick Designer vehicles and spaceships"@en ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    owl:imports <https://alessionar.github.io/open-brick-designer/ns/obd>, <https://alessionar.github.io/open-brick-designer/ns/role/> ;
+    sh:declare [ sh:prefix "obd" ; sh:namespace "https://alessionar.github.io/open-brick-designer/ns/obd#"^^xsd:anyURI ] .
+
+# --- Builds -----------------------------------------------------------------------------------------------------------
+
+obd:Vehicle a owl:Class ; rdfs:subClassOf obd:Build ; rdfs:label "Vehicle"@en ;
+    rdfs:comment "A craft or road vehicle: X is width, -Z is forward, Y=0 is the road, keel or hull floor."@en .
+obd:RoadVehicle a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Road vehicle"@en ; dcterms:identifier "road" ;
+    rdfs:comment "Six-stud System body on a bonded chassis and two axles."@en .
+obd:Motorcycle a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Motorcycle"@en ; dcterms:identifier "motorcycle" ;
+    rdfs:comment "Frame, fairing and two wheels in line."@en .
+obd:Watercraft a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Watercraft"@en ; dcterms:identifier "watercraft" ;
+    rdfs:comment "Moulded hull with an open helm."@en .
+obd:Aircraft a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Aircraft"@en ; dcterms:identifier "aircraft" ;
+    rdfs:comment "Fuselage, wings and engine pods."@en .
+obd:Spaceship a owl:Class ; rdfs:subClassOf obd:Vehicle ; rdfs:label "Spaceship"@en ; dcterms:identifier "spaceship" ;
+    rdfs:comment "A fictional craft; propulsion is a design vocabulary, not an engineering simulation."@en .
+
+# --- Components -------------------------------------------------------------------------------------------------------
+
+obd:VehicleComponent a owl:Class ; rdfs:subClassOf obd:Component ; rdfs:label "Vehicle component"@en ;
+    rdfs:comment "A construction stage of a Vehicle; it is part of exactly one Vehicle."@en .
+
+obd:Chassis a owl:Class ; rdfs:subClassOf obd:VehicleComponent ; rdfs:label "Chassis"@en ; obd:partOf obd:Vehicle ; obd:order 1 ;
+    obd:role role:chassis ; rdfs:comment "Load-bearing frame the body and running gear attach to."@en .
+obd:RunningGear a owl:Class ; rdfs:subClassOf obd:VehicleComponent ; rdfs:label "Running gear"@en ; obd:partOf obd:Vehicle ; obd:order 2 ;
+    obd:role role:wheel, role:tyre ; rdfs:comment "Axles, wheels and tyres, measured as a wheel pack."@en .
+obd:Body a owl:Class ; rdfs:subClassOf obd:VehicleComponent ; rdfs:label "Body"@en ; obd:partOf obd:Vehicle ; obd:order 3 ;
+    obd:role role:body ; rdfs:comment "Shaped outer shell: car body, hull or fuselage."@en .
+obd:Cockpit a owl:Class ; rdfs:subClassOf obd:VehicleComponent ; rdfs:label "Cockpit"@en ; obd:partOf obd:Vehicle ; obd:order 4 ;
+    obd:role role:glass ; rdfs:comment "Cabin, helm or cockpit with its glazing."@en .
+obd:Wing a owl:Class ; rdfs:subClassOf obd:VehicleComponent ; rdfs:label "Wing"@en ; obd:partOf obd:Vehicle ; obd:order 5 ;
+    obd:role role:wing ; rdfs:comment "Wings and tail surfaces; left and right are matched parts."@en .
+obd:Engine a owl:Class ; rdfs:subClassOf obd:VehicleComponent ; rdfs:label "Engine"@en ; obd:partOf obd:Vehicle ; obd:order 6 ;
+    obd:role role:engine ; rdfs:comment "Engine pods, nacelles and exhausts."@en .
+
+# --- Parameters -------------------------------------------------------------------------------------------------------
+
+obd:vehicleLength a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Vehicle ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 40 ] ) ] ;
+    obd:unit "stud" ; obd:order 1 ; dcterms:identifier "length" ;
+    rdfs:comment "Studs along z. Even for a road vehicle."@en .
+
+obd:vehiclePalette a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Vehicle ;
+    rdfs:range xsd:string ;
+    obd:order 2 ; dcterms:identifier "palette" ;
+    rdfs:comment "Name of a palette in ldraw_tools/data/design-palettes.json."@en .
+
+obd:vehicleWheelbase a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:RoadVehicle ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 30 ] ) ] ;
+    obd:unit "stud" ; obd:order 3 ; dcterms:identifier "wheelbase" ;
+    rdfs:comment "Studs between the axles. Even."@en .
+
+obd:runningGearPack a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:RunningGear ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "classic" "touring" ) ] ;
+    obd:default "touring" ; obd:order 1 ; dcterms:identifier "pack" ;
+    rdfs:comment "classic: wheel-pin running gear for four-stud bodies; touring: extended pins and wide tyres for six-stud bodies."@en .
+
+obd:spaceshipArchetype a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Spaceship ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "starfighter" "freighter" "capital-ship" ) ] ;
+    obd:order 1 ; dcterms:identifier "archetype" ;
+    rdfs:comment "Which design brief the spaceship follows."@en .
+
+# --- Validity (SHACL) -------------------------------------------------------------------------------------------------
+
+obdsh:RoadVehicleShape a sh:NodeShape ; sh:targetClass obd:RoadVehicle ;
+    rdfs:comment "A road vehicle has a length and a wheelbase, both even stud counts."@en ;
+    sh:property [ sh:path obd:vehicleLength ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path obd:vehicleWheelbase ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/vehicles> ;
+        sh:message "Vehicle length and wheelbase must be even stud counts (even-studs)" ;
+        sh:select """SELECT $this WHERE { $this obd:vehicleLength ?l ; obd:vehicleWheelbase ?w . FILTER (?l - 2 * FLOOR(?l / 2) != 0 || ?w - 2 * FLOOR(?w / 2) != 0) }""" ] .
+
+obdsh:SpaceshipShape a sh:NodeShape ; sh:targetClass obd:Spaceship ;
+    rdfs:comment "A spaceship follows exactly one archetype."@en ;
+    sh:property [ sh:path obd:spaceshipArchetype ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+# --- First implementations: ldraw_tools/vehicles.py DESIGNS -----------------------------------------------------------
+
+build:grand-tourer a obd:RoadVehicle ; dcterms:title "Grand tourer"@en ; obd:vehiclePalette "heritage-racing" ; obd:vehicleLength 18 ; obd:vehicleWheelbase 10 ;
+    rdfs:comment "Long sculpted bonnet, inset low cabin, continuous shoulders and a short rear deck."@en .
+build:delivery-van a obd:RoadVehicle ; dcterms:title "Delivery van"@en ; obd:vehiclePalette "coastal-delivery" ; obd:vehicleLength 18 ; obd:vehicleWheelbase 10 ;
+    rdfs:comment "Short bonnet, upright cab and a taller quiet cargo box with a restrained belt line."@en .
+build:pickup a obd:RoadVehicle ; dcterms:title "Workshop pickup"@en ; obd:vehiclePalette "desert-utility" ; obd:vehicleLength 20 ; obd:vehicleWheelbase 12 ;
+    rdfs:comment "Separate cab and open load bed, capped bed rails, contrasting bumpers and functional cargo space."@en .
+build:tipper-truck a obd:RoadVehicle ; dcterms:title "Site tipper truck"@en ; obd:vehiclePalette "desert-utility" ; obd:vehicleLength 22 ; obd:vehicleWheelbase 14 ;
+    rdfs:comment "Forward cab with moulded seats, mirrors and a dedicated tipper bucket carried on a System chassis."@en .
+build:touring-motorcycle a obd:Motorcycle ; dcterms:title "Touring motorcycle"@en ; obd:vehiclePalette "heritage-racing" ; obd:vehicleLength 10 ;
+    rdfs:comment "Dedicated motorcycle frame and vintage fairing, separate spoked wheels/tyres and a rear luggage rack."@en .
+build:harbour-launch a obd:Watercraft ; dcterms:title "Harbour launch"@en ; obd:vehiclePalette "coastal-delivery" ; obd:vehicleLength 14 ;
+    rdfs:comment "Purpose-made boat hull, open helm with a real seat and steering wheel, navigation lights and life ring."@en .
+build:courier-jet a obd:Aircraft ; dcterms:title "Courier jet"@en ; obd:vehiclePalette "coastal-delivery" ; obd:vehicleLength 26 ;
+    rdfs:comment "Matched aircraft nose/glass and tapered rear, swept wings, dedicated engine pods and an equipped cockpit."@en .
+
+# --- First implementations: ldraw_tools/spaceships.py ARCHETYPES ------------------------------------------------------
+
+build:starfighter a obd:Spaceship ; dcterms:title "Advanced starfighter"@en ; obd:spaceshipArchetype "starfighter" ;
+    rdfs:comment "A readable nose-to-cockpit spine, distinctive wing arrangement and clearly separate engine masses."@en .
+build:freighter a obd:Spaceship ; dcterms:title "Detailed light freighter"@en ; obd:spaceshipArchetype "freighter" ;
+    rdfs:comment "A broad cargo hull with an offset or raised cockpit, a readable loading opening and a strong rear engine band."@en .
+build:capital-ship a obd:Spaceship ; dcterms:title "Large display-scale capital ship"@en ; obd:spaceshipArchetype "capital-ship" ;
+    rdfs:comment "A clear wedge, hammerhead or elongated spine with layered superstructure and a visible engine cluster."@en .
