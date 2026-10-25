@@ -11,7 +11,7 @@ dependencies = ["pyldraw3==1.7.0", "numpy==2.5.2", "jsonschema==4.26.0"]
 
 [project.optional-dependencies]
 test = ["pytest==9.1.1"]
-ontology = ["rdflib==7.6.0"]  # toolkit-only: regenerates ldraw_tools/role_vocab.py from ontology/roles.ttl
+ontology = ["rdflib==7.6.0"]  # toolkit-only: regenerates ldraw_tools/role_vocab.py from ontology/roles.ttl and checks ontology/obd.ttl against the schema
 
 [project.scripts]
 ldraw-agent = "ldraw_tools.cli:main"

@@ -1,6 +1,6 @@
 # Ontology of LEGO buildings
 
-One grammar, many buildings. A house, a cottage, a shop, a townhouse, a tower and a castle keep are not six generators: they are six configurations of the same tree, each a small JSON document. Code is in `ldraw_tools/grammar/`; the machine-readable form is [`ontology.schema.json`](ontology.schema.json) (JSON Schema 2020-12 with `default`, `minimum`/`maximum`, `enum` and two extra keywords: `x-component` names the ontology node a group belongs to, `x-colour` marks a colour parameter). The parameter tables below are generated from it by `export_schema.py`.
+One grammar, many buildings. A house, a cottage, a shop, a townhouse, a tower and a castle keep are not six generators: they are six configurations of the same tree, each a small JSON document. Code is in `ldraw_tools/grammar/`; the machine-readable form is [`ontology.schema.json`](ontology.schema.json) (JSON Schema 2020-12 with `default`, `minimum`/`maximum`, `enum` and two extra keywords: `x-component` names the ontology node a group belongs to, `x-colour` marks a colour parameter). The parameter tables below are generated from it by `export_schema.py`. The same components and parameters also exist as OWL in [`ontology/obd.ttl`](../../../ontology/obd.ttl) (epic #89); `tools/build_obd.py --check` fails if the two disagree, until the schema is generated from the ontology (#94).
 
 ```
 Building
