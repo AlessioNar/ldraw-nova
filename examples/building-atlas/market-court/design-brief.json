@@ -12,14 +12,8 @@
     "lamp",
     "bench"
   ],
-  "source_sha256": "ba5abfca6dfb90a3fa95aeada3cbbb1314dea1a110c54fdffd6858851cdd175c",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 712,
-  "model": "market-court/market-court.mpd",
-  "plan": "market-court/scene.plan.json",
-  "guide": "market-court/README.md",
-  "preview": "market-court/home.png",
-  "sections": 10
+  "sections": 10,
+  "source_sha256": "ba5abfca6dfb90a3fa95aeada3cbbb1314dea1a110c54fdffd6858851cdd175c",
+  "checks_passed": true
 }

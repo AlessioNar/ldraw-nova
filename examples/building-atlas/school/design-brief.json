@@ -12,14 +12,8 @@
     "bench",
     "tree"
   ],
-  "source_sha256": "bc33e48c8df56847c259973915e5da9de0b8339695fbc4030bcc0f6d430c0e7e",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 530,
-  "model": "school/school.mpd",
-  "plan": "school/scene.plan.json",
-  "guide": "school/README.md",
-  "preview": "school/home.png",
-  "sections": 10
+  "sections": 10,
+  "source_sha256": "bc33e48c8df56847c259973915e5da9de0b8339695fbc4030bcc0f6d430c0e7e",
+  "checks_passed": true
 }

@@ -13,14 +13,8 @@
     "bench",
     "planter"
   ],
-  "source_sha256": "0d2ca147ce56243cc1fa741879d7462804bec772dc077ed0a288eb49ce3b1646",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 442,
-  "model": "cottage/cottage.mpd",
-  "plan": "cottage/scene.plan.json",
-  "guide": "cottage/README.md",
-  "preview": "cottage/home.png",
-  "sections": 10
+  "sections": 10,
+  "source_sha256": "0d2ca147ce56243cc1fa741879d7462804bec772dc077ed0a288eb49ce3b1646",
+  "checks_passed": true
 }

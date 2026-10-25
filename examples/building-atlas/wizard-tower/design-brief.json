@@ -11,14 +11,8 @@
     "tree",
     "planter"
   ],
-  "source_sha256": "d3660a513dd6f9565d962d53c71d8c395663119f9974eb22e401390a855b4d13",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 459,
-  "model": "wizard-tower/wizard-tower.mpd",
-  "plan": "wizard-tower/scene.plan.json",
-  "guide": "wizard-tower/README.md",
-  "preview": "wizard-tower/home.png",
-  "sections": 9
+  "sections": 9,
+  "source_sha256": "d3660a513dd6f9565d962d53c71d8c395663119f9974eb22e401390a855b4d13",
+  "checks_passed": true
 }

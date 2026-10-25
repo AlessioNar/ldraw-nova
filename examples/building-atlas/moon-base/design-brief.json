@@ -12,14 +12,8 @@
     "solar-array",
     "dish"
   ],
-  "source_sha256": "a84cd95abe738008f73b9f0e7bb2796bb93eb6eb9837b37ab0be08ce9b57c1ca",
-  "checks_passed": true,
-  "bom_matches": true,
-  "visual_review_recorded": false,
   "physical_placements": 487,
-  "model": "moon-base/moon-base.mpd",
-  "plan": "moon-base/scene.plan.json",
-  "guide": "moon-base/README.md",
-  "preview": "moon-base/home.png",
-  "sections": 12
+  "sections": 12,
+  "source_sha256": "a84cd95abe738008f73b9f0e7bb2796bb93eb6eb9837b37ab0be08ce9b57c1ca",
+  "checks_passed": true
 }
