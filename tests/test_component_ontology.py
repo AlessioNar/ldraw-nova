@@ -41,3 +41,20 @@ def test_diff_catches_a_changed_default(gen, tmp_path):
     path = tmp_path / 'obd.ttl'
     path.write_text(changed, encoding='utf-8')
     assert any('footprint.width' in line for line in gen.diff(*gen.load(path)))
+
+
+@pytest.fixture(scope='module')
+def export():
+    spec = importlib.util.spec_from_file_location('export_schema', ROOT / 'docs' / 'plans' / 'build-grammar' / 'export_schema.py')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_generated_schema_equals_the_hand_kept_one(export):
+    from ldraw_tools.grammar.schema import SCHEMA
+    assert export.build_schema() == SCHEMA
+
+
+def test_committed_schema_and_params_are_current(export):
+    assert export.main(['--check']) == 0
