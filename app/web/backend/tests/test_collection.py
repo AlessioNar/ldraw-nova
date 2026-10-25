@@ -393,12 +393,12 @@ def catalog(tmp_path, monkeypatch):
 
 
 def test_set_search_by_number_name_and_theme(client, catalog):
-    nums = lambda q: [s["set_num"] for s in client.get("/api/sets", params={"query": q}).json()["sets"]]  # noqa: E731
+    nums = lambda q: [s["set_num"] for s in client.get("/api/catalog/sets", params={"query": q}).json()["sets"]]  # noqa: E731
     assert nums("8448") == ["8448-1"] and nums("tipper truck") == ["200-1"] and nums("racers") == ["100-1"]
     assert nums("") == ["200-1", "100-1", "8448-1"] and nums("nothing") == []
-    one = client.get("/api/sets/8448").json()
+    one = client.get("/api/catalog/sets/8448").json()
     assert (one["set_num"], one["name"], one["num_parts"], one["mapped_pieces"], one["dropped_pieces"]) == ("8448-1", "Super Street Sweeper", 11, 8, 3)
-    assert client.get("/api/sets/9999").status_code == 404
+    assert client.get("/api/catalog/sets/9999").status_code == 404
 
 
 def test_add_a_set_creates_a_set_source_with_its_parts(client, catalog):
@@ -411,7 +411,7 @@ def test_add_a_set_creates_a_set_source_with_its_parts(client, catalog):
     assert table("set-8448-1") == {("3001", 4): 4, ("3003", 1): 10, ("3020", 15): 2} and "not listed" in data["warnings"][0]
     again = client.post("/api/collection/sets", json={"set_num": "8448-1", "state": "built"}).json()["inventory"]
     assert again["id"] == "set-8448-1-2" and again["set"]["state"] == "built"
-    assert sorted(client.get("/api/sets/8448").json()["owned_sources"]) == ["set-8448-1", "set-8448-1-2"]
+    assert sorted(client.get("/api/catalog/sets/8448").json()["owned_sources"]) == ["set-8448-1", "set-8448-1-2"]
     assert workspace.owned_parts()[0][("3003", 1)] == 15                         # set rows count like any other
     for bad in ({"set_num": "9999"}, {"set_num": "8448", "copies": 0}, {"set_num": "8448", "copies": 100}, {"set_num": "8448", "state": "lost"}):
         assert client.post("/api/collection/sets", json=bad).status_code in (400, 404)
@@ -429,7 +429,7 @@ def test_set_source_rows_can_be_edited_and_undone(client, catalog):
 def test_missing_catalogue_is_a_clear_503(client, monkeypatch, tmp_path):
     monkeypatch.setenv("LDRAW_NOVA_SET_CATALOG", str(tmp_path / "missing.bin"))
     set_catalog._load.cache_clear()
-    assert client.get("/api/sets", params={"query": "x"}).status_code == 503
+    assert client.get("/api/catalog/sets", params={"query": "x"}).status_code == 503
     assert client.post("/api/collection/sets", json={"set_num": "1"}).status_code == 503
 
 
@@ -715,3 +715,25 @@ def test_old_upload_endpoint_still_creates_sources(client, cli):
     r = client.post("/api/inventories", json={"name": "Plain", "csv": RB})
     assert r.status_code == 200 and r.json()["inventory"]["total_pieces"] == 11 and r.json()["report"]["format"] == "rebrickable-csv"
     assert client.post("/api/inventories", json={"name": "Plain", "csv": RB}).status_code == 409
+
+
+def test_owned_sets_list_records_with_brand_and_counts(client, catalog):
+    client.post("/api/collection/sets", json={"set_num": "8448", "copies": 2, "state": "built"})
+    client.post("/api/collection/sets", json={"set_num": "100", "brand": "  CADA "})
+    sets = {s["id"]: s for s in client.get("/api/sets").json()["sets"]}
+    big, racer = sets["set-8448-1"], sets["set-100-1"]
+    assert (big["brand"], big["image"], big["copies"], big["state"], big["set_num"]) == ("LEGO", None, 2, "built", "8448-1")
+    assert (big["pieces"], big["reserved"], big["missing"], big["on_hand"]) == (16, 16, 0, 16)
+    assert (racer["brand"], racer["state"], racer["pieces"], racer["reserved"]) == ("CADA", "parts", 4, 0)
+    assert client.post("/api/collection/sets", json={"set_num": "100", "brand": "x" * 41}).status_code == 400
+
+
+def test_set_stored_before_brands_reads_as_lego_without_a_rewrite(client, catalog):
+    client.post("/api/collection/sets", json={"set_num": "100"})
+    data = stored("set-100-1")
+    del data["set"]["brand"], data["set"]["image"]
+    collection_store.save(data)
+    [old] = client.get("/api/sets").json()["sets"]
+    assert (old["brand"], old["image"], old["copies"]) == ("LEGO", None, 1)
+    assert client.get("/api/collection").json()["sources"][0]["set"]["brand"] == "LEGO"
+    assert "brand" not in stored("set-100-1")["set"]

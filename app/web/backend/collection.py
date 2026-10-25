@@ -515,13 +515,36 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False, fam
 
 # --- sets --------------------------------------------------------------------
 
-def add_set(set_num: str, copies: int = 1, state: str = "parts") -> dict:
+DEFAULT_BRAND = "LEGO"
+MAX_BRAND_CHARS = 40
+
+
+def _clean_brand(brand: Any) -> str:
+    text = " ".join(str(brand or "").split())
+    if len(text) > MAX_BRAND_CHARS:
+        raise InventoryError(400, f"Brand is at most {MAX_BRAND_CHARS} characters")
+    return text or DEFAULT_BRAND
+
+
+def set_record(data: dict) -> dict | None:
+    """The set block of a source with every field of a set record filled in, or None for a source that is not a set.
+    Sources stored before brands and images existed read as brand LEGO with no image, so they need no rewrite."""
+    block = data.get("set")
+    if data.get("kind") != "set" or not isinstance(block, dict):
+        return None
+    image = block.get("image")
+    return {**block, "brand": block.get("brand") or DEFAULT_BRAND, "image": image if isinstance(image, str) and image else None,
+            "copies": block.get("copies") or 1, "state": block.get("state") or "parts"}
+
+
+def add_set(set_num: str, copies: int = 1, state: str = "parts", brand: str = DEFAULT_BRAND) -> dict:
     """Adds a catalogue set as a source of kind "set": its parts list copied in (so a later catalogue refresh cannot change
     what the owner owns), multiplied by `copies`. `state` "built" keeps the parts counted as owned and records that the set is
     assembled (what a later reservation will use)."""
     import set_catalog
     if state not in ("parts", "built"):
         raise InventoryError(400, "state must be parts or built")
+    brand = _clean_brand(brand)
     copies = _clean_qty(copies, 1, "number of copies")
     if copies > 99:
         raise InventoryError(400, "At most 99 copies of a set")
@@ -543,15 +566,45 @@ def add_set(set_num: str, copies: int = 1, state: str = "parts") -> dict:
             n += 1
             sid, name = f"{base_id}-{n}"[:60], f"{title[:inventories.MAX_NAME_CHARS - 6]} ({n})"
         data = {"id": sid, "name": name, "created_at": time.time(), "source_filename": None, "kind": "set",
-                "set": {"set_num": info["set_num"], "name": info["name"], "year": info["year"], "theme": info["theme"],
-                        "num_parts": info["num_parts"], "copies": copies, "state": state, "dropped_pieces": dropped * copies},
+                "set": {"set_num": info["set_num"], "brand": brand, "name": info["name"], "year": info["year"], "theme": info["theme"],
+                        "image": None, "num_parts": info["num_parts"], "copies": copies, "state": state, "dropped_pieces": dropped * copies},
                 "origin": {"format": "set-catalog", "catalog": {k: v for k, v in catalog.meta.items() if isinstance(v, (str, int, float))}},
                 "rows": [{"part": p, "colour": c, "qty": q * copies, "rb_part": p, "rb_colour": 0} for p, c, q in lines],
                 "unmapped_parts": [], "unmapped_colours": [],
                 "warnings": [f"{dropped * copies} piece(s) of this set have no LDraw equivalent and are not listed"] if dropped else []}
         _save(data)
         _append_log(sid, _stamp([{"op": "create", "what": "set"}], 1, f"Added set {info['set_num']}"))
-    return {"inventory": inventories.summary(data), "set": data["set"]}
+    return {"inventory": inventories.summary(data), "set": set_record(data)}
+
+
+def owned_sets() -> list[dict]:
+    """Every owned set as a record: brand, image, copies, state and piece counts. `reserved` is the set's pieces while it
+    is built; `missing` is how many of those the collection no longer covers (other reservations took them);
+    `on_hand` is the rest."""
+    import reservations
+    owned, _ = store.owned_totals()
+    reserved = reservations.reserved_totals()
+    found = []
+    for sid in store.source_ids():
+        try:
+            data = store.load(sid)
+        except InventoryError:
+            continue
+        record = set_record(data)
+        if record is None:
+            continue
+        rows = [r for r in data.get("rows", []) if int(r["qty"]) > 0]
+        pieces = sum(int(r["qty"]) for r in rows)
+        built = record["state"] == "built"
+        missing = 0
+        if built:
+            for r in rows:
+                key = (reservations.part_key(r["part"]), int(r["colour"]))
+                missing += min(int(r["qty"]), max(0, reserved.get(key, 0) - owned.get(key, 0)))
+        found.append({**record, "id": sid, "source_name": data.get("name", sid), "pieces": pieces,
+                      "distinct_parts": len({r["part"] for r in rows}), "reserved": pieces if built else 0,
+                      "missing": missing, "on_hand": pieces - missing})
+    return found
 
 
 # --- notes -------------------------------------------------------------------

@@ -171,6 +171,8 @@ def summary(data: dict) -> dict:
     review = data.get("review", [])         # colour-family pieces not counted as owned (Pileometer); keys only when present
     extra = {"review_items": len(review), "review_pieces": sum(r["qty"] for r in review)} if review else {}
     set_info = data.get("set")
+    if isinstance(set_info, dict):
+        set_info = {**set_info, "brand": set_info.get("brand") or "LEGO", "image": set_info.get("image") or None}
     return {
         **extra,
         "kind": data.get("kind") or "import", "schema": data.get("schema", 1),
