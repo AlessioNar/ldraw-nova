@@ -304,3 +304,4 @@
 .ws-seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 999px; overflow: hidden; margin-right: 6px; vertical-align: middle; }
 .ws-seg button { border: 0; border-radius: 0; padding: 1px 10px; font-size: var(--fs-xs); background: none; color: var(--muted); }
 .ws-seg button[aria-pressed="true"] { background: var(--accent, #6b46c1); color: #fff; }
+.ws-fp-chosen b { color: var(--text, inherit); }
