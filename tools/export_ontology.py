@@ -24,6 +24,7 @@ FILES = {
     'obd.ttl': 'Component classes and parameters (OWL)',
     'roles.ttl': 'Role vocabulary (SKOS)',
     'shapes.ttl': 'Validity rules (SHACL)',
+    'vehicles.ttl': 'Vehicles and spaceships (OWL, SHACL)',
     'sets.ttl': 'Sets, brands and parts-list sources (OWL, SKOS, PROV-O)',
 }
 MERGED = 'ontology.ttl'

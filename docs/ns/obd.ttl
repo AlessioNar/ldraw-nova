@@ -698,9 +698,9 @@ obd:order a owl:AnnotationProperty ;
 
 obd:partOf a owl:FunctionalProperty,
         owl:ObjectProperty ;
-    rdfs:comment "The building a component belongs to."@en ;
+    rdfs:comment "The build (a building or, see vehicles.ttl, a vehicle) a component belongs to."@en ;
     rdfs:domain obd:Component ;
-    rdfs:range obd:Building .
+    rdfs:range obd:Build .
 
 obd:role a owl:ObjectProperty ;
     rdfs:comment "A role (concept of the role scheme) the component's placements carry."@en ;
@@ -1062,6 +1062,10 @@ obd:wallsTimberColour a owl:DatatypeProperty,
     obd:default "reddish brown" ;
     obd:order 5 .
 
+obd:Build a owl:Class ;
+    rdfs:label "Build"@en ;
+    rdfs:comment "What a grammar produces from one configuration: a Building here, a Vehicle in vehicles.ttl."@en .
+
 obd:Base a owl:Class ;
     rdfs:label "Base"@en ;
     dcterms:identifier "base" ;
@@ -1070,6 +1074,12 @@ obd:Base a owl:Class ;
     obd:order 8 ;
     obd:partOf obd:Building ;
     obd:role role:base .
+
+obd:Building a owl:Class ;
+    rdfs:label "Building"@en ;
+    rdfs:comment "One grammar configuration: a footprint carrying storeys, walls, openings, corners, a roof, details and a base."@en ;
+    rdfs:subClassOf obd:Build ;
+    obd:order 0 .
 
 obd:Footprint a owl:Class ;
     rdfs:label "Footprint"@en ;
@@ -1099,14 +1109,9 @@ obd:Walls a owl:Class ;
     obd:role role:trim,
         role:wall .
 
-obd:Building a owl:Class ;
-    rdfs:label "Building"@en ;
-    rdfs:comment "One grammar configuration: a footprint carrying storeys, walls, openings, corners, a roof, details and a base."@en ;
-    obd:order 0 .
-
 obd:Component a owl:Class ;
     rdfs:label "Component"@en ;
-    rdfs:comment "A construction stage of a building; it is part of exactly one Building and stamps placements with its roles."@en .
+    rdfs:comment "A construction stage of a build; it is part of exactly one Build and stamps placements with its roles."@en .
 
 obd:Corners a owl:Class ;
     rdfs:label "Corners"@en ;
