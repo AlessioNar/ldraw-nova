@@ -417,9 +417,9 @@ export const collectionApi = {
   importDiff: (previewId: string, replace: string) => request<ImportDiff>(`/api/collection/imports/${sid(previewId)}/diff`, { method: "POST", body: json({ replace }) }),
   commitImport: (previewId: string, body: { name?: string; replace?: string }) =>
     request<{ inventory: Inventory; report: ImportReport; diff?: Omit<ImportDiff, "lines">; batch?: number }>(`/api/collection/imports/${sid(previewId)}/commit`, { method: "POST", body: json(body) }),
-  sets: (query: string) => request<{ sets: CatalogSet[] }>(`/api/sets?${qs({ query, limit: 20 })}`),
-  addSet: (set_num: string, copies: number, state: "parts" | "built") =>
-    request<{ inventory: Inventory }>("/api/collection/sets", { method: "POST", body: json({ set_num, copies, state }) }),
+  sets: (query: string) => request<{ sets: CatalogSet[] }>(`/api/catalog/sets?${qs({ query, limit: 20 })}`),
+  addSet: (set_num: string, copies: number, state: "parts" | "built", brand?: string) =>
+    request<{ inventory: Inventory }>("/api/collection/sets", { method: "POST", body: json({ set_num, copies, state, brand }) }),
   quickParse: (text: string) => request<{ items: QuickItem[]; ok: number; total: number }>("/api/collection/quick-add/parse", { method: "POST", body: json({ text }) }),
   exportPreview: (format: string, scope: string) => request<ExportSummary>(`/api/collection/export/preview?${qs({ format, scope })}`),
   quickAdd: (items: { part: string; colour: number; qty: number }[]) =>
