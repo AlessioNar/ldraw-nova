@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import NewBuild from "./pages/NewBuild";
 import Builds from "./pages/Builds";
 import Parts from "./pages/Parts";
+import Costs from "./pages/Costs";
 import Settings from "./pages/Settings";
 import { setProviderCatalogue } from "./modelChoices";
 
@@ -100,6 +101,7 @@ export default function App() {
             <Route path="/models" element={<Navigate to="/builds" replace />} />
             <Route path="/parts" element={<Parts />} />
             <Route path="/parts/:id" element={<Parts />} />
+            <Route path="/costs" element={<Costs />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

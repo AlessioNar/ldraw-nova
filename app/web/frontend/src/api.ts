@@ -142,6 +142,13 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 const json = (body: unknown) => JSON.stringify(body);
 
+/** GET /api/costs: spend per UTC day and kind, plus totals (see backend usage_log.costs). */
+export type CostDay = { day: string; kind: string; calls: number; cost_usd: number; cost_eur: number; unpriced_calls: number };
+export type CostHistory = {
+  from: string | null; to: string | null; eur_per_usd: number; days: CostDay[];
+  totals: { calls: number; cost_usd: number; cost_eur: number; unpriced_calls: number };
+};
+
 export type ProviderInfo = { provider: string; label: string; effort: boolean; prompt_caching: boolean; discovery: boolean };
 
 export const api = {
@@ -159,6 +166,13 @@ export const api = {
     request(`/api/chats/${id}/messages`, { method: "POST", body: json({ text, llm_model_id, options, images, documents }) }),
   approve: (id: string, approval: string, approved: boolean) => request(`/api/chats/${id}/approvals/${approval}`, { method: "POST", body: json({ approved }) }),
   catalog: () => request<{ models: ModelProfile[] }>("/api/model-catalog"),
+  costs: (from?: string, to?: string) => {
+    const q = new URLSearchParams();
+    if (from) q.set("from", from);
+    if (to) q.set("to", to);
+    const qs = q.toString();
+    return request<CostHistory>(`/api/costs${qs ? `?${qs}` : ""}`);
+  },
   worker: (id: string, worker: string) => request<WorkerTranscript>(`/api/chats/${id}/workers/${worker}`),
   cancel: (id: string) => request(`/api/chats/${id}/cancel`, { method: "POST" }),
   models: () => request<{ models: ModelFile[]; pending: number }>("/api/models"),
