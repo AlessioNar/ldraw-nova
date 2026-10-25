@@ -230,7 +230,6 @@ class Importer:
 
     def run(self) -> None:
         import builds
-        from db.models import Build
         files = self.source.files
         index = builds.Index(files)
         slugs = builds.all_slugs(files)
@@ -395,7 +394,7 @@ class Importer:
             if message_id in known_messages or (worker_id is not None and worker_id in known_workers):
                 continue
             cost = usage.get("cost_usd")
-            number = lambda key: int(usage.get(key)) if is_number(usage.get(key)) else 0
+            number = lambda key, u=usage: int(u.get(key)) if is_number(u.get(key)) else 0
             events.append(dict(
                 ts=to_dt(message.get("created_at")), kind="worker" if (worker or message.get("_subagent")) else "agent", chat_id=chat_id,
                 build_id=None, message_id=message_id, worker_id=worker_id,
@@ -465,7 +464,7 @@ def verify(source: Source, report: Report) -> None:
     import db
     from sqlalchemy import func, select
     from db.models import Build, BuildDraft, Chat, Message, ModelRecord, Proposal, UsageEvent, WorkerStep
-    from pg_store import clean_json, file_sha256, to_float
+    from pg_store import clean_json, to_float
     import usage as usage_module
     files = source.files
     index = builds.Index(files)
@@ -723,7 +722,6 @@ def run_import(data_dir: Path, dry_run: bool) -> Report:
     if not dry_run:
         from builds import reconcile
         from pg_store import PgChatStore
-        import settings
         report.count("version_records_adopted_from_files", reconcile(PgChatStore(data_dir / "chats", data_dir / "output")))
     record_run(report, started)
     return report

@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 import db
