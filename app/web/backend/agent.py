@@ -81,8 +81,9 @@ CODE_TOOLS = {"run_shell", "run_python", "run_toolkit", "delegate"}      # deleg
 
 
 def _documents_gate(run: Run, ctx: ToolContext | None, name: str) -> bool:
-    """Full permissions still ask before code runs in a chat with uploaded documents: their text can carry injected instructions."""
-    return (name in CODE_TOOLS and ctx is not None
+    """Opt-in (`confirm_with_documents`, off by default): full permissions still ask before code runs in a chat with
+    uploaded documents, whose text can carry injected instructions."""
+    return (run.options.get("confirm_with_documents") is True and name in CODE_TOOLS and ctx is not None
             and any(m.get("_documents") for m in ctx.store.messages(run.chat_id)))
 
 
