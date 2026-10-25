@@ -438,6 +438,24 @@ export type Reservation = {
   id: string; model: string; build: string; chat: string | null; state: string; created_at: number; pieces: number; distinct_parts: number;
   short_pieces: number; short: { part: string; colour: number; colour_name: string; reserved: number; owned: number; short: number }[];
 };
+/** An owned set as GET /api/sets returns it: brand, picture, copies and piece counts (on_hand + missing = pieces). */
+export type OwnedSet = {
+  id: string; source_name: string; set_num: string; name: string; year: number; theme: string; num_parts: number;
+  brand: string; image: string; copies: number; state: "parts" | "built"; pieces: number; distinct_parts: number;
+  reserved: number; missing: number; on_hand: number;
+};
+export type SetImageSettings = { remote_fetch: boolean; source: string };
+
+export const setsApi = {
+  list: () => request<{ sets: OwnedSet[] }>("/api/sets"),
+  imageSettings: () => request<SetImageSettings>("/api/set-images/settings"),
+  setRemoteFetch: (remote_fetch: boolean) =>
+    request<SetImageSettings>("/api/set-images/settings", { method: "PUT", body: json({ remote_fetch }) }),
+  uploadImage: (source: string, file: File) =>
+    request<{ set_num: string; image: string }>(`/api/sets/${sid(source)}/image`, { method: "POST", body: file, headers: { "Content-Type": file.type } }),
+  removeImage: (source: string) => request<{ removed: boolean }>(`/api/sets/${sid(source)}/image`, { method: "DELETE" }),
+};
+
 export type BuiltSet = { source: string; name: string; pieces: number };
 
 export const reservationsApi = {
