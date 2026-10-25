@@ -395,7 +395,7 @@ def test_only_mode_attaches_the_check_and_tells_the_agent_it_does_not_fit(ctx, b
     assert argv[2] == "check" and Path(argv[3]).name == "model.mpd" and Path(argv[3]).parent.parent == ctx.work_dir / "publication"
     assert argv[4:8] == ["bricks", "--mode", "only", "--json"] and argv[argv.index("--store") + 1] == str(bricks)
     check = result.parts_check
-    assert set(check) == {"mode", "complete", "needed_total", "owned_total", "short", "summary"}
+    assert set(check) == {"mode", "complete", "needed_total", "owned_total", "short", "summary", "sources"}
     assert check["mode"] == "only" and check["complete"] is False and check["needed_total"] == 19 and check["owned_total"] == 4
     assert [s["part"] for s in check["short"]] == ["3001", "3023", "3020"]               # largest shortfall first
     assert check["short"][0] == dict(part="3001", colour=4, colour_name="Red", needed=12, owned=3, missing=9)

@@ -10,6 +10,38 @@
   },
   "sha1": "2e47f17ddbc091dabe6faedc99fb57b045a5ac85"
  },
+ "bed#0": {
+  "params": {},
+  "sha1": "cda272da545bc5dc7d5ed14b0a3425d3dd8c7f25"
+ },
+ "bed#1": {
+  "params": {
+   "length": 10,
+   "mattress_colour": "light blue",
+   "width": 6
+  },
+  "sha1": "c2ec59c8304675173aea7188dbcedf6ea52c9a0e"
+ },
+ "bookshelf#0": {
+  "params": {},
+  "sha1": "2dcc1a55c3af744c2fc39e29ab61706ab3e6a8a7"
+ },
+ "bookshelf#1": {
+  "params": {
+   "books": false,
+   "shelves": 4,
+   "width": 7
+  },
+  "sha1": "e1a0edfbb73fb86ed28b3efa135e61d865b43fed"
+ },
+ "bookshelf#2": {
+  "params": {
+   "book_colour": "blue",
+   "shelves": 1,
+   "width": 3
+  },
+  "sha1": "ef7c0cf079aadf2195fee962af04ff8b7eee1f1c"
+ },
  "cargo-ship#0": {
   "params": {},
   "sha1": "ba9768c8dcad61962e11c5680abc9ab6aed6a47c"
@@ -30,6 +62,17 @@
   },
   "sha1": "0a619ab9e94963f6081d16f371b5947e4bcd34fc"
  },
+ "chair#0": {
+  "params": {},
+  "sha1": "99f572cec1d96c2f4018763b279970f4238dbb9c"
+ },
+ "chair#1": {
+  "params": {
+   "back_courses": 4,
+   "frame_colour": "black"
+  },
+  "sha1": "1e6684c9f096951f6da76667e7847ad4f2ac87e9"
+ },
  "courier-jet#0": {
   "params": {},
   "sha1": "479e2d316530f58c090e1087b9a09e5d9b688f85"
@@ -44,6 +87,27 @@
    "wheelbase": 12
   },
   "sha1": "8ae9f40cd9d23e729305b596f9e3e68e8bb37b9f"
+ },
+ "dining-table#0": {
+  "params": {},
+  "sha1": "f0cad2b7be6e05565f32de9e60b7a0018ec91f5d"
+ },
+ "dining-table#1": {
+  "params": {
+   "depth": 6,
+   "leg_courses": 3,
+   "top_colour": "white",
+   "width": 8
+  },
+  "sha1": "267fb38c253c8dfbf4c793946c79ae3d21f804fd"
+ },
+ "dining-table#2": {
+  "params": {
+   "depth": 2,
+   "leg_courses": 1,
+   "width": 2
+  },
+  "sha1": "7c62a94c64cbb211255278e80a67726090f2b5a7"
  },
  "grand-tourer#0": {
   "params": {},
@@ -92,6 +156,18 @@
   "params": {},
   "sha1": "66077dd2c40795505f2ba96bcd53dbf7358bcec8"
  },
+ "sofa#0": {
+  "params": {},
+  "sha1": "9b26477bb25f84139fbe522a54e5ebf71cba034f"
+ },
+ "sofa#1": {
+  "params": {
+   "cushion_colour": "red",
+   "depth": 5,
+   "width": 10
+  },
+  "sha1": "1dea6eb882b0f1f38880020239d6107ba34ef24f"
+ },
  "starfighter#0": {
   "params": {},
   "sha1": "a0918b0fc820ddd71b9bcaa5d733cf3062c77c69"
@@ -104,6 +180,17 @@
    "wingspan": 24
   },
   "sha1": "814ac8afd951194497edd563eeb22ed4724b3e36"
+ },
+ "stool#0": {
+  "params": {},
+  "sha1": "068b0a13d67851368599e918cee4d3076653ef03"
+ },
+ "stool#1": {
+  "params": {
+   "courses": 4,
+   "seat_colour": "yellow"
+  },
+  "sha1": "ed62dd47fb8e4988053e89860ad8dfec4b9dacd9"
  },
  "street-lantern#0": {
   "params": {},

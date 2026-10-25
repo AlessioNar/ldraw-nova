@@ -581,6 +581,28 @@ def substituted_pieces(needed, by_part):
     return sum(min(n, sum(q for _, q in by_part.get(part, ()))) for part, n in need_by_part.items())
 
 
+def source_usage(needed, inventories):
+    """Where a model's covered pieces come from: [{id, name, kind, pieces}] in the order the inventories are listed.
+
+    Each (part, colour) is taken from the first inventory that has it, then the next, so a loose-parts list put first
+    is used up before a set.  Only inventories that supply at least one piece are returned."""
+    left = [Counter({(r.part, r.colour): 0 for r in inv.rows}) for inv in inventories]
+    for counter, inv in zip(left, inventories):
+        for r in inv.rows:
+            counter[(r.part, r.colour)] += r.qty
+    used = [0] * len(inventories)
+    for key, need in needed.items():
+        for i, counter in enumerate(left):
+            take = min(need, counter.get(key, 0))
+            if take > 0:
+                counter[key] -= take
+                used[i] += take
+                need -= take
+            if need <= 0:
+                break
+    return [dict(id=inv.id, name=inv.name, kind=inv.kind or "import", pieces=n) for inv, n in zip(inventories, used) if n > 0]
+
+
 def check_model(model, inventories, *, mode="prefer", library=None, substitutions=True, needed=None):
     """Compare a model's physical BOM with inventories; `needed` skips the BOM expansion when it is already known."""
     if mode not in MODES:
@@ -607,4 +629,5 @@ def check_model(model, inventories, *, mode="prefer", library=None, substitution
             f"{ok} of {needed_total} pieces owned; short by {missing} piece(s) across {len(short)} part/colour line(s), "
             f"{len(not_owned)} part(s) not owned at all.")
     return dict(mode=mode, complete=not short, needed_total=needed_total, owned_total=sum(owned.values()), short=short,
-                not_owned_parts=not_owned, colour_substitutions=subs, ok_pieces=ok, summary=text)
+                not_owned_parts=not_owned, colour_substitutions=subs, ok_pieces=ok, summary=text,
+                sources=source_usage(needed, inventories))

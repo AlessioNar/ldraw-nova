@@ -1,0 +1,161 @@
+# Furniture (issue #199, part of #40, extends epic #89; decided in #76: the catalogue comes from the reference sets).
+# Two parts. First, the catalogue: one skos:Concept per kind of furniture found in the reference sets by tools/harvest_furniture.py,
+# with how many pieces and sets it was found in, its typical footprint (studs) and height (plates), and the parts those pieces use
+# most; tests/test_furniture.py keeps these numbers equal to ldraw_tools/data/furniture-catalogue.json. Second, the generators in
+# ldraw_tools/generators/furniture.py as builds, each drawn from catalogue kinds (obd:drawnFrom) and carrying its default footprint
+# (obd:furnitureWidth and Depth in studs, obd:furnitureHeight in LDU) so a room can ask whether a piece fits. Parameter IRIs follow obd.ttl:
+# obd:<group><Key>. Furniture is a Build like a Building, so it is placed inside a Building's storey by a room, not by this file.
+@prefix build: <https://alessionar.github.io/open-brick-designer/ns/build/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix furn: <https://alessionar.github.io/open-brick-designer/ns/furniture/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://alessionar.github.io/open-brick-designer/ns/furniture> a owl:Ontology ;
+    dcterms:title "Open Brick Designer furniture"@en ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    owl:imports <https://alessionar.github.io/open-brick-designer/ns/obd> .
+
+# --- Classes ----------------------------------------------------------------------------------------------------------
+
+obd:Furniture a owl:Class ; rdfs:subClassOf obd:Build ; rdfs:label "Furniture"@en ;
+    rdfs:comment "A piece for a room: centred on x and z, Y=0 is the floor, the front you sit at or open is -Z."@en .
+obd:Seat a owl:Class ; rdfs:subClassOf obd:Furniture ; rdfs:label "Seat"@en ; dcterms:identifier "seat" ;
+    rdfs:comment "Stool, chair or sofa."@en .
+obd:Table a owl:Class ; rdfs:subClassOf obd:Furniture ; rdfs:label "Table"@en ; dcterms:identifier "table" ;
+    rdfs:comment "A plate top on round-brick legs: dining table, coffee table or desk."@en .
+obd:Bed a owl:Class ; rdfs:subClassOf obd:Furniture ; rdfs:label "Bed"@en ; dcterms:identifier "bed" ;
+    rdfs:comment "Posts, a frame with head and foot boards, a mattress and a pillow."@en .
+obd:Shelving a owl:Class ; rdfs:subClassOf obd:Furniture ; rdfs:label "Shelving"@en ; dcterms:identifier "shelving" ;
+    rdfs:comment "Boards between brick uprights."@en .
+
+# --- Properties -------------------------------------------------------------------------------------------------------
+
+obd:drawnFrom a owl:ObjectProperty ; rdfs:domain obd:Furniture ; rdfs:range skos:Concept ;
+    rdfs:comment "A kind of furniture in the catalogue whose parts and proportions this design follows."@en .
+obd:furnitureWidth a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:domain obd:Furniture ; rdfs:range xsd:integer ; obd:unit "stud" ;
+    rdfs:comment "Studs along x at the default parameters."@en .
+obd:furnitureDepth a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:domain obd:Furniture ; rdfs:range xsd:integer ; obd:unit "stud" ;
+    rdfs:comment "Studs along z at the default parameters."@en .
+obd:furnitureHeight a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:domain obd:Furniture ; rdfs:range xsd:integer ; obd:unit "ldu" ;
+    rdfs:comment "Height in LDraw units (a plate is 8, a brick 24) at the default parameters."@en .
+obd:referencePieces a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:domain skos:Concept ; rdfs:range xsd:integer ;
+    rdfs:comment "Distinct pieces of this kind found in the reference sets."@en .
+obd:referenceSets a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:domain skos:Concept ; rdfs:range xsd:integer ;
+    rdfs:comment "Reference sets that contain at least one piece of this kind."@en .
+obd:typicalFootprint a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:domain skos:Concept ; rdfs:range xsd:string ;
+    rdfs:comment "Median footprint of the pieces found, studs along x by studs along z (measured to within about a stud)."@en .
+obd:typicalHeight a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:domain skos:Concept ; rdfs:range xsd:integer ; obd:unit "plate" ;
+    rdfs:comment "Median height of the pieces found, in plates."@en .
+obd:vocabulary a owl:DatatypeProperty ; rdfs:domain skos:Concept ; rdfs:range xsd:string ;
+    rdfs:comment "LDraw part numbers the pieces use most, most used first."@en .
+
+obd:stoolCourses a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Seat ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 4 ] ) ] ;
+    obd:default 2 ; obd:order 1 ; dcterms:identifier "courses" ; rdfs:comment "Stool height in round-brick courses."@en .
+obd:chairBackCourses a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Seat ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 4 ] ) ] ;
+    obd:default 2 ; obd:order 2 ; dcterms:identifier "back_courses" ; rdfs:comment "Chair back height in brick courses."@en .
+obd:sofaWidth a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Seat ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 4 ] [ xsd:maxInclusive 10 ] ) ] ;
+    obd:default 8 ; obd:order 3 ; obd:unit "stud" ; dcterms:identifier "width" ; rdfs:comment "Sofa width."@en .
+obd:sofaDepth a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Seat ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 3 ] [ xsd:maxInclusive 5 ] ) ] ;
+    obd:default 4 ; obd:order 4 ; obd:unit "stud" ; dcterms:identifier "depth" ; rdfs:comment "Sofa depth, back included."@en .
+obd:tableWidth a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Table ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 2 ] [ xsd:maxInclusive 8 ] ) ] ;
+    obd:default 6 ; obd:order 1 ; obd:unit "stud" ; dcterms:identifier "width" ; rdfs:comment "Top width."@en .
+obd:tableDepth a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Table ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 2 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 4 ; obd:order 2 ; obd:unit "stud" ; dcterms:identifier "depth" ; rdfs:comment "Top depth."@en .
+obd:tableLegCourses a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Table ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 3 ] ) ] ;
+    obd:default 2 ; obd:order 3 ; obd:unit "course" ; dcterms:identifier "leg_courses" ; rdfs:comment "Leg height in brick courses."@en .
+obd:bedWidth a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Bed ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 3 ] [ xsd:maxInclusive 6 ] ) ] ;
+    obd:default 4 ; obd:order 1 ; obd:unit "stud" ; dcterms:identifier "width" ; rdfs:comment "Bed width (3-4 single, 5-6 double)."@en .
+obd:bedLength a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Bed ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 6 ] [ xsd:maxInclusive 10 ] ) ] ;
+    obd:default 8 ; obd:order 2 ; obd:unit "stud" ; dcterms:identifier "length" ; rdfs:comment "Bed length."@en .
+obd:shelfWidth a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Shelving ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 3 ] [ xsd:maxInclusive 8 ] ) ] ;
+    obd:default 4 ; obd:order 1 ; obd:unit "stud" ; dcterms:identifier "width" ; rdfs:comment "Shelf width."@en .
+obd:shelfShelves a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Shelving ;
+    rdfs:range [ a rdfs:Datatype ; owl:onDatatype xsd:integer ; owl:withRestrictions ( [ xsd:minInclusive 1 ] [ xsd:maxInclusive 4 ] ) ] ;
+    obd:default 3 ; obd:order 2 ; dcterms:identifier "shelves" ; rdfs:comment "Compartments, one above the other."@en .
+obd:shelfBooks a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Shelving ; rdfs:range xsd:boolean ;
+    obd:default true ; obd:order 3 ; dcterms:identifier "books" ; rdfs:comment "A row of books on every shelf."@en .
+
+# --- Catalogue: kinds found in the reference sets (tools/harvest_furniture.py) ---------------------------------------------
+
+furn: a owl:Ontology, skos:ConceptScheme ;
+    dcterms:title "Open Brick Designer furniture kinds"@en ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:source "Furniture submodels of the reference sets in data/models-annotated"@en .
+
+furn:armchair a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Armchair"@en ;
+    obd:referencePieces 4 ; obd:referenceSets 3 ; obd:typicalFootprint "3x3" ; obd:typicalHeight 10 ;
+    obd:vocabulary "3068b", "3679", "4079", "99207", "11211", "14769", "24201", "2877" .
+furn:bed a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Bed"@en ;
+    obd:referencePieces 28 ; obd:referenceSets 20 ; obd:typicalFootprint "6x6" ; obd:typicalHeight 10 ;
+    obd:vocabulary "3023", "6141", "3069b", "3020", "3710", "85984", "3032", "6091" .
+furn:bench a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Bench"@en ;
+    obd:referencePieces 11 ; obd:referenceSets 11 ; obd:typicalFootprint "6x3" ; obd:typicalHeight 6 ;
+    obd:vocabulary "3023", "3069b", "2431", "3034", "6141", "6636", "3021", "3022" .
+furn:cabinet a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Cabinet"@en ;
+    obd:referencePieces 9 ; obd:referenceSets 4 ; obd:typicalFootprint "2x3" ; obd:typicalHeight 10 ;
+    obd:vocabulary "15573", "3023", "92410", "3069b", "32028", "3710", "4070", "4533" .
+furn:chair a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Chair"@en ;
+    obd:referencePieces 21 ; obd:referenceSets 16 ; obd:typicalFootprint "2x3" ; obd:typicalHeight 8 ;
+    obd:vocabulary "3069b", "3022", "3023", "3679", "48336", "6141", "3002", "3004" .
+furn:desk a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Desk"@en ;
+    obd:referencePieces 18 ; obd:referenceSets 12 ; obd:typicalFootprint "6x3" ; obd:typicalHeight 12 ;
+    obd:vocabulary "3795", "15573", "3022", "3069b", "3004", "3023", "6141", "15712" .
+furn:shelf a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Shelf"@en ;
+    obd:referencePieces 8 ; obd:referenceSets 6 ; obd:typicalFootprint "5x2" ; obd:typicalHeight 17 ;
+    obd:vocabulary "3020", "3069b", "3023", "4070", "6141", "3062b", "32028", "32952" .
+furn:sofa a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Sofa"@en ;
+    obd:referencePieces 7 ; obd:referenceSets 6 ; obd:typicalFootprint "8x4" ; obd:typicalHeight 8 ;
+    obd:vocabulary "3710", "3004", "3035", "4032a", "6191", "87079", "3009", "3010" .
+furn:stool a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Stool"@en ;
+    obd:referencePieces 5 ; obd:referenceSets 4 ; obd:typicalFootprint "2x2" ; obd:typicalHeight 6 ;
+    obd:vocabulary "3062b", "3941", "4032a", "4150", "11203", "15395", "2343", "2432" .
+furn:table a skos:Concept ; skos:inScheme furn: ; skos:prefLabel "Table"@en ;
+    obd:referencePieces 38 ; obd:referenceSets 28 ; obd:typicalFootprint "4x4" ; obd:typicalHeight 10 ;
+    obd:vocabulary "6141", "3899", "59900", "60474", "3062b", "3941", "3022", "3023" .
+
+# --- Designs: the generators in ldraw_tools/generators/furniture.py ---------------------------------------------------------
+
+build:stool a obd:Seat ; dcterms:title "Stool"@en ; obd:drawnFrom furn:stool ;
+    obd:furnitureWidth 2 ; obd:furnitureDepth 2 ; obd:furnitureHeight 56 ; obd:stoolCourses 2 ;
+    rdfs:comment "Round stool: a stack of round 2x2 bricks under a round plate seat."@en .
+build:chair a obd:Seat ; dcterms:title "Chair"@en ; obd:drawnFrom furn:chair, furn:armchair ;
+    obd:furnitureWidth 2 ; obd:furnitureDepth 2 ; obd:furnitureHeight 80 ; obd:chairBackCourses 2 ;
+    rdfs:comment "Chair on four round-brick legs with a 2x2 seat and a brick back."@en .
+build:dining-table a obd:Table ; dcterms:title "Table"@en ; obd:drawnFrom furn:table, furn:desk ;
+    obd:furnitureWidth 6 ; obd:furnitureDepth 4 ; obd:furnitureHeight 64 ; obd:tableWidth 6 ; obd:tableDepth 4 ; obd:tableLegCourses 2 ;
+    rdfs:comment "Table or desk: a two-layer plate top on four round-brick legs."@en .
+build:bed a obd:Bed ; dcterms:title "Bed"@en ; obd:drawnFrom furn:bed ;
+    obd:furnitureWidth 4 ; obd:furnitureDepth 8 ; obd:furnitureHeight 88 ; obd:bedWidth 4 ; obd:bedLength 8 ;
+    rdfs:comment "Bed on four posts: a plate base with a head and foot board, a mattress and a pillow."@en .
+build:sofa a obd:Seat ; dcterms:title "Sofa"@en ; obd:drawnFrom furn:sofa, furn:bench ;
+    obd:furnitureWidth 8 ; obd:furnitureDepth 4 ; obd:furnitureHeight 64 ; obd:sofaWidth 8 ; obd:sofaDepth 4 ;
+    rdfs:comment "Sofa: a plate base with arms, a two-course back and a cushion seat."@en .
+build:bookshelf a obd:Shelving ; dcterms:title "Bookshelf"@en ; obd:drawnFrom furn:shelf, furn:cabinet ;
+    obd:furnitureWidth 4 ; obd:furnitureDepth 2 ; obd:furnitureHeight 176 ; obd:shelfWidth 4 ; obd:shelfShelves 3 ; obd:shelfBooks true ;
+    rdfs:comment "Open shelving: boards between brick uprights, with an optional row of books on each shelf."@en .

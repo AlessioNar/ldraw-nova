@@ -32,15 +32,17 @@ DEFAULT_ESTIMATE = {"eur_low": 1.0, "eur_high": 2.0, "minutes_low": 15, "minutes
 MIN_HISTORY = 3
 HISTORY_TTL_S = 60
 # Families a generator exists for when the registry is not loaded yet (the estimate endpoint never waits for it).
-STATIC_FAMILIES = {"car", "van", "truck", "motorcycle", "boat", "aircraft", "spaceship", "house", "building", "train"}
+STATIC_FAMILIES = {"car", "van", "truck", "motorcycle", "boat", "aircraft", "spaceship", "house", "building", "train", "furniture"}
 GENERIC_KINDS = {"model", "vehicle", "building", "thing", "object", "toy"}
 SIZE_PARAMS = ("length", "wingspan", "width", "depth", "trunk_courses")
+HEIGHT_PARAMS = ("courses", "trunk_courses", "leg_courses", "back_courses", "shelves")      # what "taller" changes
 WHOLE = ("whole", "model", "it", "", "size")
 
 ROLE_PARAMS = {"body": ["body", "wall", "hull"], "hull": ["hull", "body", "wall"], "walls": ["wall", "body"],
                "wheels": ["wheels", "wheel"], "glass": ["glass", "canopy"], "canopy": ["canopy", "glass"],
                "roof": ["roof"], "trim": ["trim"], "accent": ["accent"], "door": ["door"], "wing": ["wing"],
-               "chimney": ["chimney"], "engine": ["engine"], "foliage": ["foliage"], "trunk": ["trunk"], "flowers": ["flower"]}
+               "chimney": ["chimney"], "engine": ["engine"], "foliage": ["foliage"], "trunk": ["trunk"], "flowers": ["flower"],
+               "back": ["frame"], "top": ["top"], "leg": ["leg"], "book": ["book"]}
 FEATURE_WORDS = {"door": "door", "window": "windows", "windows": "windows", "porch": "porch", "chimney": "chimney",
                  "dormer": "dormer", "engine": "engines", "engines": "engines", "wheel": "wheels", "wheels": "wheels",
                  "wagon": "wagons", "wagons": "wagons", "carriage": "wagons", "carriages": "wagons"}
@@ -407,8 +409,8 @@ def _scale(schema: dict, wanted: dict, edit: dict, target: str) -> bool:
     amount, unit = edit.get("amount"), edit.get("unit")
     if target == "roof" and "roof_tiers" in schema:
         names = ["roof_tiers"]
-    elif (unit == "courses" or delta in ("taller", "lower")) and ("courses" in schema or "trunk_courses" in schema):
-        names = ["courses" if "courses" in schema else "trunk_courses"]
+    elif (unit == "courses" or delta in ("taller", "lower")) and any(n in schema for n in HEIGHT_PARAMS):
+        names = [next(n for n in HEIGHT_PARAMS if n in schema)]
     elif delta in ("longer", "shorter"):
         names = [n for n in ("length", "depth") if n in schema][:1]
     elif delta in ("wider", "narrower"):
@@ -762,7 +764,7 @@ def _with_kind(spec: dict, text: str) -> dict:
     """The keyword reading knows only the family; the word that gave it is the kind ("helicopter" is no jet)."""
     if spec.get("intent") == "new_model" and not (spec.get("subject") or {}).get("kind"):
         pattern = dict(understand._FAMILIES).get(spec["subject"]["family"])
-        found = pattern and re.search(rf"\b(?:{pattern})s?\b", " " + understand._key(text) + " ")
+        found = pattern and re.search(rf"\b(?:{pattern})s?\b", " " + understand.furniture_subject(understand._key(text)) + " ")
         if found:
             spec["subject"]["kind"] = found.group(0).strip()
     return spec
