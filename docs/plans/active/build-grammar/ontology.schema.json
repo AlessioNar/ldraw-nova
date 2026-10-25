@@ -933,6 +933,15 @@
      "default": false,
      "description": "Modular: two street lamps on the sidewalk",
      "type": "boolean"
+    },
+    "corner": {
+     "default": "none",
+     "description": "Modular: a second sidewalk along this side makes a corner module (two street facades)",
+     "enum": [
+      "none",
+      "left",
+      "right"
+     ]
     }
    },
    "default": {
@@ -943,7 +952,8 @@
     "path_colour": "light grey",
     "path_width": 2,
     "sidewalk": 6,
-    "lamps": false
+    "lamps": false,
+    "corner": "none"
    }
   }
  }

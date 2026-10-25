@@ -83,8 +83,8 @@ obdsh:ParapetFlat a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identif
 
 obdsh:ModularFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "modular-fits" ;
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
-        sh:message "A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors (modular-fits)" ;
-        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?rf obd:roofVerge ?verge ; obd:roofOverhang ?overhang . ?st obd:storeysEaves ?eaves ; obd:storeysFloors ?floors . ?co obd:cornersStyle ?corners . ?dt obd:detailsConnectors ?connectors . FILTER ((?kind = "modular" && (?w != 32 || ?d > 32-?sidewalk || ?verge != 0 || ?overhang != 0 || ?eaves || !?floors || ?corners = "towers")) || (?kind != "modular" && ?connectors)) }""" ] .
+        sh:message "A modular building fills the 32 studs beside its sidewalks, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors (modular-fits)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk ; obd:baseCorner ?corner . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?rf obd:roofVerge ?verge ; obd:roofOverhang ?overhang . ?st obd:storeysEaves ?eaves ; obd:storeysFloors ?floors . ?co obd:cornersStyle ?corners . ?dt obd:detailsConnectors ?connectors . FILTER ((?kind = "modular" && (?w != 32 - IF(?corner != "none", ?sidewalk, 0) || ?d > 32-?sidewalk || ?verge != 0 || ?overhang != 0 || ?eaves || !?floors || ?corners = "towers")) || (?kind != "modular" && ?connectors)) }""" ] .
 
 obdsh:InteriorRect a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "interior-rect" ;
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
@@ -125,6 +125,11 @@ obdsh:AwningFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifi
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
         sh:message "An awning stripes the front cornice of the ground storey: it needs a rectangular footprint and 2 or more storeys, and it takes the place of a porch (awning-fits)" ;
         sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsAwning true ; obd:detailsPorch ?porch . ?fp obd:footprintShape ?shape . ?st obd:storeysCount ?count ; obd:storeysBandProjection ?proj . FILTER (?shape != "rect" || ?count < 2 || ?proj < 1 || ?porch = true) }""" ] .
+
+obdsh:CornerFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "corner-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A corner module needs a modular base with a sidewalk of 2 or more studs; the building is 32 minus the sidewalk wide, and only the two street sides get windows (corner-fits)" ;
+        sh:select """SELECT $this WHERE { ?bs a obd:Base ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk ; obd:baseCorner ?corner . ?op obd:openingsSides ?side . FILTER (?corner != "none" && (?kind != "modular" || ?sidewalk < 2 || (?side != "front" && ?side != ?corner))) }""" ] .
 
 obdsh:SignShop a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "sign-shop" ;
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;

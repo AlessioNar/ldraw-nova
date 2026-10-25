@@ -901,3 +901,11 @@ obd:baseLamps a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
     obd:order 8 ;
     dcterms:identifier "lamps" ;
     rdfs:comment "Modular: two street lamps on the sidewalk"@en .
+
+obd:baseCorner a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Base ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "none" "left" "right" ) ] ;
+    obd:default "none" ;
+    obd:order 9 ;
+    dcterms:identifier "corner" ;
+    rdfs:comment "Modular: a second sidewalk along this side makes a corner module (two street facades)"@en .

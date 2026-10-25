@@ -313,4 +313,18 @@ PRESETS = {
                 'roof': {'style': 'hip', 'colour': 'yellow', 'finial': True, 'overhang': 0},
                 'details': {'connectors': True, 'balcony': True, 'balcony_colour': 'dark brown'},
                 'base': {'kind': 'modular', 'colour': 'dark grey', 'path_colour': 'light grey', 'lamps': True}}),
+    'modular-corner-cafe': dict(
+        title='Modular corner cafe', group='modular',
+        description='Corner module: a cafe on the street corner with windows and cornice on two streets, striped awning, furnished rooms, hip roof.',
+        keywords=('modular corner', 'corner cafe', 'corner building', 'corner shop'),
+        config={'name': 'modular corner cafe', 'footprint': {'depth': 22},
+                'storeys': {'count': 3, 'courses': 7, 'band_projection': 1, 'band_colour': 'white', 'interior': 'furnished'},
+                'walls': {'colour': 'dark tan', 'plinth': True, 'plinth_colour': 'dark grey'},
+                'corners': {'style': 'pillars', 'pillar_colour': 'white'},
+                'openings': {'door': 'glazed', 'door_position': 'left', 'door_colour': 'dark green', 'frame_colour': 'white',
+                             'ground_windows': 'wide', 'upper_windows': 'tall'},
+                'roof': {'style': 'hip', 'colour': 'dark red', 'overhang': 0},
+                'details': {'sign': 'fascia', 'sign_colour': 'dark green', 'connectors': True,
+                            'awning': True, 'awning_colour': 'dark green', 'awning_alt_colour': 'white'},
+                'base': {'kind': 'modular', 'colour': 'dark grey', 'path_colour': 'light grey', 'lamps': True, 'corner': 'left'}}),
 }

@@ -85,6 +85,8 @@ def technic_bricks(ctx, st, course, y0, free):
     taken = set()
     for j in (z0 + depth // 4, z0 + 3 * depth // 4 - 1):
         for i in (x0, x1 - 1):
+            if ctx.cfg['base']['corner'] == ('left' if i == x0 else 'right'):
+                continue                      # a street side is not bolted to a neighbour
             pair = {(i, j), (i, j + 1)}
             if pair <= free and all(st.walls.axis(c, st.course0 + course) == 'v' for c in pair):
                 ctx.canvas.put(catalog.TECHNIC_BRICK, ctx.code(72), 'structure', i + .5, j + 1, y0, 90, label='module connector')

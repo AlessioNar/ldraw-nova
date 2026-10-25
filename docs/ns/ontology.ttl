@@ -135,6 +135,17 @@ obd:baseColour a owl:DatatypeProperty,
     obd:default "green" ;
     obd:order 3 .
 
+obd:baseCorner a owl:DatatypeProperty,
+        owl:FunctionalProperty,
+        obd:Parameter ;
+    dcterms:identifier "corner" ;
+    rdfs:comment "Modular: a second sidewalk along this side makes a corner module (two street facades)"@en ;
+    rdfs:domain obd:Base ;
+    rdfs:range [ a rdfs:Datatype ;
+            owl:oneOf ( "none" "left" "right" ) ] ;
+    obd:default "none" ;
+    obd:order 9 .
+
 obd:baseKind a owl:DatatypeProperty,
         owl:FunctionalProperty,
         obd:Parameter ;
@@ -1425,6 +1436,14 @@ role:wood a skos:Concept ;
             sh:select "SELECT $this WHERE { ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?rf obd:roofStyle ?style . ?dt obd:detailsChimney ?chimney . FILTER (?style NOT IN (\"gable\",\"hip\") && ?chimney != \"none\") }" ] ;
     sh:targetClass obd:Building .
 
+<https://alessionar.github.io/open-brick-designer/ns/shapes#CornerFits> a sh:NodeShape ;
+    dcterms:identifier "corner-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "A corner module needs a modular base with a sidewalk of 2 or more studs; the building is 32 minus the sidewalk wide, and only the two street sides get windows (corner-fits)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?bs a obd:Base ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk ; obd:baseCorner ?corner . ?op obd:openingsSides ?side . FILTER (?corner != \"none\" && (?kind != \"modular\" || ?sidewalk < 2 || (?side != \"front\" && ?side != ?corner))) }" ] ;
+    sh:targetClass obd:Building .
+
 <https://alessionar.github.io/open-brick-designer/ns/shapes#DoorHeight> a sh:NodeShape ;
     dcterms:identifier "door-height" ;
     sh:sparql [ a sh:SPARQLConstraint ;
@@ -1484,9 +1503,9 @@ role:wood a skos:Concept ;
 <https://alessionar.github.io/open-brick-designer/ns/shapes#ModularFits> a sh:NodeShape ;
     dcterms:identifier "modular-fits" ;
     sh:sparql [ a sh:SPARQLConstraint ;
-            sh:message "A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors (modular-fits)" ;
+            sh:message "A modular building fills the 32 studs beside its sidewalks, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors (modular-fits)" ;
             sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
-            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?rf obd:roofVerge ?verge ; obd:roofOverhang ?overhang . ?st obd:storeysEaves ?eaves ; obd:storeysFloors ?floors . ?co obd:cornersStyle ?corners . ?dt obd:detailsConnectors ?connectors . FILTER ((?kind = \"modular\" && (?w != 32 || ?d > 32-?sidewalk || ?verge != 0 || ?overhang != 0 || ?eaves || !?floors || ?corners = \"towers\")) || (?kind != \"modular\" && ?connectors)) }" ] ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk ; obd:baseCorner ?corner . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?rf obd:roofVerge ?verge ; obd:roofOverhang ?overhang . ?st obd:storeysEaves ?eaves ; obd:storeysFloors ?floors . ?co obd:cornersStyle ?corners . ?dt obd:detailsConnectors ?connectors . FILTER ((?kind = \"modular\" && (?w != 32 - IF(?corner != \"none\", ?sidewalk, 0) || ?d > 32-?sidewalk || ?verge != 0 || ?overhang != 0 || ?eaves || !?floors || ?corners = \"towers\")) || (?kind != \"modular\" && ?connectors)) }" ] ;
     sh:targetClass obd:Building .
 
 <https://alessionar.github.io/open-brick-designer/ns/shapes#NotchFits> a sh:NodeShape ;
@@ -1940,15 +1959,6 @@ obd:partOf a owl:FunctionalProperty,
     rdfs:domain obd:Component ;
     rdfs:range obd:Build .
 
-obd:Base a owl:Class ;
-    rdfs:label "Base"@en ;
-    dcterms:identifier "base" ;
-    rdfs:comment "Ground"@en ;
-    rdfs:subClassOf obd:Component ;
-    obd:order 8 ;
-    obd:partOf obd:Building ;
-    obd:role role:base .
-
 role:trim a skos:Concept ;
     skos:altLabel "cornice"@en,
         "plinth"@en,
@@ -1964,6 +1974,15 @@ role:trim a skos:Concept ;
     skos:inScheme role: ;
     skos:prefLabel "trim"@en ;
     obd:order 15 .
+
+obd:Base a owl:Class ;
+    rdfs:label "Base"@en ;
+    dcterms:identifier "base" ;
+    rdfs:comment "Ground"@en ;
+    rdfs:subClassOf obd:Component ;
+    obd:order 8 ;
+    obd:partOf obd:Building ;
+    obd:role role:base .
 
 obd:Footprint a owl:Class ;
     rdfs:label "Footprint"@en ;
