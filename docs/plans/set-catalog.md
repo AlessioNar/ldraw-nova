@@ -45,6 +45,14 @@ Per-set zlib costs about 1 MB more than the best block scheme but keeps access t
 
 `sets.rank_sets` scores each set with the measure `inventory.check_model` uses, `sum(min(needed, owned)) / sum(needed)`, over the set's mapped parts. It walks an inverted index from (part, colour) to (set, qty), so only owned lines are visited: 0.11 s per query once the index exists (1.4 s to build it), against 1.3 s for a plain per-set loop; both paths return identical rankings. Results carry `dropped_pieces` and `mapped_share` for the unmapped caveat and `has_model`.
 
+## Local catalogue (other brands)
+
+The backend merges an optional `data/local/set-catalog-local.json` (override: `LDRAW_NOVA_LOCAL_SET_CATALOG`) into the set catalogue at load time. It is written by `tools/fetch_cada_sets.py`, is gitignored and never committed. Format: `{"format": "set-catalog-local/1", "sets": [{"key": "cada:C51026W", "brand": "cada", "set_num": "C51026W", "name": ..., "year": null|int, "pieces": null|int}]}`.
+
+- A local set's `set_num` in the API is its key (`cada:C51026W`), so numbers cannot clash across brands; `number` is the bare number and `brand` the display name (`CaDA`; LEGO sets read `LEGO`). Search matches number, name and brand; `/api/catalog/sets/C51026W` finds it by bare number too.
+- Local sets carry no parts list. Adding one creates a set source with its brand and piece count and no rows; the parts come in through the BrickLink import.
+- A missing, unreadable or wrongly formatted file is ignored: the catalogue behaves exactly as without it.
+
 ## Not verified
 
 - Whether the Rebrickable terms contain further conditions on the downloads page than the quoted text.

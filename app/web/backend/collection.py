@@ -559,9 +559,11 @@ def add_set(set_num: str, copies: int = 1, state: str = "parts", brand: str = DE
     info = catalog.get(str(set_num))
     if info is None:
         raise InventoryError(404, f"No set {str(set_num)[:30]!r} in the catalogue")
+    if brand == DEFAULT_BRAND:
+        brand = info["brand"]                                    # a set from another brand's local catalogue brings its own
     lines = catalog.lines(info["set_num"])
     dropped = info["dropped_part"] + info["dropped_colour"]
-    title = f"{info['set_num']} {info['name']}"[:inventories.MAX_NAME_CHARS]
+    title = f"{info['number']} {info['name']}"[:inventories.MAX_NAME_CHARS]
     with store.lock:
         n = 1
         base_id = inventories.slugify(f"set-{info['set_num']}")
@@ -577,7 +579,7 @@ def add_set(set_num: str, copies: int = 1, state: str = "parts", brand: str = DE
                 "unmapped_parts": [], "unmapped_colours": [],
                 "warnings": [f"{dropped * copies} piece(s) of this set have no LDraw equivalent and are not listed"] if dropped else []}
         _save(data)
-        _append_log(sid, _stamp([{"op": "create", "what": "set"}], 1, f"Added set {info['set_num']}"))
+        _append_log(sid, _stamp([{"op": "create", "what": "set"}], 1, f"Added set {info['number']}"))
     return {"inventory": inventories.summary(data), "set": set_record(data)}
 
 
