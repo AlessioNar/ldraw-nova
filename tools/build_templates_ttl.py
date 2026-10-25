@@ -75,6 +75,11 @@ def slug(text):
     return re.sub(r'[^a-z0-9]+', '-', re.sub(r'\[.*?\]', '', text.lower())).strip('-')
 
 
+def role_name(role):
+    """Role local name in roles.ttl: a per-colour sub-role is `wall:stripe-a` there and `wall_stripe_a` in a template (issue #220)."""
+    return re.sub(r'_stripe_([a-z])$', r':stripe-\1', role)
+
+
 def knob_class(key):
     for prefix, cls in KNOB_CLASS:
         if key.startswith(prefix):
@@ -119,7 +124,7 @@ def template_block(data):
         t.append(f'    dcterms:license <{iri_lic}>')
     t.append('    obd:family ' + ', '.join(lit(f) for f in data['families']))
     t.append('    obd:kind ' + ', '.join(lit(k) for k in data['kinds']))
-    t.append('    obd:carriesRole ' + ', '.join(f'role:{r}' for r in sorted(data['roles'])))
+    t.append('    obd:carriesRole ' + ', '.join(f'role:{role_name(r)}' for r in sorted(data['roles'])))
     t.append(f'    obd:partCount {len(data["leaves"])}')
     knobs = list(data['params'])
     t.append('    obd:hasKnob ' + ', '.join(f'<{BASE}template/{tid}/knob/{k}>' for k in knobs))
@@ -129,7 +134,7 @@ def template_block(data):
              f'    dcterms:identifier {lit(key)}',
              f'    rdfs:comment {lit(spec["description"])}@en']
         if key.startswith('colour_'):
-            k.append(f'    obd:forRole role:{key[len("colour_"):]}')
+            k.append(f'    obd:forRole role:{role_name(key[len("colour_"):])}')
         default = spec.get('default')
         if isinstance(default, bool):
             k.append(f'    obd:default {str(default).lower()}')

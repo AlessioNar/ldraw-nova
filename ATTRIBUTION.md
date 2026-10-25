@@ -70,3 +70,13 @@ The site is copyrighted (Kai Zimmermann) and publishes no licence, so that list 
 gitignored, nothing fetched is committed or bundled, and the tool makes three requests per run (robots.txt, the
 brand page, one JSON file), honours robots.txt, and refuses to run twice without `--force`. CaDA is a trademark of
 its owner, which does not sponsor or endorse this project.
+
+## Derived building templates
+
+`ldraw_tools/data/templates/` and `ontology/templates.ttl` publish 100 build templates derived by
+`tools/derive_template_candidates.py` from the reference models in `models-packed/`. Each model is credited to its own author and licence: the template's `source`
+block (and its PROV-O record in `templates.ttl`: `prov:wasDerivedFrom`, `prov:wasAttributedTo`, `dcterms:license`)
+carries the model's `Author:` and `!LICENSE` header lines, in practice **CCAL version 2.0**
+(https://creativecommons.org/licenses/by/2.0/). A template is a derivative of its source model and stays under
+that licence; the ontology files themselves are CC BY-SA 4.0. The ranking that chose them is
+`data/template-candidates/ranking.csv`.
