@@ -1,4 +1,4 @@
-// Client for the build workspace endpoints (docs/plans/build-workspace/CONTRACT.md).
+// Client for the build workspace endpoints (docs/plans/done/build-workspace/CONTRACT.md).
 import { request } from "../api";
 import type { DescribeResult, DraftInfo, PartsCheckData, RegenerateResult, WorkspaceData } from "./types";
 

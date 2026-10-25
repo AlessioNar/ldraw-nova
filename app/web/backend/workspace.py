@@ -1,5 +1,5 @@
 """The build workspace's bookkeeping: the draft's metadata, parts counted from model files, the parts check against
-the person's whole collection, and AI proposals. See docs/plans/build-workspace/CONTRACT.md.
+the person's whole collection, and AI proposals. See docs/plans/done/build-workspace/CONTRACT.md.
 
 The draft IS the build's editor session (routers/editor.py, space `builds`); this module only keeps the files beside it:
 

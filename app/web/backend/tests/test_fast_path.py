@@ -383,7 +383,7 @@ def test_registry_dump_matches_the_toolkit_when_available():
 
 
 def test_a_template_wins_only_a_kind_no_generator_owns():
-    """Templates (docs/plans/build-templates) sit next to the generators as "template:<id>"; a generator wins a tie."""
+    """Templates (docs/plans/active/build-templates) sit next to the generators as "template:<id>"; a generator wins a tie."""
     flatbed = {"id": "template:flatbed-truck", "kind": "template", "title": "Flatbed truck", "families": ["truck"],
                "kinds": ["flatbed truck", "flatbed"], "quality": "Derived from a model", "defaults": {"z_delta": 0},
                "params": {"type": "object", "properties": {

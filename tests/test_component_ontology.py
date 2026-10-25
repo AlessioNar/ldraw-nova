@@ -45,7 +45,7 @@ def test_diff_catches_a_changed_default(gen, tmp_path):
 
 @pytest.fixture(scope='module')
 def export():
-    spec = importlib.util.spec_from_file_location('export_schema', ROOT / 'docs' / 'plans' / 'build-grammar' / 'export_schema.py')
+    spec = importlib.util.spec_from_file_location('export_schema', ROOT / 'docs' / 'plans' / 'active' / 'build-grammar' / 'export_schema.py')
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

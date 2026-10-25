@@ -1,4 +1,4 @@
-# SHACL shapes for the building grammar (issue #93, epic #89; design: docs/plans/build-ontology/PROPOSAL.md).
+# SHACL shapes for the building grammar (issue #93, epic #89; design: docs/plans/active/build-ontology/PROPOSAL.md).
 # Each validity rule of ldraw_tools/grammar/schema.py CONSTRAINTS is one sh:NodeShape whose dcterms:identifier is the rule id. A rule
 # is a sh:sparql constraint that selects the buildings BREAKING it, so a conforming graph is a valid combination.
 # The shapes validate a NORMALISED build (defaults filled, repairs applied), as tools/validate_shapes.py loads it: normalise() repairs

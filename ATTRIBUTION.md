@@ -50,7 +50,7 @@ LEGO sets, read with `ldraw-agent sets`) and `ldraw_tools/data/rebrickable-colou
 
 Rebrickable's downloads page states (read 2026-10-21): "Free for personal and commercial use, provided you
 acknowledge Rebrickable as your data source." This notice is that acknowledgement; keep it when you redistribute the
-files or derivatives. The terms are recorded in `docs/plans/set-catalog.md`.
+files or derivatives. The terms are recorded in `docs/plans/done/set-catalog.md`.
 
 ### Set pictures
 

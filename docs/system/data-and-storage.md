@@ -38,7 +38,7 @@ Models, parts lists, editor state and agent work folders are **files** on two Do
 | LDraw parts library (release 2026-09, sha-checked) | `/opt/ldraw/ldraw`, served at `/ldraw/` | downloaded at build |
 | Toolkit plus its own Python venv | `/opt/ldraw-nova` (`.venv`, with `output` symlinked to `/data/output`) | `ldraw_tools/`, `ldraw-agent` |
 | 1,821 reference models | `/opt/ldraw-nova/data/models-annotated/` | `models-packed/`: 130 `.tar.xz` shards plus `manifest.json`; `tools/models_pack.py unpack` |
-| Descriptions of parts, models and submodels | `data/ldraw-info.db` (SQLite, about 26 MB, opened read-only) | committed. **It cannot be regenerated from this repo** (`docs/plans/data-audit.md:36`) |
+| Descriptions of parts, models and submodels | `data/ldraw-info.db` (SQLite, about 26 MB, opened read-only) | committed. **It cannot be regenerated from this repo** (`docs/plans/done/data-audit.md:36`) |
 | Search caches | `<toolkit>/.cache/discovery/<hash>/catalog.sqlite` (FTS5), `.cache/buildable/` | built at image build or on first use |
 | Sets catalogue (about 20k sets) | `ldraw_tools/data/set-catalog.bin` | `tools/build_set_catalog.py` from Rebrickable CSVs |
 | Rebrickable mappings | `ldraw_tools/data/rebrickable-*.json` | `tools/build_rebrickable_maps.py` |
@@ -63,4 +63,4 @@ SQLite is used only as read-only reference data and as caches. It is never used 
 
 - **Display.** `entrypoint.sh` starts one `Xvfb :99`, and LeoCAD renders on it with software OpenGL.
 - **Snapshots.** Missing snapshots and BOMs for My Builds are rendered in the background (`gallery.ensure_artifacts`).
-- **Timing.** One view takes about 21 s, four views about 31 s, and a GLB export about 7.6 s (`docs/plans/deterministic-first/PROPOSAL.md:40`).
+- **Timing.** One view takes about 21 s, four views about 31 s, and a GLB export about 7.6 s (`docs/plans/done/deterministic-first/PROPOSAL.md:40`).

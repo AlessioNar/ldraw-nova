@@ -1,4 +1,4 @@
-"""Worker events for the UI (docs/plans/swarm-subagents/08-ui.md): live events, reconnect snapshot, transcript endpoint."""
+"""Worker events for the UI (docs/plans/done/swarm-subagents/08-ui.md): live events, reconnect snapshot, transcript endpoint."""
 import asyncio
 import re
 

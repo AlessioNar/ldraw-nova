@@ -138,11 +138,11 @@ def test_a_role_edit_is_one_free_step_with_a_report():
 
 # ---- hint and decision agree ------------------------------------------------------------------------------------
 
-PROMPTS = next((p for p in (Path("/opt/ldraw-nova/docs/plans/nl-review/prompts.json"),
-                            *(parent / "docs/plans/nl-review/prompts.json" for parent in Path(__file__).resolve().parents)) if p.is_file()), None)
+PROMPTS = next((p for p in (Path("/opt/ldraw-nova/docs/plans/active/nl-review/prompts.json"),
+                            *(parent / "docs/plans/active/nl-review/prompts.json" for parent in Path(__file__).resolve().parents)) if p.is_file()), None)
 
 
-@pytest.mark.skipif(PROMPTS is None, reason="docs/plans/nl-review/prompts.json is not mounted")
+@pytest.mark.skipif(PROMPTS is None, reason="docs/plans/active/nl-review/prompts.json is not mounted")
 def test_hint_and_decision_agree_on_the_54_prompts():
     contexts = {"new": (None, None),
                 "house": ({"generator": "house", "params": dict(ENTRIES["house"]["defaults"])}, {"has_model": True}),

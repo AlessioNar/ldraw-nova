@@ -21972,6 +21972,6 @@
   "no_ldraw": "first 300 of 9837 unresolved Cardboard/Paper, Cloth, Foam or sticker-sheet parts (LDraw does not model them)",
   "rules": "Aliases follow Rebrickable relation types P,T,M,A (child -> parent) up to 4 hops, then strip prNNNN/patNNNN; target must exist as parts/<id>.dat. Printed parts alias to their unprinted base (shape equivalent, print is lost)."
  },
- "source": "Rebrickable parts.csv and part_relationships.csv checked against parts/*.dat of the official LDraw library; see docs/plans/rebrickable-mapping.md",
+ "source": "Rebrickable parts.csv and part_relationships.csv checked against parts/*.dat of the official LDraw library; see docs/plans/done/rebrickable-mapping.md",
  "version": 1
 }

@@ -1,4 +1,4 @@
-"""Make this a template: the quality gate, the role preview and corrections, the job (docs/plans/build-templates, section 6)."""
+"""Make this a template: the quality gate, the role preview and corrections, the job (docs/plans/active/build-templates, section 6)."""
 
 import copy
 import json

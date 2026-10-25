@@ -1,4 +1,4 @@
-"""Templates from builds: any model with roles becomes a parametric starting point (see docs/plans/build-templates).
+"""Templates from builds: any model with roles becomes a parametric starting point (see docs/plans/active/build-templates).
 
 A sibling of the generator registry with the same surface, so the understanding step can route to either:
 

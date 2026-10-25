@@ -28,7 +28,7 @@ report is printed to stdout. Pure standard library, works offline.
 Colour method (the bulk colors.csv carries no LDraw ids): per Rebrickable colour,
 first COLOUR_OVERRIDES, then a normalised-name match against LDConfig.ldr, then an
 exact RGB match with the same transparency, then the nearest RGB (same transparency,
-plain colour families only, within MAX_APPROX) flagged exact=false; otherwise unmapped. See docs/plans/rebrickable-mapping.md.
+plain colour families only, within MAX_APPROX) flagged exact=false; otherwise unmapped. See docs/plans/done/rebrickable-mapping.md.
 
 Part method: identity (same number exists as parts/<id>.dat) is the default and is
 not listed. Otherwise follow Rebrickable relationships child -> parent for the
@@ -49,9 +49,9 @@ DATA = REPO / "ldraw_tools" / "data"
 COLOURS_FILE = "rebrickable-colours.json"
 PARTS_FILE = "rebrickable-parts.json"
 SOURCE_COLOURS = ("Rebrickable colors.csv (bulk download) matched to the LDConfig.ldr of the official "
-                  "LDraw library; see docs/plans/rebrickable-mapping.md")
+                  "LDraw library; see docs/plans/done/rebrickable-mapping.md")
 SOURCE_PARTS = ("Rebrickable parts.csv and part_relationships.csv checked against parts/*.dat of the "
-                "official LDraw library; see docs/plans/rebrickable-mapping.md")
+                "official LDraw library; see docs/plans/done/rebrickable-mapping.md")
 
 # Relation types (child_part_num -> parent_part_num) whose parent has the same geometry.
 SHAPE_RELS = ("P", "T", "M", "A")

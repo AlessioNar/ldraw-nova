@@ -78,7 +78,7 @@ services:
     # and look at ./data/output on the host.
 
   # ---- PostgreSQL: the application database (request log and cost history today; more later) --------------------
-  # See docs/plans/postgres/PROPOSAL.md. No published port, and it sits on an internal network only the app joins.
+  # See docs/plans/active/postgres/PROPOSAL.md. No published port, and it sits on an internal network only the app joins.
 
   # One-shot: generates the two database passwords on the first start (plain `docker compose up -d` needs no setup).
   db-secrets:

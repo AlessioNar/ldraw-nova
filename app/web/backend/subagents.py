@@ -1,7 +1,7 @@
 """Flag-gated `delegate` tool: the planner hands a bounded job to a cheap worker model (easy to delete).
 
 The worker runs the same step loop as the planner (agent_loop.run_steps) on its own model, from a validated
-contract (docs/plans/swarm-subagents/README.md section 2). Its transcript goes to chats/<chat>/workers/<id>.jsonl,
+contract (docs/plans/done/swarm-subagents/README.md section 2). Its transcript goes to chats/<chat>/workers/<id>.jsonl,
 not to messages.jsonl, so the planner's history and prompt cache are untouched. Cost is shared through
 budget.BudgetLedger: the worker reserves its max_eur, every step is added to the ledger, and when it ends one
 aggregate `_usage` plus `_worker` lands on the delegate tool result (or on a hidden record if it was cancelled).

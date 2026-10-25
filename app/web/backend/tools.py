@@ -300,7 +300,7 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None, 
 
 def _propose(ctx: ToolContext, slug: str, model: bytes, name: str, warnings: list, checks_passed: bool) -> ToolResult:
     """A model published by a chat attached to a build is not a version: it waits in the build as a proposal
-    the person keeps in the draft, previews or discards (docs/plans/build-workspace/CONTRACT.md)."""
+    the person keeps in the draft, previews or discards (docs/plans/done/build-workspace/CONTRACT.md)."""
     import usage
     import workspace
     from routers import editor

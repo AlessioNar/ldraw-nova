@@ -1,4 +1,4 @@
-"""SQLAlchemy 2.0 models for every table of docs/plans/postgres/sql/0001_init.sql (the reference schema).
+"""SQLAlchemy 2.0 models for every table of docs/plans/active/postgres/sql/0001_init.sql (the reference schema).
 
 Later phases move chats, builds and the parts collection onto these; today only app_setting, usage_event and
 request_log are written. Keep this file and the Alembic revisions in step: a revision is generated with

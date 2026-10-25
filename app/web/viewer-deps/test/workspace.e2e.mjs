@@ -16,7 +16,7 @@ import { chromium } from 'playwright';
 
 const baseURL = process.env.WS_E2E_URL ?? 'http://127.0.0.1:8826';
 const container = process.env.WS_E2E_CONTAINER ?? 'obd-ws-int-check';
-const shots = process.env.WS_E2E_SHOTS ?? join(dirname(fileURLToPath(import.meta.url)), '../../../../docs/plans/build-workspace/integration-screenshots');
+const shots = process.env.WS_E2E_SHOTS ?? join(dirname(fileURLToPath(import.meta.url)), '../../../../docs/plans/done/build-workspace/integration-screenshots');
 const VAGUE = process.env.WS_E2E_VAGUE ?? 'hmm';
 const NEEDS_AI = process.env.WS_E2E_NEEDS_AI ?? 'a helicopter';
 let BUILD;      // a throwaway generator build made below: the seeded data may carry anyone's versions and drafts

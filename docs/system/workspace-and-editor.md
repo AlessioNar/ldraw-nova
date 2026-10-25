@@ -1,6 +1,6 @@
 # Builds, the workspace and the editor
 
-Paths are relative to `app/web/backend/` (backend) and `app/web/frontend/src/` (frontend). The owner decisions for this part are recorded in `docs/plans/build-workspace/CONTRACT.md:3-7`.
+Paths are relative to `app/web/backend/` (backend) and `app/web/frontend/src/` (frontend). The owner decisions for this part are recorded in `docs/plans/done/build-workspace/CONTRACT.md:3-7`.
 
 ## The build model
 
@@ -54,7 +54,7 @@ Starting a build:
 
 ## The workspace
 
-**Layout** (`docs/plans/build-workspace/README.md`):
+**Layout** (`docs/plans/done/build-workspace/README.md`):
 - a top bar;
 - a tool rail: select, move, rotate, add, paint, delete;
 - the **3D canvas**;
@@ -100,7 +100,7 @@ sequenceDiagram
   - undo went from about 4 s to 25–32 ms;
   - reopening went from 3.2 s to 28 ms
 
-  (`docs/plans/build-workspace/editor-performance.md`).
+  (`docs/plans/done/build-workspace/editor-performance.md`).
 
 ## Versions, draft and API
 

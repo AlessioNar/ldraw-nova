@@ -1,4 +1,4 @@
-"""The shared budget ledger (docs/plans/swarm-subagents/04-shared-budget.md): planner plus workers under one cap."""
+"""The shared budget ledger (docs/plans/done/swarm-subagents/04-shared-budget.md): planner plus workers under one cap."""
 import asyncio
 import threading
 

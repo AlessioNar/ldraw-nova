@@ -3,7 +3,7 @@
     rules shortcut (free)  ->  one single-shot structured call (cheap model)  ->  one retry  ->  rules fallback
 
 The LLM only reads natural language here. It never sees parts, plans or tools, and it builds nothing; the output is
-data for the deterministic router (see docs/plans/deterministic-first/PROPOSAL.md, section 3a). Not wired into the
+data for the deterministic router (see docs/plans/done/deterministic-first/PROPOSAL.md, section 3a). Not wired into the
 chat turn yet: `understand()` is the entry point and routers/understand.py a small internal endpoint for testing.
 
 Prompt layout, built for provider prompt caching: a fixed prefix (instructions, registry digest, colour list; the

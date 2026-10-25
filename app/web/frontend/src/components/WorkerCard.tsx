@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, type LiveWorker, type Message, type ToolCall, type WorkerTranscript } from "../api";
 
-/** Every worker status in docs/plans/swarm-subagents/README.md section 2, plus the two the UI adds itself. */
+/** Every worker status in docs/plans/done/swarm-subagents/README.md section 2, plus the two the UI adds itself. */
 export const STATUS: Record<string, { label: string; tone: "ok" | "warn" | "bad" | "run" }> = {
   running: { label: "running", tone: "run" },
   queued: { label: "waiting to start", tone: "run" },

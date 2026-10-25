@@ -1,4 +1,4 @@
-"""docs/plans/loop-perf/live_check.py against the real app served by uvicorn, with a mock Anthropic behind it."""
+"""docs/plans/done/loop-perf/live_check.py against the real app served by uvicorn, with a mock Anthropic behind it."""
 import importlib.util
 import os
 import threading
@@ -12,7 +12,7 @@ import llm_config
 import settings
 from mock_providers import MockAnthropic, reply
 
-SCRIPT = Path(__file__).resolve().parents[4] / "docs" / "plans" / "loop-perf" / "live_check.py"
+SCRIPT = Path(__file__).resolve().parents[4] / "docs" / "plans" / "done" / "loop-perf" / "live_check.py"
 if not SCRIPT.is_file():                 # inside the container the tests are not next to the repo root
     pytest.skip("live_check.py is only reachable from a checkout layout", allow_module_level=True)
 spec = importlib.util.spec_from_file_location("live_check", SCRIPT)
