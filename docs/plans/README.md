@@ -3,6 +3,8 @@
 One page to see every plan and where it stands. Updated 2026-10-25.
 For how the system works today, read [docs/system/README.md](../system/README.md); the security pass is in [docs/security/](../security/).
 
+**Tracking moved to GitHub:** [epics](https://github.com/AlessioNar/ldraw-nova/issues?q=is%3Aissue+label%3Aepic) with sub-issues, and [owner decisions](https://github.com/AlessioNar/ldraw-nova/issues?q=is%3Aissue+label%3Aowner-decision). The docs below stay as the specs; the issues are the source of truth for status and next steps.
+
 Status words: **Active** (work running or next), **Done** (built and merged; the doc is the record), **Planned** (agreed, not started), **Reference** (background or analysis, nothing to build), **Superseded** (replaced by a later plan).
 
 ## Active
