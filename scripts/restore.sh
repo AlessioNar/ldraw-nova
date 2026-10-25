@@ -5,7 +5,8 @@
 #
 # Without the second argument the data archive with the same stamp next to the dump is used if it exists; pass
 # `none` to restore the database only. This REPLACES the database. The data archive is unpacked over /data (files
-# in the backup overwrite the same names; other files stay). The app container is stopped during the restore and
+# in the backup overwrite the same names; other files stay). If obd-config-STAMP.tgz sits next to the dump, the LLM
+# settings and API keys in it are unpacked over /config the same way (CONFIG_VOLUME). The app container is stopped during the restore and
 # started again afterwards if it was running. Without -y you are asked to confirm.
 # Settings (environment): DB_CONTAINER (ldraw-nova-db), APP_CONTAINER (ldraw-nova-app; empty = leave it alone),
 # DATA_VOLUME (ldraw-nova-docker_data), DB_NAME (obd), DB_ADMIN (obd_admin), DB_OWNER (obd_app).
@@ -15,6 +16,7 @@ export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 DB_CONTAINER="${DB_CONTAINER:-ldraw-nova-db}"
 APP_CONTAINER="${APP_CONTAINER-ldraw-nova-app}"
 DATA_VOLUME="${DATA_VOLUME:-ldraw-nova-docker_data}"
+CONFIG_VOLUME="${CONFIG_VOLUME:-ldraw-nova-docker_config}"
 DB_NAME="${DB_NAME:-obd}"
 DB_ADMIN="${DB_ADMIN:-obd_admin}"
 DB_OWNER="${DB_OWNER:-obd_app}"
@@ -30,9 +32,15 @@ if [ -z "${data}" ]; then
     [ -f "${candidate}" ] && data="${candidate}" || data="none"
 fi
 [ "${data}" = "none" ] || [ -f "${data}" ] || { echo "no such data archive: ${data}" >&2; exit 2; }
+config=""
+if [ "${data}" != "none" ]; then
+    candidate="$(dirname "${data}")/$(basename "${data}" .tgz | sed 's/^obd-data-/obd-config-/').tgz"
+    [ -f "${candidate}" ] && config="${candidate}"
+fi
 
 echo "This replaces database '${DB_NAME}' in ${DB_CONTAINER} with ${dump}"
 [ "${data}" = "none" ] && echo "and leaves the data volume alone." || echo "and unpacks ${data} over volume ${DATA_VOLUME}."
+[ -z "${config}" ] || echo "It also unpacks ${config} (settings and API keys) over volume ${CONFIG_VOLUME}."
 if [ "${yes}" != 1 ]; then
     read -r -p "Continue? [y/N] " answer
     [ "${answer}" = "y" ] || { echo "Aborted."; exit 1; }
@@ -56,6 +64,13 @@ if [ "${data}" != "none" ]; then
     data_dir="$(cd "$(dirname "${data}")" && { pwd -W 2>/dev/null || pwd; })"
     docker run --rm --user 0 -v "${DATA_VOLUME}:/d" -v "${data_dir}:/b:ro" --entrypoint sh "${HELPER_IMAGE}" \
         -c 'tar xzf "/b/$1" -C /d' sh "$(basename "${data}")"
+fi
+
+if [ -n "${config}" ]; then
+    echo "Restoring the config volume ..."
+    config_dir="$(cd "$(dirname "${config}")" && { pwd -W 2>/dev/null || pwd; })"
+    docker run --rm --user 0 -v "${CONFIG_VOLUME}:/c" -v "${config_dir}:/b:ro" --entrypoint sh "${HELPER_IMAGE}" \
+        -c 'tar xzf "/b/$1" -C /c' sh "$(basename "${config}")"
 fi
 
 if [ "${was_running}" = 1 ]; then
