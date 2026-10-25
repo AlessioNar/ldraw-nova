@@ -372,7 +372,7 @@ async def _run_worker(ctx: ToolContext, contract: Contract, entry: dict, model: 
     guard = ctx.limits.guard
     cap_eur = ledger.reserve(contract.id, contract.max_eur, ctx.store.messages(ctx.chat_id))   # clamped to what is left
     guard.enter(ctx.work_dir)
-    sink = FileSink(ctx.chat_dir / "workers" / f"{contract.id}.jsonl")
+    sink = ctx.store.worker_sink(ctx.chat_id, contract.id)
     worker_events.start(ctx, contract, model, cap_eur)
     sink.add({"role": "user", "content": _task_message(contract)})
     system = worker_prompt(contract)

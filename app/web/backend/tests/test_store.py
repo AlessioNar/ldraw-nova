@@ -6,6 +6,7 @@ import settings
 from store import ChatStore
 
 
+@pytest.mark.files_only
 def test_chat_is_a_folder_with_a_sibling_work_folder(store: ChatStore):
     chat = store.create_chat()
     assert (settings.CHATS_DIR / chat["id"] / "chat.json").is_file()
@@ -13,6 +14,7 @@ def test_chat_is_a_folder_with_a_sibling_work_folder(store: ChatStore):
     assert store.get_chat(chat["id"])["title"] == "New chat"
 
 
+@pytest.mark.files_only
 def test_messages_are_jsonl_with_sequential_ids(store: ChatStore):
     chat = store.create_chat()
     assert store.add_message(chat["id"], {"role": "user", "content": "hi"}) == 1

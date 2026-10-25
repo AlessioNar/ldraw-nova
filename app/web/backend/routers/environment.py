@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 import db
 import environment_config
 import sandbox
+import storage
 import toolkit
 
 router = APIRouter()
@@ -14,7 +15,7 @@ router = APIRouter()
 @router.get("/api/environment")
 def environment_get():
     return {"variables": environment_config.public(), "jev_source": toolkit.jev_source(),
-            "sandbox_isolation": sandbox.isolation_status(), "database": db.status()}
+            "sandbox_isolation": sandbox.isolation_status(), "database": db.status(), "storage": storage.status()}
 
 
 @router.get("/api/environment/check")

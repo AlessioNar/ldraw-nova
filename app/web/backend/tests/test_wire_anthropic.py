@@ -88,7 +88,8 @@ def test_parallel_tool_results_share_one_user_turn_marked_on_the_last(store):
 def test_stored_history_is_free_of_cache_control(store):
     chat_id, _, _ = run(store, TWO_STEPS + [reply("Again.")], followups=["more"])
     assert "cache_control" not in json.dumps(store.messages(chat_id))
-    assert "cache_control" not in (settings.CHATS_DIR / chat_id / "messages.jsonl").read_text()
+    if not store.pg:
+        assert "cache_control" not in (settings.CHATS_DIR / chat_id / "messages.jsonl").read_text()
 
 
 def test_usage_cache_counters_flow_into_events_and_the_saved_messages(store):

@@ -1,5 +1,7 @@
 # Migrations (Alembic)
 
+Revisions: `0001` the initial schema, `0002` (phase 2) `build_draft.extra` and `proposal.chat_id` without a foreign key. The reference-SQL test compares `0001` only.
+
 `alembic upgrade head` runs when the app starts (`db/migrate.py`, under a PostgreSQL advisory lock). Models are in `db/models.py`; the first revision is equivalent to `docs/plans/postgres/sql/0001_init.sql` (a test compares the two).
 
 Changing the schema, from `app/web/backend` against a throwaway database:

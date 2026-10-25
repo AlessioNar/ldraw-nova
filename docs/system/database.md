@@ -1,6 +1,6 @@
 # The database (PostgreSQL)
 
-Since phase 1 of [the PostgreSQL plan](../plans/postgres/PROPOSAL.md) the app has a PostgreSQL 18 database next to the files. **Today it holds only two things: the request log and the cost history.** Chats, builds and the parts collection are still files; they move in later phases (the tables for them already exist and are empty).
+Since phase 1 of [the PostgreSQL plan](../plans/postgres/PROPOSAL.md) the app has a PostgreSQL 18 database next to the files. **It holds the request log and the cost history, and, since phase 2, the chats, builds, drafts and proposals** (once they were imported, see "Storage: database or files" below). The parts collection is still files; it moves in a later phase (its tables exist and are empty). Model files, editor state and agent work folders are files either way.
 
 ## What runs
 
@@ -13,6 +13,48 @@ Since phase 1 of [the PostgreSQL plan](../plans/postgres/PROPOSAL.md) the app ha
 
 Dev mode (`docker-compose.dev.yml`) also publishes the database on `127.0.0.1:5433`.
 
+## Storage: database or files
+
+Chats, messages, worker transcripts, published-model records, builds, versions, drafts and proposals have two interchangeable backends behind the same code (`store.py` `ChatStore` = files, `pg_store.py` `PgChatStore` = PostgreSQL; `pg_builds.py` for build, draft and proposal rows). `storage.py` chooses once per start:
+
+| `LDRAW_NOVA_STORAGE` | Result |
+|---|---|
+| `auto` (default) | PostgreSQL when the database is reachable, migrated to the newest revision **and** the files hold nothing that is not in it yet; the JSON files otherwise |
+| `files` | Always the JSON files (a db-less install, or the way back) |
+| `postgres` | PostgreSQL even if the files hold data nobody imported; falls back to the files, with an error in the log, when the database is not usable |
+
+"Nothing that is not in it yet" is the safety net of `auto`: an install with chats or builds on disk (a `chat.json` or `build.json`) and no recorded import keeps working on the files (the log says so) instead of showing an empty list. After the import (`app_setting['json_import'].done`), or on a fresh volume, the database is used. Settings > Environment (`GET /api/environment`) reports `storage: {backend, mode, json_import}`.
+
+What lives where in PostgreSQL mode:
+
+- `chat` (title, model, options, `build_id`, the message counter), `message` (the **whole message record** as jsonb `body`: `_usage`, `_worker`, `_fast_path`, ... exactly as in `messages.jsonl`; the id comes from the chat row under a row lock, so two writers never share one), `worker_step` (a delegated worker's transcript), `model_record` (a chat's published models **and** a build's versions, with the file path under `/data`, `sha256` and part count).
+- `build` (title, source, dates; the chat list is `chat.build_id`), `build_draft` (the draft's columns; `forked`, `drift`, `sources` and any other key in `extra`), `proposal` (the row; the `.mpd` stays a file in `builds/<slug>/proposals/`).
+- Versions are still **the model files in `generated/`** (what exists is what is on disk). `model_record` adds what files cannot say (sha256, parts, a recorded origin); a version file with no record is adopted at start for builds that have a row (`builds.reconcile`, cheap, origin left NULL = still derived from the chats) and stays derived otherwise.
+- Cost events: unchanged. `usage_log.record` writes a `usage_event` next to each step with the chat and message id; the store does not write a second one. Deleting a chat deletes its messages, steps and model records; its spend and its model files stay. Deleting a build deletes its versions' records, draft and proposals and detaches its chats.
+- Not stored: API keys (`/config`), the chat's folder (renders, `workspace/`, editor `edit.json`), work folders. A build's workspace key `b-<slug>` is not a chat: its messages and worker files stay files.
+- Known harmless differences from the files: JSON object keys come back in jsonb order, times in chat and model records have microsecond precision, and a chat that was never attached to a build has no `build_id` key (the file store left `"build_id": null` after a detach). On the owner's real data, 30 read routes (chats, chat detail, builds, build detail, workspace, proposals, models, a worker transcript) return identical JSON from both backends apart from that one key.
+
+## Importing the JSON files
+
+`app/web/backend/migrate_json.py` reads the files in `/data` and writes the tables. The JSON files are only read: they stay as a frozen backup (rollback = run the previous image on the same volume, or `--export` first to keep what was done since). The parts collection (`inventories/`) is not part of it.
+
+```
+docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json              # dry run: rolled back, prints counts and anomalies
+docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json --commit     # dry run, import, then verify; sets app_setting json_import
+docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json --verify     # files against database (exit code 1 on a mismatch)
+docker exec -w /app/web/backend ldraw-nova-app python3 -m migrate_json --export /data/export-json [--force]
+```
+
+Take a backup first (`bash scripts/backup.sh`), then restart the app so `auto` picks the database (`docker compose restart ldraw-nova-app`), or set `LDRAW_NOVA_STORAGE=postgres`.
+
+- **Idempotent**: inserts are `ON CONFLICT DO NOTHING` on the natural key (chat + message id, build + version, ...), one transaction per build and per chat; a crash leaves whole entities. A second run adds nothing. A file that changed after it was imported is reported (`changed: ...`), never copied over the rows; new messages in it are added.
+- **Anomalies are reported, not guessed**: a truncated `messages.jsonl` line, a chat whose build does not exist (imported unattached), a version recorded twice (the later record wins), unknown keys, unknown origins.
+- **Cost events**: one `usage_event` per message that carries `_usage`, unless the live recorder already wrote one for that chat and message (or worker): history is imported once and live rows are never doubled. The exchange rate stored is today's.
+- **Verify** (also after `--commit`): per chat the fields, the message count and a canonical sha256 of all messages, the model records and the sha256 of each model file, worker steps and the cost sum against `usage_event`; per build the record, versions, draft and proposals. Records that point at a deleted model file are counted (`model_files_missing`), not failed: a chat keeps them as history. Rows that exist only in the database (made after the import) are fine.
+- Every run is a row in `import_run` (counts, anomalies, per-entity file size and mtime); a successful commit + verify writes `app_setting['json_import']` and a report to `/data/_migration/report-<time>.json`.
+- **First start**: `LDRAW_NOVA_DB_IMPORT=auto` runs dry run, commit and verify by itself when the files hold chats or builds and no import is recorded. The default is `manual` (never).
+- **Export** (`--export DIR`): the inverse mapping, writing the same JSON layout (`chats/<id>/chat.json`, `messages.jsonl`, `models.jsonl`, `workers/`; `builds/<slug>/build.json`, `models.jsonl`, `draft.json`, `proposals/`) from the database; an existing file is never overwritten without `--force`.
+
 ## The password never reaches agent code
 
 - It is a file (`/run/secrets/db_password`, root:70 0440), read by the server only. It is in no environment variable, so not in `docker inspect`, `/api/environment` or the agent's scrubbed environment (`sandbox.py`).
@@ -21,7 +63,7 @@ Dev mode (`docker-compose.dev.yml`) also publishes the database on `127.0.0.1:54
 
 ## Code
 
-`app/web/backend/db/` (engine and session from the password file, `models.py` with every table of [sql/0001_init.sql](../plans/postgres/sql/0001_init.sql), `migrate.py`), `app/web/backend/migrations/` (Alembic, see its README), `usage_log.py` (cost history, `GET /api/costs`), `request_log.py` (describe/estimate telemetry).
+`app/web/backend/db/` (engine and session from the password file, `models.py` with every table of [sql/0001_init.sql](../plans/postgres/sql/0001_init.sql) plus revision 0002, `migrate.py`), `app/web/backend/migrations/` (Alembic, see its README; `0002` adds `build_draft.extra` and drops the foreign key of `proposal.chat_id`, because a proposal file kept its chat id after the chat was deleted), `storage.py` (the switch), `pg_store.py`, `pg_builds.py`, `migrate_json.py`, `usage_log.py` (cost history, `GET /api/costs`), `request_log.py` (describe/estimate telemetry).
 
 - **Request log**: one row per `/api/describe` and `/api/describe/estimate` request (route, who decided, generator, timing, a 12-character hash of the text). The sentence is stored only if `keep_request_text` is on (`PUT /api/request-log/settings`, default off). Rows older than 180 days are deleted at start and daily.
 - **Cost history**: one `usage_event` per model call (planner steps, workers, the understanding call), kept forever, no link to chats (deleting a chat keeps the spend). The per-chat `_usage` in messages is unchanged. `GET /api/costs?from=2026-10-01&to=2026-10-31` returns the `cost_daily` view (per day and kind) with totals.
@@ -59,3 +101,5 @@ docker run --rm --name obd-pg-tests --network obd-pg-net --cap-drop ALL --cap-ad
 ```
 
 With `NET_ADMIN` the entrypoint applies the firewall rule, so the isolation test can check that the agent user is refused.
+
+`LDRAW_NOVA_TEST_STORAGE=postgres` (with the same database URL) runs the **whole** suite on the PostgreSQL store: every test gets an empty database and `get_store()` / the `store` fixture are `PgChatStore`; tests that read the JSON files themselves carry `@pytest.mark.files_only` and skip. `tests/test_pg_store.py` (the same operations on both stores give the same results, the switch, numbering and versions under concurrency, cascades) and `tests/test_migrate_json.py` (importer: dry run, commit, verify, idempotence, tampering, export round trip, first start) always use the database.

@@ -89,7 +89,9 @@ def model_origins(store: ChatStore) -> dict[Path, str]:
     """model path -> "editor" for versions saved from the 3D editor (by chat or from My Builds)."""
     origins: dict[Path, str] = {}
     keys = [c["id"] for c in store.list_chats()]
-    if store.builds_dir.is_dir():
+    if store.pg:
+        keys += [store.build_key(slug) for slug in store.build_ids()]
+    elif store.builds_dir.is_dir():
         keys += [store.build_key(p.name) for p in store.builds_dir.iterdir() if p.is_dir() and store.valid_id(store.build_key(p.name))]
     for key in keys:
         for ref in store.models(key):
