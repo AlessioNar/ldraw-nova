@@ -104,11 +104,14 @@ export default function ModelCard({ model, showChats = false, onDelete, onEdit, 
           <div><span className="label">File</span><b>{model.size >= 1024 * 1024 ? `${(model.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(model.size / 1024))} KB`}</b></div>
         </div>
         {showWarnings && warnings.length > 0 && <ul className="model-warnings small">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
-        {model.version != null && model.version > 1 && model.changes && (
-          <p className="model-changes small" title="Compared with the previous version's parts list">
-            <strong>Changed since v{model.version - 1}:</strong> {model.changes.summary}
-          </p>
-        )}
+        {model.version != null && model.version > 1 && model.changes && (model.changes.summary.length > 120
+          ? <details className="model-changes small" title="Compared with the previous version's parts list">
+              <summary><strong>Changed since v{model.version - 1}:</strong> {model.changes.summary.slice(0, 100).replace(/[,;]?\s+\S*$/, "")}…</summary>
+              {model.changes.summary}
+            </details>
+          : <p className="model-changes small" title="Compared with the previous version's parts list">
+              <strong>Changed since v{model.version - 1}:</strong> {model.changes.summary}
+            </p>)}
         {model.info_heading && <p className="model-info-heading"><strong>{model.info_heading}</strong></p>}
         {model.description && !(model.version != null && model.title === model.description) && <p className="model-description">{model.description}</p>}
         <div className="muted small ellipsis">

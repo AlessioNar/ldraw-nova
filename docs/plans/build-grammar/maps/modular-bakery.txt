@@ -1,0 +1,218 @@
+FRONT ELEVATION (top = roof)
+                       dd       
+                       dd       
+                       dd       
+                       dd       
+                       dd       
+                       dd       
+                       dd       
+                       dd       
+                       dd       
+RRRRRRRRRRRRRRRRRRRRRRRddRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+tttttttttttttttttttttttttttttttt
+tttttttttttttttttttttttttttttttt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWttWWWWWWWttWWWWWWWWWWWttWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tttttttttttttttttttttttttttttttt
+tttttttttttttttttttttttttttttttt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWooWWWWWWWooWWWWWWWWWWWooWWWWWt
+tWttWWWWWWWttWWWWWWWWWWWttWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tttttttttttttttttttttttttttttttt
+tttttttttttttttttttttttttttttttt
+dddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddd
+dddddddddddddddddddddddddddddddd
+tDDDDWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tDDDDWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tDDDDWWWWWWWWWWWWWWWWWWWWWWWWWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWooooooooWWWWWooooooodWWt
+tDDdDWWWWWWWWWWWWWWWWWWWWWWWdWWt
+tDDdDWWWWWWWWWWWWWWWWWWWWWWWdWWt
+tDDdDWWWWWWWWWWWWWWWWWWWWWWWdWWt
+tDDdDtttttttttttttttttttttttdttt
+tDDdDtttttttttttttttttttttttdttt
+................................
+................................
+................................
+
+PLAN at plate 5
+                                
+                                
+                                
+                                
+   d                        d   
+                                
+tDDDDWWWWWWWWWWWWWWWWWWWWWWWWWWt
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+Wsssssssssssss    sssssssssssssW
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+                                
+                                
+
+PLAN at plate 28
+                                
+                                
+                                
+                                
+                                
+                                
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+Wsssssssssssss    sssssssssssssW
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+                                
+                                
+
+PLAN at plate 51
+                                
+                                
+                                
+                                
+                                
+                                
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+Wsssssssssssss    sssssssssssssW
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+W                              W
+tWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWt
+                                
+                                
