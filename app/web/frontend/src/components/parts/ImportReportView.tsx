@@ -38,10 +38,10 @@ export default function ImportReportView({ report, onFamilies, hideFamilies = fa
     {clean && <p className="ok-text">Every part and colour was matched.</p>}
     {report.warnings.length > 0 && <div className="banner" role="status">{report.warnings.map((w, i) => <div key={i}>{w}</div>)}</div>}
     <Unmapped title="Parts not recognised" items={report.unmapped_parts}
-      hint="These Rebrickable parts have no LDraw equivalent, so the agent will not see them."
-      label={(p) => `${p.rb_part} · colour ${p.colour} · ×${p.qty}`} />
+      hint="These parts have no LDraw equivalent, so the agent will not see them."
+      label={(p) => `${p.rb_part} · colour ${p.colour} · ×${p.qty}${p.reason ? ` · ${p.reason}` : ""}`} />
     <Unmapped title="Colours not recognised" items={report.unmapped_colours}
       hint="These colours could not be mapped to LDraw, so the agent will not see these pieces."
-      label={(c) => `${c.part} · Rebrickable colour ${c.rb_colour} · ×${c.qty}`} />
+      label={(c) => `${c.part} · ${c.reason ?? `Rebrickable colour ${c.rb_colour}`} · ×${c.qty}`} />
   </div>;
 }

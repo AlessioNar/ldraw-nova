@@ -59,6 +59,9 @@ def register(commands):
     p.add_argument("--name", help="Inventory name (default: the file name)")
     p.add_argument("--include-spares", action="store_true", help="Count spare parts as owned")
     p.add_argument("--force", action="store_true", help="Replace an existing inventory with the same name")
+    p.add_argument("--format", choices=sorted(importers.FORMATS), help="Read the file as this format instead of detecting it")
+    p.add_argument("--map", action="append", default=[], metavar="ROLE=VALUE",
+                   help="Generic CSV: part=HEADER, colour=HEADER, qty=HEADER, system=bricklink|rebrickable|ldraw|name (repeatable)")
     p.add_argument("--dry-run", action="store_true", help="Parse and report only; write nothing (the web app previews imports with this)")
     p.add_argument("--family-colour", action="append", default=[], metavar="FAMILY=CODE",
                    help="Pileometer: LDraw colour for a colour family, e.g. Grays=72 (repeatable)")
@@ -207,13 +210,24 @@ def run(args, library, parts):
             if not code.strip().isdigit():
                 raise ValueError(f"--family-colour expects FAMILY=CODE, got {item!r}")
             family_colours[family.strip().title()] = int(code)
-        result = importers.parse(text, include_spares=args.include_spares, library=optional_library(), family_colours=family_colours,
-                                 filename=path.name)
+        mapping = {}
+        for item in args.map:
+            role, _, value = item.partition("=")
+            if role.strip() not in {"part", "colour", "qty", "system"} or not value:
+                raise ValueError(f"--map expects part=, colour=, qty= or system= followed by a value, got {item!r}")
+            mapping[role.strip()] = value
+        try:
+            result = importers.parse(text, include_spares=args.include_spares, library=optional_library(), family_colours=family_colours,
+                                     filename=path.name, format=args.format, mapping=mapping or None)
+        except importers.NeedsMapping as exc:
+            return dict(checks_passed=False, error=str(exc), error_type="NeedsMapping", mapping_needed=exc.to_json()), 2
         name = args.name or path.stem
         inv = make_inventory(name, result, source_filename=path.name)
         fmt = (result.origin or {}).get("format", "")
         report = dict(inventory=inv.to_json(), dialect=result.dialect, format=fmt, total_rows=result.total_rows,
                       total_pieces=result.total_pieces, spare_pieces=result.spare_pieces, warnings=result.warnings, stored="")
+        if (result.origin or {}).get("mapping"):
+            report.update(mapping=result.origin["mapping"], header_signature=result.origin["header_signature"])
         if args.dry_run:
             if result.pileometer:
                 report["pileometer"] = result.pileometer

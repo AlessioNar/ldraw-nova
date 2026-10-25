@@ -281,8 +281,8 @@ export type PileometerSummary = {
 };
 export type ImportReport = {
   dialect: string; format?: string; total_rows: number; total_pieces: number; spare_pieces: number;
-  unmapped_parts: { rb_part: string; colour: number; qty: number; name?: string; family?: string }[];
-  unmapped_colours: { rb_colour: number; part: string; qty: number; family?: string }[];
+  unmapped_parts: { rb_part: string; colour: number | string; qty: number; name?: string; family?: string; reason?: string }[];
+  unmapped_colours: { rb_colour: number | string; part: string; qty: number; family?: string; reason?: string }[];
   warnings: string[];
   pileometer?: PileometerSummary;
 };
@@ -360,8 +360,15 @@ export type OpsResult = { batch: number | null; changes: number; source: Invento
 export type HistoryBatch = { batch: number; ts: number; note: string; summary: string; changes: number; kind: "edit" | "replace" | "undo" | "create"; undone: boolean; undoable: boolean };
 export type ReviewItem = { id: string; part: string; description: string; qty: number; note: string; brickit_part: string; candidates: { colour: number; name: string; owned: boolean }[] };
 export type ReviewGroup = { source: string; source_name: string; family: string; pieces: number; candidates: ReviewItem["candidates"]; items: ReviewItem[] };
+export type ColourSystem = "bricklink" | "rebrickable" | "ldraw" | "name";
+/** The owner's column choice for a generic CSV: header names, and how the colour column is written. */
+export type ColumnMapping = { part: string; colour: string; qty: string; system: ColourSystem };
+export type NeedsMapping = {
+  needs_mapping: { headers: string[]; sample: string[][]; guess: Partial<ColumnMapping>; saved: ColumnMapping | null; signature: string; systems: ColourSystem[] };
+};
 export type ImportPreview = {
   preview_id: string; name: string; format: string; report: ImportReport; same_name: string | null;
+  mapping?: ColumnMapping; mapping_remembered?: boolean;
   totals: { lines: number; pieces: number; parts: number; colours: number; review_items: number; review_pieces: number; unmapped_pieces: number };
 };
 export type DiffLine = { part: string; colour: number; colour_name: string; description: string; before: number; after: number };
@@ -371,6 +378,13 @@ export type ImportDiff = {
   review: { before_items: number; after_items: number; before_pieces: number; after_pieces: number };
   target: { id: string; name: string };
 };
+export type ExportFormat = "bricklink-xml" | "rebrickable-csv" | "csv";
+export type ExportSummary = {
+  format: ExportFormat; title: string; filename: string; lines: number; pieces: number; omitted_lines: number; omitted_pieces: number;
+  omitted: { part: string; colour: number; colour_name: string; qty: number; reason: string }[]; notes: string[];
+};
+/** The download address of an export; the browser saves the file. */
+export const exportUrl = (format: ExportFormat, scope: string) => `/api/collection/export?${qs({ format, scope })}`;
 export type CatalogSet = { set_num: string; name: string; year: number; theme: string; num_parts: number; mapped_pieces: number; dropped_pieces: number };
 export type QuickItem = {
   line: string; qty: number | null; qty_assumed: boolean; colour: number | null; colour_name: string;
@@ -397,8 +411,9 @@ export const collectionApi = {
   review: () => request<{ groups: ReviewGroup[]; items: number; pieces: number }>("/api/collection/review"),
   resolveReview: (body: { source: string; id?: string; family?: string; colour?: number; qty?: number; discard?: boolean }) =>
     request<OpsResult>("/api/collection/review", { method: "POST", body: json(body) }),
-  previewImport: (name: string, csv: string, include_spares: boolean, filename: string, family_colours?: Record<string, number>) =>
-    request<ImportPreview>("/api/collection/imports/preview", { method: "POST", body: json({ name, csv, include_spares, filename, family_colours }) }),
+  previewImport: (name: string, csv: string, include_spares: boolean, filename: string, family_colours?: Record<string, number>,
+                  how?: { format?: string; mapping?: ColumnMapping }) =>
+    request<ImportPreview | NeedsMapping>("/api/collection/imports/preview", { method: "POST", body: json({ name, csv, include_spares, filename, family_colours, ...how }) }),
   importDiff: (previewId: string, replace: string) => request<ImportDiff>(`/api/collection/imports/${sid(previewId)}/diff`, { method: "POST", body: json({ replace }) }),
   commitImport: (previewId: string, body: { name?: string; replace?: string }) =>
     request<{ inventory: Inventory; report: ImportReport; diff?: Omit<ImportDiff, "lines">; batch?: number }>(`/api/collection/imports/${sid(previewId)}/commit`, { method: "POST", body: json(body) }),
@@ -406,6 +421,7 @@ export const collectionApi = {
   addSet: (set_num: string, copies: number, state: "parts" | "built") =>
     request<{ inventory: Inventory }>("/api/collection/sets", { method: "POST", body: json({ set_num, copies, state }) }),
   quickParse: (text: string) => request<{ items: QuickItem[]; ok: number; total: number }>("/api/collection/quick-add/parse", { method: "POST", body: json({ text }) }),
+  exportPreview: (format: string, scope: string) => request<ExportSummary>(`/api/collection/export/preview?${qs({ format, scope })}`),
   quickAdd: (items: { part: string; colour: number; qty: number }[]) =>
     request<OpsResult & { pieces: number }>("/api/collection/quick-add", { method: "POST", body: json({ items }) }),
 };

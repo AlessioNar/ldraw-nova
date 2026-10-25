@@ -1,0 +1,1067 @@
+{
+ "by_name": {
+  "aqua": 41,
+  "black": 11,
+  "blue": 7,
+  "blueviolet": 97,
+  "brightgreen": 36,
+  "brightlightblue": 105,
+  "brightlightorange": 110,
+  "brightlightyellow": 103,
+  "brightpink": 104,
+  "brown": 8,
+  "chromeantiquebrass": 57,
+  "chromeblack": 122,
+  "chromeblue": 52,
+  "chromegold": 21,
+  "chromegreen": 64,
+  "chromepink": 82,
+  "chromesilver": 22,
+  "copper": 84,
+  "darkazure": 153,
+  "darkblue": 63,
+  "darkblueviolet": 109,
+  "darkbluishgrey": 85,
+  "darkbrown": 120,
+  "darkgreen": 80,
+  "darkgrey": 10,
+  "darknougat": 225,
+  "darkorange": 68,
+  "darkpink": 47,
+  "darkpurple": 89,
+  "darkred": 59,
+  "darktan": 69,
+  "darkturquoise": 39,
+  "earthorange": 29,
+  "fabulandbrown": 106,
+  "fabulandorange": 160,
+  "flatdarkgold": 81,
+  "flatsilver": 95,
+  "glittertransclear": 101,
+  "glittertransdarkpink": 100,
+  "glittertranslightblue": 162,
+  "glittertransneongreen": 163,
+  "glittertranspurple": 102,
+  "glowindarkopaque": 46,
+  "glowindarktrans": 118,
+  "glowindarkwhite": 159,
+  "green": 6,
+  "lavender": 154,
+  "lightaqua": 152,
+  "lightblue": 62,
+  "lightbluishgrey": 86,
+  "lightgreen": 38,
+  "lightgrey": 9,
+  "lightlime": 35,
+  "lightnougat": 90,
+  "lightorange": 32,
+  "lightpurple": 93,
+  "lightsalmon": 26,
+  "lightturquoise": 40,
+  "lightviolet": 44,
+  "lightyellow": 33,
+  "lime": 34,
+  "maerskblue": 72,
+  "magenta": 71,
+  "mediumazure": 156,
+  "mediumblue": 42,
+  "mediumbrown": 91,
+  "mediumdarkpink": 94,
+  "mediumgreen": 37,
+  "mediumlavender": 157,
+  "mediumlime": 76,
+  "mediumnougat": 150,
+  "mediumorange": 31,
+  "metalblue": 78,
+  "metallicgold": 65,
+  "metallicgreen": 70,
+  "metallicsilver": 67,
+  "milkywhite": 60,
+  "nougat": 28,
+  "olivegreen": 155,
+  "orange": 4,
+  "pearldarkgrey": 77,
+  "pearlgold": 115,
+  "pearllightgold": 61,
+  "pearllightgrey": 66,
+  "pearlverylightgrey": 119,
+  "pearlwhite": 83,
+  "pink": 23,
+  "purple": 24,
+  "red": 5,
+  "reddishbrown": 88,
+  "salmon": 25,
+  "sandblue": 55,
+  "sandgreen": 48,
+  "sandpurple": 54,
+  "sandred": 58,
+  "skyblue": 87,
+  "speckleblackcopper": 116,
+  "speckleblackgold": 151,
+  "speckleblacksilver": 111,
+  "tan": 2,
+  "transaqua": 113,
+  "transblack": 13,
+  "transbrightgreen": 108,
+  "transclear": 12,
+  "transdarkblue": 14,
+  "transdarkpink": 50,
+  "transgreen": 20,
+  "translightblue": 15,
+  "translightbrightgreen": 226,
+  "translightgreen": 221,
+  "translightorange": 164,
+  "translightpurple": 114,
+  "transmediumblue": 74,
+  "transneongreen": 16,
+  "transneonorange": 18,
+  "transneonyellow": 121,
+  "transorange": 98,
+  "transpink": 107,
+  "transpurple": 51,
+  "transred": 17,
+  "transyellow": 19,
+  "verylightbluishgrey": 99,
+  "verylightgrey": 49,
+  "verylightorange": 96,
+  "violet": 43,
+  "white": 1,
+  "yellow": 3,
+  "yellowishgreen": 158
+ },
+ "colours": {
+  "1": {
+   "exact": true,
+   "ldraw": 15,
+   "method": "legocolors",
+   "name": "White"
+  },
+  "10": {
+   "exact": true,
+   "ldraw": 8,
+   "method": "legocolors",
+   "name": "Dark Gray"
+  },
+  "100": {
+   "exact": true,
+   "ldraw": 114,
+   "method": "legocolors",
+   "name": "Glitter Trans-Dark Pink"
+  },
+  "101": {
+   "exact": true,
+   "ldraw": 117,
+   "method": "legocolors",
+   "name": "Glitter Trans-Clear"
+  },
+  "102": {
+   "exact": true,
+   "ldraw": 129,
+   "method": "legocolors",
+   "name": "Glitter Trans-Purple"
+  },
+  "103": {
+   "exact": true,
+   "ldraw": 226,
+   "method": "legocolors",
+   "name": "Bright Light Yellow"
+  },
+  "104": {
+   "exact": true,
+   "ldraw": 29,
+   "method": "legocolors",
+   "name": "Bright Pink"
+  },
+  "105": {
+   "exact": true,
+   "ldraw": 212,
+   "method": "legocolors",
+   "name": "Bright Light Blue"
+  },
+  "106": {
+   "exact": true,
+   "ldraw": 450,
+   "method": "legocolors",
+   "name": "Fabuland Brown"
+  },
+  "107": {
+   "exact": true,
+   "ldraw": 45,
+   "method": "legocolors",
+   "name": "Trans-Pink"
+  },
+  "108": {
+   "exact": true,
+   "ldraw": 35,
+   "method": "legocolors",
+   "name": "Trans-Bright Green"
+  },
+  "109": {
+   "exact": true,
+   "ldraw": 23,
+   "method": "legocolors",
+   "name": "Dark Blue-Violet"
+  },
+  "11": {
+   "exact": true,
+   "ldraw": 0,
+   "method": "legocolors",
+   "name": "Black"
+  },
+  "110": {
+   "exact": true,
+   "ldraw": 191,
+   "method": "legocolors",
+   "name": "Bright Light Orange"
+  },
+  "111": {
+   "exact": true,
+   "ldraw": 76,
+   "method": "legocolors",
+   "name": "Speckle Black-Silver"
+  },
+  "113": {
+   "exact": true,
+   "ldraw": 39,
+   "method": "legocolors",
+   "name": "Trans-Aqua"
+  },
+  "114": {
+   "exact": true,
+   "ldraw": 44,
+   "method": "legocolors",
+   "name": "Trans-Light Purple"
+  },
+  "115": {
+   "exact": true,
+   "ldraw": 297,
+   "method": "legocolors",
+   "name": "Pearl Gold"
+  },
+  "116": {
+   "exact": true,
+   "ldraw": 75,
+   "method": "legocolors",
+   "name": "Speckle Black-Copper"
+  },
+  "118": {
+   "exact": true,
+   "ldraw": 294,
+   "method": "legocolors",
+   "name": "Glow In Dark Trans"
+  },
+  "119": {
+   "exact": true,
+   "ldraw": 150,
+   "method": "legocolors",
+   "name": "Pearl Very Light Gray"
+  },
+  "12": {
+   "exact": true,
+   "ldraw": 47,
+   "method": "legocolors",
+   "name": "Trans-Clear"
+  },
+  "120": {
+   "exact": true,
+   "ldraw": 308,
+   "method": "legocolors",
+   "name": "Dark Brown"
+  },
+  "121": {
+   "exact": true,
+   "ldraw": 54,
+   "method": "legocolors",
+   "name": "Trans-Neon Yellow"
+  },
+  "122": {
+   "exact": true,
+   "ldraw": 64,
+   "method": "legocolors",
+   "name": "Chrome Black"
+  },
+  "13": {
+   "exact": true,
+   "ldraw": 40,
+   "method": "legocolors",
+   "name": "Trans-Black"
+  },
+  "14": {
+   "exact": true,
+   "ldraw": 33,
+   "method": "legocolors",
+   "name": "Trans-Dark Blue"
+  },
+  "15": {
+   "exact": true,
+   "ldraw": 43,
+   "method": "legocolors",
+   "name": "Trans-Light Blue"
+  },
+  "150": {
+   "exact": true,
+   "ldraw": 84,
+   "method": "legocolors",
+   "name": "Medium Nougat"
+  },
+  "151": {
+   "exact": true,
+   "ldraw": 133,
+   "method": "legocolors",
+   "name": "Speckle Black-Gold"
+  },
+  "152": {
+   "exact": true,
+   "ldraw": 323,
+   "method": "legocolors",
+   "name": "Light Aqua"
+  },
+  "153": {
+   "exact": true,
+   "ldraw": 321,
+   "method": "legocolors",
+   "name": "Dark Azure"
+  },
+  "154": {
+   "exact": true,
+   "ldraw": 31,
+   "method": "legocolors",
+   "name": "Lavender"
+  },
+  "155": {
+   "exact": true,
+   "ldraw": 330,
+   "method": "legocolors",
+   "name": "Olive Green"
+  },
+  "156": {
+   "exact": true,
+   "ldraw": 322,
+   "method": "legocolors",
+   "name": "Medium Azure"
+  },
+  "157": {
+   "exact": true,
+   "ldraw": 30,
+   "method": "legocolors",
+   "name": "Medium Lavender"
+  },
+  "158": {
+   "exact": true,
+   "ldraw": 326,
+   "method": "legocolors",
+   "name": "Yellowish Green"
+  },
+  "159": {
+   "exact": true,
+   "ldraw": 329,
+   "method": "legocolors",
+   "name": "Glow In Dark White"
+  },
+  "16": {
+   "exact": true,
+   "ldraw": 42,
+   "method": "legocolors",
+   "name": "Trans-Neon Green"
+  },
+  "160": {
+   "exact": true,
+   "ldraw": 509,
+   "method": "rebrickable-name",
+   "name": "Fabuland Orange"
+  },
+  "162": {
+   "exact": true,
+   "ldraw": 302,
+   "method": "rebrickable-name",
+   "name": "Glitter Trans-Light Blue"
+  },
+  "163": {
+   "exact": true,
+   "ldraw": 111,
+   "method": "legocolors",
+   "name": "Glitter Trans-Neon Green"
+  },
+  "164": {
+   "exact": true,
+   "ldraw": 231,
+   "method": "legocolors",
+   "name": "Trans-Light Orange"
+  },
+  "17": {
+   "exact": true,
+   "ldraw": 36,
+   "method": "legocolors",
+   "name": "Trans-Red"
+  },
+  "18": {
+   "exact": true,
+   "ldraw": 38,
+   "method": "legocolors",
+   "name": "Trans-Neon Orange"
+  },
+  "19": {
+   "exact": true,
+   "ldraw": 46,
+   "method": "legocolors",
+   "name": "Trans-Yellow"
+  },
+  "2": {
+   "exact": true,
+   "ldraw": 19,
+   "method": "legocolors",
+   "name": "Tan"
+  },
+  "20": {
+   "exact": true,
+   "ldraw": 34,
+   "method": "legocolors",
+   "name": "Trans-Green"
+  },
+  "21": {
+   "exact": true,
+   "ldraw": 334,
+   "method": "legocolors",
+   "name": "Chrome Gold"
+  },
+  "22": {
+   "exact": true,
+   "ldraw": 383,
+   "method": "legocolors",
+   "name": "Chrome Silver"
+  },
+  "221": {
+   "exact": true,
+   "ldraw": 285,
+   "method": "rebrickable-name",
+   "name": "Trans-Light Green"
+  },
+  "225": {
+   "exact": true,
+   "ldraw": 128,
+   "method": "rebrickable-name",
+   "name": "Dark Nougat"
+  },
+  "226": {
+   "exact": true,
+   "ldraw": 35,
+   "method": "legocolors",
+   "name": "Trans-Light Bright Green"
+  },
+  "23": {
+   "exact": true,
+   "ldraw": 13,
+   "method": "legocolors",
+   "name": "Pink"
+  },
+  "24": {
+   "exact": true,
+   "ldraw": 22,
+   "method": "legocolors",
+   "name": "Purple"
+  },
+  "25": {
+   "exact": true,
+   "ldraw": 12,
+   "method": "legocolors",
+   "name": "Salmon"
+  },
+  "26": {
+   "exact": true,
+   "ldraw": 100,
+   "method": "legocolors",
+   "name": "Light Salmon"
+  },
+  "28": {
+   "exact": true,
+   "ldraw": 92,
+   "method": "legocolors",
+   "name": "Nougat"
+  },
+  "29": {
+   "exact": true,
+   "ldraw": 366,
+   "method": "legocolors",
+   "name": "Earth Orange"
+  },
+  "3": {
+   "exact": true,
+   "ldraw": 14,
+   "method": "legocolors",
+   "name": "Yellow"
+  },
+  "31": {
+   "exact": true,
+   "ldraw": 462,
+   "method": "legocolors",
+   "name": "Medium Orange"
+  },
+  "32": {
+   "exact": true,
+   "ldraw": 121,
+   "method": "rebrickable-name",
+   "name": "Light Orange"
+  },
+  "33": {
+   "exact": true,
+   "ldraw": 18,
+   "method": "legocolors",
+   "name": "Light Yellow"
+  },
+  "34": {
+   "exact": true,
+   "ldraw": 27,
+   "method": "legocolors",
+   "name": "Lime"
+  },
+  "35": {
+   "exact": true,
+   "ldraw": 120,
+   "method": "legocolors",
+   "name": "Light Lime"
+  },
+  "36": {
+   "exact": true,
+   "ldraw": 10,
+   "method": "legocolors",
+   "name": "Bright Green"
+  },
+  "37": {
+   "exact": true,
+   "ldraw": 74,
+   "method": "legocolors",
+   "name": "Medium Green"
+  },
+  "38": {
+   "exact": true,
+   "ldraw": 17,
+   "method": "legocolors",
+   "name": "Light Green"
+  },
+  "39": {
+   "exact": true,
+   "ldraw": 3,
+   "method": "legocolors",
+   "name": "Dark Turquoise"
+  },
+  "4": {
+   "exact": true,
+   "ldraw": 25,
+   "method": "legocolors",
+   "name": "Orange"
+  },
+  "40": {
+   "exact": true,
+   "ldraw": 11,
+   "method": "legocolors",
+   "name": "Light Turquoise"
+  },
+  "41": {
+   "exact": true,
+   "ldraw": 118,
+   "method": "legocolors",
+   "name": "Aqua"
+  },
+  "42": {
+   "exact": true,
+   "ldraw": 73,
+   "method": "legocolors",
+   "name": "Medium Blue"
+  },
+  "43": {
+   "exact": true,
+   "ldraw": 110,
+   "method": "legocolors",
+   "name": "Violet"
+  },
+  "44": {
+   "exact": true,
+   "ldraw": 20,
+   "method": "legocolors",
+   "name": "Light Violet"
+  },
+  "46": {
+   "exact": true,
+   "ldraw": 21,
+   "method": "legocolors",
+   "name": "Glow In Dark Opaque"
+  },
+  "47": {
+   "exact": true,
+   "ldraw": 5,
+   "method": "legocolors",
+   "name": "Dark Pink"
+  },
+  "48": {
+   "exact": true,
+   "ldraw": 378,
+   "method": "legocolors",
+   "name": "Sand Green"
+  },
+  "49": {
+   "exact": true,
+   "ldraw": 503,
+   "method": "legocolors",
+   "name": "Very Light Gray"
+  },
+  "5": {
+   "exact": true,
+   "ldraw": 4,
+   "method": "legocolors",
+   "name": "Red"
+  },
+  "50": {
+   "exact": true,
+   "ldraw": 37,
+   "method": "legocolors",
+   "name": "Trans-Dark Pink"
+  },
+  "51": {
+   "exact": true,
+   "ldraw": 52,
+   "method": "legocolors",
+   "name": "Trans-Purple"
+  },
+  "52": {
+   "exact": true,
+   "ldraw": 61,
+   "method": "legocolors",
+   "name": "Chrome Blue"
+  },
+  "54": {
+   "exact": true,
+   "ldraw": 373,
+   "method": "legocolors",
+   "name": "Sand Purple"
+  },
+  "55": {
+   "exact": true,
+   "ldraw": 379,
+   "method": "legocolors",
+   "name": "Sand Blue"
+  },
+  "57": {
+   "exact": true,
+   "ldraw": 60,
+   "method": "legocolors",
+   "name": "Chrome Antique Brass"
+  },
+  "58": {
+   "exact": true,
+   "ldraw": 335,
+   "method": "legocolors",
+   "name": "Sand Red"
+  },
+  "59": {
+   "exact": true,
+   "ldraw": 320,
+   "method": "legocolors",
+   "name": "Dark Red"
+  },
+  "6": {
+   "exact": true,
+   "ldraw": 2,
+   "method": "legocolors",
+   "name": "Green"
+  },
+  "60": {
+   "exact": true,
+   "ldraw": 79,
+   "method": "legocolors",
+   "name": "Milky White"
+  },
+  "61": {
+   "exact": true,
+   "ldraw": 142,
+   "method": "legocolors",
+   "name": "Pearl Light Gold"
+  },
+  "62": {
+   "exact": true,
+   "ldraw": 9,
+   "method": "legocolors",
+   "name": "Light Blue"
+  },
+  "63": {
+   "exact": true,
+   "ldraw": 272,
+   "method": "legocolors",
+   "name": "Dark Blue"
+  },
+  "64": {
+   "exact": true,
+   "ldraw": 62,
+   "method": "legocolors",
+   "name": "Chrome Green"
+  },
+  "65": {
+   "exact": true,
+   "ldraw": 82,
+   "method": "legocolors",
+   "name": "Metallic Gold"
+  },
+  "66": {
+   "exact": true,
+   "ldraw": 135,
+   "method": "legocolors",
+   "name": "Pearl Light Gray"
+  },
+  "67": {
+   "exact": true,
+   "ldraw": 80,
+   "method": "legocolors",
+   "name": "Metallic Silver"
+  },
+  "68": {
+   "exact": true,
+   "ldraw": 484,
+   "method": "legocolors",
+   "name": "Dark Orange"
+  },
+  "69": {
+   "exact": true,
+   "ldraw": 28,
+   "method": "legocolors",
+   "name": "Dark Tan"
+  },
+  "7": {
+   "exact": true,
+   "ldraw": 1,
+   "method": "legocolors",
+   "name": "Blue"
+  },
+  "70": {
+   "exact": true,
+   "ldraw": 81,
+   "method": "rebrickable-name",
+   "name": "Metallic Green"
+  },
+  "71": {
+   "exact": true,
+   "ldraw": 26,
+   "method": "legocolors",
+   "name": "Magenta"
+  },
+  "72": {
+   "exact": true,
+   "ldraw": 313,
+   "method": "legocolors",
+   "name": "Maersk Blue"
+  },
+  "74": {
+   "exact": true,
+   "ldraw": 41,
+   "method": "legocolors",
+   "name": "Trans-Medium Blue"
+  },
+  "76": {
+   "exact": true,
+   "ldraw": 115,
+   "method": "legocolors",
+   "name": "Medium Lime"
+  },
+  "77": {
+   "exact": true,
+   "ldraw": 148,
+   "method": "legocolors-name",
+   "name": "Pearl Dark Gray"
+  },
+  "78": {
+   "exact": true,
+   "ldraw": 137,
+   "method": "legocolors",
+   "name": "Metal Blue"
+  },
+  "8": {
+   "exact": true,
+   "ldraw": 6,
+   "method": "legocolors",
+   "name": "Brown"
+  },
+  "80": {
+   "exact": true,
+   "ldraw": 288,
+   "method": "legocolors",
+   "name": "Dark Green"
+  },
+  "81": {
+   "exact": true,
+   "ldraw": 178,
+   "method": "legocolors",
+   "name": "Flat Dark Gold"
+  },
+  "82": {
+   "exact": true,
+   "ldraw": 63,
+   "method": "legocolors",
+   "name": "Chrome Pink"
+  },
+  "83": {
+   "exact": true,
+   "ldraw": 183,
+   "method": "legocolors",
+   "name": "Pearl White"
+  },
+  "84": {
+   "exact": true,
+   "ldraw": 134,
+   "method": "legocolors",
+   "name": "Copper"
+  },
+  "85": {
+   "exact": true,
+   "ldraw": 72,
+   "method": "legocolors",
+   "name": "Dark Bluish Gray"
+  },
+  "86": {
+   "exact": true,
+   "ldraw": 71,
+   "method": "legocolors",
+   "name": "Light Bluish Gray"
+  },
+  "87": {
+   "exact": true,
+   "ldraw": 232,
+   "method": "legocolors",
+   "name": "Sky Blue"
+  },
+  "88": {
+   "exact": true,
+   "ldraw": 70,
+   "method": "legocolors",
+   "name": "Reddish Brown"
+  },
+  "89": {
+   "exact": true,
+   "ldraw": 85,
+   "method": "legocolors",
+   "name": "Dark Purple"
+  },
+  "9": {
+   "exact": true,
+   "ldraw": 7,
+   "method": "legocolors",
+   "name": "Light Gray"
+  },
+  "90": {
+   "exact": true,
+   "ldraw": 78,
+   "method": "legocolors",
+   "name": "Light Nougat"
+  },
+  "91": {
+   "exact": true,
+   "ldraw": 86,
+   "method": "legocolors",
+   "name": "Medium Brown"
+  },
+  "93": {
+   "exact": true,
+   "ldraw": 69,
+   "method": "legocolors",
+   "name": "Light Purple"
+  },
+  "94": {
+   "exact": true,
+   "ldraw": 351,
+   "method": "legocolors",
+   "name": "Medium Dark Pink"
+  },
+  "95": {
+   "exact": true,
+   "ldraw": 179,
+   "method": "rebrickable-name",
+   "name": "Flat Silver"
+  },
+  "96": {
+   "exact": true,
+   "ldraw": 68,
+   "method": "legocolors",
+   "name": "Very Light Orange"
+  },
+  "97": {
+   "exact": true,
+   "ldraw": 89,
+   "method": "legocolors",
+   "name": "Blue-Violet"
+  },
+  "98": {
+   "exact": true,
+   "ldraw": 57,
+   "method": "legocolors",
+   "name": "Trans-Orange"
+  },
+  "99": {
+   "exact": true,
+   "ldraw": 151,
+   "method": "legocolors",
+   "name": "Very Light Bluish Gray"
+  }
+ },
+ "reverse": {
+  "0": 11,
+  "1": 7,
+  "10": 36,
+  "100": 26,
+  "11": 40,
+  "110": 43,
+  "111": 163,
+  "114": 100,
+  "115": 76,
+  "117": 101,
+  "118": 41,
+  "12": 25,
+  "120": 35,
+  "121": 32,
+  "128": 225,
+  "129": 102,
+  "13": 23,
+  "133": 151,
+  "134": 84,
+  "135": 66,
+  "137": 78,
+  "14": 3,
+  "142": 61,
+  "148": 77,
+  "15": 1,
+  "150": 119,
+  "151": 99,
+  "17": 38,
+  "178": 81,
+  "179": 95,
+  "18": 33,
+  "183": 83,
+  "19": 2,
+  "191": 110,
+  "2": 6,
+  "20": 44,
+  "21": 46,
+  "212": 105,
+  "22": 24,
+  "226": 103,
+  "23": 109,
+  "231": 164,
+  "232": 87,
+  "25": 4,
+  "26": 71,
+  "27": 34,
+  "272": 63,
+  "28": 69,
+  "285": 221,
+  "288": 80,
+  "29": 104,
+  "294": 118,
+  "297": 115,
+  "3": 39,
+  "30": 157,
+  "302": 162,
+  "308": 120,
+  "31": 154,
+  "313": 72,
+  "320": 59,
+  "321": 153,
+  "322": 156,
+  "323": 152,
+  "326": 158,
+  "329": 159,
+  "33": 14,
+  "330": 155,
+  "334": 21,
+  "335": 58,
+  "34": 20,
+  "35": 108,
+  "351": 94,
+  "36": 17,
+  "366": 29,
+  "37": 50,
+  "373": 54,
+  "378": 48,
+  "379": 55,
+  "38": 18,
+  "383": 22,
+  "39": 113,
+  "4": 5,
+  "40": 13,
+  "41": 74,
+  "42": 16,
+  "43": 15,
+  "44": 114,
+  "45": 107,
+  "450": 106,
+  "46": 19,
+  "462": 31,
+  "47": 12,
+  "484": 68,
+  "5": 47,
+  "503": 49,
+  "509": 160,
+  "52": 51,
+  "54": 121,
+  "57": 98,
+  "6": 8,
+  "60": 57,
+  "61": 52,
+  "62": 64,
+  "63": 82,
+  "64": 122,
+  "68": 96,
+  "69": 93,
+  "7": 9,
+  "70": 88,
+  "71": 86,
+  "72": 85,
+  "73": 42,
+  "74": 37,
+  "75": 116,
+  "76": 111,
+  "78": 90,
+  "79": 60,
+  "8": 10,
+  "80": 67,
+  "81": 70,
+  "82": 65,
+  "84": 150,
+  "85": 89,
+  "86": 91,
+  "89": 97,
+  "9": 62,
+  "92": 28
+ },
+ "source": "CRAN package legocolors 0.4.0 (MIT, Matthew Leonawicz) BrickLink/LDraw pairs, completed by Rebrickable colour names; see docs/plans/rebrickable-mapping.md",
+ "unmapped": [
+  "73",
+  "123",
+  "124",
+  "125",
+  "126",
+  "127",
+  "128",
+  "129",
+  "130",
+  "131",
+  "132",
+  "133",
+  "134",
+  "135",
+  "136",
+  "137",
+  "138",
+  "139",
+  "140",
+  "141",
+  "142",
+  "143",
+  "144",
+  "145",
+  "146",
+  "147",
+  "148",
+  "149",
+  "161",
+  "165",
+  "166",
+  "227"
+ ],
+ "version": 1
+}
