@@ -102,3 +102,12 @@ def test_tag_plan_keeps_roles_already_there(official):
 def test_role_vocabulary_is_closed():
     assert set(roles.CANONICAL.values()) <= set(roles.ROLES)
     assert set(roles.ROLE_WORDS.values()) <= set(roles.ROLES)
+
+
+def test_grammar_and_classifier_share_one_vocabulary():
+    from ldraw_tools import role_vocab
+    from ldraw_tools.grammar import roles as grammar_roles
+    assert set(grammar_roles.ROLE_NAMES) <= set(roles.ROLES)
+    assert roles.ROLES == tuple(role_vocab.ROLES) and roles.CANONICAL is role_vocab.ALIAS
+    assert roles.canonical is role_vocab.canonical
+    assert role_vocab.canonical('tower') == 'wall' and role_vocab.canonical('roof') == 'roof'

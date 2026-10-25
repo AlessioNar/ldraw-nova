@@ -24,30 +24,13 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from . import role_vocab
 from .builder import build_plan
+from .role_vocab import canonical  # noqa: F401  (re-exported: the classifier's public name)
 
-ROLES = ('roof', 'wall', 'window', 'door', 'base', 'wheel', 'tyre', 'chassis', 'body', 'glass', 'wing', 'engine',
-         'trim', 'detail', 'structure', 'tower')      # 'tower': stamped by the building grammar, never guessed here
-
-# Roles that the generators stamp, folded into the classifier vocabulary (used to score the classifier on them).
-# 'tower' is the building grammar's (ldraw_tools/grammar/roles.py on the build-grammar branch); its other roles
-# (roof, wall, window, door, glass, base, detail, trim, structure) are the same words with the same meaning.
-CANONICAL = {'porch': 'trim', 'chimney': 'roof', 'accent': 'trim', 'light': 'detail', 'hull': 'body',
-             'canopy': 'glass', 'wood': 'detail', 'metal': 'trim', 'headlamp': 'detail', 'tail_lamp': 'detail',
-             'tower': 'wall'}
-
-ROLE_WORDS = {   # what a person says -> role (used by role_edits to resolve "the roof", "the windows", "the wheels")
-    # A feature word such as "chimney" or "porch" is deliberately absent: it only means something on a plan that has
-    # that role (a generator's or the grammar's), and "remove the chimney" must never fall back to "remove the roof".
-    'roof': 'roof', 'roofs': 'roof', 'roofing': 'roof', 'wall': 'wall', 'walls': 'wall', 'brickwork': 'wall',
-    'masonry': 'wall', 'tower': 'tower', 'towers': 'tower', 'turret': 'tower', 'turrets': 'tower', 'panes': 'glass',
-    'glazing': 'glass', 'baseplate': 'base', 'ground': 'base', 'cornice': 'trim', 'plinth': 'trim', 'window': 'window',
-    'windows': 'window', 'glass': 'glass', 'windscreen': 'glass', 'windshield': 'glass', 'canopy': 'glass',
-    'door': 'door', 'doors': 'door', 'floor': 'base', 'base': 'base', 'foundation': 'base', 'wheel': 'wheel',
-    'wheels': 'wheel', 'rim': 'wheel', 'rims': 'wheel', 'tyre': 'tyre', 'tyres': 'tyre', 'tire': 'tyre',
-    'tires': 'tyre', 'chassis': 'chassis', 'frame': 'chassis', 'body': 'body', 'bodywork': 'body', 'wing': 'wing',
-    'wings': 'wing', 'engine': 'engine', 'engines': 'engine', 'trim': 'trim', 'details': 'detail', 'detail': 'detail',
-}
+ROLES = tuple(role_vocab.ROLES)      # 'tower' is stamped by the building grammar and folded into 'wall' by canonical()
+CANONICAL = role_vocab.ALIAS
+ROLE_WORDS = role_vocab.WORDS
 
 
 @dataclass(frozen=True)
@@ -598,10 +581,6 @@ def _aircraft(kind, desc, bottom, top, mid, share, lateral, edge=0.0, body_half=
 
 
 # ------------------------------------------------------------------------------------------------ plan tagging
-
-def canonical(role):
-    return CANONICAL.get(role, role)
-
 
 def tag_plan(plan, parts, *, hints='', overwrite=False, use_names=True, facts=None):
     """Copy of the plan with a `role` on every placement that has none; returns (plan, report).
