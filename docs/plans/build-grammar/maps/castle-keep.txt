@@ -1,0 +1,162 @@
+FRONT ELEVATION (top = roof)
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+   TTTTTTW W W  W W WTTTTTT   
+   TTTTTTW W W  W W WTTTTTT   
+   TTTTTTW W W  W W WTTTTTT   
+   TTTTTTRRRRRRRRRRRRTTTTTT   
+   TTTTTTRRRRRRRRRRRRTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWW WWW WW WWTTTTTT   
+   TTTTTTWW WWW WW WWTTTTTT   
+   TTTTTTWW WWW WW WWTTTTTT   
+   TTTTTTWW WWW WW WWTTTTTT   
+   TTTTTTWW WWW WW WWTTTTTT   
+   TTTTTTWW WWW WW WWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTttttttttttttTTTTTT   
+   TTTTTTttttttttttttTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWWWWWWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWW WDDDDW WWTTTTTT   
+   TTTTTTWW WDDDDW WWTTTTTT   
+   TTTTTTWW WDDDDW WWTTTTTT   
+   TTTTTTWW WDDDDW WWTTTTTT   
+   TTTTTTWW WDDDDW WWTTTTTT   
+   TTTTTTWW WDDDDW WWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   TTTTTTWWWWDDDDWWWWTTTTTT   
+   ttttttttttDDDDtttttttttt   
+   ttttttttttDDDDtttttttttt   
+   tttttttttt....tttttttttt   
+..............................
+..............................
+
+PLAN at plate 5
+                              
+                              
+                              
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TT  TTWWWWDDDDWWWWTT  TT   
+   TT  TTWWWW    WWWWTT  TT   
+   TTTT                TTTT   
+   TTTT                TTTT   
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+   TTTT                TTTT   
+   TTTT                TTTT   
+   TT  TTWWWWWWWWWWWWTT  TT   
+   TT  TTWWWWWWWWWWWWTT  TT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+                              
+                              
+                              
+
+PLAN at plate 28
+                              
+                              
+                              
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+   TT  TTWWWWWWWWWWWWTT  TT   
+   TT  TTWWWWWWWWWWWWTT  TT   
+   TTTT                TTTT   
+   TTTT                TTTT   
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+     WW                WW     
+   TTTT                TTTT   
+   TTTT                TTTT   
+   TT  TTWWWWWWWWWWWWTT  TT   
+   TT  TTWWWWWWWWWWWWTT  TT   
+   TTTTTT            TTTTTT   
+   TTTTTT            TTTTTT   
+                              
+                              
+                              
+
+PLAN at plate 51
+                              
+                              
+                              
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+   TT  TT            TT  TT   
+                              
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+                              
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+   TT  TT            TT  TT   
+                              
+   TTT TT            TTT TT   
+   TTT TT            TTT TT   
+                              
+                              
+                              

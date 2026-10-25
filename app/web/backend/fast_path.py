@@ -25,7 +25,7 @@ import chat_routing
 from store import get_store
 
 # Seconds a generator takes in the resident worker (build + checks + preview), from the proposal's measurements.
-SECONDS = {"house": 15, "starfighter": 20, "arcade-bay": 10, "street-lantern": 10}
+SECONDS = {"house": 15, "building": 15, "starfighter": 20, "arcade-bay": 10, "street-lantern": 10}
 DEFAULT_SECONDS = 20
 DEFAULT_ESTIMATE = {"eur_low": 1.0, "eur_high": 2.0, "minutes_low": 15, "minutes_high": 30}   # proposal: EUR 1.5-2, 24-35 min
 MIN_HISTORY = 3
