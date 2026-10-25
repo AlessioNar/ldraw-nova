@@ -18,8 +18,7 @@ from collections import Counter, OrderedDict
 from pathlib import Path
 from typing import Optional
 
-import inventories
-import settings
+import collection_store
 
 PROPOSAL_RE = re.compile(r"^[0-9a-f]{12}$")
 MAX_PROPOSALS = 20
@@ -187,23 +186,14 @@ def diff_summary(before: str, after: str) -> dict:
 
 def owned_parts() -> tuple[dict, str]:
     """All of the person's parts lists added together, exact rows only (the Pileometer review pieces are in
-    `review`, not `rows`), and a signature that changes when any list does."""
-    owned: dict = {}
-    signature = []
-    folder = settings.INVENTORIES_DIR
-    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
-        if not inventories.valid_id(path.stem):
-            continue
-        try:
-            stat = path.stat()
-            data = inventories._load(path.stem)
-        except (OSError, inventories.InventoryError):
-            continue
-        signature.append(f"{path.stem}:{stat.st_mtime_ns}:{stat.st_size}")
-        for row in data.get("rows", []):
-            key = (str(row["part"]).casefold().removesuffix(".dat"), row["colour"])
-            owned[key] = owned.get(key, 0) + int(row["qty"])
-    return owned, "|".join(signature)
+    `review`, not `rows`), and a signature that changes when any list does. Read through the collection store."""
+    return collection_store.owned_totals()
+
+
+def available_parts(exclude_build: Optional[str] = None) -> tuple[dict, str]:
+    """Owned minus what built sets and reservations hold (not counting `exclude_build`'s own models), and its signature."""
+    import reservations
+    return reservations.available_totals(exclude_build)
 
 
 def check(usage: dict, owned: Optional[dict] = None, signature: str = "") -> dict:

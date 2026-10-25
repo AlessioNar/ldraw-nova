@@ -8,7 +8,7 @@ from __future__ import annotations
 from ..architecture import Module, slab, WIDE_PLATES, lengths
 from ..vehicle_details import detail_module
 from ..details import palettes
-from .base import Generator, colour_param, tag_roles
+from .base import Generator, colour_param, inherit_roles, tag_roles
 from .colours import colour_code, custom_palette
 
 BRICKS2 = {2: '3003', 3: '3002', 4: '3001', 6: '2456', 8: '3007'}
@@ -54,30 +54,38 @@ def build(p):
     base = Module('starfighter-hull', 'Wing plates, 4-wide fuselage, slope nose, canopy and tail fin; front -Z')
 
     # Layer 1: full-width plate rows under everything, plus the 2-wide nose plates.
+    # base.role is stamped on each placement as it is added: per-placement roles, never recovered from colours.
+    base.role = 'wing'
     for r in range(rows):
         slab(base, -widths[r] // 2, zw + 2 * r, widths[r], 2, 8, wing)
+    base.role = 'hull'
     spine(base, 0, -length // 2, nose, 8, hull, bricks=False)
+    base.role = 'accent'
     # Layers 2 and 3: stepped plates beside the fuselage, layer 2 offset one stud in Z so it bonds the rows.
     for r in range(rows - 1):
         w = min(widths[r], widths[r + 1]) - 2
         if w >= 8:
             for x0 in (-w // 2, 2):
                 slab(base, x0, zw + 2 * r + 1, w // 2 - 2, 2, 16, accent)
+    base.role = 'wing'
     for r in range(rows):
         w = widths[r] - 6
         if w >= 8:
             for x0 in (-w // 2, 2):
                 slab(base, x0, zw + 2 * r, w // 2 - 2, 2, 24, wing)
     # Fuselage bricks over the plates: 4 wide behind the nose, 2 wide ahead of it, then slope, canopy, fin.
+    base.role = 'hull'
     for x in (-1, 1):
         spine(base, x, zw, length // 2 - zw, 32, hull)
     spine(base, 0, -length // 2 + 2, nose - 2, 32, hull)
     base.add('3039', hull, 0, 32, -length // 2 + 1.5)
-    base.add('3039', canopy, 0, 56, zw + 1.5)                    # canopy: slope in front, glass brick behind
-    base.add('3003', canopy, 0, 56, zw + 3)
+    base.add('3039', canopy, 0, 56, zw + 1.5, role='canopy')     # canopy: slope in front, glass brick behind
+    base.add('3003', canopy, 0, 56, zw + 3, role='canopy')
     spine(base, 0, zw + 4, length // 2 - zw - 4, 56, hull)
+    base.role = 'accent'
     spine(base, 0, length // 2 - 4, 4, 80, accent)
     spine(base, 0, length // 2 - 2, 2, 104, accent)
+    base.role = None
     m.add(base, hull, id='hull')
     # Engines under the wing tails.
     pod_palette, _ = custom_palette(palettes()['heritage-racing']['roles'], roof=engine, metal=p['engine_core'])
@@ -88,8 +96,8 @@ def build(p):
         m.add(detail_module('jet-engine-pod', pod_palette), engine, x, 0, length // 2 - 3, id=f'engine-{i}')
     plan = m.plan()
     plan['author'] = 'ldraw-nova generators'
-    by_colour = {canopy: 'canopy', wing: 'wing', accent: 'accent', hull: 'hull'}
-    tag_roles(plan, [('starfighter-hull', lambda q: by_colour.get(q['colour'])), ('vehicle-jet-engine-pod', 'engine')])
+    tag_roles(plan, [('vehicle-jet-engine-pod', 'engine')])
+    inherit_roles(plan)
     return plan, notes
 
 

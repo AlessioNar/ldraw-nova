@@ -65,3 +65,89 @@ def ctx():
     store = get_store()
     chat = store.create_chat()
     return tools.ToolContext(chat["id"], store, lambda *_: None)
+
+
+# ---------------------------------------------------------------- PostgreSQL (optional)
+# Tests that need the database ask for `database`; they skip when LDRAW_NOVA_TEST_DATABASE_URL is unset. It points at
+# a throwaway server (a superuser on database `postgres`), e.g.
+#   docker run -d --name obd-pg-testdb --tmpfs /var/lib/postgresql -e POSTGRES_PASSWORD=test postgres:18-alpine
+#   LDRAW_NOVA_TEST_DATABASE_URL=postgresql://postgres:test@obd-pg-testdb:5432/postgres
+# The schema is built once per session by Alembic into a template database; each test gets the same copy, emptied
+# (TRUNCATE) between tests.
+TEST_DATABASE_URL = os.environ.get("LDRAW_NOVA_TEST_DATABASE_URL", "").strip()
+
+
+def _server_url():
+    from sqlalchemy.engine import make_url
+    url = make_url(TEST_DATABASE_URL)
+    return url.set(drivername="postgresql+psycopg")
+
+
+@pytest.fixture(scope="session")
+def pg_admin():
+    """An autocommit engine on the throwaway server, for creating and dropping databases."""
+    if not TEST_DATABASE_URL:
+        pytest.skip("LDRAW_NOVA_TEST_DATABASE_URL is not set (no test PostgreSQL)")
+    from sqlalchemy import create_engine
+    engine = create_engine(_server_url(), isolation_level="AUTOCOMMIT")
+    yield engine
+    engine.dispose()
+
+
+def create_database(admin, name: str, template: str | None = None):
+    from sqlalchemy import text
+    with admin.connect() as connection:
+        connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+        connection.execute(text(f'CREATE DATABASE "{name}"' + (f' TEMPLATE "{template}"' if template else "")))
+    return _server_url().set(database=name)
+
+
+def drop_database(admin, name: str):
+    from sqlalchemy import text
+    with admin.connect() as connection:
+        connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+
+
+@pytest.fixture(scope="session")
+def pg_template(pg_admin):
+    """A database migrated to head by Alembic, used as the template of every test database."""
+    from sqlalchemy import create_engine
+    from db import migrate
+    name = f"obd_tpl_{os.getpid()}"
+    url = create_database(pg_admin, name)
+    engine = create_engine(url)
+    migrate.upgrade(engine)
+    engine.dispose()
+    yield name
+    drop_database(pg_admin, name)
+
+
+@pytest.fixture(scope="session")
+def pg_test_url(pg_admin, pg_template):
+    name = f"obd_test_{os.getpid()}"
+    yield create_database(pg_admin, name, template=pg_template)
+    import db
+    db.reset()
+    drop_database(pg_admin, name)
+
+
+@pytest.fixture
+def database(pg_test_url):
+    """The app's database layer pointed at the test database, with every table empty."""
+    import db
+    from sqlalchemy import text
+    from db.models import metadata
+    db.configure(pg_test_url)
+    names = ", ".join(f'"{t.name}"' for t in metadata.sorted_tables)
+    with db.session_scope() as session:
+        session.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
+    yield db
+    db.reset()
+
+
+@pytest.fixture
+def fresh_database(pg_admin):
+    """An empty database (no schema) for migration tests: yields its URL, dropped afterwards."""
+    name = f"obd_empty_{os.getpid()}"
+    yield create_database(pg_admin, name)
+    drop_database(pg_admin, name)

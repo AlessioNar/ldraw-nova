@@ -536,9 +536,11 @@ var EditorCore = (function () {
 
   // ---- the add tool ------------------------------------------------------------------------------
 
-  const nextEntryId = plan => {
+  // The lowest free "eN" id, as the server picks it. `nodes` (the picture, with adds not yet confirmed) count as used too.
+  const nextEntryId = (plan, nodes) => {
     const used = new Set();
     for (const section of (plan && plan.sections) || []) for (const step of section.steps || []) for (const e of step) used.add(e.id);
+    for (const n of nodes || []) used.add(n.entryId === undefined ? n.id : n.entryId);
     let n = 1;
     while (used.has(`e${n}`)) n++;
     return `e${n}`;
@@ -573,10 +575,128 @@ var EditorCore = (function () {
 
   // The batch the add tool sends: the part, then a snap of it (onto the part it was dropped on when that is in the same
   // section). The caller retries without the snap when the server refuses it (nothing to snap to).
-  function addEdits(plan, part, colour, placement, snap = true) {
+  function addEdits(plan, part, colour, placement, snap = true, id) {
     const ref = String(part).trim().toLowerCase();
     const add = { op: 'add', section: placement.section, part: ref.endsWith('.dat') ? ref : `${ref}.dat`, colour, position: placement.local };
-    return snap ? [add, { op: 'snap', id: nextEntryId(plan), ...(placement.to ? { to: placement.to } : {}) }] : [add];
+    return snap ? [add, { op: 'snap', id: id || nextEntryId(plan), ...(placement.to ? { to: placement.to } : {}) }] : [add];
+  }
+
+  // ---- adding at once, and applying the server's difference ------------------------------------------
+
+  // A plain part that sits where its own fields say (not relative, not a sub-model): the picture can be worked out
+  // from the entry alone. Returns the node fields, or null.
+  function plainFields(entry, sectionNames) {
+    if (!entry || !Array.isArray(entry.at) || entry.at.length !== 3 || entry.at.some(v => !Number.isFinite(v))) return null;
+    if (entry.on || entry.attach || entry.snap || entry.repeat || !Number.isInteger(entry.colour)) return null;
+    if (sectionNames.has(norm(entry.ref))) return null;
+    let matrix = IDENTITY;
+    if (entry.matrix) {
+      matrix = Array.isArray(entry.matrix[0]) ? entry.matrix.flat() : entry.matrix;
+      if (matrix.length !== 9 || matrix.some(v => !Number.isFinite(v))) return null;
+    } else if (entry.yaw) {
+      if (!Number.isFinite(entry.yaw)) return null;
+      matrix = rotationMatrix('y', entry.yaw);
+    }
+    return { ref: entry.ref, colour: String(entry.colour), localPosition: entry.at.slice(), localMatrix: matrix.slice() };
+  }
+
+  // Put a node in a frame (the sub-model instance it sits in; the identity at the root).
+  function frameNode(node, frame) {
+    node.parentKey = frame.parentKey; node.parentMatrix = frame.parentMatrix; node.parentPosition = frame.parentPosition;
+    node.depth = frame.depth;
+    node.matrix = matMul(frame.parentMatrix, node.localMatrix);
+    node.position = add(mulVec(frame.parentMatrix, node.localPosition), frame.parentPosition);
+    return node;
+  }
+
+  // The frames a section is drawn in: the root's, or one per copy on screen (null when it is not drawn at all).
+  function sectionFrames(nodes, plan, name) {
+    if (plan.sections[0] && norm(plan.sections[0].name) === norm(name)) {
+      return [{ parentKey: '', parentMatrix: IDENTITY, parentPosition: [0, 0, 0], depth: 0, copies: 1 }];
+    }
+    const frames = new Map();
+    for (const n of nodes) if (norm(n.section) === norm(name) && !frames.has(n.parentKey)) frames.set(n.parentKey, n);
+    return frames.size ? [...frames.values()].map(n => ({ parentKey: n.parentKey, parentMatrix: n.parentMatrix, parentPosition: n.parentPosition, depth: n.depth, copies: n.copies })) : null;
+  }
+
+  const newNode = (id, section, fields, frame) => frameNode({
+    key: frame.parentKey ? `${frame.parentKey}/${id}` : id, id, entryId: id, section, ref: fields.ref, colour: fields.colour,
+    localPosition: fields.localPosition, localMatrix: fields.localMatrix, leaf: true, editable: true, repeated: false,
+    templateAt: null, repeatCount: 0, copies: frame.copies || 1, position: [0, 0, 0], matrix: IDENTITY,
+  }, frame);
+
+  // The picture with a part added where it was dropped, before the server has answered: the nodes plus the new one
+  // (flagged `pending`), or null when that cannot be told (the section is not on screen, or the id is taken).
+  function optimisticAdd(nodes, plan, id, section, part, colour, local) {
+    const names = new Set(plan.sections.map(s => norm(s.name)));
+    const ref = String(part).trim().toLowerCase();
+    const fields = plainFields({ ref: ref.endsWith('.dat') ? ref : `${ref}.dat`, colour, at: local }, names);
+    const frames = fields && sectionFrames(nodes, plan, section);
+    if (!frames) return null;
+    const name = plan.sections.find(s => norm(s.name) === norm(section)).name;
+    const added = frames.map(frame => ({ ...newNode(id, name, fields, frame), pending: true }));
+    if (added.some(a => nodes.some(n => n.key === a.key))) return null;
+    return [...nodes, ...added];
+  }
+
+  // Apply the server's difference (splices of plan steps, see ldraw_tools.commands.editor.plan_delta) to the plan
+  // and to the picture. Returns { plan, nodes }, or null when the picture cannot be worked out from the changed
+  // entries alone (a relative, repeated or sub-model entry is involved, or a copy of the section is not on screen):
+  // the caller then asks for the whole model. The inputs are not changed.
+  function applyDelta(plan, nodes, splices) {
+    if (!plan || !Array.isArray(splices)) return null;
+    const names = new Set(plan.sections.map(s => norm(s.name)));
+    const sections = plan.sections.slice();
+    const copied = new Set();
+    const was = new Map(), now = new Map();                // section index -> Map(id -> entry)
+    const note = (map, si, entries) => { if (!map.has(si)) map.set(si, new Map()); for (const e of entries) map.get(si).set(e.id, e); };
+    for (const sp of splices) {
+      const section = sections[sp.section];
+      if (!section || !section.steps[sp.step]) return null;
+      if (!copied.has(sp.section)) { sections[sp.section] = { ...section, steps: section.steps.slice() }; copied.add(sp.section); }
+      const step = sections[sp.section].steps[sp.step];
+      if (!(sp.at >= 0 && sp.remove >= 0 && sp.at + sp.remove <= step.length) || !Array.isArray(sp.insert)) return null;
+      note(was, sp.section, step.slice(sp.at, sp.at + sp.remove));
+      note(now, sp.section, sp.insert);
+      sections[sp.section].steps[sp.step] = [...step.slice(0, sp.at), ...sp.insert, ...step.slice(sp.at + sp.remove)];
+    }
+    const next = { ...plan, sections };
+    let result = nodes;
+    for (const si of new Set([...was.keys(), ...now.keys()])) {
+      const name = sections[si].name, old = was.get(si) || new Map(), fresh = new Map();
+      if (sections[si].steps.some(step => step.some(e => e.on || e.attach || e.snap))) return null;      // placed relative to others
+      for (const e of old.values()) if (e.repeat || names.has(norm(e.ref))) return null;
+      for (const [id, e] of now.get(si) || []) { const f = plainFields(e, names); if (!f) return null; fresh.set(id, f); }
+      const same = n => norm(n.section) === norm(name) && !n.repeated;
+      result = result.filter(n => !(same(n) && old.has(n.entryId) && !fresh.has(n.entryId)));
+      const seen = new Set();
+      result = result.map(n => {
+        if (!same(n) || !fresh.has(n.entryId)) return n;
+        seen.add(n.entryId);
+        return frameNode({ ...n, ...fresh.get(n.entryId), pending: undefined }, n);
+      });
+      const adding = [...fresh.keys()].filter(id => !seen.has(id));
+      if (adding.length) {
+        const frames = sectionFrames(result, next, name);
+        if (!frames) return null;
+        for (const id of adding) for (const frame of frames) {
+          const node = newNode(id, name, fresh.get(id), frame);
+          if (result.some(n => n.key === node.key)) return null;
+          result = [...result, node];
+        }
+      }
+    }
+    return { plan: next, nodes: result };
+  }
+
+  // The picture part-way (0..1) from `from` to `to`: parts in both that moved slide, the rest are as in `to`.
+  function tweenNodes(from, to, t) {
+    const before = new Map(from.map(n => [n.key, n]));
+    return to.map(n => {
+      const a = before.get(n.key);
+      if (!a || t >= 1 || [0, 1, 2].every(k => a.position[k] === n.position[k])) return n;
+      return { ...n, position: [0, 1, 2].map(k => a.position[k] + (n.position[k] - a.position[k]) * t) };
+    });
   }
 
   const recolourEdits = (placements, ids, colour) => chosen(placements, ids)
@@ -586,7 +706,7 @@ var EditorCore = (function () {
 
   const TOOLS = ['select', 'move', 'rotate', 'add', 'paint', 'delete'];
   const MODES = ['edit', 'view', 'player'];
-  const COMMANDS = ['undo', 'redo', 'delete', 'set-tool', 'set-colour', 'add-part', 'set-mode', 'reload', 'view-version', 'back-to-draft', 'focus', 'step'];
+  const COMMANDS = ['undo', 'redo', 'delete', 'set-tool', 'set-colour', 'add-part', 'set-mode', 'reload', 'view-version', 'back-to-draft', 'focus', 'step', 'select'];
 
   const colourId = v => {
     const n = typeof v === 'string' && /^\d+$/.test(v.trim()) ? Number(v) : v;
@@ -630,12 +750,30 @@ var EditorCore = (function () {
       if (!/^https?:$/.test(url.protocol) || url.origin !== origin) throw new Error('view-version only opens a URL on this site');
       return { cmd, url: url.href };
     }
+    if (cmd === 'select') {
+      const ids = data.ids;
+      if (!Array.isArray(ids) || ids.length > 500 || ids.some(i => typeof i !== 'string' || !i || i.length > 200)) throw new Error('select needs a list of up to 500 part ids ("section:id")');
+      return { cmd, ids: ids.slice() };
+    }
     if (cmd === 'step') {
       const n = Number(data.n);
       if (!Number.isInteger(n) || n < 1) throw new Error('step needs a whole step number, starting at 1');
       return { cmd, n };
     }
     return { cmd };
+  }
+
+  // The keys of the parts named by "section:id" ids (the form the server uses; a bare id is that id in the root section),
+  // every copy of a sub-model's part included. Unknown ids are skipped.
+  function keysForIds(nodes, ids) {
+    const sections = new Set(nodes.map(n => norm(n.section)));
+    const wanted = new Set();
+    for (const raw of ids) {
+      const at = raw.indexOf(':');
+      if (at > 0 && sections.has(norm(raw.slice(0, at)))) wanted.add(`${norm(raw.slice(0, at))}:${raw.slice(at + 1)}`);
+      else wanted.add(`:${raw}`);
+    }
+    return nodes.filter(n => n.leaf && (wanted.has(`${norm(n.section)}:${n.entryId}`) || (!n.parentKey && wanted.has(`:${n.entryId}`)))).map(n => n.key);
   }
 
   // The piece the parent is told about (obd:selection): the plan entry with its own (section) position and matrix.
@@ -656,7 +794,7 @@ var EditorCore = (function () {
            rayBox, pick, pickAll, pickHits, nextHit, deleteTargets, nextSelection, axisParameter, planeAngle, snapMove, snapRotate, fitDistance, snapStep, framingFill, moveEdits, rotateEdits,
            deleteEdits, nudgeEdits, centroid, editsBody, describeParts,
            TOOLS, MODES, COMMANDS, effectiveColours, sceneMatrix, diffLeaves, leafRefs, predictEdits, boxSelect, mergeSelection,
-           subtreeBox, nextEntryId, placementFor, addEdits, recolourEdits, parseCommand, trustedMessage, pieceInfo, matMul };
+           subtreeBox, nextEntryId, placementFor, addEdits, optimisticAdd, applyDelta, tweenNodes, plainFields, recolourEdits, parseCommand, trustedMessage, pieceInfo, keysForIds, matMul };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = EditorCore;

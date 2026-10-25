@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { downloadGlb, downloadUrl, timeAgo, type ChatModel, type ModelFile, type ViewerMode } from "../api";
 import { useApp } from "../context";
@@ -9,6 +9,7 @@ type Props = {
   showChats?: boolean;
   onDelete?: () => Promise<void>;
   onEdit?: () => Promise<void>;      // My Builds: open the model in the 3D editor
+  extraActions?: ReactNode;          // My Builds: "I built this" and friends
   buildId?: string;                  // My Builds: the build this file is a version of; the card links to its page
 };
 
@@ -20,7 +21,7 @@ function DownloadIcon() {
   );
 }
 
-export default function ModelCard({ model, showChats = false, onDelete, onEdit, buildId }: Props) {
+export default function ModelCard({ model, showChats = false, onDelete, onEdit, buildId, extraActions }: Props) {
   const { openViewer } = useApp();
   const open = (mode: ViewerMode = "viewer") =>
     model.model_url &&
@@ -104,11 +105,14 @@ export default function ModelCard({ model, showChats = false, onDelete, onEdit, 
           <div><span className="label">File</span><b>{model.size >= 1024 * 1024 ? `${(model.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(model.size / 1024))} KB`}</b></div>
         </div>
         {showWarnings && warnings.length > 0 && <ul className="model-warnings small">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>}
-        {model.version != null && model.version > 1 && model.changes && (
-          <p className="model-changes small" title="Compared with the previous version's parts list">
-            <strong>Changed since v{model.version - 1}:</strong> {model.changes.summary}
-          </p>
-        )}
+        {model.version != null && model.version > 1 && model.changes && (model.changes.summary.length > 120
+          ? <details className="model-changes small" title="Compared with the previous version's parts list">
+              <summary><strong>Changed since v{model.version - 1}:</strong> {model.changes.summary.slice(0, 100).replace(/[,;]?\s+\S*$/, "")}…</summary>
+              {model.changes.summary}
+            </details>
+          : <p className="model-changes small" title="Compared with the previous version's parts list">
+              <strong>Changed since v{model.version - 1}:</strong> {model.changes.summary}
+            </p>)}
         {model.info_heading && <p className="model-info-heading"><strong>{model.info_heading}</strong></p>}
         {model.description && !(model.version != null && model.title === model.description) && <p className="model-description">{model.description}</p>}
         <div className="muted small ellipsis">
@@ -134,6 +138,7 @@ export default function ModelCard({ model, showChats = false, onDelete, onEdit, 
               Info
             </button>
           )}
+          {extraActions}
           {buildId && <Link className="button primary-link" to={`/build/${buildId}`} title="Open this model's build: versions, settings, editor and chats">Open build</Link>}
           <span className="model-viewer-actions" role="group" aria-label="View model">
             <button onClick={() => open()} disabled={!model.model_url}>

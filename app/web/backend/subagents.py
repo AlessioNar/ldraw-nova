@@ -425,7 +425,8 @@ async def _run_worker(ctx: ToolContext, contract: Contract, entry: dict, model: 
         return await run_steps(entry=entry, params=params, sink=sink, tools=schemas, max_steps=steps,
                                build_messages=build_messages, run_tool=run_tool,
                                ref=lambda png: ctx.store.ref(ctx.chat_id, png), before_step=before_step,
-                               after_message=record_usage)
+                               after_message=record_usage,
+                               usage_context={"kind": "worker", "chat_id": ctx.chat_id, "worker_id": contract.id})
 
     ended, error, finished, repaired = "", "", False, False
     strays: list[str] = []

@@ -1,0 +1,14 @@
+{
+ "domain": "vehicle",
+ "counts": {
+  "chassis": 21,
+  "body": 14,
+  "glass": 4,
+  "roof": 6,
+  "wheel": 8,
+  "tyre": 8
+ },
+ "low_confidence": 2,
+ "seconds": 0.4,
+ "warnings": 0
+}

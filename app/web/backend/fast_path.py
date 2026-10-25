@@ -10,12 +10,15 @@ variant the composer calls while typing.
 """
 from __future__ import annotations
 
+import asyncio
+import copy
 import re
 import statistics
 import time
 from typing import Any, Optional
 
 import generator_bridge
+import request_log
 import settings
 import understand
 import usage
@@ -23,7 +26,7 @@ import chat_routing
 from store import get_store
 
 # Seconds a generator takes in the resident worker (build + checks + preview), from the proposal's measurements.
-SECONDS = {"house": 15, "starfighter": 20, "arcade-bay": 10, "street-lantern": 10}
+SECONDS = {"house": 15, "building": 15, "starfighter": 20, "arcade-bay": 10, "street-lantern": 10}
 DEFAULT_SECONDS = 20
 DEFAULT_ESTIMATE = {"eur_low": 1.0, "eur_high": 2.0, "minutes_low": 15, "minutes_high": 30}   # proposal: EUR 1.5-2, 24-35 min
 MIN_HISTORY = 3
@@ -126,9 +129,14 @@ def _clamp_value(key: str, spec: dict, value: Any, default: Any, notes: list[str
 
 # ---------------------------------------------------------------- choosing the generator
 
+def _word_in(needle: str, text: str) -> bool:
+    """`needle` as a whole word (or phrase, plain plural allowed) inside `text`: "house" is in "red house", not in "lighthouse"."""
+    return bool(re.search(rf"(?<![a-z]){re.escape(needle)}(?:e?s)?(?![a-z])", text))
+
+
 def _kind_hit(entry: dict, kind: str) -> bool:
     kind = kind.casefold().strip()
-    return bool(kind) and any(kind == k or kind in k or k in kind for k in entry["kinds"])
+    return bool(kind) and any(kind == k or _word_in(k, kind) or _word_in(kind, k) for k in entry["kinds"])
 
 
 def choose(spec: dict) -> tuple[Optional[dict], str]:
@@ -143,10 +151,15 @@ def choose(spec: dict) -> tuple[Optional[dict], str]:
         if (entry["quality"].startswith("Small accent piece") and not by_kind) or not (by_kind or by_family):
             continue
         exact = kind.casefold() in entry["kinds"]
-        rows.append((-(by_kind * 4 + by_family * 2 + (entry["families"][0] == family) + exact), len(entry["families"]), position, entry))
+        template = entry.get("kind") == "template"         # a model turned into a template (docs/plans/build-templates)
+        rows.append((-(by_kind * 4 + by_family * 2 + (entry["families"][0] == family) + exact), template,
+                     not entry.get("presets"), len(entry["families"]), position, entry))
     if not rows:
         return None, f"no generator builds a {kind or family}"
-    best = min(rows, key=lambda r: r[:3])[3]      # best score, then the more specific generator, then registry order
+    # best score, then a generator before a template (it is parametric from scratch and tested at its corners; a template
+    # wins only a kind no generator matches as well, "flatbed truck"), then the more specific entry, then registry order
+    # (the building grammar, which carries presets, before the older flat generator that answers the same words)
+    best = min(rows, key=lambda r: r[:5])[5]
     generic = not kind or kind.casefold() in GENERIC_KINDS or kind.casefold() == family
     if not generic and not _kind_hit(best, kind):
         return None, f"no generator builds a {kind}"
@@ -172,9 +185,38 @@ def _unsupported_reason(spec: dict) -> str:
     return ""
 
 
+# House-dialect settings of the building grammar and where they live in its configuration (to show "from" values)
+ALIAS_PATHS = {"width": ("footprint", "width"), "depth": ("footprint", "depth"), "roof_colour": ("roof", "colour"),
+               "wall_colour": ("walls", "colour"), "trim_colour": ("storeys", "band_colour"),
+               "door_colour": ("openings", "door_colour"), "glass_colour": ("openings", "glass_colour"),
+               "chimney_colour": ("details", "chimney_colour"), "chimney": ("details", "chimney"),
+               "porch": ("details", "porch")}
+
+
+# House-dialect settings that a grammar patch to these configuration fields overrides (the grammar lets the flat
+# value win over the group, so the flat one must go when the person addresses the field directly)
+ALIAS_SHADOWS = {"width": {("footprint", "width")}, "depth": {("footprint", "depth")},
+                 "courses": {("storeys", "count"), ("storeys", "courses")}, "door_side": {("openings", "door"), ("openings", "door_position")},
+                 "door_style": {("openings", "door")}, "windows": {("openings", "count"), ("openings", "ground_windows"), ("openings", "upper_windows")},
+                 "window_sides": {("openings", "sides")}, "roof_style": {("roof", "style")}, "roof_tiers": {("roof", "tiers")},
+                 "wall_colour": {("walls", "colour")}, "roof_colour": {("roof", "colour")}, "door_colour": {("openings", "door_colour")},
+                 "glass_colour": {("openings", "glass_colour")}, "chimney_colour": {("details", "chimney_colour")},
+                 "trim_colour": {("openings", "frame_colour"), ("storeys", "band_colour")},
+                 "porch": {("details", "porch")}, "chimney": {("details", "chimney")}}
+
+
+def _effective(params: dict, key: str, default: Any = None) -> Any:
+    """A setting's value: the flat param, else (grammar builds) the value inside the nested configuration."""
+    if params.get(key) is not None:
+        return params[key]
+    group, name = ALIAS_PATHS.get(key, (None, None))
+    value = (params.get(group) or {}).get(name) if group else None
+    return default if value is None else value
+
+
 # ---------------------------------------------------------------- spec -> params
 
-def _size_params(entry: dict, spec: dict, notes: list[str]) -> dict:
+def _size_params(entry: dict, spec: dict, notes: list[str], base: Optional[dict] = None) -> dict:
     schema, out = entry["params"]["properties"], {}
     size = spec.get("size") or {}
     studs = size.get("studs") or {}
@@ -197,7 +239,7 @@ def _size_params(entry: dict, spec: dict, notes: list[str]) -> dict:
         for name in SIZE_PARAMS:
             if name in schema and "minimum" in schema[name]:
                 low, high = schema[name]["minimum"], schema[name]["maximum"]
-                default = schema[name].get("default", low)
+                default = _effective(base or {}, name, schema[name].get("default", low))
                 out[name] = round(default + (default - low) * share) if share < 0 else round(default + (high - default) * share)
     return out
 
@@ -205,7 +247,7 @@ def _size_params(entry: dict, spec: dict, notes: list[str]) -> dict:
 def _colour_param(entry: dict, role: str) -> Optional[str]:
     schema = entry["params"]["properties"]
     for alias in ROLE_PARAMS.get(role, [role]):
-        for name in (alias, f"{alias}_colour"):
+        for name in (alias, f"{alias}_colour", f"colour_{alias}"):      # colour_<role>: templates
             if schema.get(name, {}).get("x-colour"):
                 return name
         if alias in ("body", "wall", "hull") and "colour" in schema:
@@ -239,18 +281,67 @@ def _feature_params(entry: dict, spec: dict, notes: list[str]) -> dict:
     return out
 
 
+def pick_preset(entry: dict, kind: str, family: str = "") -> Optional[str]:
+    """The preset of a grammar entry a request means: its name or keyword as a whole word ("a lighthouse", "a warehouse"),
+    else the plain house for a generic house/building request. None for entries without presets."""
+    presets = entry.get("presets") or {}
+    kind = (kind or "").casefold().strip().replace("-", " ")
+    if not presets:
+        return None
+    named = next((k for k in presets if kind and k.replace("-", " ") == kind), None)
+    if named:
+        return named
+    for name, preset in presets.items():
+        if kind and any(kind == w or _word_in(w, kind) for w in preset.get("keywords") or []):
+            return name
+    return "house" if "house" in presets else next(iter(presets))
+
+
+# Wall colour -> (roof, trim): a roof that reads against the walls, trim in white or light grey. Small on purpose.
+HARMONY = {"red": ("dark grey", "white"), "blue": ("dark blue", "white"), "green": ("dark green", "white"),
+           "yellow": ("dark red", "white"), "orange": ("dark red", "white"), "white": ("dark red", "light grey"),
+           "tan": ("dark tan", "white"), "brown": ("dark grey", "tan"), "reddish brown": ("dark grey", "tan"),
+           "black": ("dark grey", "white"), "grey": ("dark red", "white"), "light grey": ("dark red", "white"),
+           "dark grey": ("dark red", "white"), "pink": ("dark pink", "white"), "purple": ("dark grey", "white")}
+WALL_ROLES = ("body", "wall", "walls")
+
+
+def _harmony(entry: dict, wanted: dict, notes: list[str]) -> None:
+    """One named colour for a building ("a blue house"): pick the roof and trim to go with it instead of the default red."""
+    schema = entry["params"]["properties"]
+    wall = next((p for p in ("wall_colour", "colour") if p in wanted), None)
+    if wall is None or "roof_colour" not in schema or any(p in wanted for p in ("roof_colour", "trim_colour")):
+        return
+    name = str(_norm_colour(wanted[wall]) or wanted[wall]).casefold()
+    base = re.sub(r"^(dark|light|bright|medium)\s+", "", name)
+    roof, trim = HARMONY.get(name) or HARMONY.get(base) or ("dark grey", "white")
+    if _norm_colour(roof) == _norm_colour(name):
+        roof = "dark grey" if name != "dark grey" else "dark red"
+    wanted["roof_colour"] = roof
+    if "trim_colour" in schema:
+        wanted["trim_colour"] = trim
+    notes.append(f"chose a {roof} roof" + (f" and {trim} trim" if "trim_colour" in schema else "") + f" to go with the {name} walls")
+
+
 def params_from_spec(entry: dict, spec: dict) -> tuple[dict, list[str]]:
     """Generator params for a new-model spec, and the notes (what was assumed, left out or clamped)."""
     notes: list[str] = []
-    wanted = _size_params(entry, spec, notes)
+    subject = spec.get("subject") or {}
+    preset = pick_preset(entry, subject.get("kind") or "", subject.get("family") or "")
+    base = copy.deepcopy(entry["presets"][preset]["config"]) if preset else {}
+    wanted = _size_params(entry, spec, notes, base)
+    named = {}
     for role, name in (spec.get("colours") or {}).items():
         param = _colour_param(entry, role)
         if param is None:
             notes.append(f"a {role} colour is not a setting of the {entry['id']} design; left out")
         else:
             wanted[param] = name
+            named[role] = name
+    if len(named) == 1 and next(iter(named)) in WALL_ROLES:
+        _harmony(entry, wanted, notes)
     wanted.update(_feature_params(entry, spec, notes))
-    params, more = clamp(entry, wanted)
+    params, more = clamp(entry, {**base, **wanted})
     return params, notes + more
 
 
@@ -259,9 +350,9 @@ def spec_from_params(entry: dict, params: dict) -> dict:
     colours = {}
     for role in ("body", "roof", "trim", "wheels", "glass", "accent", "door", "wing", "chimney"):
         name = _colour_param(entry, role)
-        if name and name in params:
-            colours.setdefault(role, str(params[name]))
-    studs = {k: params[k] for k in ("width", "depth", "length") if k in params}
+        if name and _effective(params, name) is not None:
+            colours.setdefault(role, str(_effective(params, name)))
+    studs = {k: _effective(params, k) for k in ("width", "depth", "length") if _effective(params, k) is not None}
     spec: dict = {"intent": "new_model", "subject": {"family": entry["families"][0], "kind": entry["kinds"][0]}}
     if colours:
         spec["colours"] = colours
@@ -302,8 +393,8 @@ def edit_params(entry: dict, current: dict, edits: list[dict]) -> tuple[dict, li
         else:
             notes.append(f"{op} {target} needs the AI builder")
     params, more = clamp(entry, wanted)
-    changes = [{"param": k, "label": k.replace("_", " "), "from": current.get(k), "to": params[k]}
-               for k in params if params[k] != current.get(k)]
+    changes = [{"param": k, "label": k.replace("_", " "), "from": _effective(current, k), "to": params[k]}
+               for k in params if params[k] != _effective(current, k, current.get(k)) and not isinstance(params[k], dict)]
     return params, changes, notes + more, history
 
 
@@ -348,6 +439,133 @@ def _toggle(schema: dict, wanted: dict, edit: dict, target: str, add: bool, entr
     else:
         return False
     return True
+
+
+# ---------------------------------------------------------------- role edits: a build with no live generator source
+
+def _model_spec() -> dict:
+    """Stand-in for CURRENT_SPEC on a build that has parts but no generator to read settings from."""
+    return {"intent": "new_model", "subject": {"family": "other"}, "note": understand.STAND_IN_NOTE}
+
+
+def _route_role_edit(spec: dict, context: dict, confidence: float) -> dict:
+    """The edits of a spec as role edits (recolour / remove by role or selection) for the build's own plan."""
+    edits, notes, history, shown = [], [], None, []
+    for edit in spec.get("edits") or []:
+        op, target = edit.get("op"), str(edit.get("target", "")).casefold().strip()
+        if op in ("undo", "revert"):
+            history = op
+        elif op == "set_colour":
+            colour = _norm_colour(edit.get("value"))
+            if colour is None:
+                return {"route": "clarify", "question": f"I don't know the colour {edit.get('value')!r}. Which colour would you like?",
+                        "choices": ["red", "blue", "white", "dark grey"]}
+            role = None if target in understand.SELECTION_WORDS or target in WHOLE else target
+            edits.append({"op": "recolour", "role": role, "colour": colour})
+            shown.append({"label": f"{role or 'selection'} colour", "from": None, "to": colour})
+        elif op == "remove_feature":
+            role = None if target in understand.SELECTION_WORDS else target
+            edits.append({"op": "remove", "role": role})
+            shown.append({"label": role or "selection", "from": None, "to": "removed"})
+        else:
+            notes.append(f"{op} {target} needs the AI builder".strip())
+    if not edits and not history:
+        return _needs_ai(spec, "; ".join(notes[:2]) or "that is more than a recolour or a removal")
+    out = {"route": "edit", "role_edits": edits, "changes": shown, "notes": notes, "confidence": round(confidence, 2),
+           "cost_eur": 0.0, "seconds_estimate": 1}
+    if history:
+        out["history"] = history
+    return out
+
+
+# scale/direction words that continue ("again", "bigger") or soften ("a bit less") the last numeric change
+RELATIVE = {"again": (0, 1), "do it again": (0, 1), "once more": (0, 1), "more": (0, 1), "even more": (0, 1), "a bit more": (0, .5),
+            "a little more": (0, .5), "some more": (0, 1), "bigger": (1, 1), "larger": (1, 1), "even bigger": (1, 1), "a bit bigger": (1, .5),
+            "a little bigger": (1, .5), "longer": (1, 1), "wider": (1, 1), "taller": (1, 1), "smaller": (-1, 1), "shorter": (-1, 1),
+            "narrower": (-1, 1), "a bit smaller": (-1, .5), "a bit less": (-2, .5), "a little less": (-2, .5), "less": (-2, .5),
+            "not so much": (-2, .5), "too much": (-2, .5), "much less": (-2, 1)}
+
+
+def relative_spec(text: str, last: Optional[dict]) -> Optional[dict]:
+    """"again", "a bit less", "bigger" read against the last numeric change of the build (free, no model).
+
+    last = {"changes": [{"param", "from", "to"}]}. direction 0 repeats the last move, +1/-1 force up/down by its size,
+    -2 takes half of it back.
+    """
+    found = RELATIVE.get(understand._key(text))
+    if not found or not last:
+        return None
+    direction, factor = found
+    edits = []
+    for change in last.get("changes") or []:
+        old, new, param = change.get("from"), change.get("to"), change.get("param")
+        if not param or isinstance(old, bool) or isinstance(new, bool) or not isinstance(old, (int, float)) or not isinstance(new, (int, float)) or old == new:
+            continue
+        step, up = max(1, round(abs(new - old) * factor)), new > old
+        sign = (1 if up else -1) if direction == 0 else (-(1 if up else -1) if direction == -2 else direction)
+        edits.append({"op": "set_param", "target": param, "value": new + sign * step})
+    return {"intent": "edit", "subject": {"family": "other"}, "edits": edits, "confidence": 1.0} if edits else None
+
+
+# ---------------------------------------------------------------- the building grammar's own text addressing
+
+def _leaves(patch: dict, prefix: tuple = ()) -> list[tuple[tuple, Any]]:
+    out = []
+    for key, value in patch.items():
+        out += _leaves(value, prefix + (key,)) if isinstance(value, dict) else [(prefix + (key,), value)]
+    return out
+
+
+def _dig(config: dict, path: tuple) -> Any:
+    for key in path:
+        config = config.get(key) if isinstance(config, dict) else None
+    return config
+
+
+def grammar_edit(entry: dict, current: dict, patch: dict, confidence: float = 1.0) -> dict:
+    """An edit decision for a grammar config patch (what nl.apply_text understood) applied over the building's params."""
+    params = copy.deepcopy(current.get("params") or {})
+    leaves = _leaves(patch)
+    touched = {path[:2] for path, _ in leaves if len(path) > 1}
+    for alias, paths in ALIAS_SHADOWS.items():
+        if alias in params and paths & touched:
+            del params[alias]
+    changes = []
+    for path, value in leaves:
+        group = params
+        for key in path[:-1]:
+            group = group.setdefault(key, {})
+        before = group.get(path[-1])
+        group[path[-1]] = value
+        if before != value:
+            changes.append({"param": ".".join(path), "label": " ".join(path).replace("_", " "), "from": before, "to": value})
+    params, notes = clamp(entry, params)
+    return {"route": "edit", "generator": entry["id"], "params": params, "changes": changes, "notes": notes,
+            "confidence": round(confidence, 2), "cost_eur": 0.0, "seconds_estimate": SECONDS.get(entry["id"], DEFAULT_SECONDS)}
+
+
+async def grammar_decision(text: str, current: Optional[dict]) -> Optional[dict]:
+    """The building grammar's text addressing as a fast-path answer, or None when it does not read the WHOLE message
+    (a partly understood request goes on to the understanding step, so nothing is applied half-way)."""
+    entry = _entry(current["generator"]) if current else None
+    if entry is None or entry["id"] != "building" or len(text) > 240 or text.rstrip().endswith("?"):
+        return None
+    nested = {k: v for k, v in (current.get("params") or {}).items() if isinstance(v, dict)}
+    found = await generator_bridge.apply_text(nested, text)
+    if not found or not found.get("understood") or found.get("missed"):
+        return None
+    patch: dict = {}
+    for clause in found["understood"]:
+        patch = _merge(patch, clause["patch"])
+    decision = grammar_edit(entry, current, patch)
+    return decision if decision["changes"] else None
+
+
+def _merge(base: dict, extra: dict) -> dict:
+    out = dict(base)
+    for key, value in extra.items():
+        out[key] = _merge(out[key], value) if isinstance(value, dict) and isinstance(out.get(key), dict) else value
+    return out
 
 
 # ---------------------------------------------------------------- history: the cost and time of real AI builds
@@ -418,14 +636,17 @@ def _generator_route(entry: dict, params: dict, notes: list[str], confidence: fl
             "confidence": round(confidence, 2), "cost_eur": 0.0, "seconds_estimate": SECONDS.get(entry["id"], DEFAULT_SECONDS)}
 
 
-def route(spec: dict, current: Optional[dict] = None, confidence: float = 0.7) -> dict:
-    """The decision for one understood spec (no LLM; only the cached registry and the cached chat history)."""
+def route(spec: dict, current: Optional[dict] = None, confidence: float = 0.7, context: Optional[dict] = None) -> dict:
+    """The decision for one understood spec (no LLM; only the cached registry and the cached chat history).
+
+    `context` describes the build (see workspace_api.build_context): without a live generator source an edit becomes a
+    role edit of the build's own plan."""
     confidence = spec.get("confidence", confidence)
     intent = spec.get("intent")
     if intent in ("question", "other"):
         return _clarify(spec)
     if intent == "edit":
-        return _route_edit(spec, current, confidence)
+        return _route_edit(spec, current, confidence, context)
     reason = _unsupported_reason(spec)
     if reason:
         return _needs_ai(spec, reason)
@@ -436,10 +657,22 @@ def route(spec: dict, current: Optional[dict] = None, confidence: float = 0.7) -
             return _clarify(spec)
         return _needs_ai(spec, why)
     params, notes = params_from_spec(entry, spec)
-    return _generator_route(entry, params, notes, confidence)
+    out = _generator_route(entry, params, notes, confidence)
+    kind = ((spec.get("subject") or {}).get("kind") or "").strip().casefold()
+    preset = pick_preset(entry, kind, (spec.get("subject") or {}).get("family") or "")
+    if preset:
+        out["preset"] = preset
+        out["title"] = f"{entry['title']}: {entry['presets'][preset]['title']}"
+    if kind and kind not in GENERIC_KINDS and kind != (spec.get("subject") or {}).get("family") and not (
+            kind in entry["kinds"] or kind == preset or kind in ((entry.get("presets") or {}).get(preset) or {}).get("keywords", [])):
+        out["closest"] = True
+        out["notes"] = [f"closest design: {out['title']} (there is no exact {kind} design)", *out["notes"]]
+    return out
 
 
-def _route_edit(spec: dict, current: Optional[dict], confidence: float) -> dict:
+def _route_edit(spec: dict, current: Optional[dict], confidence: float, context: Optional[dict] = None) -> dict:
+    if not current and (context or {}).get("has_model"):
+        return _route_role_edit(spec, context, confidence)
     if not current:
         return {"route": "clarify", "generic": True, "question": "There is nothing to change yet. What would you like to build?"}
     entry = _entry(current["generator"])
@@ -498,12 +731,26 @@ def _current_spec(current: Optional[dict]) -> Optional[dict]:
     return spec_from_params(entry, current.get("params") or {}) if entry else None
 
 
-def _guess_spec(text: str, current_spec: Optional[dict]) -> tuple[dict, bool]:
+def _rules_spec(text: str, current: Optional[dict], context: Optional[dict], previous: Optional[str]) -> tuple[Optional[dict], bool]:
+    """(spec, certain) from the exact rules both the hint and the decision use: role words on a build with no live
+    generator, the last change for "again"/"a bit less", then presets/undo/"make the <role> <colour>"."""
+    context = context or {}
+    if not current and context.get("has_model"):
+        spec = understand.role_rules(text, previous)
+        if spec:
+            return spec, True
+    spec = relative_spec(text, context.get("last")) if current else None
+    spec = spec or understand.rules_shortcut(text, _current_spec(current) or (_model_spec() if context.get("has_model") else None), previous)
+    return spec, bool(spec)
+
+
+def _guess_spec(text: str, current: Optional[dict], context: Optional[dict] = None, previous: Optional[str] = None) -> tuple[dict, bool]:
     """(spec, certain) from rules alone: exact patterns first (certain), then the keyword reading."""
-    spec = understand.rules_shortcut(text, current_spec)
+    spec, certain = _rules_spec(text, current, context, previous)
     if spec:
-        return spec, True
-    return _with_kind(understand.heuristic_spec(text, current_spec), text), False
+        return spec, certain
+    spec_now = _current_spec(current) or (_model_spec() if (context or {}).get("has_model") else None)
+    return _with_kind(understand.heuristic_spec(text, spec_now), text), False
 
 
 def _with_kind(spec: dict, text: str) -> dict:
@@ -516,27 +763,28 @@ def _with_kind(spec: dict, text: str) -> dict:
     return spec
 
 
-def rules_guess(text: str, current: Optional[dict] = None) -> dict:
+def rules_guess(text: str, current: Optional[dict] = None, context: Optional[dict] = None) -> dict:
     """Free and fast (no model call, no registry dump, cached chat history): the likely route and a hint line.
 
-    confidence is 1.0 for exact patterns (presets, 'make the roof blue') and lower for the keyword reading; the real
-    /api/describe may decide differently once the cheap model has read the text.
+    Same rules and the same build context (live generator source, role edits on other builds) as the decision, so the
+    hint and the answer agree whenever no model is needed. confidence is 1.0 for exact patterns.
     """
     started = time.monotonic()
     text = (text or "").strip()[: understand.MAX_REQUEST_CHARS]
     if len(text) < 3:
         return {"route": "clarify", "confidence": 0.0, "decided_by": "rules", "hint": ""}
-    spec, certain = _guess_spec(text, _current_spec(current))
+    previous = (context or {}).get("previous")
+    spec, certain = _guess_spec(text, current, context, previous)
     if _entries():
-        decision = route(spec, current)
+        decision = route(spec, current, context=context)
     else:                                                                   # registry not loaded yet: families alone
         family = (spec.get("subject") or {}).get("family")
         if spec.get("intent") == "new_model" and family in STATIC_FAMILIES:
             decision = {"route": "generator", "seconds_estimate": DEFAULT_SECONDS}
+        elif spec.get("intent") == "edit":
+            decision = {"route": "edit", "seconds_estimate": 1}
         else:
-            decision = _needs_ai(spec, "no generator for this") if spec.get("intent") == "new_model" else _clarify(spec)
-    if decision["route"] == "clarify" and not certain and spec.get("intent") == "new_model" and len(text.split()) >= 3:
-        decision = _needs_ai(spec, "unknown subject")                       # a real request the keywords cannot place: likely the AI build
+            decision = _needs_ai(spec, "no generator for this") if spec.get("intent") == "new_model" and (certain or family != "other") else _clarify(spec)
     kind = decision["route"]
     if certain:
         confidence = 1.0
@@ -546,12 +794,15 @@ def rules_guess(text: str, current: Optional[dict] = None) -> dict:
         confidence = 0.4 if (spec.get("subject") or {}).get("family", "other") != "other" else 0.3
     out = {"route": kind, "confidence": round(confidence, 2), "decided_by": "rules", "hint": ""}
     if kind in ("generator", "edit"):
-        seconds = decision.get("seconds_estimate", DEFAULT_SECONDS)
-        out.update(generator=decision.get("generator"), cost_eur=0.0, seconds_estimate=seconds, hint=f"Fast path: free, ~{seconds} s")
+        seconds = 1 if kind == "edit" else decision.get("seconds_estimate", DEFAULT_SECONDS)
+        what = "; ".join(f"{c['label']}: {c.get('from') if c.get('from') is not None else '…'} → {c.get('to')}" for c in decision.get("changes") or [])
+        out.update(generator=decision.get("generator"), cost_eur=0.0, seconds_estimate=seconds,
+                   hint=f"Fast path: free, ~{seconds} s" + (f" · {what}" if what else ""))
     elif kind == "needs_ai":
         est = decision["estimate"]
         out.update(estimate=est, hint=f"AI build: ~€{est['eur_low']:g}–{est['eur_high']:g}, ~{est['minutes_low']}–{est['minutes_high']} min")
     out["took_ms"] = round((time.monotonic() - started) * 1000, 1)
+    request_log.record_estimate(text, out, spec=spec, current=current)
     return out
 
 
@@ -597,22 +848,58 @@ def _unsure(spec: dict) -> bool:
     return float(spec.get("confidence", 1.0)) < 0.5 or any(a.get("question") for a in spec.get("ambiguities") or [])
 
 
+def context_text(current: Optional[dict], context: Optional[dict]) -> str:
+    """The compact build summary and the last turns the understanding call reads follow-ups against."""
+    context, parts = context or {}, []
+    if current:
+        shown = {k: v for k, v in (current.get("params") or {}).items() if not isinstance(v, (dict, list))}
+        parts.append(f"build: generator {current['generator']} " + " ".join(f"{k}={v}" for k, v in list(shown.items())[:14]))
+    elif context.get("has_model"):
+        roles = ", ".join(f"{r} {n}" for r, n in (context.get("roles") or {}).items())
+        parts.append(f"build: a model of {context.get('parts', '?')} parts" + (" edited by hand or by the AI, no live generator" if context.get("diverged") else ", not made by a generator")
+                     + (f"; roles {roles}" if roles else ""))
+    if context.get("selection"):
+        parts.append(f"{context['selection']} parts selected on the canvas")
+    turns = context.get("turns") or []
+    if turns:
+        parts.append("last turns: " + " | ".join(str(t)[:120] for t in turns[-3:]))
+    return "; ".join(parts)
+
+
 async def describe(text: str, *, current: Optional[dict] = None, build_id: Optional[str] = None,
-                   previous_text: Optional[str] = None, llm_id: Optional[str] = None) -> dict:
-    """Understand the request (rules first, else one structured call) and route it. See docs/plans/phase2/fast-path.md."""
+                   previous_text: Optional[str] = None, llm_id: Optional[str] = None, context: Optional[dict] = None) -> dict:
+    """Understand the request (rules first, else one structured call) and route it. See docs/plans/phase2/fast-path.md.
+
+    `context` (optional): has_model, parts, roles, diverged, selection, last (the last change), turns (last turns as text).
+    Without a live generator source (`current` None) but with a model, edits become role edits of the build's plan."""
+    started = time.monotonic()
     await generator_bridge.ensure()
-    if not current and (steps := split_steps(text)):
+    context = context or {}
+    if not current and not context.get("has_model") and (steps := split_steps(text)):
         combined = await _describe_steps(*steps, build_id=build_id, llm_id=llm_id)
         if combined:
             return combined
-    current_spec = _current_spec(current)
+    role_build = bool(context.get("has_model")) and not current
+    current_spec = _current_spec(current) or (_model_spec() if role_build else None)
     params = None
-    if not understand.rules_shortcut(text, current_spec, previous_text):
-        params = await understand.model_params(llm_id)
-    result = await understand.understand(text, current_spec=current_spec, previous_text=previous_text, params=params)
+    spec, _ = _rules_spec(text, current, context, previous_text)
+    if spec:
+        result = understand.Result(spec, "rules")
+    else:
+        grammar = await grammar_decision(text, current)
+        if grammar:
+            grammar.update(understanding_cost_eur=0.0, understood_by="grammar", understanding_model=None)
+            if build_id:
+                grammar["build_id"] = build_id
+            await asyncio.to_thread(request_log.record_describe, text, grammar, spec=None, started=started, current=current)
+            return grammar
+        if not understand.rules_shortcut(text, current_spec, previous_text):
+            params = await understand.model_params(llm_id)
+        result = await understand.understand(text, current_spec=current_spec, previous_text=previous_text, params=params,
+                                             context=context_text(current, context))
     spec = _with_kind(result.spec or {}, text) if result.source == "rules_fallback" else result.spec or {}
-    decision = route(spec, current,
-                     confidence=1.0 if result.source == "rules" else 0.7 if result.source == "llm" else 0.3)
+    decision = route(spec, current, confidence=1.0 if result.source == "rules" else 0.7 if result.source == "llm" else 0.3,
+                     context=context)
     cost = (result.usage or {}).get("cost_usd")
     spent = 0.0 if not result.usage else (None if cost is None else round(cost * settings.eur_per_usd(), 6))
     decision.update(understanding_cost_eur=spent, understood_by=result.source, understanding_model=result.model)
@@ -626,7 +913,7 @@ async def describe(text: str, *, current: Optional[dict] = None, build_id: Optio
         decision = {**_clarify(spec), "spec": spec, **extras}
         if "choices" not in decision:
             decision["question"] = "I am not sure I read that right. Could you say it a little differently?"
-    elif current and result.source != "rules" and decision["route"] in ("edit", "generator") and (
+    elif result.source != "rules" and ((current and decision["route"] in ("edit", "generator")) or (role_build and decision["route"] == "edit")) and (
             confidence_low(result, spec) or not chat_routing.whole_edit_command(text)):
         # An understood edit is applied only when the whole message is that edit: an edit word inside a longer instruction
         # ("go on... consider all bricks as dark grey") or a shaky reading is asked about, never applied.
@@ -635,4 +922,6 @@ async def describe(text: str, *, current: Optional[dict] = None, build_id: Optio
                     "question": "That looks like more than a quick change. What would you like to change?"}
     if build_id:
         decision["build_id"] = build_id
+    await asyncio.to_thread(request_log.record_describe, text, decision, spec=spec, started=started,
+                            usage_event_id=result.usage_event_id, current=current)
     return decision

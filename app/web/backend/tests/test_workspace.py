@@ -167,7 +167,7 @@ def test_regenerate_is_one_undoable_step(client):
 
 
 def test_describe_regenerates_for_generator_and_edit_routes_and_spends_nothing_otherwise(client, monkeypatch):
-    slug = make_build(client, "ws describe", TINY)
+    slug = make_build(client, "ws describe")           # empty: the first generator answer replaces nothing, so it is not asked about
     seen = []
 
     async def fake(text, current=None, build_id=None, **kw):
@@ -210,7 +210,7 @@ def test_describe_turns_are_saved_in_the_build_chat(client, monkeypatch):
     """One history per build: the fast path's turns (text, route, changes, cost 0, timing) land in the attached chat,
     previous_text defaults to the last user message, and the agent later reads the turns as ordinary history."""
     import history
-    slug = make_build(client, "ws chat", TINY)
+    slug = make_build(client, "ws chat")
     seen = []
 
     async def fake(text, current=None, build_id=None, previous_text=None, **kw):
@@ -522,8 +522,8 @@ def test_a_reply_with_no_agent_gets_a_clarify_about_the_build(client, monkeypatc
     assert follow["route"] == "clarify" and "Ask the AI" not in follow["choices"]
     _agent_chat(slug, [("user", "hi"), ("assistant", "Done.")])
     client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes", "quick": True})
-    last = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes"}).json()   # quick turn is last: quick mode again
-    assert last["route"] == "clarify" and "Ask the AI" in last["choices"]
+    last = client.post(f"/api/builds/{slug}/draft/describe", json={"text": "yes"}).json()   # a quick turn doesn't end the AI conversation
+    assert last["route"] == "agent"
 
 
 def test_edit_words_inside_a_long_instruction_are_not_applied(client, monkeypatch, house_registry):

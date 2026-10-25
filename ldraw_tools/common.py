@@ -134,7 +134,10 @@ def get_parts(root=None, *, refresh=False, shadows=None):
         if entry.name.lower() in {"parts", "p", "ldconfig.ldr"}:
             link = target / entry.name
             if not link.is_symlink():
-                link.symlink_to(entry, target_is_directory=entry.is_dir())
+                try:
+                    link.symlink_to(entry, target_is_directory=entry.is_dir())
+                except FileExistsError:          # parallel workers (buildable --warm) race to create the same link
+                    pass
     if not any(p.name.lower() == "ldconfig.ldr" for p in target.iterdir()):
         raise ValueError(f"LDConfig.ldr missing from {root}")
     files = sorted((root / "parts").glob("*.dat"))

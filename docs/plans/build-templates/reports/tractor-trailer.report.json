@@ -1,0 +1,82 @@
+{
+ "leaves": 57,
+ "domain": "vehicle",
+ "verified": {
+  "z": {
+   "cuts": [
+    -30.0
+   ],
+   "totals": [
+    -2,
+    1,
+    2,
+    3,
+    4,
+    6,
+    8,
+    10,
+    12
+   ],
+   "combined_checks": {}
+  },
+  "swap_brick_1x2": {
+   "codes": [
+    "3004",
+    "2877",
+    "98283",
+    "3065"
+   ]
+  },
+  "swap_tile_1x2": {
+   "codes": [
+    "3069b",
+    "2412b"
+   ]
+  }
+ },
+ "rejected": {
+  "x": [],
+  "z": [
+   {
+    "cut": -154.5,
+    "deltas": [
+     1
+    ],
+    "ok": false,
+    "checks": {
+     "1": {
+      "errors": 0,
+      "components": 15
+     }
+    }
+   }
+  ]
+ },
+ "baseline": {
+  "errors": 0,
+  "components": 13
+ },
+ "corners": {
+  "min": {
+   "params": {
+    "z_delta": -2
+   },
+   "ok": true,
+   "errors": 0,
+   "components": 13
+  },
+  "max": {
+   "params": {
+    "z_delta": 12
+   },
+   "ok": true,
+   "errors": 0,
+   "components": 13
+  }
+ },
+ "size": {
+  "z": 12
+ },
+ "import_warnings": 0,
+ "seconds": 48.4
+}

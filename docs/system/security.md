@@ -29,6 +29,7 @@ The full report is [docs/security/2026-10-24-security-pass.md](../security/2026-
 ## Residual risks to know
 
 - **Agent code has internet access.** A prompt-injected agent with full permissions can send out whatever it can read. That includes **the Jev key**, which is why it should be a separate key with a low cap.
+- **The database is out of the agent's reach.** The password is a root-only file (never an environment variable), the `agent` user is rejected on port 5432 by the same firewall step, and `db` has no published port on an internal network ([database.md](database.md)).
 - **The firewall depends on a capability.** If the container starts without NET_ADMIN, Settings shows "Sandbox isolation: off", and the H1 path is open again.
 - **No login.** Binding to `0.0.0.0` (`LDRAW_NOVA_WEB_BIND`) exposes everything to the LAN.
 - **Not done yet:** Dependabot/Renovate and audits in CI.

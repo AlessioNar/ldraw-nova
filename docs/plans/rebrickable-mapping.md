@@ -83,3 +83,7 @@ The part counts above are unweighted over all 64.9k Rebrickable part numbers, mo
 - Colour coverage by pieces: 99.75%.
 - Of the 500 most-used parts 496 resolve; of the 2000 most-used, 1879.
 - Most-used unresolved: `298c02` (4,896), `3711a` (3,717), `970c03` (1,858), `30237b` (1,608), `3046a` (1,234), `1011A` (1,100), `30237a`, `970c28`, `970c27`, `1121L`..`1142L` (Modulex tiles). They are minifig leg and torso assemblies, older mould variants and Modulex, so a suffix-letter fallback (`3711a` to `3711`) and an assembly mapping for `970cNN`/`973cNN` are the likely next gains.
+
+## BrickLink colours
+
+`ldraw_tools/data/bricklink-colours.json` maps BrickLink colour ids to LDraw codes for the BrickLink XML/CSV and BrickStore importers and the BrickLink wanted-list export. Rebrickable's bulk `colors.csv` carries no `external_ids`, so the table is built by `tools/build_bricklink_colours.py` from the BrickLink/LDraw pairs of the `legocolors` R package (MIT), then completed by colour name against `rebrickable-colours.json`. Keys: `colours` (id to `{name, ldraw, exact, method}`), `by_name` (normalised name to id, for CSVs that carry names), `reverse` (LDraw code to one BrickLink id, for export) and `unmapped` (ids with no certain LDraw colour: Modulex, Clikits, Neon and similar). An unmapped colour is reported on import and omitted, with the reason, on export; it is never guessed. Part numbers go through the same alias data as the Rebrickable import.

@@ -1,0 +1,88 @@
+FRONT ELEVATION (top = roof)
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   RRRRRRRRRRRRRRRR   
+  RRRRRRRRRRRRRRRRRR  
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWooWWWWWWooWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   tttttttttttttttt   
+  tttttttttttttttttt  
+   dddddddddddddddd   
+   dddddddddddddddd   
+   dddddddddddddddd   
+   WDDDDWWWWWWWWWWW   
+   WDDDDWWWWWWWWWWW   
+   WDDDDWWWWWWWWWWW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWooooooooW   
+   WDDDDWWWWWWWWWWW   
+   WDDDDWWWWWWWWWWW   
+   WDDDDWWWWWWWWWWW   
+   tDDDDttttttttttt   
+   tDDDDttttttttttt   
+   tD..Dttttttttttt   
+......................
+......................
+
+PLAN at plate 5
+                      
+                      
+                      
+   WDDDDWWWWWWWWWWW   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   WWWWWWWWWWWWWWWW   
+                      
+                      
+                      
+
+PLAN at plate 28
+                      
+                      
+                      
+   WWWWWWWWWWWWWWWW   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   W              W   
+   WWWWWWWWWWWWWWWW   
+                      
+                      
+                      

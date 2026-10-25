@@ -1,0 +1,12 @@
+/* --- Costs: the cost history page (GET /api/costs) --- */
+.costs-range { display: flex; gap: var(--sp-3); align-items: flex-end; flex-wrap: wrap; margin-bottom: var(--sp-4); }
+.costs-range label { display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-sm); color: var(--fg-2); }
+.costs-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-2); }
+.costs-totals .panel { display: flex; flex-direction: column; gap: var(--sp-1); }
+.costs-totals strong { font-size: var(--fs-xl); font-weight: 600; }
+.costs-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.costs-table th, .costs-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.costs-table tbody tr:last-child th, .costs-table tbody tr:last-child td { border-bottom: 0; }
+.costs-table thead th { font-size: var(--fs-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+.costs-table .num { text-align: right; }
+.costs-table .strong { font-weight: 600; }

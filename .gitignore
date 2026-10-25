@@ -23,3 +23,6 @@ data/.models-annotated.stamp
 # SQLite sidecar files of the reference database
 data/*.db-shm
 data/*.db-wal
+
+# Local backups (scripts/backup.sh)
+backups/

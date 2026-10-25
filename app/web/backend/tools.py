@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import inspect
 import hashlib
+import asyncio
 import json
 import shutil
 import time
@@ -20,6 +21,7 @@ from typing import Awaitable, Callable
 from urllib.parse import quote
 
 import sandbox
+import collection_store
 import settings
 import toolkit
 import builds
@@ -167,7 +169,52 @@ def artifact_url(ctx: ToolContext, path: Path) -> str:
     return f"/api/chats/{ctx.chat_id}/artifacts/" + quote(path.relative_to(ctx.work_dir).as_posix())
 
 
-async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) -> ToolResult:
+_background: set = set()      # strong references to the checks running after a quick save
+
+
+def check_path_for(model: Path) -> Path:
+    """The sidecar holding a saved version's background check: {"status": "checking"|"ok"|"warnings"|"failed", "warnings": [...]}."""
+    return model.with_name(model.stem + ".check.json")
+
+
+def read_check(model: Path) -> dict | None:
+    try:
+        return json.loads(check_path_for(model).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+async def _finish_checks(ctx: ToolContext, target: Path, revision: Path, review: Path) -> None:
+    """The heavy half of a save, after the version exists: the geometry and connectivity check, then the preview render
+    and the parts list. The result lands in the version's sidecar (read_check); a failure here never removes the version."""
+    sidecar = check_path_for(target)
+    try:
+        report = review / "geometry.json"
+        run = await run_command(ctx, ["./ldraw-agent", "validate", str(revision), "--geometry", "--detail", "summary",
+                                      "--report", str(report)], 1800)
+        status, warnings = "failed", ["The geometry check could not finish."]
+        if run.exit_code in (0, 1) and report.is_file():
+            diagnostics = json.loads(report.read_text(encoding="utf-8")).get("diagnostics") or []
+            warnings = [str(d.get("message")) for d in diagnostics if d.get("severity") in ("error", "warning")][:6]
+            status = "failed" if run.exit_code == 1 else ("warnings" if warnings else "ok")
+        sidecar.write_text(json.dumps({"status": status, "warnings": warnings, "checked_at": time.time()}), encoding="utf-8")
+        gallery.publishing.add(target.resolve())
+        try:
+            rendered = await run_command(ctx, ["./ldraw-agent", "render", str(target), "--outdir", str(review), "--views", "home"], 600)
+        finally:
+            gallery.publishing.discard(target.resolve())
+        image, bom = review / "home.png", review / "leocad-bom.csv"
+        if rendered.exit_code == 0 and image.exists() and bom.exists():
+            shutil.copyfile(image, snapshot_path_for(target))
+            shutil.copyfile(bom, bom_path_for(target))
+    except Exception as exc:  # noqa: BLE001 - background work: report it on the version, never raise
+        try:
+            sidecar.write_text(json.dumps({"status": "failed", "warnings": [f"The check stopped: {exc}"], "checked_at": time.time()}), encoding="utf-8")
+        except OSError:
+            pass
+
+
+async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None, background_check: bool = False) -> ToolResult:
     source = resolve_path(ctx, path, write=True)
     if not source.is_file() or source.suffix.lower() not in {".mpd", ".ldr"}:
         raise ToolError("Publish a self-contained .mpd or .ldr from this chat's output folder")
@@ -186,7 +233,11 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
     revision.write_bytes(source_bytes)
     report = review / "validation.json"
     ctx.emit("progress", {"summary": "Checking the model before publication."})
-    validation = await run_command(ctx, ["./ldraw-agent", "validate", str(revision), "--geometry",
+    chat_now = None if ctx.store.is_build(ctx.chat_id) else ctx.store.get_chat(ctx.chat_id)
+    quick = background_check and not (chat_now or {}).get("build_id")
+    # A quick save validates the file (syntax and structure, about a second) and returns; the geometry and connectivity
+    # check, the render and the parts list finish in the background and show on the version.
+    validation = await run_command(ctx, ["./ldraw-agent", "validate", str(revision), *([] if quick else ["--geometry"]),
                                          "--detail", "summary", "--report", str(report)], 1800)
     if validation.exit_code not in (0, 1) or not report.is_file():
         return ToolResult("Error: toolkit validation could not finish; model was not published.\n" + validation.as_text())
@@ -202,23 +253,29 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
     # Reserve synchronously before the next await, including concurrent chats.
     target = settings.GENERATED_DIR / f"{slug}-v{_next_version(slug)}.mpd"
     target.write_bytes(source_bytes)
-    ctx.emit("progress", {"summary": "Rendering the published model and exporting its parts list."})
-    gallery.publishing.add(target.resolve())
-    try:
-        rendered = await run_command(ctx, ["./ldraw-agent", "render", str(target), "--outdir", str(review),
-                                          "--views", "home"], 600)
-    finally:
-        gallery.publishing.discard(target.resolve())
     image, bom = review / "home.png", review / "leocad-bom.csv"
-    if rendered.exit_code == 0 and image.exists() and bom.exists():
-        shutil.copyfile(image, snapshot_path_for(target))
-        shutil.copyfile(bom, bom_path_for(target))
-    else:
-        warnings.append("Preview/BOM rendering failed; the model can still be opened in 3D.")
+    if not quick:
+        ctx.emit("progress", {"summary": "Rendering the published model and exporting its parts list."})
+        gallery.publishing.add(target.resolve())
+        try:
+            rendered = await run_command(ctx, ["./ldraw-agent", "render", str(target), "--outdir", str(review),
+                                              "--views", "home"], 600)
+        finally:
+            gallery.publishing.discard(target.resolve())
+        if rendered.exit_code == 0 and image.exists() and bom.exists():
+            shutil.copyfile(image, snapshot_path_for(target))
+            shutil.copyfile(bom, bom_path_for(target))
+        else:
+            warnings.append("Preview/BOM rendering failed; the model can still be opened in 3D.")
     ref = ctx.store.add_model(ctx.chat_id, name or source.stem, target, warnings, origin=ctx.origin,
                               source=source.relative_to(ctx.work_dir).as_posix() if ctx.work_dir in source.parents else None)
     if ctx.store.is_build(ctx.chat_id):
         builds.touch(ctx.store, ctx.chat_id[len(store_module.BUILD_PREFIX):])
+    if quick:
+        check_path_for(target).write_text(json.dumps({"status": "checking", "warnings": []}), encoding="utf-8")
+        task = asyncio.get_running_loop().create_task(_finish_checks(ctx, target, revision, review))
+        _background.add(task)
+        task.add_done_callback(_background.discard)
     ctx.emit("model", {"id": ref["id"], "name": ref["name"]})
     model_url = "/files/generated/" + quote(target.name)
     result = {"model_url": model_url, "source": artifact_url(ctx, source),
@@ -237,7 +294,7 @@ async def t_publish_model(ctx: ToolContext, path: str, name: str | None = None) 
         result["bom"] = artifact_url(ctx, bom)
         result["bom_path"] = str(bom)
     content = json.dumps(result, indent=2)
-    check, note = await parts_check(ctx, revision)
+    check, note = (None, "") if quick else await parts_check(ctx, revision)
     return ToolResult(f"{content}\n\n{note}" if note else content, models=[ref], parts_check=check)
 
 
@@ -280,7 +337,7 @@ async def parts_check(ctx: ToolContext, model: Path) -> tuple[dict | None, str]:
         ctx.emit("progress", {"summary": "Checking the model against your parts inventory."})
         report = model.parent / "parts-check.json"
         argv = ["./ldraw-agent", "inventory", "check", str(model), ids, "--mode", mode, "--json",
-                "--store", str(settings.INVENTORIES_DIR), "--report", str(report)]
+                *collection_store.cli_store_args(), "--report", str(report)]
         run = await run_command(ctx, argv, 600)           # exit 1 = short in "only" mode
         data = json.loads(report.read_text(encoding="utf-8")) if report.is_file() else {}
         if run.exit_code not in (0, 1) or not isinstance(data, dict) or data.get("error") or "short" not in data:
@@ -315,7 +372,7 @@ async def t_my_parts(ctx: ToolContext, query: str = "", colour: int | None = Non
         raise ToolError("query must be a string and limit an integer")
     limit = max(1, min(limit, parts_steering.MAX_SEARCH_RESULTS))
     argv = ["./ldraw-agent", "inventory", "search", parts_steering.id_list(chosen), "--limit", str(limit + 1), "--json",
-            "--store", str(settings.INVENTORIES_DIR), *(["--colour", str(colour)] if colour is not None else [])]
+            *collection_store.cli_store_args(), *(["--colour", str(colour)] if colour is not None else [])]
     if query.strip():
         argv += ["--", query.strip()[:200]]               # after --: a query starting with "-" is not an option
     run = await run_command(ctx, argv, 120)
@@ -349,7 +406,7 @@ async def t_buildable_models(ctx: ToolContext, query: str = "", limit: int = par
     report = ctx.work_dir / "buildable-models.json"
     report.unlink(missing_ok=True)
     argv = ["./ldraw-agent", "inventory", "buildable", parts_steering.id_list(invs), "--cache-only", f"--limit={limit}", "--json",
-            "--store", str(settings.INVENTORIES_DIR), "--report", str(report),
+            *collection_store.cli_store_args(), "--report", str(report),
             *([f"--max-missing-share={max_missing_share}"] if max_missing_share is not None else []),
             *([f"--query={query.strip()[:100]}"] if query.strip() else [])]
     run = await run_command(ctx, argv, 120)

@@ -132,6 +132,36 @@ def _report(ok, state, **extra):
                 redo_depth=len(state["redo"]), **extra), 0 if ok else 1
 
 
+def plan_delta(old, new):
+    """The change from plan `old` to plan `new` as splices of steps, or None when its shape changed.
+
+    A splice is `{section, step, at, remove, insert}`: in step `step` of section `section` (both by index), replace
+    `remove` entries from index `at` with the entries `insert`. Entries are compared whole, so only the span
+    between the first and the last entry that differ is sent: one added brick is one entry, a move is one entry
+    twice. The plan's header, its sections (names, order, other fields) and every section's number of steps must be
+    the same, else None and the caller sends the whole plan. Applying the splices in order gives `new`.
+    """
+    head = lambda plan: {k: v for k, v in plan.items() if k != "sections"}
+    if head(old) != head(new) or len(old["sections"]) != len(new["sections"]):
+        return None
+    splices = []
+    for si, (a, b) in enumerate(zip(old["sections"], new["sections"])):
+        if len(a["steps"]) != len(b["steps"]) or {k: v for k, v in a.items() if k != "steps"} != {k: v for k, v in b.items() if k != "steps"}:
+            return None
+        for ti, (x, y) in enumerate(zip(a["steps"], b["steps"])):
+            if x == y:
+                continue
+            low = min(len(x), len(y))
+            at = 0
+            while at < low and x[at] == y[at]:
+                at += 1
+            tail = 0
+            while tail < low - at and x[-1 - tail] == y[-1 - tail]:
+                tail += 1
+            splices.append(dict(section=si, step=ti, at=at, remove=len(x) - at - tail, insert=y[at:len(y) - tail]))
+    return splices
+
+
 def _short(rows, owned):
     result = []
     for part, colour, needed in rows:
@@ -188,8 +218,17 @@ def run_editor(args, library, parts):
         _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
         return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, warnings=warnings)
 
-    if args.action == "apply":
-        edits = _read(args.edits)
+    role = None
+    if args.action == "role":
+        # "make the roof blue" on any plan: the words are resolved to ops here, then applied exactly like `apply`
+        from .. import role_edits
+        spec = _read(args.role_edit)
+        role = role_edits.resolve(plan, parts, spec["edits"], selection=spec.get("selection"), force=bool(spec.get("force")))
+        if not role["ops"]:
+            return _report(True, state, applied=False, **{k: role[k] for k in ("changes", "notes", "clarify")})
+        args.edits = None
+    if args.action in ("apply", "role"):
+        edits = role["ops"] if role else _read(args.edits)
         inverses = list(reversed(inverse(plan, edits, parts)))      # undo runs them last-first: a later edit may need an earlier one's part
         candidate = apply(plan, edits, parts)
         rows = _rows(candidate, parts)
@@ -203,7 +242,8 @@ def run_editor(args, library, parts):
         state = {**state, "undo": [*state["undo"], {"forward": edits, "inverse": inverses}], "redo": [],
                  "revision": state["revision"] + 1}
         _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
-        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, short=flagged)
+        extra = dict(applied=True, changes=role["changes"], notes=role["notes"]) if role else {}
+        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, short=flagged, delta=plan_delta(plan, candidate), **extra)
 
     if args.action == "undo":
         if not state["undo"]:
@@ -215,7 +255,7 @@ def run_editor(args, library, parts):
         state = {**state, "undo": state["undo"][:-1], "redo": [*state["redo"], batch],
                  "revision": state["revision"] + 1}
         _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
-        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text)
+        return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, delta=plan_delta(plan, candidate))
 
     if not state["redo"]:
         return _report(False, state, error="Nothing to redo")
@@ -226,7 +266,7 @@ def run_editor(args, library, parts):
     state = {**state, "undo": [*state["undo"], batch], "redo": state["redo"][:-1],
              "revision": state["revision"] + 1}
     _commit(plan_path, state_path, mpd_path, candidate, state, rows, mpd_text)
-    return _report(True, state, plan=candidate, used=rows, mpd=mpd_text)
+    return _report(True, state, plan=candidate, used=rows, mpd=mpd_text, delta=plan_delta(plan, candidate))
 
 
 def prewarm_jobs(parts, plan):
@@ -247,14 +287,25 @@ def prewarm_jobs(parts, plan):
 def run_request(request, library, parts, idle=None):
     """One editor action for a resident worker: `run_editor` with the CLI's arguments as a JSON object.
 
-    The request has `action` (open|replace|apply|undo|redo), the `plan`/`state`/`mpd` paths and the options the CLI
+    The request has `action` (open|replace|apply|undo|redo|warm), the `plan`/`state`/`mpd` paths and the options the CLI
     takes (`base_revision`, `edits`, `owned`, `mode`, `source`, `from_mpd`, `name`). The reply is the CLI's
     report plus `exit_code` (0 done, 1 refused, 2 failed); the plan and the preview are on disk, so unless
     `full` is set they are left out of the reply. Failures the CLI turns into exit code 2 come back the same way.
     """
-    names = ("action", "plan", "state", "mpd", "base_revision", "edits", "owned", "mode", "source", "from_mpd", "name")
+    names = ("action", "plan", "state", "mpd", "base_revision", "edits", "owned", "mode", "source", "from_mpd", "name", "role_edit")
     args = types.SimpleNamespace(**{k: request.get(k) for k in names})
     args.mode = args.mode or "off"
+    if args.action == "warm":
+        # A workspace was opened on an existing session: load the library (done by the caller) and queue the geometry
+        # of the plan's part types, so the first edit and snap of the session do not pay for them.
+        try:
+            jobs = prewarm_jobs(parts, _read(args.plan))
+            if idle is not None:
+                idle.clear()
+                idle.extend(jobs)
+            return dict(ok=True, warm=True, jobs=len(jobs), exit_code=0)
+        except (OSError, ValueError, AttributeError) as exc:
+            return dict(ok=False, error=str(exc), exit_code=2)
     try:
         report, status = run_editor(args, library, parts)
     except (OSError, ValueError, PartError, RecursionError, jsonschema.ValidationError) as exc:
@@ -271,7 +322,7 @@ def register(commands):
     c = commands.add_parser("editor", help="Manual editor sessions: open, apply, undo and redo a chat's plan")
     c.add_argument("--report", help="Also write the JSON report to this file")
     sub = c.add_subparsers(dest="action", required=True)
-    for action in ("open", "replace", "apply", "undo", "redo"):
+    for action in ("open", "replace", "apply", "role", "undo", "redo"):
         s = sub.add_parser(action)
         s.add_argument("--plan", required=True, help="The chat's plan file (output/editor/plan.json)")
         s.add_argument("--state", required=True, help="The session state file beside it")
@@ -284,8 +335,11 @@ def register(commands):
             s.add_argument("--from", dest="source", help="An existing plan file to open (else a one-brick skeleton)")
             s.add_argument("--from-mpd", help="An MPD/LDR model file to import as the plan (instead of --from)")
             s.add_argument("--name", help="A name for the model, used when publishing")
-        if action == "apply":
-            s.add_argument("--edits", required=True, help="JSON file with the list of edit operations")
+        if action == "role":
+            s.add_argument("--role-edit", required=True, help='JSON file {"edits": [...], "selection": [...], "force": bool}')
+        if action in ("apply", "role"):
+            if action == "apply":
+                s.add_argument("--edits", required=True, help="JSON file with the list of edit operations")
             s.add_argument("--owned", help="JSON file [[part, colour, qty], ...] of the chat's inventories")
             s.add_argument("--mode", choices=("off", "prefer", "only"), default="off",
                            help="off: no inventory check; only: refuse a short edit; prefer: flag it")

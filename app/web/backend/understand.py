@@ -21,6 +21,7 @@ the planned families) when the registry is absent or raises, so this module work
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -36,6 +37,7 @@ import litellm
 import model_catalog
 import providers
 import usage
+import usage_log
 
 log = logging.getLogger("ldraw-nova.understand")
 
@@ -110,6 +112,7 @@ colours: role -> colour name, only names from COLOURS, only colours the user sta
 features: things to include (name, count, where); required true only when the user insists.
 constraints: only what the user states (parts_mode off|prefer|only, max_parts, budget_eur, must_use, avoid). OPTIONS are chat defaults: do not copy them.
 edits (follow-ups only, one per change, empty for a new model): set_colour target role value colour; scale_param target (wheels, whole...) delta bigger|smaller|longer|shorter|wider|taller|lower with optional amount+unit studs|courses|percent; set_param target value; add_feature / remove_feature target feature, optional count, where; swap_part target value; replace_model value family or design; undo; revert. Target whole means the entire model.
+CONTEXT (when given): the build in front of the user and the last turns. Read "again", "a bit less", "bigger", "the other one" against the last change.
 reference_hint: only a named real set or franchise.
 ambiguities: only when it would change what gets built; at most 2, each with a short question and options.
 confidence: 0 to 1. Omit every field you do not need.
@@ -144,26 +147,30 @@ def tool() -> dict:
                                              "parameters": json.loads(_compact(_tool_schema()))}}
 
 
-def tail(text: str, current_spec: Optional[dict] = None, options: Optional[dict] = None, retry_note: str = "") -> str:
-    """The variable part of the prompt: options, current spec (follow-ups only), the request."""
+def tail(text: str, current_spec: Optional[dict] = None, options: Optional[dict] = None, retry_note: str = "",
+         context: str = "") -> str:
+    """The variable part of the prompt: options, current spec (follow-ups only), conversation context, the request."""
     lines = []
     opts = {k: v for k, v in (options or {}).items() if v not in (None, "")}
     if opts:
         lines.append("OPTIONS: " + "; ".join(f"{k}={v}" for k, v in sorted(opts.items())))
     if current_spec:
         lines.append("CURRENT_SPEC: " + _compact(current_spec))
+    if context:
+        lines.append("CONTEXT: " + context[:900])
     lines.append("REQUEST: " + text[:MAX_REQUEST_CHARS])
     if retry_note:
         lines.append("YOUR PREVIOUS OUTPUT WAS INVALID (" + retry_note[:300] + "). Call emit_spec again with valid arguments.")
     return "\n".join(lines)
 
 
-def messages_for(model: str, digest: Digest, text: str, current_spec=None, options=None, retry_note: str = "") -> list[dict]:
+def messages_for(model: str, digest: Digest, text: str, current_spec=None, options=None, retry_note: str = "",
+                 context: str = "") -> list[dict]:
     system = prefix(digest)
     if providers.supports_prompt_caching(model):
         system = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
     return [{"role": "system", "content": system},
-            {"role": "user", "content": tail(text, current_spec, options, retry_note)}]
+            {"role": "user", "content": tail(text, current_spec, options, retry_note, context)}]
 
 
 # ---------------------------------------------------------------- validation and normalisation
@@ -390,6 +397,48 @@ def rules_shortcut(text: str, current_spec: Optional[dict] = None, previous_text
     return None
 
 
+# ---- "make the roof blue" / "remove the chimney" / "paint this red" on ANY build: the words stay raw, the plan's roles decide
+SELECTION_WORDS = {"this", "these", "it", "that", "those", "selection", "selected", "the selection", "selected parts",
+                   "selected pieces", "selected bricks", "this part", "this piece", "this brick", "these parts", "these pieces"}
+_PART_NOUNS = {"tile", "tiles", "brick", "bricks", "part", "parts", "piece", "pieces", "slope", "slopes", "plate", "plates"}
+_LEAD = r"^(?:(?:please|can you|could you|would you|just|now) )*"
+_PAINT = re.compile(_LEAD + rf"(?:make|paint|colou?r|turn|change|set)\s+(?:all\s+)?(?:the\s+)?([a-z]+(?: [a-z]+){{0,2}}?)\s+(?:to\s+|into\s+)?({_COLOUR_RE})(?:\s+please)?$")
+_BARE = re.compile(rf"^(?:the\s+)?([a-z]+(?: [a-z]+){{0,1}}?)\s+(?:to\s+|in\s+)?({_COLOUR_RE})$")
+_DROP_IT = re.compile(_LEAD + r"(?:remove|delete|get rid of|take off|take away|drop|erase)\s+(?:all\s+)?(?:the\s+|these\s+|this\s+|that\s+|those\s+)?([a-z]+(?: [a-z]+){0,2}?)(?:\s+please)?$")
+
+
+_NOUN_ONLY = re.compile(r"^(?:the\s+)?([a-z]+(?: [a-z]+){0,1})$")
+STAND_IN_NOTE = "a model with no generator"
+
+
+def _noun(phrase: str) -> str:
+    words = [w for w in phrase.split() if w not in ("a", "an", "the", "all", "my")]
+    while len(words) > 1 and words[-1] in _PART_NOUNS:
+        words.pop()
+    text = " ".join(words)
+    return "selection" if text in SELECTION_WORDS or (len(words) > 1 and words[-1] in ("selection",)) else text
+
+
+def role_rules(text: str, previous_text: Optional[str] = None) -> Optional[dict]:
+    """The recolour/remove edits the words say, as an edit spec, or None. English only; the model reads other languages.
+
+    Nothing is looked up here (the plan's roles decide what "roof" means); "paint this red" has target "selection"."""
+    key = _key(text)
+    if key in _AGAIN and previous_text and _key(previous_text) not in _AGAIN:
+        return role_rules(previous_text)
+    edits = []
+    for clause in (c for c in re.split(r"\s*(?:,|\band\b)\s*", key) if c):
+        found = _PAINT.match(clause) or _BARE.match(clause)
+        if found:
+            edits.append({"op": "set_colour", "target": _noun(found.group(1)), "value": _COLOUR_BY_LOWER[found.group(2)]})
+            continue
+        found = _DROP_IT.match(clause) or (_NOUN_ONLY.match(clause) if edits and edits[-1]["op"] == "remove_feature" else None)
+        if not found:
+            return None
+        edits.append({"op": "remove_feature", "target": _noun(found.group(1))})
+    return {"intent": "edit", "subject": {"family": "other"}, "edits": edits, "confidence": 1.0} if edits else None
+
+
 _FAMILIES = [("spaceship", r"space ?ship|starship|spacecraft|starfighter|rocket|shuttle|freighter"),
              ("motorcycle", r"motor ?bike|motorcycle|bike|scooter"),
              ("aircraft", r"plane|jet|aeroplane|airplane|helicopter|aircraft"),
@@ -413,6 +462,10 @@ def heuristic_spec(text: str, current_spec: Optional[dict] = None) -> dict:
     shortcut = rules_shortcut(text, current_spec)
     if shortcut:
         return shortcut
+    if current_spec and current_spec.get("note") == STAND_IN_NOTE:        # a build with no generator: a named subject is a new model
+        fresh = heuristic_spec(text, None)
+        if fresh["subject"]["family"] != "other":
+            return fresh
     if current_spec:
         edits = []
         for verb, op in (("add", "add_feature"), ("remove", "remove_feature")):
@@ -460,6 +513,7 @@ class Result:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     digest_version: Optional[str] = None
+    usage_event_id: Optional[int] = None  # the cost-history row of this request's model call(s), when stored
 
     def as_dict(self) -> dict:
         return {"spec": self.spec, "source": self.source, "attempts": self.attempts, "usage": self.usage,
@@ -499,7 +553,7 @@ def _add_usage(total: Optional[dict], record: Optional[dict], cost: Optional[flo
 
 async def understand(text: str, *, current_spec: Optional[dict] = None, previous_text: Optional[str] = None,
                      options: Optional[dict] = None, params: Optional[dict] = None, digest: Optional[Digest] = None,
-                     use_rules: bool = True) -> Result:
+                     use_rules: bool = True, context: str = "") -> Result:
     """One user message -> a spec.v1 dict, with the cost of getting it.
 
     `params` are the resolved litellm parameters of the chat's worker model (inference.params_for); None means no
@@ -530,7 +584,7 @@ async def understand(text: str, *, current_spec: Optional[dict] = None, previous
             call.setdefault("timeout", 30)
             try:
                 response = await litellm.acompletion(
-                    **call, messages=messages_for(model, digest, text, current_spec, options, note),
+                    **call, messages=messages_for(model, digest, text, current_spec, options, note, context),
                     tools=[tool()], tool_choice=_tool_choice(model))
                 record = usage.usage_record(response)
                 result.usage = _add_usage(result.usage, record, usage.step_cost_usd(record, pricing, model) if record else None)
@@ -546,6 +600,8 @@ async def understand(text: str, *, current_spec: Optional[dict] = None, previous
             result.errors.append(note)
     if result.spec is None:
         result.spec = heuristic_spec(text, current_spec)
+    if result.usage:                                   # the call costs money: it belongs in the cost history
+        result.usage_event_id = await asyncio.to_thread(usage_log.record, "understand", result.usage, result.model)
     result.latency_s = time.monotonic() - started
     log.info("understand source=%s model=%s attempts=%d usage=%s latency=%.2fs", result.source, result.model,
              result.attempts, result.usage, result.latency_s)

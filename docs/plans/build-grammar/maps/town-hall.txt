@@ -1,0 +1,100 @@
+FRONT ELEVATION (top = roof)
+        RRRRRRRRRRRR        
+        RRRRRRRRRRRR        
+       RRRRRRRRRRRRRR       
+       RRRRRRRRRRRRRR       
+       RRRRRRRRRRRRRR       
+      RRRRRRRRRRRRRRRR      
+      RRRRRRRRRRRRRRRR      
+      RRRRRRRRRRRRRRRR      
+     RRRRRRRRRRRRRRRRRR     
+     RRRRRRRRRRRRRRRRRR     
+     RRRRRRRRRRRRRRRRRR     
+    RRRRRRRRRRRRRRRRRRRR    
+    RRRRRRRRRRRRRRRRRRRR    
+    RRRRRRRRRRRRRRRRRRRR    
+   RRRRRRRRRRRRRRRRRRRRRR   
+   RRRRRRRRRRRRRRRRRRRRRR   
+   RRRRRRRRRRRRRRRRRRRRRR   
+   tttttttttttttttttttttt   
+  tttttttttttttttttttttttt  
+   tWWWWWWWWWWWWWWWWWWWWt   
+   tWWWWWWWWWWWWWWWWWWWWt   
+   tWWWWWWWWWWWWWWWWWWWWt   
+   tWWWWWWWWWWWWWWWWWWWWt   
+   tWWWWWWWWWWWWWWWWWWWWt   
+   tWWWWWWWWWWWWWWWWWWWWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWooooWWooooWWWooooWt   
+   tWWWWWWWWWWWWWWWWWWWWt   
+   tWWWWWWWddddddWWWWWWWt   
+   tWWWWWWWddddddWWWWWWWt   
+   ttttttttddddddtttttttt   
+  tttttttttddddddttttttttt  
+   tWWWWWWWWDDDDWWWWWWWWt   
+   tWWWWWWWWDDDDWWWWWWWWt   
+   tWWWWWWWWDDDDWWWWWWWWt   
+   tWWWWWWWWDDDDWWWWWWWWt   
+   tWWWWWWWWDDDDWWWWWWWWt   
+   tWWWWWWWWDDDDWWWWWWWWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tWWooooWWDDDDWWWooooWt   
+   tttttttttDDDDttttttttt   
+   tttttttttDDDDttttttttt   
+   tttttttttD..Dttttttttt   
+............................
+............................
+
+PLAN at plate 5
+                            
+                            
+                            
+   tWWooooWWDDDDWWWooooWt   
+   o                    o   
+   o                    o   
+   o                    o   
+   o                    o   
+   W                    W   
+   W                    W   
+   o                    o   
+   o                    o   
+   o                    o   
+   o                    o   
+   tWooooWWWooooWWWooooWt   
+                            
+                            
+                            
+
+PLAN at plate 25
+                            
+                            
+                            
+   tWWooooWWooooWWWooooWt   
+   o                    o   
+   o                    o   
+   o                    o   
+   o                    o   
+   W                    W   
+   W                    W   
+   o                    o   
+   o                    o   
+   o                    o   
+   o                    o   
+   tWooooWWWooooWWWooooWt   
+                            
+                            
+                            

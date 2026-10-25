@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 import parts_steering
 import sandbox
+import collection_store
 import settings
 import toolkit
 import workspace
@@ -117,8 +118,9 @@ def _selection(store, key: str, chat: dict) -> tuple[str, dict, str]:
     """(mode, owned map, inventory id list). A chat uses the inventories it selected; a build (the workspace)
     uses the person's whole collection, exact rows only, as "prefer": owned and used are shown, nothing is refused."""
     if store.is_build(key):
-        owned, signature = workspace.owned_parts()
+        _, signature = workspace.owned_parts()
         ids = ",".join(part.split(":")[0] for part in signature.split("|") if part)
+        owned, _ = workspace.available_parts(key.removeprefix(store.build_key("")))     # minus what other models hold
         return ("prefer" if ids else "off"), owned, ids
     mode, inventories = parts_steering.selection(chat.get("options") or {})
     return (mode if inventories else "off"), owned_map(inventories), parts_steering.id_list(inventories)
@@ -171,7 +173,7 @@ async def editor_palette(space: str, chat_id: str, query: str = "", colour: Opti
     if inventory_only:
         # 100 rows: the sandbox keeps 20k characters of output, more would be cut mid-JSON
         report = await _cli(store, chat_id, ["inventory", "search", ids, "--limit", "100",
-                                             "--json", "--store", str(settings.INVENTORIES_DIR),
+                                             "--json", *collection_store.cli_store_args(),
                                              *(["--colour", str(colour)] if colour is not None else []),
                                              *(["--", query] if query else [])])
         if report.get("error"):

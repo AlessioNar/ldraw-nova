@@ -54,7 +54,7 @@ MAX_PLAN_BYTES = 5_000_000
 EDITOR_WORKER = os.environ.get("LDRAW_NOVA_EDITOR_WORKER", "1") != "0"
 CLI_OPTIONS = {"--plan": "plan", "--state": "state", "--mpd": "mpd", "--base-revision": "base_revision",
                "--edits": "edits", "--owned": "owned", "--mode": "mode", "--from": "source",
-               "--from-mpd": "from_mpd", "--name": "name"}
+               "--from-mpd": "from_mpd", "--name": "name", "--role-edit": "role_edit"}
 
 EMPTY_PLAN = {"version": 1, "author": "LDraw Nova editor", "sections": [
     {"name": "model.ldr", "description": "Manual editor model", "steps": [[]]}]}
@@ -143,6 +143,18 @@ def _view(store, chat_id: str) -> dict:
             "parts": _parts_table(state.get("used"), _chat(store, chat_id).get("options") or {})}
 
 
+def _delta_view(store, chat_id: str, report: dict) -> Optional[dict]:
+    """The small answer to an edit, undo or redo: the splices of the plan's steps that changed (see the toolkit's
+    `plan_delta`), the new revision and depths and the parts table. None when the report has no delta (the plan's
+    shape changed, or an older toolkit): the caller sends the whole view. The preview MPD is not part of it; it is on
+    disk, and the canvas draws from the changed entries."""
+    if report.get("delta") is None or "revision" not in report:
+        return None
+    return {"delta": True, "revision": report["revision"], "undo_depth": report.get("undo_depth", 0),
+            "redo_depth": report.get("redo_depth", 0), "splices": report["delta"],
+            "parts": _parts_table(report.get("used"), _chat(store, chat_id).get("options") or {})}
+
+
 def _outcome(report: dict, exit_code: int) -> dict:
     """Translate the CLI's report into an HTTP response or exception."""
     if report.get("ok"):
@@ -208,10 +220,12 @@ class EditorOpen(BaseModel):
 class EditorEdits(BaseModel):
     edits: list[dict[str, Any]] = Field(max_length=MAX_EDITS)
     base_revision: int
+    delta: bool = False               # answer with the difference (see _delta_view) instead of the whole plan and preview
 
 
 class EditorRevision(BaseModel):
     base_revision: Optional[int] = None
+    delta: bool = False
 
 
 class EditorPublish(BaseModel):
@@ -235,12 +249,39 @@ def editor_plans(space: str, chat_id: str):
     return {"plans": plan_files(store, chat_id)}
 
 
+_warmed: dict[str, int] = {}      # workspace key -> id of the editor worker that was told to warm up for it
+
+
+def warm(store, chat_id: str) -> None:
+    """Start the editor worker (library load) and have it load the geometry of the plan's part types, in the
+    background, once per worker: the first edit and snap of a session then do not pay for them. Needs a running loop."""
+    if not EDITOR_WORKER:
+        return
+    try:
+        worker = build_worker.get_editor_worker()
+        if _warmed.get(chat_id) == id(worker):
+            return
+        _warmed[chat_id] = id(worker)
+        request = {"op": "editor", "action": "warm", "plan": str(_paths(store, chat_id)[1])}
+
+        async def go():
+            try:
+                await worker.request(request, timeout=TIMEOUT)
+            except Exception:                       # busy, crashed: the next edit starts it anyway
+                _warmed.pop(chat_id, None)
+        asyncio.get_running_loop().create_task(go())
+    except Exception:
+        _warmed.pop(chat_id, None)
+
+
 @router.get("/api/{space}/{chat_id}/editor")
-def editor_get(space: str, chat_id: str):
+async def editor_get(space: str, chat_id: str):
     store = get_store()
     chat_id = _key(space, chat_id)
     _chat(store, chat_id)
-    return _view(store, chat_id)
+    view = await asyncio.to_thread(_view, store, chat_id)
+    warm(store, chat_id)
+    return view
 
 
 @router.post("/api/{space}/{chat_id}/editor")
@@ -251,8 +292,10 @@ async def editor_open(space: str, chat_id: str, body: EditorOpen):
     return await open_session(store, chat_id, body.source, body.name, body.replace)
 
 
-async def apply_edits(store, chat_id: str, edits: list, base_revision: int) -> dict:
-    """Apply a batch under the chat's lock (shared by the route and the agent's editor_edit tool)."""
+async def apply_edits(store, chat_id: str, edits: list, base_revision: int, delta: bool = False) -> dict:
+    """Apply a batch under the chat's lock (shared by the route and the agent's editor_edit tool).
+
+    `delta` answers with the difference (`_delta_view`) when the toolkit reports one; the agent gets the whole view."""
     if _session(store, chat_id) is None:
         not_found("no editor plan for this chat")
     async with _lock(chat_id):
@@ -272,13 +315,45 @@ async def apply_edits(store, chat_id: str, edits: list, base_revision: int) -> d
             arguments += ["--owned", str(owned_path), "--mode", mode]
         report = await _run(store, chat_id, arguments)
         _outcome(report, 0)
-        _touch(store, chat_id)
-        return _view(store, chat_id)
+        return await _answer(store, chat_id, report, "edit", delta)
 
 
-def _touch(store, chat_id: str, kind: str = "edit") -> None:
+async def apply_role_edit(store, chat_id: str, spec: dict) -> dict:
+    """"make the roof blue" on the draft: the toolkit resolves the words (roles of the plan, or the selection) into ops and
+    applies them as ONE undoable batch, answering with the delta view. Nothing changes when the words match nothing or
+    only with low confidence: the answer then has `clarify` (and `applied` False)."""
+    if _session(store, chat_id) is None:
+        not_found("no editor plan for this chat")
+    async with _lock(chat_id):
+        folder, _, _, _ = _paths(store, chat_id)
+        folder.mkdir(parents=True, exist_ok=True)
+        sandbox.give_to_agent(folder)
+        request_path = folder / "role-edit.json"
+        request_path.write_text(json.dumps(spec), encoding="utf-8")
+        sandbox.give_to_agent(request_path)
+        report = await _run(store, chat_id, _arguments(store, chat_id, "role") + ["--role-edit", str(request_path)])
+        _outcome(report, 0)
+        if not report.get("applied"):
+            return {"applied": False, "clarify": report.get("clarify"), "changes": report.get("changes") or [], "notes": report.get("notes") or []}
+        view = await _answer(store, chat_id, report, "edit", True)
+        return {"applied": True, "changes": report.get("changes") or [], "notes": report.get("notes") or [],
+                "view": view if view.get("delta") else None}
+
+
+def _touch(store, chat_id: str, kind: str = "edit", view: Optional[dict] = None) -> None:
     if store.is_build(chat_id):
-        workspace.touch_draft(store, chat_id, kind, _view(store, chat_id))
+        workspace.touch_draft(store, chat_id, kind, view if view is not None else _view(store, chat_id))
+
+
+async def _answer(store, chat_id: str, report: dict, kind: str, delta: bool) -> dict:
+    """The response to a committed edit: the difference when asked for and available, else the whole view."""
+    small = _delta_view(store, chat_id, report) if delta else None
+    if small is not None:
+        _touch(store, chat_id, kind, small)         # only the undo depth is read: no need to read the files again
+        return small
+    view = await asyncio.to_thread(_view, store, chat_id)
+    _touch(store, chat_id, kind, view)
+    return view
 
 
 async def replace_plan(store, chat_id: str, mpd: Path, base_revision: Optional[int] = None) -> dict:
@@ -376,7 +451,7 @@ async def editor_edits(space: str, chat_id: str, body: EditorEdits):
     store = get_store()
     chat_id = _key(space, chat_id)
     _chat(store, chat_id)
-    return await apply_edits(store, chat_id, body.edits, body.base_revision)
+    return await apply_edits(store, chat_id, body.edits, body.base_revision, body.delta)
 
 
 @router.post("/api/{space}/{chat_id}/editor/undo")
@@ -389,8 +464,7 @@ async def editor_undo(space: str, chat_id: str, body: EditorRevision):
     async with _lock(chat_id):
         report = await _run(store, chat_id, _arguments(store, chat_id, "undo", body.base_revision))
         _outcome(report, 0)
-        _touch(store, chat_id, "undo")
-        return _view(store, chat_id)
+        return await _answer(store, chat_id, report, "undo", body.delta)
 
 
 @router.post("/api/{space}/{chat_id}/editor/redo")
@@ -403,8 +477,7 @@ async def editor_redo(space: str, chat_id: str, body: EditorRevision):
     async with _lock(chat_id):
         report = await _run(store, chat_id, _arguments(store, chat_id, "redo", body.base_revision))
         _outcome(report, 0)
-        _touch(store, chat_id, "redo")
-        return _view(store, chat_id)
+        return await _answer(store, chat_id, report, "redo", body.delta)
 
 
 @router.post("/api/{space}/{chat_id}/editor/publish")
@@ -431,7 +504,7 @@ async def editor_publish(space: str, chat_id: str, body: EditorPublish):
         sandbox.give_to_agent(target)
     ctx = tools.ToolContext(chat_id, store, lambda *args: None, options=chat.get("options") or {}, origin="editor")
     try:
-        result = await tools.t_publish_model(ctx, str(target), name)
+        result = await tools.t_publish_model(ctx, str(target), name, background_check=build)
     except tools.ToolError as exc:
         raise HTTPException(400, str(exc)) from None
     publish = json.JSONDecoder().raw_decode(result.content)[0]
@@ -506,6 +579,7 @@ async def edit_model_file(store, filename: str) -> dict:
         sandbox.give_to_agent(copy)
         view = await open_session(store, key, name=build, replace=True, mpd=copy)
         _write_build_meta(store, key, model)
+    warm(store, key)
     return {**view, "build": build, "file": filename, "editor_url": f"/build/{build}/edit"}
 
 
