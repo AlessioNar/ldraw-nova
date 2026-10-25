@@ -444,6 +444,29 @@ def combine(inventories):
     return dict(total)
 
 
+def available_inventory(inventories, reservations_path):
+    """One inventory with what is left free: owned minus the parts of built sets and of every reservation, never below 0.
+
+    `reservations_path` is the backend's `.collection-reservations.json` (rows are [part, colour, qty]); a missing or
+    unreadable file means nothing is reserved.  Same rule as the backend's `reservations.available_totals`.
+    """
+    owned = combine(inventories)
+    held = Counter()
+    for inv in inventories:
+        if inv.kind == "set" and (inv.set or {}).get("state") == "built":
+            for r in inv.rows:
+                held[(r.part, r.colour)] += r.qty
+    try:
+        reservations = json.loads(Path(reservations_path).read_text(encoding="utf-8")).get("reservations", [])
+        for res in reservations:
+            for part, colour, qty in res.get("rows", []):
+                held[(str(part).casefold().removesuffix(".dat"), int(colour))] += int(qty)
+    except (OSError, ValueError, AttributeError, TypeError):
+        pass
+    rows = [Row(part, colour, qty - held[(part, colour)], part, 0) for (part, colour), qty in sorted(owned.items()) if qty > held[(part, colour)]]
+    return Inventory(id="available", name="Available parts", rows=rows)
+
+
 def colour_name(code, library=None):
     if library is not None:
         colour = library.colours_by_code.get(code)

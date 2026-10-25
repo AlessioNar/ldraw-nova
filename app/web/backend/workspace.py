@@ -190,6 +190,12 @@ def owned_parts() -> tuple[dict, str]:
     return collection_store.owned_totals()
 
 
+def available_parts(exclude_build: Optional[str] = None) -> tuple[dict, str]:
+    """Owned minus what built sets and reservations hold (not counting `exclude_build`'s own models), and its signature."""
+    import reservations
+    return reservations.available_totals(exclude_build)
+
+
 def check(usage: dict, owned: Optional[dict] = None, signature: str = "") -> dict:
     """{owned, needed, missing: [{part, colour, need, have}]}: pieces the collection covers, pieces the model
     needs, and the (part, colour) pairs it is short of. Cached by the content of the usage and the lists."""

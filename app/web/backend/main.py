@@ -29,7 +29,7 @@ import run_state
 import sandbox
 import settings
 from db import migrate as db_migrate
-from routers import builds_api, chats, collection, costs_api, describe_api, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, pipeline, spa, understand_api, workspace_api
+from routers import builds_api, chats, collection, costs_api, describe_api, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, pipeline, reservations, spa, understand_api, workspace_api
 from store import get_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -172,7 +172,7 @@ async def same_origin_api(request: Request, call_next):
 
 app.add_middleware(ChunkedBodyLimit)   # outermost: also guards bodies the middlewares above never see in full
 
-for module in (builds_api, costs_api, environment, llm_models, chats, editor, editor_palette, models_gallery, files, inventories, collection, understand_api, describe_api, pipeline, workspace_api):
+for module in (builds_api, costs_api, environment, llm_models, chats, editor, editor_palette, models_gallery, files, inventories, collection, reservations, understand_api, describe_api, pipeline, workspace_api):
     app.include_router(module.router)
 spa.mount_static(app)
 app.include_router(spa.router)   # catch-all: after every other route and mount

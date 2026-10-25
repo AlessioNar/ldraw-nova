@@ -25,6 +25,7 @@ from inventories import atomic_write
 lock = inventories._lock                      # one lock for check-then-write sequences
 NOTES_FILE = ".collection-notes.json"         # dot-prefixed: never an inventory id, never listed as a source
 NOTES_LOG = ".collection-notes.log.jsonl"
+RESERVATIONS_FILE = ".collection-reservations.json"   # also read by the toolkit CLI (`inventory buildable --available`)
 MAX_BATCHES = 500                             # history kept per source
 
 
@@ -119,6 +120,29 @@ def write_notes(notes: dict[str, str], log_entry: dict) -> None:
     atomic_write(settings.INVENTORIES_DIR / NOTES_FILE, _dump({"schema": 1, "notes": dict(sorted(notes.items()))}))
     with (settings.INVENTORIES_DIR / NOTES_LOG).open("a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry) + "\n")
+
+
+# --- reservations (parts held by models the owner built) ---------------------------
+
+def read_reservations() -> list[dict]:
+    try:
+        data = json.loads((settings.INVENTORIES_DIR / RESERVATIONS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    found = data.get("reservations") if isinstance(data, dict) else None
+    return [r for r in found if isinstance(r, dict) and isinstance(r.get("rows"), list)] if isinstance(found, list) else []
+
+
+def write_reservations(reservations: list[dict]) -> None:
+    atomic_write(settings.INVENTORIES_DIR / RESERVATIONS_FILE, _dump({"schema": 1, "reservations": reservations}))
+
+
+def reservations_signature() -> str:
+    try:
+        stat = (settings.INVENTORIES_DIR / RESERVATIONS_FILE).stat()
+    except OSError:
+        return ""
+    return f"{stat.st_mtime_ns}:{stat.st_size}"
 
 
 # --- CLI bridge: how the sandboxed toolkit finds the store ---------------------------

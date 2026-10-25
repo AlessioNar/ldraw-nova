@@ -10,7 +10,7 @@ from pathlib import Path
 from .. import buildable
 from ..common import atomic_write, dumps, get_parts
 from .. import importers
-from ..inventory import Inventory, ParseError, check_model, make_inventory, search_owned, slugify, summary
+from ..inventory import Inventory, available_inventory, ParseError, check_model, make_inventory, search_owned, slugify, summary
 from .base import Command, positive
 
 
@@ -91,6 +91,8 @@ def register(commands):
     p.add_argument("--query", default="", help="Only models whose file name or description has all these words")
     p.add_argument("--substitute-colours", action="store_true",
                    help="Also report the completeness if any owned colour of a part may stand in for a missing one (ranking stays exact)")
+    p.add_argument("--available", action="store_true",
+                   help="Rank what is free: owned minus built sets and reservations (reads .collection-reservations.json in --store)")
     p.add_argument("--keep-subvariants", action="store_true", help="Do not drop sub-variants that fit inside their parent set model")
     p.add_argument("--report", help="Also write the JSON report to this file")
     p.add_argument("--warm", action="store_true", help="Only build the BOM cache (no inventory needed)")
@@ -241,6 +243,8 @@ def run(args, library, parts):
         raise ValueError("Name at least one inventory")
     invs = [load_inventory(store, n.strip()) for n in args.name.split(",") if n.strip()]
     if action == "buildable":
+        if args.available:
+            invs = [available_inventory(invs, store / ".collection-reservations.json")]
         report = buildable_report(args, parts, invs)
         if args.report:
             atomic_write(args.report, dumps(report) + "\n")
