@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import NewBuild from "./pages/NewBuild";
 import Builds from "./pages/Builds";
 import Parts from "./pages/Parts";
+import Sets from "./pages/Sets";
 import SetDetail from "./pages/SetDetail";
 import Costs from "./pages/Costs";
 import Settings from "./pages/Settings";
@@ -102,6 +103,7 @@ export default function App() {
             <Route path="/models" element={<Navigate to="/builds" replace />} />
             <Route path="/parts" element={<Parts />} />
             <Route path="/parts/:id" element={<Parts />} />
+            <Route path="/sets" element={<Sets />} />
             <Route path="/sets/:id" element={<SetDetail />} />
             <Route path="/costs" element={<Costs />} />
             <Route path="/settings" element={<Settings />} />
