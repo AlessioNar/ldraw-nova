@@ -1014,7 +1014,7 @@
   let pumping = false;
 
   // Show what the edits will give, then send them. `retry` runs when the server refuses (400) the first form.
-  function send(edits, { optimistic = true, retry, predicted: given, label } = {}) {
+  function send(edits, { optimistic = true, retry, predicted: given, label, after } = {}) {
     const entry = { kind: edits.map(e => e.op).join('+'), edits, t0: performance.now(), label };
     if ((optimistic || given) && state.shown) {
       try {
@@ -1026,7 +1026,7 @@
       } catch (e) { /* not predictable: the answer will show it */ }
     }
     entry.optimisticMs = performance.now() - entry.t0;
-    enqueue({ entry, run: () => call('/edits', { ...Core.editsBody(edits, state.session.revision), delta: true }), retry });
+    enqueue({ entry, run: () => call('/edits', { ...Core.editsBody(edits, state.session.revision), delta: true }), retry, after });
   }
 
   function enqueue(job) {
@@ -1050,6 +1050,7 @@
 
   async function pump() {
     let failed = null;
+    const afters = [];
     if (pumping) return;
     pumping = true;
     state.busy = true;
@@ -1075,7 +1076,9 @@
         job.entry.requestMs = requestMs; job.entry.applyMs = applyMs; job.entry.totalMs = performance.now() - job.entry.t0;
         state.perf.push(job.entry);
         post({ type: 'obd:changed', revision: session.revision, undo_depth: session.undo_depth, redo_depth: session.redo_depth });
+        if (job.after) afters.push(job.after);
       }
+      for (const after of afters) after();                      // e.g. select what a paste added, once it is on screen
     } catch (e) {
       queue.length = 0;
       if (e.status === 409) {
@@ -1192,20 +1195,88 @@
   }
   toolButtons.forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
+  // ---- keyboard helpers: camera-relative nudging, select all, copy and paste, the shortcut list ---------------
+
+  // The way the camera looks along the ground, [x, z] in LDraw.
+  function cameraForward() {
+    const { position, target } = cameraInLdraw(state.shown);
+    return [target[0] - position[0], target[2] - position[2]];
+  }
+
+  function selectAll() {
+    if (!state.shown || !selecting()) return;
+    setSelected(state.shown.leaves.filter(p => p.editable).map(p => p.key));
+  }
+
+  function turnSelection(degrees) {
+    let edits = [];
+    try { edits = Core.rotateEdits(state.shown.placements, state.selected.filter(k => state.editable.has(k)), 'y', degrees); }
+    catch (error) { setStatus(`${error.message} (the model is unchanged)`, true); return; }
+    if (edits.length) send(edits);
+  }
+
+  let clipboard = null;        // { items, pastes }: what Ctrl+C took, and how many times it has been pasted
+  function copySelection() {
+    if (!state.shown || !state.selected.length) return false;
+    const { items, skipped } = Core.copyParts(state.shown.placements, state.selected.filter(k => state.editable.has(k)));
+    if (!items.length) { setStatus('Nothing to copy: sub-models, repeated runs and parts tilted on several axes are not copied yet.', true); return false; }
+    clipboard = { items, pastes: 0 };
+    setStatus(`Copied ${items.length} part${items.length === 1 ? '' : 's'}${skipped ? `, ${skipped} skipped (not a plain part)` : ''}. Ctrl+V pastes.`, false);
+    return true;
+  }
+
+  // Each paste lands one stud further to the viewer's right than the last, so copies do not pile up in one spot.
+  function pasteClipboard() {
+    if (!clipboard || !needEdit('paste')) return;
+    const { items } = clipboard;
+    const { r } = Core.groundAxes(cameraForward());
+    clipboard.pastes++;
+    const edits = Core.pasteEdits(items, [r[0] * 20 * clipboard.pastes, 0, r[1] * 20 * clipboard.pastes]);
+    const plan = state.session.plan;
+    const taken = new Set();                                    // the ids the server will give them, one after the other
+    const made = edits.map(edit => {
+      const id = Core.nextEntryId(plan, [...state.nodes, ...[...taken].map(entryId => ({ entryId }))]);
+      taken.add(id);
+      return { section: edit.section, id };
+    });
+    send(edits, { label: 'paste', optimistic: false, after: () => {
+      const keys = Core.keysForIds(state.shown.placements, made.map(m => `${m.section}:${m.id}`));
+      if (keys.length) setSelected(keys);
+    } });
+  }
+
+  function duplicateSelection() {
+    if (!needEdit('duplicate') || !copySelection()) return;
+    pasteClipboard();
+  }
+
+  const helpPanel = $('help');
+  function toggleHelp(show = helpPanel.hidden) { helpPanel.hidden = !show; }
+  $('help-close').addEventListener('click', () => toggleHelp(false));
+  const helpButton = $('help-button');
+  if (helpButton) helpButton.addEventListener('click', () => toggleHelp());
+
   // ---- keyboard -------------------------------------------------------------------------------
-  // V M R B P: tools. Delete: delete. Ctrl+Z, Ctrl+Shift+Z (or Ctrl+Y): undo, redo. F: frame the selection (or the
-  // model), Home: reset the view. G: widen to the sub-model. Arrows: nudge. Esc: clear (or leave the add tool).
-  // Space, Left, Right in the player. The stage takes focus on click.
+  // V M R B P: tools. Delete: delete. Ctrl+Z, Ctrl+Shift+Z (or Ctrl+Y): undo, redo. Ctrl+A: select all. Ctrl+C, V, D:
+  // copy, paste, duplicate. F: frame the selection (or the model), Home: reset the view. G: widen to the sub-model.
+  // Arrows, Page Up / Down: nudge (relative to the camera). [ and ]: turn a quarter. ?: the shortcut list.
+  // Esc: close the list, clear (or leave the add tool). Space, Left, Right in the player. The stage takes focus on click.
   const TOOL_KEYS = { v: 'select', m: 'move', r: 'rotate', b: 'add', p: 'paint' };
   addEventListener('keydown', e => {
     if (!state.shown || (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return;
     const mod = e.ctrlKey || e.metaKey;
     const key = e.key.toLowerCase();
     if (mod && key === 's' && !e.shiftKey) { e.preventDefault(); post({ type: 'obd:shortcut', action: 'save' }); return; }
+    if (!mod && e.key === '?') { e.preventDefault(); toggleHelp(); return; }
+    if (e.key === 'Escape' && !helpPanel.hidden) { e.preventDefault(); toggleHelp(false); return; }
     if (state.mode === 'player') return playerKey(e);
     if (state.mode === 'view') { if (!mod && (key === 'f' || e.key === 'Home')) { e.preventDefault(); key === 'f' ? frameSelection() : resetView(state.shown); } return; }
     if (mod && key === 'z') { e.preventDefault(); (e.shiftKey ? redo : undo)(); }
     else if (mod && key === 'y') { e.preventDefault(); redo(); }
+    else if (mod && key === 'a' && !e.shiftKey) { e.preventDefault(); selectAll(); }
+    else if (mod && key === 'c' && !e.shiftKey) { e.preventDefault(); copySelection(); }
+    else if (mod && key === 'v' && !e.shiftKey) { e.preventDefault(); pasteClipboard(); }
+    else if (mod && key === 'd' && !e.shiftKey) { e.preventDefault(); duplicateSelection(); }
     else if (mod) return;
     else if (e.altKey) return;
     else if (TOOL_KEYS[key] && editing()) { e.preventDefault(); setTool(TOOL_KEYS[key]); }
@@ -1213,10 +1284,14 @@
     else if (key === 'f') { e.preventDefault(); frameSelection(); }
     else if (e.key === 'Home') { e.preventDefault(); resetView(state.shown); }
     else if (key === 'g' && state.selected.length) widen();
+    else if ((e.key === '[' || e.key === ']') && state.selected.length && editing()) {
+      e.preventDefault();
+      turnSelection(e.key === ']' ? 90 : -90);
+    }
     else if (/^(Arrow(Left|Right|Up|Down)|Page(Up|Down))$/.test(e.key) && state.selected.length && editing()) {
       e.preventDefault();                        // nudge: one stud / plate per press, one undo step each
       let edits = [];
-      try { edits = Core.nudgeEdits(state.shown.placements, state.selected.filter(k => state.editable.has(k)), e.key, e.shiftKey); }
+      try { edits = Core.nudgeEdits(state.shown.placements, state.selected.filter(k => state.editable.has(k)), e.key, e.shiftKey, cameraForward()); }
       catch (error) { setStatus(`${error.message} (the model is unchanged)`, true); return; }
       if (edits.length) send(edits);
     }

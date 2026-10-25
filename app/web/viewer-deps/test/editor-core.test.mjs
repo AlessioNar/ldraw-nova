@@ -268,6 +268,42 @@ test("nudgeEdits: arrows move a stud, Page Up/Down a plate, Shift+arrow turns a 
   assert.deepEqual(C.nudgeEdits(nodes, ["top"], "a", false), []);
 });
 
+test("nudgeEdits: arrows follow the camera, snapped to the nearer stud axis", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  const at = (key, forward) => C.nudgeEdits(nodes, ["top"], key, false, forward)[0].position;
+  assert.deepEqual(at("ArrowUp", [0, -1]), [0, -24, -20]);          // looking along -z: right is -x
+  assert.deepEqual(at("ArrowRight", [0, -1]), [-20, -24, 0]);
+  assert.deepEqual(at("ArrowUp", [0, 1]), [0, -24, 20]);            // looking along +z: right is +x
+  assert.deepEqual(at("ArrowRight", [0, 1]), [20, -24, 0]);
+  assert.deepEqual(at("ArrowUp", [1, 0.3]), [20, -24, 0]);          // looking mostly along +x
+  assert.deepEqual(at("ArrowRight", [1, 0.3]), [0, -24, -20]);
+  assert.deepEqual(at("ArrowLeft", [-1, 0]), [0, -24, -20]);
+  assert.deepEqual(at("ArrowRight", [-1, 1]), [20, -24, 0]);        // a tie (the isometric start view) goes to z
+  assert.deepEqual(at("PageDown", [1, 0]), [0, -16, 0]);            // plates ignore the camera
+});
+
+test("turnOf: one rotation about x, y or z, null for none, undefined for a tilt on several axes", () => {
+  assert.equal(C.turnOf([1, 0, 0, 0, 1, 0, 0, 0, 1]), null);
+  assert.deepEqual(C.turnOf(C.rotationMatrix("y", 90)), { axis: "y", degrees: 90 });
+  assert.deepEqual(C.turnOf(C.rotationMatrix("x", -90)), { axis: "x", degrees: -90 });
+  assert.deepEqual(C.turnOf(C.rotationMatrix("z", 15)), { axis: "z", degrees: 15 });
+  assert.equal(C.turnOf(C.matMul(C.rotationMatrix("x", 90), C.rotationMatrix("y", 90))), undefined);
+});
+
+test("copyParts / pasteEdits: plain parts come back as adds, offset, turned as before", () => {
+  const { nodes } = C.flatten(SHIP_MPD, SHIP_PLAN);
+  const { items, skipped } = C.copyParts(nodes, ["top", "wl", "wr/w1"]);
+  assert.equal(skipped, 1);                                             // wl is a sub-model
+  assert.deepEqual(items.map(i => [i.section, i.part, i.colour]), [["ship.ldr", "3001.dat", 1], ["wing.ldr", "3020.dat", 1]]);
+  assert.deepEqual(C.pasteEdits(items, [20, 0, 0]), [
+    { op: "add", section: "ship.ldr", part: "3001.dat", colour: 1, position: [20, -24, 0] },
+    { op: "add", section: "wing.ldr", part: "3020.dat", colour: 1, position: [-10, 0, 20] },   // east in the world is west inside the turned wing
+  ]);
+  assert.equal(C.copyParts(nodes, ["row-1"]).items.length, 0);          // a repeated run is not copied
+  const turned = C.flatten(`0 FILE a.ldr\n0 // t1: x\n1 4 0 0 0 0 0 1 0 1 0 -1 0 0 3001.dat\n`, { sections: [{ name: "a.ldr", steps: [[{ id: "t1", ref: "3001.dat", at: [0, 0, 0], yaw: 90 }]] }] }).nodes;
+  assert.deepEqual(C.pasteEdits(C.copyParts(turned, ["t1"]).items, [0, 0, 0])[0].rotation, { axis: "y", degrees: 90 });
+});
+
 // ---- the build workspace canvas ----------------------------------------------------------------
 
 const SUB_MPD = `0 FILE main.ldr

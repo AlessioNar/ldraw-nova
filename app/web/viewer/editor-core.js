@@ -368,17 +368,61 @@ var EditorCore = (function () {
     return edits;
   }
 
-  // Keyboard nudging, as in LeoCAD: arrows move one stud on x and z, Page Up / Page Down one plate up / down
-  // (LDraw's y points down, so up is -8); Shift+Left/Right turns the selection a quarter turn about y.
-  function nudgeEdits(placements, ids, key, shift) {
+  // Keyboard nudging, as in LeoCAD: arrows move one stud, Page Up / Page Down one plate up / down (LDraw's y points
+  // down, so up is -8); Shift+Left/Right turns the selection a quarter turn about y. `forward` is the way the camera
+  // looks along the ground, [x, z] in LDraw: with it Up moves the selection away from the viewer and Right to the
+  // viewer's right, snapped to the nearer stud axis (without it Up is -z, Right is +x).
+  function groundAxes(forward) {
+    if (!forward) return { f: [0, -1], r: [1, 0] };
+    const [fx, fz] = forward;
+    const f = Math.abs(fx) > Math.abs(fz) ? [Math.sign(fx), 0] : [0, Math.sign(fz) || 1];       // a tie (the isometric start view) goes to z
+    return { f, r: [f[1], -f[0]] };
+  }
+  function nudgeEdits(placements, ids, key, shift, forward) {
     if (shift) {
       if (key !== 'ArrowLeft' && key !== 'ArrowRight') return [];
       return rotateEdits(placements, ids, 'y', key === 'ArrowRight' ? 90 : -90);
     }
-    const delta = { ArrowLeft: [-20, 0, 0], ArrowRight: [20, 0, 0], ArrowUp: [0, 0, -20], ArrowDown: [0, 0, 20],
+    const { f, r } = groundAxes(forward);
+    const stud = 20;
+    const delta = { ArrowUp: [f[0] * stud, 0, f[1] * stud], ArrowDown: [-f[0] * stud, 0, -f[1] * stud],
+                    ArrowRight: [r[0] * stud, 0, r[1] * stud], ArrowLeft: [-r[0] * stud, 0, -r[1] * stud],
                     PageUp: [0, -8, 0], PageDown: [0, 8, 0] }[key];
-    return delta ? moveEdits(placements, ids, delta) : [];
+    return delta ? moveEdits(placements, ids, delta.map(clean)) : [];
   }
+
+  // The turn that gives this matrix as one rotation about x, y or z: null for none, undefined when it is a tilt about
+  // several axes (the add edit takes one axis and angle).
+  function turnOf(matrix) {
+    const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1e-3);
+    if (near(matrix, IDENTITY)) return null;
+    const cs = { x: [matrix[4], matrix[7]], y: [matrix[0], matrix[2]], z: [matrix[0], matrix[3]] };
+    for (const axis of ['x', 'y', 'z']) {
+      const degrees = Math.atan2(cs[axis][1], cs[axis][0]) * 180 / Math.PI;
+      if (near(rotationMatrix(axis, degrees), matrix)) return { axis, degrees: Math.round(degrees * 1000) / 1000 };
+    }
+    return undefined;
+  }
+
+  // Copy: what it takes to add the selected plain parts again (where each sits in its own section, its colour and turn).
+  // Sub-models, repeated runs and tilts about several axes are skipped and counted.
+  function copyParts(placements, ids) {
+    const items = [];
+    let skipped = 0;
+    for (const p of chosen(placements, ids)) {
+      const colour = Number(p.colour), turn = p.leaf && !p.repeated && p.editable !== false ? turnOf(p.localMatrix || p.matrix || IDENTITY) : undefined;
+      if (!p.leaf || p.repeated || p.editable === false || !Number.isInteger(colour) || colour < 0 || turn === undefined) { skipped++; continue; }
+      items.push({ section: p.section, part: String(p.ref), colour, position: localOf(p).slice(), rotation: turn, parentMatrix: p.parentMatrix || null });
+    }
+    return { items, skipped };
+  }
+
+  // Paste: one "add" per copied part, moved by `delta` (a world vector, seen from inside the part's sub-model).
+  const pasteEdits = (items, delta) => items.map(i => ({
+    op: 'add', section: i.section, part: i.part, colour: i.colour,
+    position: add(i.position, toLocal(i, delta, false)).map(clean),
+    ...(i.rotation ? { rotation: { axis: i.rotation.axis, degrees: i.rotation.degrees } } : {}),
+  }));
 
   const deleteEdits = (placements, ids) => chosen(placements, ids).map(p => ({ op: 'delete', id: entryOf(p), section: p.section }));
 
@@ -792,7 +836,7 @@ var EditorCore = (function () {
 
   return { AXES, invert, mulVec, rotationMatrix, sceneToLdraw, ldrawToScene, directionToLdraw, parsePlacements, parseSections, flatten, widenSelection, describeSelection, entryIds,
            rayBox, pick, pickAll, pickHits, nextHit, deleteTargets, nextSelection, axisParameter, planeAngle, snapMove, snapRotate, fitDistance, snapStep, framingFill, moveEdits, rotateEdits,
-           deleteEdits, nudgeEdits, centroid, editsBody, describeParts,
+           deleteEdits, nudgeEdits, groundAxes, turnOf, copyParts, pasteEdits, centroid, editsBody, describeParts,
            TOOLS, MODES, COMMANDS, effectiveColours, sceneMatrix, diffLeaves, leafRefs, predictEdits, boxSelect, mergeSelection,
            subtreeBox, nextEntryId, placementFor, addEdits, optimisticAdd, applyDelta, tweenNodes, plainFields, recolourEdits, parseCommand, trustedMessage, pieceInfo, keysForIds, matMul };
 })();
