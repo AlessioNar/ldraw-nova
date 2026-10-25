@@ -88,8 +88,8 @@ obdsh:ModularFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identif
 
 obdsh:InteriorRect a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "interior-rect" ;
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
-        sh:message "Interior partitions only go into rectangular footprints (interior-rect)" ;
-        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysInterior "partition" . FILTER (?shape != "rect") }""" ] .
+        sh:message "Interior partitions and furniture only go into rectangular footprints (interior-rect)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysInterior ?interior . FILTER (?interior != "none" && ?shape != "rect") }""" ] .
 
 obdsh:EavesSetback a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "eaves-setback" ;
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
@@ -120,6 +120,11 @@ obdsh:GableWindowFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:ide
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
         sh:message "A gable-end window needs a gable roof at least 8 studs deep (gable-window-fits)" ;
         sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?rf obd:roofGableWindows true ; obd:roofStyle ?style ; obd:roofOverhang ?overhang . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . BIND (IF(?w < ?d, ?w, ?d) AS ?m) FILTER (?style != "gable" || ?m + 2*?overhang < 8) }""" ] .
+
+obdsh:AwningFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "awning-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "An awning stripes the front cornice of the ground storey: it needs a rectangular footprint and 2 or more storeys, and it takes the place of a porch (awning-fits)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsAwning true ; obd:detailsPorch ?porch . ?fp obd:footprintShape ?shape . ?st obd:storeysCount ?count ; obd:storeysBandProjection ?proj . FILTER (?shape != "rect" || ?count < 2 || ?proj < 1 || ?porch = true) }""" ] .
 
 obdsh:SignShop a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "sign-shop" ;
     sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;

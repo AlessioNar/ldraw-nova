@@ -14,6 +14,7 @@ TILE = {1: '3070b', 2: '3069b', 3: '63864', 4: '2431', 6: '6636'}
 TILE2 = {2: '3068b', 4: '87079'}
 SLOPE45 = {1: '3040b', 2: '3039', 3: '3038', 4: '3037'}
 CORNER45 = '3045'
+BRICK_2X4 = '3001'
 ROUND_BRICK_1 = '3062b'
 ROUND_PLATE_1 = '85861'   # open-stud round plate: 6141 (and its old number 4073) does not mate with plates in the LDCad shadow data
 ROUND_BRICK_4 = '87081'
@@ -66,6 +67,7 @@ for n, c in TILE2.items():
 for n, c in SLOPE45.items():
     _add(c, _slope(n))
 _add('3003', _bar(2, 2))
+_add(BRICK_2X4, _bar(4, 2))
 TECHNIC_BRICK = '3700'
 _add(TECHNIC_BRICK, _bar(2))
 _add(CORNER45, Part('', (-0.5, 1.5, -1.5, 0.5), 3, ((0.0, 0.0),)))
