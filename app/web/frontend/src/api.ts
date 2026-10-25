@@ -385,7 +385,7 @@ export type ExportSummary = {
 };
 /** The download address of an export; the browser saves the file. */
 export const exportUrl = (format: ExportFormat, scope: string) => `/api/collection/export?${qs({ format, scope })}`;
-export type CatalogSet = { set_num: string; name: string; year: number; theme: string; num_parts: number; mapped_pieces: number; dropped_pieces: number };
+export type CatalogSet = { set_num: string; number: string; brand: string; name: string; year: number; theme: string; num_parts: number; mapped_pieces: number; dropped_pieces: number };
 export type QuickItem = {
   line: string; qty: number | null; qty_assumed: boolean; colour: number | null; colour_name: string;
   colour_candidates: { colour: number; name: string }[]; part: string | null; description: string; category: string;

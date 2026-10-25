@@ -54,13 +54,13 @@ export default function AddSetDialog({ onClose, onChanged }: { onClose: () => vo
     {results && results.length > 0 && <ul className="set-results" aria-label="Sets">
       {results.map(s => <li key={s.set_num}>
         <button type="button" aria-pressed={picked?.set_num === s.set_num} className="set-result" onClick={() => setPicked(s)}>
-          <code>{s.set_num}</code><span className="set-name ellipsis">{s.name}</span>
-          <span className="muted small">{s.year || ""} · {s.theme.split(" > ")[0]}</span><span className="mono small">{s.num_parts.toLocaleString()} pcs</span>
+          <code>{s.number}</code><span className="set-name ellipsis">{s.name}</span>
+          <span className="muted small">{[s.brand !== "LEGO" && s.brand, s.year || "", s.theme.split(" > ")[0]].filter(Boolean).join(" · ")}</span><span className="mono small">{s.num_parts.toLocaleString()} pcs</span>
         </button></li>)}
     </ul>}
     {picked && <div className="set-picked panel">
-      <strong>{picked.set_num} {picked.name}</strong>
-      <p className="muted small">{picked.year} · {picked.theme} · {picked.num_parts.toLocaleString()} pieces
+      <strong>{picked.number} {picked.name}</strong>
+      <p className="muted small">{[picked.brand, picked.year || "", picked.theme].filter(Boolean).join(" · ")} · {picked.num_parts.toLocaleString()} pieces
         {picked.dropped_pieces > 0 && `, ${picked.dropped_pieces.toLocaleString()} without an LDraw part (not listed)`}</p>
       <div className="set-options">
         <label className="field"><span>Copies</span><input type="number" min={1} max={99} value={copies} onChange={e => setCopies(e.target.value)} /></label>
