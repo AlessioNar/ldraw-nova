@@ -48,6 +48,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   const [llmId, setLlmId] = useState<string | null>(null);
   const [hint, setHint] = useState<DescribeHint | null>(null);
   const [typed, setTyped] = useState(false);
+  const [attached, setAttached] = useState(0);                                       // files in the composer: they always go to the AI
   const [acting, setActing] = useState(false);
   const [mode, setMode] = useState<"ai" | "quick">(ws.ws?.chat_mode ?? "quick");   // decided by the server, from the saved chat
   const [flip, setFlip] = useState(false);                                          // this one message goes the other way
@@ -224,7 +225,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   ) : null;
 
   const cost = detail?.usage?.cost_eur;
-  const toAi = mode === "ai" ? !flip : flip;
+  const toAi = attached > 0 || (mode === "ai" ? !flip : flip);
   const seg = (
     <span className="ws-seg" role="group" aria-label="Who answers this message">
       <button type="button" aria-pressed={!toAi} onClick={() => setFlip(mode === "ai")}>Quick</button>
@@ -233,7 +234,8 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
   );
   // One short cost line next to the switch; the switch itself says who answers.
   let line: ReactNode = <b data-mode="quick">Free · instant</b>;
-  if (toAi) line = <b className="cost" data-mode="ai">Costs apply · it asks before it spends</b>;
+  if (attached > 0) line = <b className="cost" data-mode="ai">{attached === 1 ? "This file goes" : "These files go"} to the AI · costs apply</b>;
+  else if (toAi) line = <b className="cost" data-mode="ai">Costs apply · it asks before it spends</b>;
   else if (typed && hint) {
     if (hint.route === "needs_ai") line = <><b className="cost">Needs the AI{estimateLabel(hint.estimate) ? `, ${estimateLabel(hint.estimate)}` : ""}</b>. Switch to AI to ask.</>;
     else if (hint.route === "clarify") line = "Free. I may ask one question first.";
@@ -262,7 +264,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         {session}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
-          onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<>{seg} <span className="ws-hint-line" role="status" aria-live="polite">{line}</span></>}
+          onTextChange={onTextChange} onAttachments={setAttached} onOptions={(o) => { options.current = o; }} hint={<>{seg} <span className="ws-hint-line" role="status" aria-live="polite">{line}</span></>}
           llmId={llmId} onLlmChange={setLlmId} onSend={send} onStop={() => chatId && api.cancel(chatId)} running={running} />
       </div>
     </section>
