@@ -142,6 +142,13 @@ export async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 const json = (body: unknown) => JSON.stringify(body);
 
+/** GET /api/costs: spend per UTC day and kind, plus totals (see backend usage_log.costs). */
+export type CostDay = { day: string; kind: string; calls: number; cost_usd: number; cost_eur: number; unpriced_calls: number };
+export type CostHistory = {
+  from: string | null; to: string | null; eur_per_usd: number; days: CostDay[];
+  totals: { calls: number; cost_usd: number; cost_eur: number; unpriced_calls: number };
+};
+
 export type ProviderInfo = { provider: string; label: string; effort: boolean; prompt_caching: boolean; discovery: boolean };
 
 export const api = {
@@ -159,6 +166,13 @@ export const api = {
     request(`/api/chats/${id}/messages`, { method: "POST", body: json({ text, llm_model_id, options, images, documents }) }),
   approve: (id: string, approval: string, approved: boolean) => request(`/api/chats/${id}/approvals/${approval}`, { method: "POST", body: json({ approved }) }),
   catalog: () => request<{ models: ModelProfile[] }>("/api/model-catalog"),
+  costs: (from?: string, to?: string) => {
+    const q = new URLSearchParams();
+    if (from) q.set("from", from);
+    if (to) q.set("to", to);
+    const qs = q.toString();
+    return request<CostHistory>(`/api/costs${qs ? `?${qs}` : ""}`);
+  },
   worker: (id: string, worker: string) => request<WorkerTranscript>(`/api/chats/${id}/workers/${worker}`),
   cancel: (id: string) => request(`/api/chats/${id}/cancel`, { method: "POST" }),
   models: () => request<{ models: ModelFile[]; pending: number }>("/api/models"),
@@ -453,11 +467,13 @@ export type OlderChat = { id: string; title: string; updated_at: number; running
 /** One parameter of a generator, as JSON schema (ldraw_tools/generators/base.py). */
 export type ParamSpec = {
   type?: string | string[]; enum?: (string | number)[]; minimum?: number; maximum?: number; default?: unknown;
-  description?: string; "x-colour"?: boolean; "x-even"?: boolean; uniqueItems?: boolean; items?: { enum?: string[] };
+  description?: string; "x-colour"?: boolean; "x-even"?: boolean; "x-component"?: string; uniqueItems?: boolean; items?: { enum?: string[] };
+  properties?: Record<string, ParamSpec>; // a group of the building grammar (footprint, roof...)
 };
 export type GeneratorEntry = {
   id: string; title: string; families: string[]; kinds: string[]; description: string; roles: string[];
   params: { properties: Record<string, ParamSpec> }; defaults: Record<string, unknown>;
+  presets?: Record<string, { title: string; description: string; config: Record<string, unknown> }>; // the building grammar
 };
 export type GeneratorList = { generators: GeneratorEntry[]; colours: { name: string; code: number }[] };
 

@@ -3,7 +3,7 @@ import { buildsApi, viewerUrl, type GeneratorEntry, type GeneratorList, type Par
 import { colourHex } from "../ldrawColours";
 
 const PREVIEW_DELAY_MS = 600;
-type Params = Record<string, unknown>;
+export type Params = Record<string, unknown>;
 
 export const humanise = (name: string) => name.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 const isColour = (spec: ParamSpec) => spec["x-colour"] === true;
@@ -11,7 +11,7 @@ const isInteger = (spec: ParamSpec) => spec.type === "integer" && spec.minimum !
 
 /** Each control comes from the parameter's JSON schema: sliders for bounded integers, selects for enums and colours
  *  (named as in generators/colours.py), checkboxes for yes/no flags and for lists of choices. */
-function Control({ name, spec, value, colours, onChange }: {
+export function Control({ name, spec, value, colours, onChange }: {
   name: string; spec: ParamSpec; value: unknown; colours: GeneratorList["colours"]; onChange: (v: unknown) => void;
 }) {
   const id = `gen-${name}`;

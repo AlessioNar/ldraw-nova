@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 import parts_steering
 import sandbox
+import collection_store
 import settings
 import toolkit
 import workspace
@@ -171,7 +172,7 @@ async def editor_palette(space: str, chat_id: str, query: str = "", colour: Opti
     if inventory_only:
         # 100 rows: the sandbox keeps 20k characters of output, more would be cut mid-JSON
         report = await _cli(store, chat_id, ["inventory", "search", ids, "--limit", "100",
-                                             "--json", "--store", str(settings.INVENTORIES_DIR),
+                                             "--json", *collection_store.cli_store_args(),
                                              *(["--colour", str(colour)] if colour is not None else []),
                                              *(["--", query] if query else [])])
         if report.get("error"):

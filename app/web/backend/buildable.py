@@ -13,9 +13,8 @@ import json
 import logging
 import re
 import shutil
-import tempfile
-from pathlib import Path
 
+import collection_store
 import inventories
 import sandbox
 import settings
@@ -56,14 +55,12 @@ def reset() -> None:
 
 async def _cli(args: list[str], timeout: int, on_output=None) -> dict:
     """Runs `inventory buildable ...` in a scratch folder; the JSON report goes to a file, not the sandbox's stdout."""
-    folder = settings.INVENTORIES_DIR
-    folder.mkdir(parents=True, exist_ok=True)
-    work = Path(tempfile.mkdtemp(prefix=".buildable-", dir=folder))
+    work = collection_store.scratch_dir(".buildable-")
     try:
         work.chmod(0o755)
         sandbox.give_to_agent(work)
         argv = ["bash", "-c", 'exec "$@" > report.json', "buildable", str(settings.TOOLKIT_PYTHON), "-m", "ldraw_tools.cli",
-                "inventory", "buildable", *args, "--store", str(folder), "--json"]
+                "inventory", "buildable", *args, *collection_store.cli_store_args(), "--json"]
         result = await sandbox.run(argv, work, timeout=timeout, env_extra=toolkit.environment(), on_output=on_output)
         if result.timed_out:
             raise InventoryError(504, "Ranking the models took too long")
@@ -122,13 +119,13 @@ def warm() -> dict:
 def clean_ids(ids: str | None) -> list[str]:
     wanted = list(dict.fromkeys(i.strip() for i in (ids or "").split(",") if i.strip()))
     if not wanted:
-        wanted = [s["id"] for s in inventories.list_inventories()]
+        wanted = collection_store.source_ids()
         if not wanted:
             raise InventoryError(400, "Upload a parts inventory first")
     if len(wanted) > inventories.MAX_IDS:
         raise InventoryError(400, f"Choose at most {inventories.MAX_IDS} inventories")
     for i in wanted:
-        if not inventories.exists(i):
+        if not collection_store.exists(i):
             raise InventoryError(404, "no such inventory")
     return wanted
 
