@@ -159,3 +159,29 @@ def test_missing_colour_tables_say_so(client, tmp_path, monkeypatch):
     assert client.get("/api/collection/export", params={"format": "bricklink-xml"}).status_code == 503
     assert client.get("/api/collection/export", params={"format": "csv"}).status_code == 200
     collection_export.clear_caches()
+
+
+# --- parts pages (PDF text, photos) -------------------------------------------------
+
+def test_parts_page_pdf_is_read_into_lines_and_csv_for_the_preview(client, cli):
+    pytest.importorskip("pypdf")
+    canvas = pytest.importorskip("reportlab.pdfgen.canvas")
+    import base64
+    import io
+    out = io.BytesIO()
+    page = canvas.Canvas(out)
+    for i, text in enumerate(["3x 3001 Brick 2 x 4 Red", "5 3020 Plate 2 x 4 Black"]):
+        page.drawString(72, 780 - i * 20, text)
+    page.save()
+    r = client.post("/api/collection/imports/read-page", json={"data": base64.b64encode(out.getvalue()).decode()})
+    assert r.status_code == 200, r.text
+    got = r.json()
+    assert got["method"] == "pdf-text" and [(l["part"], l["qty"], l["needs_review"]) for l in got["lines"]] == [("3001", 3, False), ("3020", 5, True)]
+    assert preview(client, "from page", got["csv"])["format"] == "bricklink-csv"
+
+
+def test_parts_page_rejects_what_is_not_a_pdf_or_image(client, cli):
+    import base64
+    r = client.post("/api/collection/imports/read-page", json={"data": base64.b64encode(b"hello").decode()})
+    assert r.status_code == 422 and "not a PDF" in r.json()["detail"]
+    assert client.post("/api/collection/imports/read-page", json={"data": "***"}).status_code == 400
