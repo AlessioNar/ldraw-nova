@@ -10,7 +10,7 @@ import pytest
 
 from ldraw_tools import generators, grammar
 from ldraw_tools.builder import check_schema
-from ldraw_tools.grammar import catalog, engine, footprint, maps, nl, openings, roles, roofs, schema, tiling
+from ldraw_tools.grammar import catalog, engine, footprint, maps, nl, openings, roles, schema, tiling
 from ldraw_tools.grammar.presets import PRESETS
 
 PRESET_NAMES = list(PRESETS)
@@ -102,7 +102,7 @@ def test_wall_courses_form_a_running_bond():
     rows = {}
     for it in items(r, 'wall s0'):
         if it.yaw == 0 and it.z == 0.5:                      # the front wall, row j = 0
-            course = (it.y0 - r['canvas'].items[0].y0) // 3
+            (it.y0 - r['canvas'].items[0].y0) // 3
             rows.setdefault(it.y0, set()).update({it.x - len_of(it) / 2, it.x + len_of(it) / 2})
     heights = sorted(rows)
     assert len(heights) == 6
@@ -118,7 +118,7 @@ def len_of(it):
 
 def test_every_wall_cell_is_filled_except_openings():
     r = build({'footprint': {'width': 14, 'depth': 8}, 'storeys': {'count': 1}, 'base': {'kind': 'none'}})
-    st = [s for s in [r['canvas']]][0]
+    [s for s in [r['canvas']]][0]
     cells = footprint.Walls(footprint.rect(0, 0, 14, 8), 1).mass
     covered = {(i, j) for it in items(r, 'wall s0') for (i, j) in it.cells}
     opening_cells = {(i, j) for it in items(r, role='window') + items(r, role='door') for (i, j) in it.cells}
@@ -187,7 +187,7 @@ def test_slits_leave_a_gap_and_windows_have_glass():
 
 def test_upper_windows_line_up_with_the_ground_floor():
     r = build({'footprint': {'width': 16, 'depth': 10}})
-    front = lambda s: sorted(round(i.x) for i in r['canvas'].items if i.role == 'window' and abs(i.z - .5) < .01 and s * 100 < i.y0 * 8 // 8 < (s + 1) * 100)
+    lambda s: sorted(round(i.x) for i in r['canvas'].items if i.role == 'window' and abs(i.z - .5) < .01 and s * 100 < i.y0 * 8 // 8 < (s + 1) * 100)
     ground = sorted(round(i.x) for i in items(r, role='window') if abs(i.z - .5) < .01 and i.y0 < 20)
     upper = sorted(round(i.x) for i in items(r, role='window') if abs(i.z - .5) < .01 and i.y0 >= 20)
     assert ground and upper and all(any(abs(u - g) <= 1 for g in ground + [8]) for u in upper)

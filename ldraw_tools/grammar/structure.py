@@ -119,7 +119,7 @@ def band(ctx, st):
         else:
             for (code, i, j, w, d) in tiling.supported_cover(cs, mass):
                 _put_cover(ctx, code, colour, role, i, j, w, d, y, f'band s{st.index}')
-    for (i0, j0, w, d) in ctx.tower_rects if st.blocked else []:
+    for (i0, j0, _w, _d) in ctx.tower_rects if st.blocked else []:
         for k in range(st.band_h):
             ctx.canvas.put(catalog.ROUND_PLATE_4, ctx.code(cfg['corners']['tower_colour']), 'tower', i0 + 2, j0 + 2, y + k, 0,
                            label='tower band')
@@ -152,7 +152,7 @@ def round_towers(ctx, st):
     if not st.blocked:
         return
     colour = ctx.code(ctx.cfg['corners']['tower_colour'])
-    for (i0, j0, w, d) in ctx.tower_rects:
+    for (i0, j0, _w, _d) in ctx.tower_rects:
         for c in range(st.courses):
             ctx.canvas.put(catalog.ROUND_BRICK_4, colour, 'tower', i0 + 2, j0 + 2, st.y_floor + 3 * c, 0,
                            label=f'round tower c{st.course0 + c}')
@@ -250,7 +250,7 @@ def tower_tops(ctx):
     colour = ctx.code(co['tower_colour'])
     roof = ctx.code(co['tower_roof_colour'])
     if co['tower_shape'] == 'round':
-        for (i0, j0, w, d) in ctx.tower_rects:
+        for (i0, j0, _w, _d) in ctx.tower_rects:
             if co['tower_roof'] == 'cone':
                 ctx.canvas.put(catalog.CONE_4, roof, 'roof', i0 + 2, j0 + 2, y, 0, label='tower cone')
             else:
