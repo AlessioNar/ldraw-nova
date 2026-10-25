@@ -414,10 +414,14 @@ def _preview(token: str) -> dict:
     return found
 
 
+def _is_manual_set(data: dict) -> bool:
+    return data.get("kind") == "set" and isinstance(data.get("set"), dict) and bool(data["set"].get("manual"))
+
+
 def _replaceable(source_id: str) -> dict:
     data = store.load(source_id)
-    if (data.get("kind") or "import") != "import":
-        raise InventoryError(400, "Only an imported parts list can be replaced by a new file")
+    if (data.get("kind") or "import") != "import" and not _is_manual_set(data):
+        raise InventoryError(400, "Only an imported parts list or a set added by hand can be replaced by a new file")
     return data
 
 
@@ -458,6 +462,11 @@ def replace_source(source_id: str, new: dict, raw: bytes, name: str | None = Non
         data["id"], data["created_at"] = source_id, old.get("created_at", time.time())
         data["name"] = name or old.get("name", source_id)
         data["source_filename"] = f"{source_id}.csv"
+        if _is_manual_set(old):                       # a set added by hand keeps its identity; the file only brings the parts
+            copies = int(old["set"].get("copies") or 1)
+            for r in data["rows"]:
+                r["qty"] *= copies
+            data["set"] = {**old["set"], "num_parts": sum(r["qty"] for r in data["rows"]) // copies}
         notes = {(part_key(r["part"]), r["colour"]): r["note"] for r in old.get("rows", []) if r.get("note")}
         for r in data["rows"]:
             if (part_key(r["part"]), r["colour"]) in notes:
@@ -581,6 +590,49 @@ def add_set(set_num: str, copies: int = 1, state: str = "parts", brand: str = DE
                 "warnings": [f"{dropped * copies} piece(s) of this set have no LDraw equivalent and are not listed"] if dropped else []}
         _save(data)
         _append_log(sid, _stamp([{"op": "create", "what": "set"}], 1, f"Added set {info['number']}"))
+    return {"inventory": inventories.summary(data), "set": set_record(data)}
+
+
+def add_manual_set(brand: str, name: str, code: str, year: Any = None, copies: int = 1, state: str = "parts") -> dict:
+    """Adds a set that is in no catalogue (a CADA set, say) as an empty source of kind "set" that carries `manual`. Its parts
+    come afterwards from a file import over it (`replace_source` multiplies them by `copies`). The set key is
+    `<brand>:<code>` like the local catalogues' keys, so the set page, pictures and reservations treat it as any other."""
+    if state not in ("parts", "built"):
+        raise InventoryError(400, "state must be parts or built")
+    brand = _clean_brand(brand)
+    name = " ".join(str(name or "").split())
+    code = str(code or "").strip()
+    if not name or len(name) > inventories.MAX_NAME_CHARS:
+        raise InventoryError(400, f"The set needs a name of at most {inventories.MAX_NAME_CHARS} characters")
+    brand_key = inventories.slugify(brand)
+    set_num = code if re.fullmatch(r"[0-9a-z]{1,12}-[0-9]{1,3}", code.lower()) and brand == DEFAULT_BRAND else f"{brand_key}:{code}"
+    if not code or not set_images.valid(set_num):
+        raise InventoryError(400, "The set needs a product code of letters, digits, dots, dashes or underscores")
+    year_n = 0
+    if year not in (None, "", 0):
+        try:
+            year_n = int(year)
+        except (TypeError, ValueError):
+            raise InventoryError(400, "Year must be a number") from None
+        if not 1900 <= year_n <= 2100:
+            raise InventoryError(400, "Year must be between 1900 and 2100")
+    copies = _clean_qty(copies, 1, "number of copies")
+    if copies > 99:
+        raise InventoryError(400, "At most 99 copies of a set")
+    title = f"{code} {name}"[:inventories.MAX_NAME_CHARS]
+    with store.lock:
+        n = 1
+        base_id = inventories.slugify(f"set-{set_num}")
+        sid, label = base_id, title
+        while store.exists(sid) or inventories._name_taken(label):
+            n += 1
+            sid, label = f"{base_id}-{n}"[:60], f"{title[:inventories.MAX_NAME_CHARS - 6]} ({n})"
+        data = {"id": sid, "name": label, "created_at": time.time(), "source_filename": None, "kind": "set",
+                "set": {"set_num": set_num, "brand": brand, "name": name, "year": year_n, "theme": "", "image": None, "num_parts": 0,
+                        "copies": copies, "state": state, "dropped_pieces": 0, "manual": True},
+                "origin": {"format": "manual"}, "rows": [], "unmapped_parts": [], "unmapped_colours": [], "warnings": []}
+        _save(data)
+        _append_log(sid, _stamp([{"op": "create", "what": "set"}], 1, f"Added set {code} by hand"))
     return {"inventory": inventories.summary(data), "set": set_record(data)}
 
 
