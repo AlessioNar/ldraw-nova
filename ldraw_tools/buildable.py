@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .common import CACHE, atomic_write, database_path, models_path, readonly_uri
-from .inventory import colour_name, combine, describe, index_owned, match_bom, substituted_pieces
+from .inventory import colour_name, combine, describe, index_owned, match_bom, maybe_pieces, review_pool, substituted_pieces
 
 VERSION = 2
 MIN_PARTS = 20
@@ -235,9 +235,9 @@ def drop_subvariants(entries):
     return kept, dropped
 
 
-def evaluate(entry, owned, by_part):
+def evaluate(entry, owned, by_part, pool=()):
     ok, short = match_bom(entry.bom, owned)
-    return dict(entry=entry, needed=entry.total, matched=ok, short=short,
+    return dict(entry=entry, needed=entry.total, matched=ok, short=short, maybe=maybe_pieces(short, pool),
                 missing=sum(n - h for _, _, n, h in short), substituted=substituted_pieces(entry.bom, by_part))
 
 
@@ -252,6 +252,7 @@ def rank(entries, inventories, *, library=None, descriptions=None, limit=20, min
     descriptions = descriptions or {}
     owned = combine(inventories)
     by_part = index_owned(owned)
+    review = review_pool(inventories)
     usable = [e for e in entries if e.bom]
     counts = dict(models=len(entries), parsed=len(usable), skipped=len(entries) - len(usable))
     counts["too_small"] = sum(1 for e in usable if e.total < min_parts)
@@ -266,7 +267,7 @@ def rank(entries, inventories, *, library=None, descriptions=None, limit=20, min
     tokens = query.casefold().split()
     if tokens:
         pool = [e for e in pool if all(t in f"{e.name} {descriptions.get(Path(e.name).name, '')}".casefold() for t in tokens)]
-    scored = [evaluate(e, owned, by_part) for e in pool]
+    scored = [evaluate(e, owned, by_part, review) for e in pool]
     scored = [s for s in scored if s["matched"] > 0]
     if max_missing is not None:
         scored = [s for s in scored if s["missing"] <= max_missing]
@@ -284,6 +285,8 @@ def rank(entries, inventories, *, library=None, descriptions=None, limit=20, min
                     custom_pieces=sum(q for (p, _), q in s["entry"].bom.items() if p not in library.by_code) if library is not None else 0,
                     top_missing=[dict(part=p, colour=c, colour_name=colour_name(c, library), description=describe(p, library),
                                       needed=n, owned=h, missing=n - h) for p, c, n, h in lines[:TOP_MISSING]])
+        if review:
+            item.update(maybe_matched=s["maybe"], maybe_completeness=round((s["matched"] + s["maybe"]) / s["needed"], 4))
         if substitute_colours:
             item.update(substituted_matched=s["substituted"], substituted_completeness=round(s["substituted"] / s["needed"], 4))
         results.append(item)

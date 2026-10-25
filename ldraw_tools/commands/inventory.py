@@ -145,6 +145,8 @@ def lines_buildable(report):
     out += [f"warning: {w}" for w in report["warnings"]]
     for i, r in enumerate(report["results"], 1):
         sub = f"  with colour substitution {r['substituted_completeness']:.1%}" if "substituted_completeness" in r else ""
+        if r.get("maybe_matched"):
+            sub += f"  (+{r['maybe_matched']} maybe from colour-family pieces: {r['maybe_completeness']:.1%})"
         out.append(f"{i:>3}. {r['id']:<30}{r['completeness']:>7.1%}  {r['matched']}/{r['pieces']} pieces, {r['missing']} missing in {r['missing_lines']} line(s){sub}"
                    + (f"  ({r['custom_pieces']} on custom parts no inventory covers)" if r["custom_pieces"] else ""))
         if r["description"]:
@@ -164,15 +166,18 @@ def buildable_report(args, library, invs):
                                      min_parts=args.min_parts, max_parts=args.max_parts, max_missing=args.max_missing,
                                      max_missing_share=args.max_missing_share, query=args.query,
                                      substitute_colours=args.substitute_colours, keep_subvariants=args.keep_subvariants)
+    review_pieces = sum(r["qty"] for i in invs for r in i.review)
     mapped, unmapped = sum(i.total_pieces for i in invs), sum(i.unmapped_pieces for i in invs)
     warnings = []
     if scan.pending:
         warnings.append(f"BOM cache is incomplete: {len(scan.pending)} of {scan.total} models not scanned yet; rerun to continue")
     if counts["skipped"]:
         warnings.append(f"{counts['skipped']} model file(s) could not be parsed and were skipped")
+    if review_pieces:
+        warnings.append(f"{review_pieces} colour-family pieces are counted separately as maybe, never in the exact numbers")
     if unmapped:
         warnings.append("pieces that could not be mapped to LDraw parts or colours count as not owned, so completeness is understated")
-    return dict(base, inventories=[i.name for i in invs], inventory_pieces=mapped, unmapped_pieces=unmapped,
+    return dict(base, inventories=[i.name for i in invs], inventory_pieces=mapped, maybe_pieces=review_pieces, unmapped_pieces=unmapped,
                 unmapped_share=round(unmapped / (mapped + unmapped), 4) if mapped + unmapped else 0.0, counts=counts,
                 substitute_colours=args.substitute_colours, subvariants_dropped=not args.keep_subvariants, warnings=warnings, results=results)
 

@@ -26,6 +26,7 @@ function Card({ model, substitute, onOpen, onDesign }: { model: BuildableModel; 
     </div>
     <p className="small">{model.matched.toLocaleString()} of {model.pieces.toLocaleString()} pieces
       {model.missing > 0 ? <> · <span className="warn-text">{model.missing.toLocaleString()} missing</span> in {model.missing_lines} line{model.missing_lines === 1 ? "" : "s"}</> : <> · <span className="ok-text">nothing missing</span></>}</p>
+    {!!model.maybe_matched && <p className="small muted">+{model.maybe_matched} maybe from colour-family pieces ({pct(model.maybe_completeness ?? model.completeness)} if all fit)</p>}
     {substitute && model.substituted_completeness != null && model.substituted_completeness > model.completeness && <p className="small muted">{pct(model.substituted_completeness)} if other colours of the same part may stand in</p>}
     {model.custom_pieces > 0 && <p className="small muted">{model.custom_pieces.toLocaleString()} pieces are custom parts no list can cover</p>}
     {model.top_missing.length > 0 && <ul className="build-missing" aria-label="Most missing">

@@ -7,7 +7,7 @@ import pytest
 from conftest import mpd, ref
 
 from ldraw_tools import buildable
-from ldraw_tools.inventory import (check_model, combine, index_owned, make_inventory, match_bom, model_bom,
+from ldraw_tools.inventory import (check_model, combine, index_owned, make_inventory, match_bom, maybe_pieces, model_bom,
                                    parse_rebrickable_csv, substituted_pieces)
 from test_inventory import FIX, fixture_maps, make_model, model_text  # noqa: F401  (autouse fixture)
 
@@ -164,3 +164,23 @@ def test_cli_buildable(tmp_path, models, official):
     assert run_cli("buildable", "--warm", "--models-dir", str(models), "--cache-dir", str(tmp_path / "warm"), "--workers", "1", "--json").returncode == 0
     assert run_cli("buildable", "--store", str(store)).returncode == 2
     assert run_cli("buildable", "mine", "--max-missing", "1", "--max-missing-share", "0.1", "--store", str(store)).returncode == 2
+
+
+def test_maybe_pieces_fill_gaps_separately_and_are_used_once():
+    pool = [("3001", frozenset({71, 72}), 3), ("3003", frozenset({4}), 5)]
+    short = [("3001", 71, 4, 1), ("3001", 72, 2, 0), ("3003", 71, 2, 0), ("3022", 71, 1, 0)]
+    # 3001: the 3 maybe pieces go to the first gap (3), nothing is left for 72; 3003 and 3022 have no matching candidate
+    assert maybe_pieces(short, pool) == 3
+    assert maybe_pieces([], pool) == 0 and maybe_pieces(short, []) == 0
+
+
+def test_rank_reports_maybe_without_changing_exact_numbers(parts, models, tmp_path):
+    have = inventory("h", "3001,4,8\n")
+    have.review = [dict(id="r1", part="3003", family="Blues", candidates=[1, 272], qty=1)]
+    entries = scan(parts, models, tmp_path).entries
+    plain, _ = buildable.rank(entries, [inventory("h", "3001,4,8\n")], library=parts, min_parts=1)
+    with_review, _ = buildable.rank(entries, [have], library=parts, min_parts=1)
+    full = next(r for r in with_review if r["id"] == "full-1")
+    assert full["maybe_matched"] == 1 and full["maybe_completeness"] > full["completeness"]
+    assert {r["id"]: (r["matched"], r["completeness"]) for r in plain} == {r["id"]: (r["matched"], r["completeness"]) for r in with_review}
+    assert all("maybe_matched" not in r for r in plain)

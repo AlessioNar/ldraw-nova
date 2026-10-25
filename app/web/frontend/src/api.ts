@@ -263,11 +263,12 @@ type BuildableLine = { part: string; colour: number; colour_name: string; descri
 export type BuildableModel = {
   file: string; id: string; set_id: string | null; description: string; pieces: number; matched: number; completeness: number;
   missing: number; missing_lines: number; custom_pieces: number; top_missing: BuildableLine[];
+  maybe_matched?: number; maybe_completeness?: number; // colour-family pieces that could fill gaps; never mixed into matched/completeness
   substituted_matched?: number; substituted_completeness?: number; // only with substitute=true; never mixed into completeness
 };
 export type BuildableStatus = { state: "idle" | "building" | "ready"; done: number; total: number; error?: string };
 export type BuildableReport = {
-  inventories: string[]; inventory_pieces: number; unmapped_pieces: number; unmapped_share: number; substitute_colours: boolean;
+  inventories: string[]; inventory_pieces: number; maybe_pieces?: number; unmapped_pieces: number; unmapped_share: number; substitute_colours: boolean;
   counts: { models: number; parsed: number; skipped: number; too_small: number; subvariants: number; ranked: number };
   warnings: string[]; results: BuildableModel[]; status: BuildableStatus;
 };
