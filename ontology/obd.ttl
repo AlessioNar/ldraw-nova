@@ -211,11 +211,11 @@ obd:storeysBandColour a owl:DatatypeProperty, owl:FunctionalProperty, obd:Colour
 
 obd:storeysInterior a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
     rdfs:domain obd:Storeys ;
-    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "none" "partition" ) ] ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "none" "partition" "furnished" ) ] ;
     obd:default "none" ;
     obd:order 9 ;
     dcterms:identifier "interior" ;
-    rdfs:comment "Rooms: a partition wall with a doorway on every storey (rectangular footprints)"@en .
+    rdfs:comment "Rooms: a partition wall with a doorway on every storey, plus furniture when furnished (rectangular footprints)"@en .
 
 obd:Walls a owl:Class ;
     rdfs:subClassOf obd:Component ;
@@ -801,6 +801,30 @@ obd:detailsConnectors a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parame
     obd:order 15 ;
     dcterms:identifier "connectors" ;
     rdfs:comment "Technic pin bricks in the side walls near the top of every storey, to bolt modules together"@en .
+
+obd:detailsAwning a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
+    rdfs:domain obd:Details ;
+    rdfs:range xsd:boolean ;
+    obd:default false ;
+    obd:order 16 ;
+    dcterms:identifier "awning" ;
+    rdfs:comment "Shop awning: the front cornice of the ground storey in two alternating stripe colours (needs 2+ storeys)"@en .
+
+obd:detailsAwningColour a owl:DatatypeProperty, owl:FunctionalProperty, obd:ColourParameter ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "red" ;
+    obd:order 17 ;
+    dcterms:identifier "awning_colour" ;
+    rdfs:comment "Awning stripe"@en .
+
+obd:detailsAwningAltColour a owl:DatatypeProperty, owl:FunctionalProperty, obd:ColourParameter ;
+    rdfs:domain obd:Details ;
+    rdfs:range obd:LdrawColour ;
+    obd:default "white" ;
+    obd:order 18 ;
+    dcterms:identifier "awning_alt_colour" ;
+    rdfs:comment "Second awning stripe"@en .
 
 obd:Base a owl:Class ;
     rdfs:subClassOf obd:Component ;

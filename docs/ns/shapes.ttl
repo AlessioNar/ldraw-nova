@@ -5,6 +5,14 @@
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+<https://alessionar.github.io/open-brick-designer/ns/shapes#AwningFits> a sh:NodeShape ;
+    dcterms:identifier "awning-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+            sh:message "An awning stripes the front cornice of the ground storey: it needs a rectangular footprint and 2 or more storeys, and it takes the place of a porch (awning-fits)" ;
+            sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsAwning true ; obd:detailsPorch ?porch . ?fp obd:footprintShape ?shape . ?st obd:storeysCount ?count ; obd:storeysBandProjection ?proj . FILTER (?shape != \"rect\" || ?count < 2 || ?proj < 1 || ?porch = true) }" ] ;
+    sh:targetClass obd:Building .
+
 <https://alessionar.github.io/open-brick-designer/ns/shapes#BalconyStoreys> a sh:NodeShape ;
     dcterms:identifier "balcony-storeys" ;
     sh:sparql [ a sh:SPARQLConstraint ;
@@ -119,9 +127,9 @@
 <https://alessionar.github.io/open-brick-designer/ns/shapes#InteriorRect> a sh:NodeShape ;
     dcterms:identifier "interior-rect" ;
     sh:sparql [ a sh:SPARQLConstraint ;
-            sh:message "Interior partitions only go into rectangular footprints (interior-rect)" ;
+            sh:message "Interior partitions and furniture only go into rectangular footprints (interior-rect)" ;
             sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
-            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysInterior \"partition\" . FILTER (?shape != \"rect\") }" ] ;
+            sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysInterior ?interior . FILTER (?interior != \"none\" && ?shape != \"rect\") }" ] ;
     sh:targetClass obd:Building .
 
 <https://alessionar.github.io/open-brick-designer/ns/shapes#ModularFits> a sh:NodeShape ;

@@ -104,6 +104,8 @@ def band(ctx, st):
             ring = {c for c in ring if c[1] < bz0 and bx0 <= c[0] < bx1}
         key = ('roof', roof) if main_top and cfg['roof']['style'] == 'flat' else ('trim', trim)
         groups.setdefault(key, set()).update(ring)       # cut together with the slab so plates straddle wall and cornice
+        if cfg['details']['awning'] and st.index == 0 and st.kind == 'main':
+            _awning(ctx, groups, cells, mass, ring)
     layered = st.band_h == 2
     for (role, colour), cs in sorted(groups.items()):
         cs = _free(ctx, cs, y)
@@ -123,6 +125,28 @@ def band(ctx, st):
         for k in range(st.band_h):
             ctx.canvas.put(catalog.ROUND_PLATE_4, ctx.code(cfg['corners']['tower_colour']), 'tower', i0 + 2, j0 + 2, y + k, 0,
                            label='tower band')
+
+
+def _awning(ctx, groups, cells, mass, ring):
+    """Stripe the front cornice in two colours, two studs per stripe. A stripe takes the wall cell behind it too, so its
+    plates straddle wall and cornice like the rest of the band. The balcony's columns keep the balcony."""
+    from .details import balcony_cells
+    x0, x1, z0, _ = footprint.bbox(cells)
+    d = ctx.cfg['details']
+    stripes = (ctx.code(d['awning_colour']), ctx.code(d['awning_alt_colour']))
+    skip = {c[0] for c in balcony_cells(ctx)}
+    taken = set()
+    for i in range(x0 + 1, x1 - 1):           # the corner columns stay with the cornice that wraps round the side
+        if i in skip or (i, z0 - 1) not in ring:
+            continue
+        group = groups.setdefault(('detail', stripes[(i - x0 - 1) // 2 % 2]), set())
+        for c in ((i, z0 - 1), (i, z0)):
+            if c in ring or c in mass:
+                group.add(c)
+                taken.add(c)
+    for key, group in groups.items():
+        if key[0] != 'detail' or key[1] not in stripes:
+            group -= taken
 
 
 def eave_skirt(ctx, st):
