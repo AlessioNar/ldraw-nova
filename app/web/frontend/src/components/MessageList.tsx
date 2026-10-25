@@ -23,6 +23,12 @@ function ErrorText({ text }: { text: string }) {
   return after === undefined ? <>{text}</> : <>{before}<Link to="/settings">Open Settings</Link>{after}</>;
 }
 
+/** Who answered, in the workspace chat only (`fast` is its marker): the free path or the AI. */
+function Badge({ kind }: { kind: "you" | "free" | "ai" }) {
+  const label = { you: "You", free: "Free · instant", ai: "AI · costs apply" }[kind];
+  return <span className="msg-badge" data-kind={kind}>{label}</span>;
+}
+
 export default function MessageList({ detail, running, draft, persisting, tools, workers, now, error, scrollerRef, bottomRef, onScroll, fast }: {
   detail: ChatDetail; running: boolean; draft: string; persisting: string; tools: RunningTool[]; workers: LiveWorker[]; now: number; error: string | null;
   scrollerRef: Ref<HTMLDivElement>; bottomRef: Ref<HTMLDivElement>; onScroll: UIEventHandler<HTMLDivElement>;
@@ -88,7 +94,7 @@ export default function MessageList({ detail, running, draft, persisting, tools,
       flush();
       nodes.push(
         <div key={m.id} className="msg user">
-          <div className="bubble">{m._editor_publish ? m._label ?? text(m) : text(m)}
+          <div className="bubble">{fast && !m._editor_publish && <Badge kind="you" />}{m._editor_publish ? m._label ?? text(m) : text(m)}
             {Array.isArray(m.content) && <div className="attachments">{(m.content as ContentBlock[]).filter(b => b.type === "image_url").map((b, i) => <img key={i} src={b.image_url?.url} alt={`Attached image ${i + 1}`} />)}</div>}
             {!!m._documents?.length && <div className="document-attachments">{m._documents.map((d, i) =>
               <a className="document-chip" key={i} href={d.url ?? undefined} download={d.name}><DocumentIcon /><span>{d.name}</span></a>
@@ -104,12 +110,12 @@ export default function MessageList({ detail, running, draft, persisting, tools,
     }
     if (m._fast_path && fast) {
       flush();
-      nodes.push(<div key={m.id} className="msg assistant fast-path">{fast(m)}</div>);
+      nodes.push(<div key={m.id} className="msg assistant fast-path">{m._fast_path.route !== "needs_ai" && <Badge kind="free" />}{fast(m)}</div>);
       continue;
     }
     if (text(m)) {
       flush();
-      nodes.push(<div key={m.id} className="msg assistant"><Markdown models={publishedModels}>{text(m)}</Markdown></div>);
+      nodes.push(<div key={m.id} className="msg assistant">{fast && <Badge kind="ai" />}<Markdown models={publishedModels}>{text(m)}</Markdown></div>);
     }
     for (const call of m.tool_calls ?? []) {
       const result = results.get(call.id);

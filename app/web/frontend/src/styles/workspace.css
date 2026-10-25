@@ -289,3 +289,9 @@
 .tpl-extremes figcaption { text-align: center; }
 .tpl-knobs label { display: flex; align-items: center; gap: 8px; }
 .tpl-knobs input[type="checkbox"] { width: auto; flex: none; }
+
+/* Who answered: told apart at a glance in the workspace chat. */
+.ws-chat .msg-badge { display: inline-block; align-self: flex-start; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .02em; padding: 0 6px; border-radius: 8px; border: 1px solid var(--border); color: var(--muted); }
+.ws-chat .msg-badge[data-kind="free"] { color: var(--ok, #1b7f3b); border-color: currentColor; }
+.ws-chat .msg-badge[data-kind="ai"] { color: var(--accent, #6b46c1); border-color: currentColor; }
+.ws-chat .bubble .msg-badge { display: block; margin-bottom: 3px; }
