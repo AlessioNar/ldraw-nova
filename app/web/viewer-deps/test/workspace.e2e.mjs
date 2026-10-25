@@ -177,12 +177,12 @@ try {
   await step('c3. a vague message gets one question with quick replies; a chip is the next message', async () => {
     await sendChat(VAGUE);
     await waitChatReply('clarify');
-    const chips = await page.locator('.ws-chat .ws-chips .ws-chip-btn').allInnerTexts();
+    const chips = await page.locator('.ws-tray .ws-chips .ws-chip-btn').allInnerTexts();
     assert.ok(chips.length >= 2, `chips: ${chips}`);
     assert.ok(chips.includes('Just pick for me'), 'Just pick for me is offered');
     await shot('c3-clarify-chips');
     const before = await page.locator('.ws-chat .msg.user').count();
-    await page.locator('.ws-chat .ws-chips .ws-chip-btn').first().click();
+    await page.locator('.ws-tray .ws-chips .ws-chip-btn').first().click();
     await page.waitForFunction((n) => document.querySelectorAll('.ws-chat .msg.user').length > n, before, { timeout: 60000 });
     await waitChatReply('edit', 3);                                    // the chip was an ordinary message: the free path applied it
     await waitStatus(/draft, 2 changes/);
