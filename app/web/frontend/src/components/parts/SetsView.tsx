@@ -8,8 +8,8 @@ const SORTS: { id: Sort; label: string }[] = [{ id: "name", label: "Name" }, { i
 const share = (s: OwnedSet) => (s.pieces ? s.on_hand / s.pieces : 1);
 
 /** My sets: a card per owned set (LEGO or another brand) with its picture, state and how many pieces are on hand or missing. */
-export default function SetsView({ version, onChanged, onAdd, onAddManual }:
-  { version: number; onChanged: OnChanged; onAdd: () => void; onAddManual: () => void }) {
+export default function SetsView({ version, onChanged, onAdd }:
+  { version: number; onChanged: OnChanged; onAdd: () => void }) {
   const [sets, setSets] = useState<OwnedSet[] | null>(null);
   const [images, setImages] = useState<SetImageSettings | null>(null);
   const [error, setError] = useState("");
@@ -60,8 +60,7 @@ export default function SetsView({ version, onChanged, onAdd, onAddManual }:
     {sets && !sets.length && <div className="panel parts-empty-state">
       <h2>No sets yet</h2>
       <p className="muted">Add a set from the catalogue, LEGO or another brand, and it shows up here with its picture and part counts.</p>
-      <div className="head-actions"><button type="button" className="primary" onClick={onAdd}>Add a set</button>
-        <button type="button" onClick={onAddManual}>Add parts of a third-party set by hand</button></div>
+      <div className="head-actions"><button type="button" className="primary" onClick={onAdd}>Add a set</button></div>
     </div>}
     {sets && sets.length > 0 && <>
       <div className="parts-filters" role="search">

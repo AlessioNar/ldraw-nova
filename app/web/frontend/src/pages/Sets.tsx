@@ -3,14 +3,13 @@ import { useSearchParams } from "react-router-dom";
 import { collectionApi, type Inventory } from "../api";
 import AddSetDialog from "../components/parts/AddSetDialog";
 import BuildablePanel from "../components/parts/BuildablePanel";
-import QuickAddDialog from "../components/parts/QuickAddDialog";
 import ReservedView from "../components/parts/ReservedView";
 import SetsView from "../components/parts/SetsView";
 import type { OnChanged } from "../components/parts/changes";
 
 type View = "sets" | "reserved" | "build";
 const VIEWS: View[] = ["sets", "reserved", "build"];
-type Dialog = null | "set" | "quick";
+type Dialog = null | "set";
 type Notice = { text: string; source?: string } | null;
 
 /** My Sets: every set I own as a card with its picture and part counts; one set's page is at /sets/:id. */
@@ -46,11 +45,10 @@ export default function Sets() {
       <button type="button" aria-pressed={view === "reserved"} onClick={() => go("reserved")}>Built &amp; reserved</button>
       <button type="button" aria-pressed={view === "build"} onClick={() => go("build")}>What can I build?</button>
     </div>
-    {view === "sets" && <SetsView version={version} onChanged={changed} onAdd={() => setDialog("set")} onAddManual={() => setDialog("quick")} />}
+    {view === "sets" && <SetsView version={version} onChanged={changed} onAdd={() => setDialog("set")} />}
     {view === "reserved" && <ReservedView version={version} onChanged={changed} />}
     {view === "build" && (sources.length ? <BuildablePanel inventories={sources} /> : <p className="muted">Add some parts first, then see which set models you can build.</p>)}
     {dialog === "set" && <AddSetDialog onClose={() => setDialog(null)} onChanged={changed} />}
-    {dialog === "quick" && <QuickAddDialog onClose={() => setDialog(null)} onChanged={changed} />}
     {notice && <div className="parts-notice" role="status">
       <span>{notice.text}</span>
       {notice.source && <button type="button" onClick={() => void undo()}>Undo</button>}
