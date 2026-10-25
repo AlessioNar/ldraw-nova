@@ -1,5 +1,5 @@
 {
- "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\ntree | garden,scene | tree,oak,oak tree,pine,pine tree,fir,bush,shrub,garden tree | trunk_courses:3-10 colours:foliage_colour,foliage_accent,trunk_colour,flower_colour,ground_colour\nbrick-house | house,building | brick house,red brick house,house on a baseplate | x_delta=0|1|2 courses_delta=0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\nflatbed-truck | truck | flatbed truck,flatbed,flat-bed truck | z_delta=0|1|2|3|4|6 swap_tile_1x2=keep|3069b|2412b include_part_trailer_p2? colours:colour_body,colour_chassis,colour_door,colour_glass,colour_roof,colour_trim,colour_tyre,colour_wheel | template\npassenger-car | train | passenger car,railway carriage,train carriage,coach,train | z_delta=0|1|4 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_padding_all? colours:colour_body,colour_chassis,colour_detail,colour_door,colour_glass,colour_roof,colour_wheel,colour_window | template\nsmall-house | house,building | house with garden,garden house | z_delta=0|2 courses_delta=-1|0|1 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_chair_p105? include_part_lamp_p144? include_part_plant_p27? include_part_bush_all? colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntractor-trailer | truck,tractor | tractor,tractor and trailer,farm tractor | z_delta=-2|0|1|2|3|4|6|8|10|12 swap_brick_1x2=keep|3004|2877|98283|3065 swap_tile_1x2=keep|3069b|2412b colours:colour_body,colour_chassis,colour_glass,colour_roof,colour_tyre,colour_wheel | template\nwillowbank-cottage | house,building | cottage,farmhouse,country cottage | z_delta=0|2 courses_delta=-1|0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 include_part_entry_porch? include_part_garden_field? include_part_bench_70_p0114? include_part_flower_box_5_p0115? include_part_ridge_chimney? include_part_fence_25_70_p0182? colours:colour_base,colour_detail,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntoy-train | train,vehicle | train,steam train,locomotive,steam engine,goods train,freight train,railway,tram | wagons:0-6 colours:loco_colour,wagon_colour,roof_colour,wheel_colour,track_colour\ncargo-ship | boat,ship | ship,cargo ship,container ship,steamer,steamship,tanker,liner,ferry | length:16-40e bays:0-7 colours:hull_colour,stripe_colour,deck_colour,cabin_colour,funnel_colour,cargo_colour,cargo_accent",
+ "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\ntree | garden,scene | tree,oak,oak tree,pine,pine tree,fir,bush,shrub,garden tree | trunk_courses:3-10 colours:foliage_colour,foliage_accent,trunk_colour,flower_colour,ground_colour\ntoy-train | train,vehicle | train,steam train,locomotive,steam engine,goods train,freight train,railway,tram | wagons:0-6 colours:loco_colour,wagon_colour,roof_colour,wheel_colour,track_colour\ncargo-ship | boat,ship | ship,cargo ship,container ship,steamer,steamship,tanker,liner,ferry | length:16-40e bays:0-7 colours:hull_colour,stripe_colour,deck_colour,cabin_colour,funnel_colour,cargo_colour,cargo_accent",
  "colours": [
   "azure",
   "beige",
@@ -340,10 +340,11 @@
        "interior": {
         "enum": [
          "none",
-         "partition"
+         "partition",
+         "furnished"
         ],
         "default": "none",
-        "description": "Rooms: a partition wall with a doorway on every storey (rectangular footprints)"
+        "description": "Rooms: a partition wall with a doorway on every storey, plus furniture when furnished (rectangular footprints)"
        }
       },
       "default": {
@@ -999,6 +1000,29 @@
         "type": "boolean",
         "default": false,
         "description": "Technic pin bricks in the side walls near the top of every storey, to bolt modules together"
+       },
+       "awning": {
+        "type": "boolean",
+        "default": false,
+        "description": "Shop awning: the front cornice of the ground storey in two alternating stripe colours (needs 2+ storeys)"
+       },
+       "awning_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "red",
+        "description": "Awning stripe"
+       },
+       "awning_alt_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Second awning stripe"
        }
       },
       "default": {
@@ -1016,7 +1040,10 @@
        "flower_colour": "red",
        "fence": false,
        "fence_colour": "white",
-       "connectors": false
+       "connectors": false,
+       "awning": false,
+       "awning_colour": "red",
+       "awning_alt_colour": "white"
       }
      },
      "base": {
@@ -1363,7 +1390,10 @@
      "flower_colour": "red",
      "fence": false,
      "fence_colour": "white",
-     "connectors": false
+     "connectors": false,
+     "awning": false,
+     "awning_colour": "red",
+     "awning_alt_colour": "white"
     },
     "base": {
      "kind": "plate",
@@ -2415,7 +2445,7 @@
     },
     "modular-bakery": {
      "title": "Modular bakery",
-     "description": "Three-storey modular bakery: shop front and glazed door with sign band, arched flats above, balcony, chimney, gable roof.",
+     "description": "Three-storey modular bakery: shop front and glazed door with sign band and striped awning, furnished rooms, arched flats above, chimney, gable roof.",
      "keywords": [
       "modular bakery",
       "modular building",
@@ -2432,7 +2462,7 @@
        "courses": 7,
        "band_projection": 1,
        "band_colour": "white",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "sand red",
@@ -2460,7 +2490,10 @@
        "sign": "fascia",
        "sign_colour": "dark blue",
        "chimney": "right",
-       "connectors": true
+       "connectors": true,
+       "awning": true,
+       "awning_colour": "red",
+       "awning_alt_colour": "white"
       },
       "base": {
        "kind": "modular",
@@ -2488,7 +2521,7 @@
        "courses": 6,
        "band_projection": 1,
        "band_colour": "white",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "tan",
@@ -2542,7 +2575,7 @@
        "courses": 6,
        "band_projection": 1,
        "band_colour": "light grey",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "dark tan",
@@ -2595,7 +2628,7 @@
        "courses": 7,
        "band_projection": 1,
        "band_colour": "dark brown",
-       "interior": "partition"
+       "interior": "furnished"
       },
       "walls": {
        "colour": "red",
