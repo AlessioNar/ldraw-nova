@@ -10,7 +10,7 @@ import DocumentIcon from "./DocumentIcon";
 
 const DOCUMENT_TYPES = ".pdf,.txt,.md,.csv,.json,.yaml,.yml,.xml,.html,.rtf,.docx,.xlsx,.pptx,.mpd,.ldr,.dat";
 
-export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions, budgetReached, continuingFrom, onTextChange, onOptions, allowNoModel, hint, placeholder }: {
+export default function Composer({ llmId, onLlmChange, onSend, onStop, running, autoFocus, initialText = "", initialOptions, budgetReached, continuingFrom, onTextChange, onAttachments, onOptions, allowNoModel, hint, placeholder }: {
   llmId: string | null;
   onLlmChange: (id: string) => void;
   onSend: (text: string, options: TurnOptions, images: string[], documents: DocumentUpload[]) => Promise<void> | void;
@@ -24,6 +24,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   onTextChange?: (text: string) => void; // the workspace chat shows a live cost hint while typing
   onOptions?: (options: TurnOptions) => void; // the options a send would use right now
   allowNoModel?: boolean; // the free fast path needs no model
+  onAttachments?: (count: number) => void; // the workspace chat tells the person attachments go to the AI
   hint?: React.ReactNode; // replaces the keyboard hint line
   placeholder?: string;
 }) {
@@ -45,6 +46,8 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
       : loadChatDefaults() }));
   const [images, setImages] = useState<{ name: string; url: string; size: number }[]>([]);
   const [documents, setDocuments] = useState<(DocumentUpload & { size: number })[]>([]);
+  const attached = images.length + documents.length;
+  useEffect(() => { onAttachments?.(attached); }, [attached, onAttachments]);
   const [error, setError] = useState("");
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [steering, setSteering] = useState<PartsSteering>(() => initialOptions?.parts_mode
