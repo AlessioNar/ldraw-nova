@@ -5,13 +5,17 @@ Today it is JSON files in INVENTORIES_DIR (`<id>.json` source, `<id>.csv` origin
 only the plain functions below and passes plain dicts/lists, so moving to PostgreSQL later means rewriting this module
 and nothing else. Callers hold `lock` around read-modify-write sequences (a DB version would use a transaction instead).
 
-Older read-only consumers (workspace.owned_parts, parts_steering.load_inventory, the toolkit CLI in the sandbox) still read
-the source files directly; they only look at exact `rows` and must follow the same move.
+The toolkit CLI runs in the sandbox and cannot call these functions, so it is handed the store through the "CLI bridge"
+below (`cli_store_args`, `cli_environment`, `scratch_dir`): backend code never builds a path into the folder itself.
+Older read-only consumers (workspace.owned_parts, parts_steering.load_inventory) still read the source files directly; they
+only look at exact `rows` and must follow the same move.
 """
 from __future__ import annotations
 
 import copy
 import json
+import tempfile
+from pathlib import Path
 from typing import Any
 
 import inventories
@@ -115,6 +119,24 @@ def write_notes(notes: dict[str, str], log_entry: dict) -> None:
     atomic_write(settings.INVENTORIES_DIR / NOTES_FILE, _dump({"schema": 1, "notes": dict(sorted(notes.items()))}))
     with (settings.INVENTORIES_DIR / NOTES_LOG).open("a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry) + "\n")
+
+
+# --- CLI bridge: how the sandboxed toolkit finds the store ---------------------------
+
+def cli_store_args() -> list[str]:
+    """The `--store` option of the `inventory ...` CLI commands (a DB version would export a snapshot and point at it)."""
+    return ["--store", str(settings.INVENTORIES_DIR)]
+
+
+def cli_environment() -> dict[str, str]:
+    """Environment variables the sandboxed toolkit reads to find the store."""
+    return {"LDRAW_NOVA_INVENTORY_DIR": str(settings.INVENTORIES_DIR)}
+
+
+def scratch_dir(prefix: str) -> Path:
+    """A fresh private working folder next to the store (dot-prefixed, so never listed as a source); the caller removes it."""
+    settings.INVENTORIES_DIR.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix=prefix, dir=settings.INVENTORIES_DIR))
 
 
 # --- exact-row readers for the features that count what is owned -------------------
