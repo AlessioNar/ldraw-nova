@@ -17,6 +17,9 @@ os.environ["LDRAW_NOVA_WEB_CONFIG_DIR"] = str(_tmp / "config")
 os.environ.setdefault("LDRAW_NOVA_ALLOWED_HOSTS", "testserver")      # Starlette TestClient's Host
 os.environ["LDRAW_NOVA_GLB_CACHE_DIR"] = str(_tmp / "glb-cache")
 (_tmp / "data" / "output").mkdir(parents=True)
+# The suite runs on the JSON files unless LDRAW_NOVA_TEST_STORAGE=postgres (see PG_STORE below); a database that is
+# configured for the database tests must not switch the app's store under tests that read the files.
+os.environ["LDRAW_NOVA_STORAGE"] = "postgres" if os.environ.get("LDRAW_NOVA_TEST_STORAGE", "").strip().lower() == "postgres" else "files"
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))          # web/backend
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))          # repo root: leocad_render
@@ -52,8 +55,38 @@ def data_dir() -> Path:
     return _tmp / "data"
 
 
+# LDRAW_NOVA_TEST_STORAGE=postgres runs the whole suite on the PostgreSQL store (pg_store.py): every test then gets an
+# empty database and `get_store()` / the `store` fixture are PgChatStore. Tests that read the JSON files themselves are
+# marked `files_only` and skip. Needs LDRAW_NOVA_TEST_DATABASE_URL.
+PG_STORE = os.environ.get("LDRAW_NOVA_TEST_STORAGE", "").strip().lower() == "postgres"
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "files_only: reads or writes the JSON files directly; skipped with LDRAW_NOVA_TEST_STORAGE=postgres")
+
+
+@pytest.fixture(autouse=True)
+def storage_backend(request):
+    """With LDRAW_NOVA_TEST_STORAGE=postgres: an empty test database and the Pg store as the app's store."""
+    if not PG_STORE:
+        yield
+        return
+    if request.node.get_closest_marker("files_only"):
+        pytest.skip("reads the JSON files directly")
+    import storage
+    import store as store_module
+    request.getfixturevalue("database")
+    storage._decision = True
+    store_module.reset_store()
+    yield
+    storage._decision = None
+    store_module.reset_store()
+
+
 @pytest.fixture
 def store() -> ChatStore:
+    if PG_STORE:
+        return get_store()
     return ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
 
 

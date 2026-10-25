@@ -170,17 +170,10 @@ def chat_worker(chat_id: str, worker_id: str):
     store.get_chat(chat_id) or not_found("no such chat")
     if not re.fullmatch(r"[0-9a-f]{8}", worker_id):
         not_found("no such worker")
-    side = store.chat_dir(chat_id) / "workers" / f"{worker_id}.jsonl"
-    if not side.is_file():
+    found = store.worker_messages(chat_id, worker_id)
+    if found is None:
         not_found("no such worker")
-    messages = []
-    for line in side.read_text(encoding="utf-8").splitlines():
-        try:
-            message = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(message, dict):
-            messages.append({k: v for k, v in message.items() if k not in _STRIPPED})
+    messages = [{k: v for k, v in message.items() if k not in _STRIPPED} for message in found]
     root = store.work_dir(chat_id) / "workers" / worker_id
     files = [{"name": p.relative_to(root).as_posix(), "size": p.stat().st_size,
               "url": f"/api/chats/{chat_id}/artifacts/" + quote(f"workers/{worker_id}/{p.relative_to(root).as_posix()}")}

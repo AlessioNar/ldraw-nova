@@ -127,6 +127,7 @@ class BuildDraft(Base):
     base_revision: Mapped[int] = mapped_column(Integer, server_default="0")
     saved_revision: Mapped[int] = mapped_column(Integer, server_default="0")
     base_undo_depth: Mapped[int] = mapped_column(Integer, server_default="0")
+    extra: Mapped[Any] = mapped_column(JSONB, server_default=EMPTY_OBJECT)     # forked, drift, sources, ... (draft.json keys)
     updated_at: Mapped[dt.datetime] = mapped_column(server_default=NOW)
 
 
@@ -138,7 +139,7 @@ class Proposal(Base):
     )
     id: Mapped[str] = mapped_column(Text, primary_key=True)
     build_id: Mapped[str] = mapped_column(ForeignKey("build.id", ondelete="CASCADE"))
-    chat_id: Mapped[Optional[str]] = mapped_column(ForeignKey("chat.id", ondelete="SET NULL"))
+    chat_id: Mapped[Optional[str]] = mapped_column(Text)          # no foreign key: like the JSON file, it outlives its chat
     summary: Mapped[Any] = mapped_column(JSONB, server_default=EMPTY_OBJECT)
     cost_eur: Mapped[decimal.Decimal] = mapped_column(Numeric(10, 4), server_default=text("0"))
     warnings: Mapped[Optional[Any]] = mapped_column(JSONB)

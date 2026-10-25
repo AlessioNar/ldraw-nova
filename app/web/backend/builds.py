@@ -93,6 +93,9 @@ def valid(store: ChatStore, slug: str) -> bool:
 
 
 def read(store: ChatStore, slug: str) -> Optional[dict]:
+    if store.pg:
+        import pg_builds
+        return pg_builds.read_build(slug) if valid(store, slug) else None
     try:
         return json.loads((dir_of(store, slug) / "build.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -100,6 +103,10 @@ def read(store: ChatStore, slug: str) -> Optional[dict]:
 
 
 def write(store: ChatStore, slug: str, record: dict) -> None:
+    if store.pg:
+        import pg_builds
+        pg_builds.write_build(slug, record)
+        return
     folder = dir_of(store, slug)
     folder.mkdir(parents=True, exist_ok=True)
     tmp = folder / "build.json.tmp"
@@ -148,7 +155,7 @@ def ensure(store: ChatStore, slug: str) -> dict:
 def unique_slug(store: ChatStore, title: str) -> str:
     base = slugify(title)
     slug, n = base, 1
-    while dir_of(store, slug).exists() or versions(slug):
+    while dir_of(store, slug).exists() or versions(slug) or read(store, slug) is not None:
         n += 1
         slug = f"{base[:55]}-{n}"
     return slug
@@ -226,9 +233,26 @@ def chats_for_slug(store: ChatStore, slug: str) -> list[dict]:
     return Index(store).chats_of(slug)
 
 
+def forget(store: ChatStore, slug: str) -> None:
+    """A deleted build leaves the database (its folder and files are removed by the caller)."""
+    if store.pg:
+        import pg_builds
+        pg_builds.forget_build(slug)
+
+
+def reconcile(store: ChatStore) -> int:
+    """PostgreSQL only: give every model file of a recorded build a model_record row. Returns the rows added."""
+    if not store.pg:
+        return 0
+    import pg_builds
+    return pg_builds.reconcile(store, group_versions())
+
+
 def all_slugs(store: ChatStore) -> list[str]:
     slugs = set()
-    if store.builds_dir.is_dir():
+    if store.pg:
+        slugs = {s for s in store.build_ids() if valid(store, s)}
+    elif store.builds_dir.is_dir():
         for p in store.builds_dir.iterdir():
             if p.is_dir() and valid(store, p.name) and (p / "build.json").is_file():
                 slugs.add(p.name)

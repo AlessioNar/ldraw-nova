@@ -32,6 +32,8 @@ BUILD_PREFIX = "b-"      # a build's workspace key; chat ids start with a date, 
 
 
 class ChatStore:
+    pg = False          # True in PgChatStore (pg_store.py): chats, messages, models, drafts and proposals live in PostgreSQL
+
     def __init__(self, chats_dir: Path, output_dir: Path):
         self.chats_dir = chats_dir
         self.output_dir = output_dir
@@ -167,6 +169,37 @@ class ChatStore:
     def models(self, chat_id: str) -> list[dict]:
         return self._read(chat_id, "models.jsonl")
 
+    # --- delegated workers' transcripts ----------------------------------------
+
+    def worker_sink(self, chat_id: str, worker_id: str):
+        """Where a worker's steps go: a side file next to the chat (never part of its own history)."""
+        from agent_loop import FileSink          # lazy: agent_loop imports a lot
+        return FileSink(self.chat_dir(chat_id) / "workers" / f"{worker_id}.jsonl")
+
+    def worker_messages(self, chat_id: str, worker_id: str) -> Optional[list[dict]]:
+        """A worker's transcript, None when the chat has no such worker."""
+        side = self.chat_dir(chat_id) / "workers" / f"{worker_id}.jsonl"
+        if not side.is_file():
+            return None
+        found = []
+        for line in side.read_text(encoding="utf-8").splitlines():
+            try:
+                message = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(message, dict):
+                found.append(message)
+        return found
+
+    def build_ids(self) -> list[str]:
+        """Slugs of the builds that have a record of their own (a build.json), not the ones derived from files."""
+        found = []
+        if self.builds_dir.is_dir():
+            for p in self.builds_dir.iterdir():
+                if p.is_dir() and not p.name.startswith(".") and self.valid_id(self.build_key(p.name)) and (p / "build.json").is_file():
+                    found.append(p.name)
+        return sorted(found)
+
     # --- jsonl helpers -----------------------------------------------------
 
     def _append(self, chat_id: str, name: str, record: dict) -> None:
@@ -190,7 +223,19 @@ _store: Optional[ChatStore] = None
 
 
 def get_store() -> ChatStore:
+    """The store the app uses: PostgreSQL when storage.use_database() says so, the files otherwise."""
     global _store
     if _store is None:
-        _store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
+        import storage
+        if storage.use_database():
+            from pg_store import PgChatStore
+            _store = PgChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
+        else:
+            _store = ChatStore(settings.CHATS_DIR, settings.OUTPUT_DIR)
     return _store
+
+
+def reset_store() -> None:
+    """Choose again on the next get_store() (after the database was migrated at start, and in tests)."""
+    global _store
+    _store = None
