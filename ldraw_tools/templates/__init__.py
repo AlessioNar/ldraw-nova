@@ -12,13 +12,16 @@ Prototype templates ship in ldraw_tools/data/templates/*.json; a person's own li
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from ..generators.base import digest_line
 from .core import Template, from_data, load  # noqa: F401
 
 BUNDLED = Path(__file__).resolve().parents[1] / 'data' / 'templates'
+USER_DIR_ENV = 'LDRAW_NOVA_TEMPLATES_DIR'        # the person's own templates (the backend's data directory); optional
 REGISTRY: dict = {}
+_user: dict = {}                                 # id -> file of the templates loaded from the user's folder
 
 
 def load_dir(directory):
@@ -31,6 +34,35 @@ def load_dir(directory):
         REGISTRY[template.id] = template
         added.append(template.id)
     return added
+
+
+def user_dir():
+    value = os.environ.get(USER_DIR_ENV)
+    return Path(value) if value else None
+
+
+def refresh():
+    """Re-read the person's templates folder: what was saved since the last call appears, what was deleted goes.
+    A long-lived worker calls this before it builds from a template. Returns the ids now loaded from the folder."""
+    directory = user_dir()
+    found = {}
+    if directory is not None and directory.is_dir():
+        for path in sorted(directory.glob('*.json')):
+            if path.name.endswith('.report.json'):
+                continue
+            try:
+                template = load(path)
+            except (OSError, ValueError, KeyError):
+                continue                         # a half-written or foreign file must not break the others
+            if template.id in REGISTRY and template.id not in _user:
+                continue                         # a bundled template keeps its id
+            REGISTRY[template.id] = template
+            found[template.id] = path
+    for gone in set(_user) - set(found):
+        REGISTRY.pop(gone, None)
+    _user.clear()
+    _user.update(found)
+    return list(found)
 
 
 def register(data_or_template):
@@ -85,3 +117,4 @@ def digest():
 
 if BUNDLED.is_dir():
     load_dir(BUNDLED)
+refresh()
