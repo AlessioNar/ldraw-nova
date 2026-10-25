@@ -27,7 +27,9 @@ def _validators():
     """
     schema = json.loads((DATA / "plan.schema.json").read_text())
     defs = schema["$defs"]
-    shell = {**schema, "$defs": {**defs, "placement": True}}
+    # `placement` stays addressable for the "#/$defs/placement/properties/matrix" ref: `True` cannot be descended into.
+    open_placement = {"properties": {"matrix": defs["placement"]["properties"]["matrix"]}}
+    shell = {**schema, "$defs": {**defs, "placement": open_placement}}
     entry = {"$schema": schema["$schema"], "$ref": "#/$defs/placement", "$defs": defs}
     make = jsonschema.Draft202012Validator
     return make(schema), make(shell), make(entry), defs["section"]["properties"]["steps"]["items"]["maxItems"]

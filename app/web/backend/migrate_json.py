@@ -20,7 +20,8 @@ Properties (docs/plans/postgres/PROPOSAL.md section 5):
 * A successful commit + verify sets app_setting['json_import'] = {done, at, counts}; the app then reads the database only
   (storage.py). Every run is recorded in import_run.
 
-Not imported here: the parts collection (inventories/), which has its own storage module.
+Not imported here: the parts collection (inventories/): `python -m migrate_json --collection ...` runs its importer
+(migrate_collection.py, same modes).
 """
 from __future__ import annotations
 
@@ -794,6 +795,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--force", action="store_true", help="with --export: overwrite files that exist")
     parser.add_argument("--data-dir", help="the data folder to read (default LDRAW_NOVA_DATA_DIR or /data)")
     parser.add_argument("--json", action="store_true", help="print the report as JSON")
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if "--collection" in argv:                     # the parts collection has its own importer (migrate_collection.py)
+        argv.remove("--collection")
+        import migrate_collection
+        return migrate_collection.main(argv)
     args = parser.parse_args(argv)
     if args.data_dir:
         os.environ["LDRAW_NOVA_DATA_DIR"] = args.data_dir
