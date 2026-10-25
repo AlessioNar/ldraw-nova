@@ -11,7 +11,7 @@ OBD = Namespace('https://alessionar.github.io/open-brick-designer/ns/obd#')
 BUILD = Namespace('https://alessionar.github.io/open-brick-designer/ns/build/')
 ROLE = Namespace('https://alessionar.github.io/open-brick-designer/ns/role/')
 DCT = Namespace('http://purl.org/dc/terms/')
-PROFILE_CLASS = {'road': OBD.RoadVehicle, 'motorcycle': OBD.Motorcycle, 'watercraft': OBD.Watercraft, 'aircraft': OBD.Aircraft}
+PROFILE_CLASS = {'road': OBD.RoadVehicle, 'rail': OBD.RailVehicle, 'motorcycle': OBD.Motorcycle, 'watercraft': OBD.Watercraft, 'aircraft': OBD.Aircraft}
 
 
 @pytest.fixture(scope='module')
@@ -45,11 +45,27 @@ def test_every_archetype_is_a_spaceship(g):
         assert str(g.value(node, RDFS.comment)) == a['silhouette']
 
 
+def test_the_train_and_ship_generators_are_vehicles_with_their_defaults(g):
+    from ldraw_tools import generators
+    train, ship = generators.get('toy-train'), generators.get('cargo-ship')
+    for gen, profile in ((train, 'rail'), (ship, 'watercraft')):
+        node = BUILD[gen.id]
+        assert (node, RDF.type, PROFILE_CLASS[profile]) in g, gen.id
+        assert str(g.value(node, DCT.title)) == gen.title
+        assert str(g.value(node, RDFS.comment)) == gen.description
+    wagons = train.defaults()['wagons']
+    assert g.value(BUILD['toy-train'], OBD.trainWagons).toPython() == wagons
+    from ldraw_tools.generators.transport import LOCO_LENGTH, WAGON_LENGTH
+    assert g.value(BUILD['toy-train'], OBD.vehicleLength).toPython() == LOCO_LENGTH + WAGON_LENGTH * wagons
+    assert g.value(BUILD['cargo-ship'], OBD.vehicleLength).toPython() == ship.defaults()['length']
+    assert g.value(BUILD['cargo-ship'], OBD.shipBays).toPython() == ship.defaults()['bays']
+
+
 def test_no_extra_builds(g):
     from ldraw_tools.spaceships import ARCHETYPES
     from ldraw_tools.vehicles import DESIGNS
     ours = {str(s)[len(BUILD):] for s in g.subjects(RDF.type, None) if str(s).startswith(str(BUILD))}
-    assert ours == set(DESIGNS) | set(ARCHETYPES)
+    assert ours == set(DESIGNS) | set(ARCHETYPES) | {'toy-train', 'cargo-ship'}
 
 
 def test_wheel_packs_are_the_generators(g):

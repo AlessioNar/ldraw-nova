@@ -555,7 +555,7 @@
    "expected": {
     "intent": "new_model",
     "subject": {
-     "family": "other",
+     "family": "train",
      "kind": "train"
     }
    }

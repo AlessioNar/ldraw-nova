@@ -10,6 +10,26 @@
   },
   "sha1": "2e47f17ddbc091dabe6faedc99fb57b045a5ac85"
  },
+ "cargo-ship#0": {
+  "params": {},
+  "sha1": "ba9768c8dcad61962e11c5680abc9ab6aed6a47c"
+ },
+ "cargo-ship#1": {
+  "params": {
+   "bays": 7,
+   "length": 16
+  },
+  "sha1": "6d8cd6e95777f528c74e59952d4e8b32fa5f9c22"
+ },
+ "cargo-ship#2": {
+  "params": {
+   "bays": 6,
+   "cargo_colour": "red",
+   "hull_colour": "black",
+   "length": 36
+  },
+  "sha1": "0a619ab9e94963f6081d16f371b5947e4bcd34fc"
+ },
  "courier-jet#0": {
   "params": {},
   "sha1": "479e2d316530f58c090e1087b9a09e5d9b688f85"
@@ -96,5 +116,23 @@
  "touring-motorcycle#0": {
   "params": {},
   "sha1": "d02a45890767b9b83541e7f1cf712ecea81d2acb"
+ },
+ "toy-train#0": {
+  "params": {},
+  "sha1": "6420aaf1fe1c8af1ff4811ac904a637450a7abac"
+ },
+ "toy-train#1": {
+  "params": {
+   "wagons": 0
+  },
+  "sha1": "a1968198107ae54f9ea52517f11e7a8515fcd4c3"
+ },
+ "toy-train#2": {
+  "params": {
+   "loco_colour": "green",
+   "wagon_colour": "yellow",
+   "wagons": 5
+  },
+  "sha1": "5ee66de4516f835aa873680a71f693e474fa108f"
  }
 }

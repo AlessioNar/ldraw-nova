@@ -25,7 +25,7 @@ INFO = {
     'pickup': (('truck', 'car'), ('pickup', 'pickup truck', 'ute', 'truck')),
     'tipper-truck': (('truck',), ('tipper', 'dump truck', 'lorry', 'truck', 'construction truck')),
     'touring-motorcycle': (('motorcycle',), ('motorcycle', 'motorbike', 'bike', 'scooter')),
-    'harbour-launch': (('boat',), ('boat', 'launch', 'motorboat', 'speedboat', 'ship')),
+    'harbour-launch': (('boat',), ('boat', 'launch', 'motorboat', 'speedboat')),
     'courier-jet': (('aircraft',), ('plane', 'jet', 'aeroplane', 'airplane', 'aircraft', 'airliner')),
 }
 # Verified by tests/test_generators.py (corners of the box build with no validation errors).

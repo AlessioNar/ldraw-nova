@@ -64,7 +64,7 @@ def test_look_alike_words_are_not_matched_by_substring(kind, family):
 def test_a_preset_keeps_its_own_storeys_and_the_fallback_is_labelled():
     house = new("house")
     assert house["params"]["storeys"] == {"count": 2} and house["params"]["roof"]["colour"] == "dark red"
-    ship = new("cargo ship", "boat")
+    ship = new("pirate ship", "boat")
     assert ship["route"] == "generator" and ship["closest"] and ship["notes"][0].startswith("closest design:")
     assert not new("jet", "aircraft").get("closest") and not new("house").get("closest")
 
