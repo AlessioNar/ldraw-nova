@@ -367,9 +367,26 @@ def _existing_match(name: str) -> str | None:
 
 
 async def preview_import(name: str, csv_text: str, include_spares: bool = False, family_colours: dict | None = None,
-                         filename: str = "") -> dict:
-    """Parses an upload and keeps the result for `commit_import`; nothing is stored yet."""
-    parsed = await inventories.parse_csv(name, csv_text, include_spares, family_colours)
+                         filename: str = "", import_format: str = "", mapping: dict | None = None) -> dict:
+    """Parses an upload and keeps the result for `commit_import`; nothing is stored yet.
+
+    `import_format` overrides the detected format. A CSV nobody recognises answers `{"needs_mapping": {...}}` (headers, sample
+    rows, a guess, and the mapping the owner confirmed for the same headers before, applied here without asking again);
+    send the file again with `mapping` to read it."""
+    remembered = False
+    try:
+        parsed = await inventories.parse_csv(name, csv_text, include_spares, family_colours, import_format=import_format, mapping=mapping)
+    except inventories.NeedsMapping as needed:
+        saved = store.read_import_mappings().get(needed.info.get("signature", ""))
+        parsed = None
+        if saved and not mapping:
+            try:
+                parsed = await inventories.parse_csv(name, csv_text, include_spares, family_colours, import_format="generic-csv", mapping=saved)
+                remembered = True
+            except InventoryError:
+                parsed = None                           # the saved columns no longer fit this file: ask again
+        if parsed is None:
+            return {"needs_mapping": {**needed.info, "saved": saved or None, "systems": list(inventories.COLOUR_SYSTEMS)}}
     fmt = parsed["report"].get("format", "")
     token = secrets.token_urlsafe(9)
     with _previews_lock:
@@ -380,7 +397,8 @@ async def preview_import(name: str, csv_text: str, include_spares: bool = False,
         while len(_previews) > MAX_PREVIEWS:
             _previews.popitem(last=False)
     return {"preview_id": token, "name": name.strip(), "format": fmt, "report": parsed["report"],
-            "totals": _import_totals(parsed["data"]), "same_name": _existing_match(name)}
+            "totals": _import_totals(parsed["data"]), "same_name": _existing_match(name),
+            **({"mapping": parsed["report"]["mapping"], "mapping_remembered": remembered} if parsed["report"].get("mapping") else {})}
 
 
 def _preview(token: str) -> dict:
@@ -469,6 +487,8 @@ def commit_import(token: str, name: str | None = None, replace: str | None = Non
             raise InventoryError(400, f"The name {final!r} is reserved; choose another one")
         _store_new(data, raw, final)
         result = {"inventory": inventories.summary(data), "report": report}
+    if report.get("mapping") and report.get("header_signature"):
+        store.write_import_mapping(report["header_signature"], report["mapping"])      # next file with these headers needs no questions
     with _previews_lock:
         _previews.pop(token, None)
     return result
@@ -482,7 +502,10 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False, fam
             raise InventoryError(400, f"The name {name!r} is reserved; choose another one")
         if inventories._name_taken(name):
             raise InventoryError(409, f"An inventory called {name!r} already exists")
-    parsed = await inventories.parse_csv(name, csv_text, include_spares, family_colours, replace=replace)
+    try:
+        parsed = await inventories.parse_csv(name, csv_text, include_spares, family_colours, replace=replace)
+    except inventories.NeedsMapping as needed:
+        raise InventoryError(400, str(needed)) from None         # the one-step API cannot ask which columns to use
     if replace:
         data, _, _ = replace_source(replace, parsed["data"], parsed["raw"], name=name)
     else:

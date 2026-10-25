@@ -638,7 +638,9 @@ def test_each_importer_previews_then_commits(client, cli):
 
 def test_bad_files_fail_at_preview_with_a_clear_message(client, cli):
     r = client.post("/api/collection/imports/preview", json={"name": "bad", "csv": "A,B\n1,2\n"})
-    assert r.status_code == 400 and "header" in r.json()["detail"].lower()
+    assert r.status_code == 200 and r.json()["needs_mapping"]["headers"] == ["A", "B"]       # not a failure: the owner picks the columns
+    r = client.post("/api/collection/imports/preview", json={"name": "bad", "csv": "<INVENTORY><ITEM></INVENTORY>"})
+    assert r.status_code == 400 and "xml" in r.json()["detail"].lower()
     assert client.post("/api/collection/imports/preview", json={"name": "bad", "csv": ""}).status_code == 400
     assert client.post("/api/collection/imports/nope/commit", json={}).status_code == 410
 

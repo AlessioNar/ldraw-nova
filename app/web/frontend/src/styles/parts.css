@@ -96,3 +96,8 @@
 .build-missing li { display: flex; align-items: center; min-width: 0; }
 .build-missing .swatch { flex: none; margin-top: 0; }
 .build-card .card-actions { flex-wrap: wrap; justify-content: flex-start; }
+
+.mapping-sample { overflow-x: auto; max-height: 160px; border: 1px solid var(--border); border-radius: 6px; }
+.mapping-sample table { border-collapse: collapse; font-size: 12px; width: 100%; }
+.mapping-sample th, .mapping-sample td { padding: 3px 8px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border); }
+.import-format select { max-width: 100%; }

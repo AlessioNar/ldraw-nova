@@ -34,6 +34,9 @@ MAX_CSV_BYTES = 25 * 1024 * 1024            # the toolkit parser's own limit
 MAX_NAME_CHARS = 80
 MAX_IDS = 20
 IMPORT_TIMEOUT = 180
+IMPORT_FORMATS = ("rebrickable-csv", "brickit-pileometer", "bricklink-xml", "brickstore-bsx", "bricklink-csv", "generic-csv")
+COLOUR_SYSTEMS = ("bricklink", "rebrickable", "ldraw", "name")
+MAPPING_ROLES = ("part", "colour", "qty", "system")
 MAX_REPORT_BYTES = 256 * 1024 * 1024
 PARTS_MODES = ("off", "prefer", "only")
 ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]{0,59}")
@@ -50,6 +53,14 @@ class InventoryError(Exception):
     def __init__(self, status: int, message: str):
         super().__init__(message)
         self.status = status
+
+
+class NeedsMapping(InventoryError):
+    """A CSV no importer recognises: `info` holds its headers, a few rows and a guess at the columns."""
+
+    def __init__(self, message: str, info: dict):
+        super().__init__(422, message)
+        self.info = info
 
 
 # --- per-chat options --------------------------------------------------------
@@ -306,8 +317,24 @@ def remap_families(inventory_id: str) -> tuple[str, str]:
     return data.get("name", inventory_id), path.read_text(encoding="utf-8")
 
 
+def clean_mapping(mapping: dict | None) -> dict[str, str]:
+    """The owner's column choice for a generic CSV: part, colour, qty (header names) and system (how colours are written)."""
+    if not mapping:
+        return {}
+    if not isinstance(mapping, dict):
+        raise InventoryError(400, "mapping must be an object")
+    out = {}
+    for role, value in mapping.items():
+        if role not in MAPPING_ROLES or not isinstance(value, str) or not value or len(value) > 200 or "\0" in value:
+            raise InventoryError(400, f"mapping: {role!r} must be one of {', '.join(MAPPING_ROLES)} with a text value")
+        out[role] = value
+    if out.get("system", "name") not in COLOUR_SYSTEMS:
+        raise InventoryError(400, f"mapping: system must be one of {', '.join(COLOUR_SYSTEMS)}")
+    return out
+
+
 async def parse_csv(name: str, csv_text: str, include_spares: bool = False, family_colours: dict | None = None,
-                    replace: str = "") -> dict:
+                    replace: str = "", import_format: str = "", mapping: dict | None = None) -> dict:
     """Parses an upload with the toolkit CLI (`inventory import --dry-run`) and stores nothing.
 
     Returns {"id", "data": the inventory dict, "report": {...what the UI shows...}, "raw": the CSV bytes}. Storing, the
@@ -316,6 +343,9 @@ async def parse_csv(name: str, csv_text: str, include_spares: bool = False, fami
     """
     name = clean_name(name)
     family_colours = clean_family_colours(family_colours)
+    mapping = clean_mapping(mapping)
+    if import_format and import_format not in IMPORT_FORMATS:
+        raise InventoryError(400, f"Unknown import format {import_format!r}")
     if not isinstance(csv_text, str):
         raise InventoryError(400, "csv must be text")
     raw = csv_text.encode("utf-8")
@@ -335,6 +365,8 @@ async def parse_csv(name: str, csv_text: str, include_spares: bool = False, fami
         argv = ["bash", "-c", 'exec "$@" > report.json', "import", str(settings.TOOLKIT_PYTHON), "-m", "ldraw_tools.cli",
                 "inventory", "import", "upload.csv", f"--name={replace or name}", "--dry-run", "--json",
                 *(["--include-spares"] if include_spares else []),
+                *([f"--format={import_format}"] if import_format else []),
+                *(f"--map={role}={value}" for role, value in mapping.items()),
                 *(f"--family-colour={family}={code}" for family, code in family_colours.items())]
         result = await sandbox.run(argv, work, timeout=IMPORT_TIMEOUT, env_extra=toolkit.environment())
         if result.timed_out:
@@ -348,6 +380,8 @@ async def parse_csv(name: str, csv_text: str, include_spares: bool = False, fami
             log.error("inventory import failed (exit %s): %s %s", result.exit_code, exc, result.stderr[-2000:])
             raise InventoryError(500, "The toolkit could not import the file") from None
         if result.exit_code != 0 or "inventory" not in report:
+            if report.get("error_type") == "NeedsMapping" and isinstance(report.get("mapping_needed"), dict):
+                raise NeedsMapping(str(report.get("error", "Choose the columns")), report["mapping_needed"])
             if report.get("error_type") == "ParseError":
                 raise InventoryError(400, str(report.get("error", "Not a valid inventory CSV")))
             log.error("inventory import failed (exit %s): %s %s", result.exit_code, report.get("error"), result.stderr[-2000:])
@@ -368,6 +402,7 @@ async def parse_csv(name: str, csv_text: str, include_spares: bool = False, fami
             "unmapped_parts": data.get("unmapped_parts", []), "unmapped_colours": data.get("unmapped_colours", []),
             "warnings": report.get("warnings", []),
             **({"pileometer": report["pileometer"]} if report.get("pileometer") else {}),
+            **({"mapping": report["mapping"], "header_signature": report.get("header_signature", "")} if report.get("mapping") else {}),
         }
         return {"id": inventory_id, "data": data, "report": out_report, "raw": raw}
     finally:

@@ -31,6 +31,14 @@ retained unchanged. [The study index](examples/technic-studies/README.md) and
 The underlying 42083/42110 LDraw models credit Philippe Hurbain [Philo] and retain
 their CCAL 2.0 notices. Documentation reuse does not replace model or part licences.
 
+## BrickLink colour table
+
+`ldraw_tools/data/bricklink-colours.json` (BrickLink colour id and name to LDraw colour code, used by the BrickLink and
+BrickStore importers and the BrickLink wanted-list export) pairs colours using the `legoCols` table of the R package
+[legocolors](https://cran.r-project.org/package=legocolors) 0.4.0 (MIT licence, Copyright (c) 2019 Matthew Leonawicz),
+completed by colour name from the Rebrickable mapping above. `tools/build_bricklink_colours.py` regenerates it. Colours
+with no certain LDraw equivalent are listed as unmapped in the file and are never guessed.
+
 ## Rebrickable data
 
 `ldraw_tools/data/set-catalog.bin` (set numbers, names, years, themes, piece counts and parts lists of about 20,000
