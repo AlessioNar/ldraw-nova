@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import collection_store
 import settings
 import sandbox
 import environment_config
@@ -83,6 +82,7 @@ def workspace(store, chat_id: str) -> Path:
 
 
 def environment() -> dict[str, str]:
+    import collection_store      # late: the store's file backend imports inventories, which imports this module
     source = root()
     env = environment_config.snapshot()
     return {
