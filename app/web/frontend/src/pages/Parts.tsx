@@ -3,20 +3,18 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-r
 import { collectionApi, inventoryApi, timeAgo, type Inventory } from "../api";
 import AddPartsMenu, { type AddWay } from "../components/parts/AddPartsMenu";
 import AddSetDialog from "../components/parts/AddSetDialog";
-import BuildablePanel from "../components/parts/BuildablePanel";
 import ExportDialog from "../components/parts/ExportDialog";
 import CollectionView from "../components/parts/CollectionView";
 import InventoryDetailView from "../components/parts/InventoryDetailView";
 import QuickAddDialog from "../components/parts/QuickAddDialog";
-import ReservedView from "../components/parts/ReservedView";
 import ReviewQueue from "../components/parts/ReviewQueue";
 import SourceHistory from "../components/parts/SourceHistory";
 import SourcesView from "../components/parts/SourcesView";
 import UploadDialog from "../components/parts/UploadDialog";
 import type { OnChanged } from "../components/parts/changes";
 
-type View = "collection" | "sources" | "review" | "reserved" | "build";
-const VIEWS: View[] = ["collection", "sources", "review", "reserved", "build"];
+type View = "collection" | "sources" | "review";
+const VIEWS: View[] = ["collection", "sources", "review"];
 type Dialog = null | { kind: AddWay; replace?: string } | { kind: "export"; scope: string; name: string };
 type Notice = { text: string; source?: string } | null;
 
@@ -25,8 +23,8 @@ export default function Parts() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [search, setSearch] = useSearchParams();
-  const asked = search.get("view") as View | null;
-  const view: View = asked && VIEWS.includes(asked) ? asked : "collection";
+  const asked = search.get("view");
+  const view: View = VIEWS.includes(asked as View) ? asked as View : "collection";
   const sourceFilter = search.get("source") ?? "";
   const [sources, setSources] = useState<Inventory[] | null>(null);
   const [error, setError] = useState("");
@@ -85,7 +83,7 @@ export default function Parts() {
     <button type="button" className="icon-button" aria-label="Dismiss" onClick={() => setNotice(null)}>✕</button>
   </div>;
 
-  if (search.get("view") === "sets") return <Navigate to="/sets" replace />;
+  if (asked === "sets" || asked === "reserved" || asked === "build") return <Navigate to={asked === "sets" ? "/sets" : `/sets?view=${asked}`} replace />;
   if (id) {
     return <div className="page parts-page">
       <p className="small"><Link to="/parts?view=sources">← Sources</Link></p>
@@ -126,16 +124,12 @@ export default function Parts() {
         <button type="button" aria-pressed={view === "collection"} onClick={() => go("collection")}>Collection</button>
         <button type="button" aria-pressed={view === "sources"} onClick={() => go("sources")}>Sources ({real.length})</button>
         <button type="button" aria-pressed={view === "review"} onClick={() => go("review")}>Review{reviewPieces > 0 ? ` (${reviewPieces.toLocaleString()})` : ""}</button>
-        <button type="button" aria-pressed={view === "reserved"} onClick={() => go("reserved")}>Reserved</button>
-        <button type="button" aria-pressed={view === "build"} onClick={() => go("build")}>What can I build?</button>
       </div>
       {view === "collection" && <CollectionView version={version} source={sourceFilter} onSource={s => setSearch(s ? { source: s } : {})}
         onChanged={changed} onReview={() => go("review")} onAdd={() => setDialog({ kind: "quick" })} />}
       {view === "sources" && <SourcesView sources={sources} version={version} onChanged={changed} onRemoved={() => setVersion(v => v + 1)}
         onShow={s => go("collection", { source: s })} onReplace={s => setDialog({ kind: "import", replace: s })} />}
       {view === "review" && <ReviewQueue version={version} onChanged={changed} />}
-      {view === "reserved" && <ReservedView version={version} onChanged={changed} />}
-      {view === "build" && (real.length ? <BuildablePanel inventories={real} /> : <p className="muted">Add some parts first, then see which set models you can build.</p>)}
     </>}
     {dialogs}{toast}
   </div>;
