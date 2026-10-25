@@ -32,6 +32,7 @@ const EXAMPLES = ["Build a small house", "Make the roof blue", "Add two more win
 const summaryOf = (f: NonNullable<Message["_fast_path"]>) => f.history ? "Went back one step"
   : f.route === "generator" ? `Built ${f.title ?? f.generator} from the generator`
   : (f.changes ?? []).map((c) => `${c.label}: ${show(c.from)} → ${show(c.to)}`).join("; ") || "No visible change";
+const TWEAKS = ["Make it bigger", "Make it smaller", "Change the main colour"];   // offered after a build: free, rules-path edits
 const DEFAULT_OPTIONS = { mode: "agent", permissions: "ask" } as TurnOptions;
 const seconds = (ms: number) => (ms < 950 ? `${Math.max(ms / 1000, 0.1).toFixed(1)} s` : `${Math.round(ms / 1000)} s`);
 const show = (v: unknown) => (typeof v === "object" && v !== null ? JSON.stringify(v) : String(v));
@@ -145,12 +146,19 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     const live = m.id === lastId && !running && !acting;   // only the latest answer may still be undone
     if (f.route === "generator" || f.route === "edit") {
       const summary = summaryOf(f);
+      const rows = f.history || f.route === "generator" ? [] : f.changes ?? [];   // one row per edit when a message made several
       const canUndo = live && !ws.viewing && (ws.draft?.undo_depth ?? 0) > 0 && !ws.busy;
       return (
         <div className="ws-fp" data-route={f.route}>
-          <div className="ws-fp-line"><span>{summary}</span> <span className="ws-meta mono">free · {seconds(f.took_ms)}</span>
+          <div className="ws-fp-line"><span>{rows.length > 1 ? `${rows.length} changes` : summary}</span> <span className="ws-meta mono">free · {seconds(f.took_ms)}</span>
             {canUndo && <button className="ws-fp-undo" onClick={() => undoStep(summary)}>Undo</button>}</div>
+          {rows.length > 1 && <ul className="ws-fp-changes">{rows.map((c, i) => <li key={i}><b>{c.label}</b> <span className="muted">{show(c.from)}</span> → {show(c.to)}</li>)}</ul>}
           {!!f.notes?.length && <ul className="ws-fp-notes">{f.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
+          {live && f.route === "generator" && !f.history && (
+            <div className="ws-chips" role="group" aria-label="Try next">
+              {TWEAKS.map((t) => <button key={t} className="ws-chip-btn" onClick={() => reply(t)}>{t}</button>)}
+            </div>
+          )}
         </div>
       );
     }
