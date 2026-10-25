@@ -36,6 +36,9 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
   const disabled = ws.mode !== "edit" || !!ws.viewing;
   const colourName = colours.find((c) => c.code === ws.colour)?.name ?? `Colour ${ws.colour}`;
 
+  const shortage = !ws.viewing && ws.check && Array.isArray(ws.check.missing) ? ws.check.missing.filter((l) => l.need > l.have) : [];
+  const shortageName = (x: number | string) => (typeof x === "number" ? colours.find((k) => k.code === x)?.name ?? `colour ${x}` : x);
+
   const rows = useMemo(() => [...(owned.lines ?? [])].sort((x, y) => Number(y.used > 0) - Number(x.used > 0)), [owned.lines]);
 
   return (
@@ -43,6 +46,19 @@ export default function PartsPanel({ ws }: { ws: Workspace }) {
       <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Part number or name" aria-label="Search parts" />
       <div className="ws-row-label"><span className="label">Colour for new bricks</span><span className="mono small">{colourName}</span></div>
       <ColourPicker value={ws.colour} onPick={ws.setColour} label="Colour for new bricks" />
+
+      {shortage.length > 0 && (
+        <>
+          <div className="ws-row-label"><span className="label">Missing from your collection</span><span className="muted small">{shortage.reduce((n, l) => n + l.need - l.have, 0)} to find, live</span></div>
+          <ul className="ws-parts" aria-label="Shortage list">
+            {shortage.map((l) => (
+              <li key={`${l.part}-${l.colour}`} className="ws-none small">
+                <span className="mono">{l.need - l.have} ×</span> {l.part} <span className="muted">{shortageName(l.colour)} · you own {l.have} of {l.need}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <div className="ws-row-label"><span className="label">Your parts</span><span className="muted small">left after this draft, live</span></div>
       <ul className="ws-parts">
