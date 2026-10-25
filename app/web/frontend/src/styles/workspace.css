@@ -295,3 +295,7 @@
 .ws-chat .msg-badge[data-kind="free"] { color: var(--ok, #1b7f3b); border-color: currentColor; }
 .ws-chat .msg-badge[data-kind="ai"] { color: var(--accent, #6b46c1); border-color: currentColor; }
 .ws-chat .bubble .msg-badge { display: block; margin-bottom: 3px; }
+
+/* The one place for whatever waits on the person (clarify chips, "Ask the AI"). */
+.ws-tray { border: 1px solid var(--border-strong); background: var(--surface-2); border-radius: var(--radius); padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 6px; }
+.ws-tray .label { font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
