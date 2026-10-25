@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { inventoryApi, timeAgo, type Inventory } from "../api";
+import FirstRun from "../components/FirstRun";
 import Logo from "../components/Logo";
 import { useApp } from "../context";
 
@@ -30,6 +31,7 @@ export default function Home() {
           <Logo className="home-logo" />
           <h1>Open Brick Designer</h1>
         </div>
+        <FirstRun hasParts={lists === null ? null : lists.length > 0} hasBuilds={buildsLoaded ? builds.length > 0 : null} />
         <nav className="tiles" aria-label="Home">
           {tiles.map((t) => (
             <Link key={t.to} to={t.to} className={`tile${t.primary ? " primary-tile" : ""}`}>
