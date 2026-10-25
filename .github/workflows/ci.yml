@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [master]
+  workflow_dispatch:      # Actions tab > CI > Run workflow: runs the image job on any branch
 
 # A newer push to the same PR/branch makes the older run pointless, and the
 # image job is expensive.
@@ -70,12 +71,15 @@ jobs:
       - run: python tools/export_ontology.py --check
       - run: python tools/validate_shapes.py --presets
       # Cookbook queries run against docs/ns/; --noconftest because tests/conftest.py needs the LDraw library.
-      - run: pytest -q --noconftest tests/test_ontology_export.py tests/test_role_ontology.py tests/test_component_ontology.py tests/test_shapes.py
+      - run: pytest -q --noconftest tests/test_ontology_export.py tests/test_role_ontology.py tests/test_component_ontology.py tests/test_shapes.py tests/test_sets_ontology.py
 
   # The only place the Dockerfile is built end to end and the tests that need
   # LeoCAD / the LDraw library can run. Real network access is required: the
   # image downloads LeoCAD, the LDraw library, bun, mpd2glb, uv, jev-rerank...
   image:
+    # Not on pull requests: the build pulls many base images and download stages, and runs into Docker Hub
+    # rate limits. It runs on pushes to master and on manual dispatch.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:

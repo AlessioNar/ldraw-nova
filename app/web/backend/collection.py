@@ -25,6 +25,7 @@ from typing import Any
 import collection_store as store
 import inventories
 import part_info
+import set_images
 from inventories import InventoryError, LOOSE_ID
 
 LOOSE_NAME = "Loose parts"
@@ -559,9 +560,11 @@ def add_set(set_num: str, copies: int = 1, state: str = "parts", brand: str = DE
     info = catalog.get(str(set_num))
     if info is None:
         raise InventoryError(404, f"No set {str(set_num)[:30]!r} in the catalogue")
+    if brand == DEFAULT_BRAND:
+        brand = info["brand"]                                    # a set from another brand's local catalogue brings its own
     lines = catalog.lines(info["set_num"])
     dropped = info["dropped_part"] + info["dropped_colour"]
-    title = f"{info['set_num']} {info['name']}"[:inventories.MAX_NAME_CHARS]
+    title = f"{info['number']} {info['name']}"[:inventories.MAX_NAME_CHARS]
     with store.lock:
         n = 1
         base_id = inventories.slugify(f"set-{info['set_num']}")
@@ -577,8 +580,32 @@ def add_set(set_num: str, copies: int = 1, state: str = "parts", brand: str = DE
                 "unmapped_parts": [], "unmapped_colours": [],
                 "warnings": [f"{dropped * copies} piece(s) of this set have no LDraw equivalent and are not listed"] if dropped else []}
         _save(data)
-        _append_log(sid, _stamp([{"op": "create", "what": "set"}], 1, f"Added set {info['set_num']}"))
+        _append_log(sid, _stamp([{"op": "create", "what": "set"}], 1, f"Added set {info['number']}"))
     return {"inventory": inventories.summary(data), "set": set_record(data)}
+
+
+def owned_set_nums() -> set[str]:
+    """The catalogue numbers of the sets the owner has, as a cheap lookup (no piece counts)."""
+    found = set()
+    for sid in store.source_ids():
+        try:
+            record = set_record(store.load(sid))
+        except InventoryError:
+            continue
+        if record is not None:
+            found.add(str(record["set_num"]))
+    return found
+
+
+def set_source(source_id: str) -> dict:
+    """The set record of one source, 404 when the source is missing or is not a set."""
+    try:
+        record = set_record(store.load(source_id))
+    except InventoryError:
+        record = None
+    if record is None:
+        raise InventoryError(404, "No such set")
+    return record
 
 
 def owned_sets() -> list[dict]:
@@ -605,7 +632,7 @@ def owned_sets() -> list[dict]:
             for r in rows:
                 key = (reservations.part_key(r["part"]), int(r["colour"]))
                 missing += min(int(r["qty"]), max(0, reserved.get(key, 0) - owned.get(key, 0)))
-        found.append({**record, "id": sid, "source_name": data.get("name", sid), "pieces": pieces,
+        found.append({**record, "image": record["image"] or set_images.image_url(record["set_num"]), "id": sid, "source_name": data.get("name", sid), "pieces": pieces,
                       "distinct_parts": len({r["part"] for r in rows}), "reserved": pieces if built else 0,
                       "missing": missing, "on_hand": pieces - missing})
     return found
