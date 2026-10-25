@@ -53,7 +53,7 @@ export default function SetsView({ version, onChanged, onAdd, onAddManual }:
   return <section aria-label="My sets">
     {images && <label className="check set-fetch">
       <input type="checkbox" checked={images.remote_fetch} disabled={busy === "fetch"} onChange={e => void toggleFetch(e.target.checked)} />
-      <span>Fetch set pictures from {images.source}<small className="muted"> · once per owned set, kept on this machine, never shared. Off by default; your own photos always work.</small></span>
+      <span>Fetch set pictures from {images.source}<small className="muted"> · once per owned set, kept on this machine, never shared. Untick to stay offline; your own photos always work.</small></span>
     </label>}
     {error && <div className="banner error" role="alert">{error}</div>}
     {!sets && !error && <p className="muted"><span className="spinner" aria-hidden /> Loading…</p>}
