@@ -788,6 +788,7 @@ JPG = b"\xff\xd8\xff\xe0" + b"fake"
 @pytest.fixture
 def pictures(tmp_path, monkeypatch):
     monkeypatch.delenv("LDRAW_NOVA_SET_IMAGE_FETCH", raising=False)
+    monkeypatch.setattr(settings, "TOOLKIT_DIR", tmp_path / "no-toolkit")      # the image ships real set models: no render fallback
     set_images._failed.clear()
     downloads = []
 
