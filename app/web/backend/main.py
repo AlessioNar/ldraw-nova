@@ -43,7 +43,10 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 async def _prune_request_log_daily() -> None:
     while True:
         await asyncio.sleep(24 * 3600)
-        await asyncio.to_thread(request_log.prune)
+        try:
+            await asyncio.to_thread(request_log.prune)
+        except Exception as exc:  # noqa: BLE001 - a failed prune is retried tomorrow, it must not end the daily job
+            logging.getLogger("request_log").warning("the daily prune failed: %s: %s", exc.__class__.__name__, str(exc)[:300])
 
 
 async def _import_json_on_first_start() -> None:

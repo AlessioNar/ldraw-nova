@@ -173,6 +173,62 @@ def test_request_log_prunes_rows_older_than_180_days(database):
     assert request_log.prune() == 0
 
 
+def test_request_log_prune_takes_a_custom_window_and_leaves_everything_else(database):
+    now = dt.datetime.now(dt.timezone.utc)
+    with database.session_scope() as session:
+        event = UsageEvent(ts=now - dt.timedelta(days=900), kind="understand", model="m", cost_usd=Decimal("0.01"))
+        session.add(event)
+        session.flush()
+        session.add_all([RequestLog(ts=now - dt.timedelta(days=d), route=f"r{d}", sentence="a red car", usage_event_id=event.id)
+                         for d in (400, 40, 10)])
+    request_log.set_keep_text(True)
+    assert request_log.prune(days=30) == 2
+    with database.session_scope() as session:
+        assert session.scalars(select(RequestLog.route)).all() == ["r10"]
+        assert session.scalar(select(RequestLog.usage_event_id)) is not None      # the cost row it points at is still there
+        assert session.scalar(select(UsageEvent.cost_usd)) == Decimal("0.010000")      # cost history is kept forever
+    assert request_log.get_keep_text() is True                                      # settings are not telemetry
+
+
+def test_request_log_prune_copes_with_a_heavy_owner(database):
+    """Assumed volume: about 300 requests a day for 180 days (54,000 rows); here 60,000 rows spread over 240 days."""
+    with database.session_scope() as session:
+        session.execute(text("INSERT INTO request_log (ts, route) SELECT now() - (g % 240) * interval '1 day' - interval '1 hour', 'r' "
+                             "FROM generate_series(1, 60000) g"))
+        session.execute(text("ANALYZE request_log"))
+    expected = 60000 * 60 // 240      # ages 180d+1h .. 239d+1h of 0..239 days
+    with database.session_scope() as session:
+        assert session.scalar(text("SELECT count(*) FROM request_log WHERE ts < now() - interval '180 days'")) == expected
+    assert request_log.prune() == expected
+    with database.session_scope() as session:
+        assert session.scalar(text("SELECT count(*) FROM request_log")) == 60000 - expected
+    assert request_log.prune() == 0
+
+
+def test_the_daily_job_prunes_after_each_day_and_survives_a_failing_prune(monkeypatch):
+    import main
+    calls = []
+
+    def prune():
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("database went away")
+        return 0
+
+    sleeps = []
+
+    async def sleep(seconds):
+        sleeps.append(seconds)
+        if len(sleeps) > 2:
+            raise asyncio.CancelledError
+
+    monkeypatch.setattr(main.request_log, "prune", prune)
+    monkeypatch.setattr(main.asyncio, "sleep", sleep)
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(main._prune_request_log_daily())
+    assert sleeps[:2] == [24 * 3600, 24 * 3600] and len(calls) == 2
+
+
 def test_a_failing_database_never_breaks_the_caller(database, monkeypatch):
     database.configure("postgresql+psycopg://nobody:x@127.0.0.1:1/none")       # nothing listens there
     assert request_log.record("describe", "hello", route="clarify", decided_by="rules") is None
