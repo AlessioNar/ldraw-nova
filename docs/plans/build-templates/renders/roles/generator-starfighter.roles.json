@@ -1,0 +1,12 @@
+{
+ "domain": "aircraft",
+ "counts": {
+  "wing": 21,
+  "engine": 4,
+  "body": 10,
+  "glass": 2
+ },
+ "low_confidence": 0,
+ "seconds": 0.1,
+ "warnings": 0
+}

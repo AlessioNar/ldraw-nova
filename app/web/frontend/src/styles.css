@@ -7,6 +7,8 @@
 @import "./styles/responsive.css";
 @import "./styles/providers.css";
 @import "./styles/parts.css";
+@import "./styles/collection.css";
+@import "./styles/costs.css";
 @import "./styles/chat-stage.css";
 @import "./styles/build.css";
 @import "./styles/workspace.css";

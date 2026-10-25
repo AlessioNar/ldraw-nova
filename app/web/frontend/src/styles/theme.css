@@ -23,7 +23,7 @@
   --radius-sm: 4px; --radius: 7px; --radius-lg: 11px; --radius-pill: 99px;
   --ease: cubic-bezier(.2, .7, .2, 1);
   --t-fast: 100ms; --t: 160ms;
-  --sidebar-w: 272px; --rail-w: 52px;
+
   --grid-minor: 24px; --grid-major: 120px;
   /* Toy box brick colours: fills and markers only, never text */
   --brick-red: #d63a2f; --brick-yellow: #ffc933; --brick-blue: #2f74e0; --brick-green: #23a05a;

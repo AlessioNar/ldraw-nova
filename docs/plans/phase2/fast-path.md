@@ -56,6 +56,12 @@ that do not map are listed in `notes`; a message with nothing mappable becomes `
 `"history": "undo" | "revert"` (the build page applies its version history). "Make it a truck instead" returns a `generator` route for the
 new design with the colours carried over.
 
+On a `building` (grammar) build, a message the rules do not answer is first read by the grammar's own text addressing
+(`nl.apply_text`: "three storeys", "arched windows", "a hip roof"), with no model call. Only when it reads the WHOLE message
+(no clause missed, not a question) the answer is an `edit` with `understood_by: "grammar"` and changes named by their
+configuration path (`storeys.count`); otherwise the message goes on to the understanding step as before. House-dialect
+values the patch would be overridden by are dropped from the params.
+
 ### route "needs_ai": ask the person before the paid build
 
 ```json
@@ -101,3 +107,10 @@ characters. The real `/api/describe` may decide differently once the model has r
 - `needs_ai`: show `reason` and `estimate`, let the person confirm, then start the AI build with `spec`. No automatic fallback.
 - The generator registry is dumped once from the toolkit interpreter (about 2 s) and cached in `CONFIG_DIR/generators.json`; the first
   `/api/describe` after a toolkit update pays that. Until it is loaded the estimate endpoint falls back to a built-in family list.
+
+## Wave 2 additions (#42)
+
+- **More rules, no call.** With a current build the rules read ordered, multi-clause follow-ups ("make the roof red and the door white, then add a chimney", "2 studs longer", "two more windows", "bigger wheels", "remove the porch") in English, with Italian, Spanish and French keywords for the common words. All or nothing: one unreadable clause sends the whole message to the model.
+- **Steps.** "a red car and make it longer" builds the first part, then applies the edits on it. The `generator` answer carries the final `params` and `steps: [{step, route, text, ...}]` reporting each step.
+- **Preview.** An `edit` (or a `generator` from "make it a truck instead") that moves a size by more than 30 %, replaces the generator, or touches a draft with hand edits (`current.manual_edits: true`) carries `preview: {reasons, summary}`. The payload is still complete, so a client that ignores `preview` keeps applying it.
+- **Ask on doubt.** A model reading with confidence below 0.5, or with a flagged ambiguity, applies nothing and returns `clarify` with the ambiguity's options as `choices`.

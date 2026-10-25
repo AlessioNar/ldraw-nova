@@ -1,6 +1,2640 @@
 {
- "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat,ship | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent",
+ "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat,ship | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\ntree | garden,scene | tree,oak,oak tree,pine,pine tree,fir,bush,shrub,garden tree | trunk_courses:3-10 colours:foliage_colour,foliage_accent,trunk_colour,flower_colour,ground_colour\nbrick-house | house,building | brick house,red brick house,house on a baseplate | x_delta=0|1|2 courses_delta=0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\nflatbed-truck | truck | flatbed truck,flatbed,flat-bed truck | z_delta=0|1|2|3|4|6 swap_tile_1x2=keep|3069b|2412b include_part_trailer_p2? colours:colour_body,colour_chassis,colour_door,colour_glass,colour_roof,colour_trim,colour_tyre,colour_wheel | template\npassenger-car | train | passenger car,railway carriage,train carriage,coach,train | z_delta=0|1|4 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_padding_all? colours:colour_body,colour_chassis,colour_detail,colour_door,colour_glass,colour_roof,colour_wheel,colour_window | template\nsmall-house | house,building | house with garden,garden house | z_delta=0|2 courses_delta=-1|0|1 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_chair_p105? include_part_lamp_p144? include_part_plant_p27? include_part_bush_all? colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntractor-trailer | truck,tractor | tractor,tractor and trailer,farm tractor | z_delta=-2|0|1|2|3|4|6|8|10|12 swap_brick_1x2=keep|3004|2877|98283|3065 swap_tile_1x2=keep|3069b|2412b colours:colour_body,colour_chassis,colour_glass,colour_roof,colour_tyre,colour_wheel | template\nwillowbank-cottage | house,building | cottage,farmhouse,country cottage | z_delta=0|2 courses_delta=-1|0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 include_part_entry_porch? include_part_garden_field? include_part_bench_70_p0114? include_part_flower_box_5_p0115? include_part_ridge_chimney? include_part_fence_25_70_p0182? colours:colour_base,colour_detail,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template",
+ "colours": [
+  "azure",
+  "beige",
+  "black",
+  "blue",
+  "bright green",
+  "bright light blue",
+  "bright light orange",
+  "bright light yellow",
+  "bright pink",
+  "brown",
+  "burgundy",
+  "charcoal",
+  "chrome",
+  "clear",
+  "cream",
+  "dark azure",
+  "dark blue",
+  "dark bluish grey",
+  "dark brown",
+  "dark green",
+  "dark grey",
+  "dark orange",
+  "dark pink",
+  "dark red",
+  "dark tan",
+  "dark turquoise",
+  "flesh",
+  "gold",
+  "green",
+  "grey",
+  "lavender",
+  "light blue",
+  "light bluish grey",
+  "light brown",
+  "light green",
+  "light grey",
+  "light turquoise",
+  "light violet",
+  "light yellow",
+  "lilac",
+  "lime",
+  "magenta",
+  "maroon",
+  "medium azure",
+  "medium blue",
+  "medium green",
+  "medium lavender",
+  "medium lilac",
+  "navy",
+  "navy blue",
+  "nougat",
+  "olive",
+  "olive green",
+  "orange",
+  "pearl gold",
+  "pearl silver",
+  "pink",
+  "purple",
+  "red",
+  "reddish brown",
+  "rust",
+  "salmon",
+  "sand blue",
+  "sand green",
+  "sand red",
+  "silver",
+  "sky blue",
+  "smoke",
+  "tan",
+  "tinted",
+  "trans black",
+  "trans blue",
+  "trans clear",
+  "trans dark blue",
+  "trans green",
+  "trans light blue",
+  "trans orange",
+  "trans red",
+  "trans yellow",
+  "transparent",
+  "turquoise",
+  "white",
+  "yellow"
+ ],
+ "signature": "ad022967108c03c051020e68c743412c94953adc9e8c041bb2a1deb5e7f119be",
  "entries": [
+  {
+   "id": "building",
+   "title": "Building (grammar)",
+   "families": [
+    "house",
+    "building"
+   ],
+   "kinds": [
+    "apartment",
+    "bakery",
+    "bank",
+    "barn",
+    "bastion",
+    "beacon",
+    "bungalow",
+    "cabin",
+    "castle",
+    "chateau",
+    "citadel",
+    "city gate",
+    "cottage",
+    "cottage with garden",
+    "courtyard fort",
+    "courtyard house",
+    "depot",
+    "detailed house",
+    "dojo",
+    "drum tower",
+    "factory",
+    "flats",
+    "fort",
+    "fortress",
+    "garage",
+    "garden cottage",
+    "garden pavilion",
+    "gate tower",
+    "gazebo",
+    "hall",
+    "home",
+    "house",
+    "hutong",
+    "japanese pagoda",
+    "keep",
+    "keep tower",
+    "keystone townhouse",
+    "kiosk",
+    "library",
+    "lighthouse",
+    "manor",
+    "market",
+    "minka",
+    "modular apartments",
+    "modular bakery",
+    "modular bank",
+    "modular building",
+    "modular chinese",
+    "modular flats",
+    "modular shop",
+    "modular tea house",
+    "modular town hall",
+    "museum",
+    "office",
+    "pagoda",
+    "palace",
+    "pavilion",
+    "ryokan",
+    "shed",
+    "shop",
+    "shrine",
+    "siheyuan",
+    "silo",
+    "stable",
+    "store",
+    "stronghold",
+    "stupa",
+    "tahoto",
+    "tea room",
+    "temple",
+    "tenement",
+    "terrace",
+    "terraced",
+    "tower",
+    "town hall",
+    "townhall",
+    "townhouse",
+    "villa",
+    "warehouse",
+    "watchtower"
+   ],
+   "description": "One grammar for buildings: footprint (rect, L, U, courtyard), storeys, wall style, openings, corner towers, roof (gable, hip, flat, battlements, eave roofs), details. Also accepts the house generator's flat parameters. Presets: house, cottage, shop, townhouse, cottage-garden, arched-townhouse, tower, castle-keep, pagoda, temple-hall, minka, gate-tower, tea-room, white-pagoda, siheyuan, barn, town-hall, apartment-block, courtyard-fort, lighthouse, warehouse, manor, modular-bakery, modular-town-hall, modular-flats, modular-tea-house.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "type": "string",
+      "default": "building",
+      "maxLength": 60,
+      "pattern": "^[A-Za-z0-9 _.-]*$",
+      "description": "Model name"
+     },
+     "footprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Footprint",
+      "description": "Plan shape of the ground floor",
+      "properties": {
+       "shape": {
+        "enum": [
+         "rect",
+         "L",
+         "U",
+         "courtyard"
+        ],
+        "default": "rect",
+        "description": "rect, L, U (two wings round a notch) or courtyard (ring round an open yard)"
+       },
+       "width": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 40,
+        "default": 12,
+        "description": "Studs along x (the front width)"
+       },
+       "depth": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 32,
+        "default": 8,
+        "description": "Studs along z"
+       },
+       "notch_width": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 20,
+        "default": 4,
+        "description": "L/U: width of the cut-out"
+       },
+       "notch_depth": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 16,
+        "default": 4,
+        "description": "L/U: depth of the cut-out"
+       },
+       "notch_corner": {
+        "enum": [
+         "back-right",
+         "back-left",
+         "front-right",
+         "front-left"
+        ],
+        "default": "back-right",
+        "description": "L: which corner is cut away"
+       },
+       "notch_side": {
+        "enum": [
+         "back",
+         "front"
+        ],
+        "default": "back",
+        "description": "U: which side the notch opens to"
+       },
+       "court_width": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 24,
+        "default": 4,
+        "description": "Courtyard: width of the open yard"
+       },
+       "court_depth": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 20,
+        "default": 4,
+        "description": "Courtyard: depth of the open yard"
+       }
+      },
+      "default": {
+       "shape": "rect",
+       "width": 12,
+       "depth": 8,
+       "notch_width": 4,
+       "notch_depth": 4,
+       "notch_corner": "back-right",
+       "notch_side": "back",
+       "court_width": 4,
+       "court_depth": 4
+      }
+     },
+     "storeys": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Storeys",
+      "description": "Storeys stacked on the footprint; each is wall courses plus a floor band",
+      "properties": {
+       "count": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 6,
+        "default": 2,
+        "description": "Number of storeys"
+       },
+       "courses": {
+        "type": "integer",
+        "minimum": 3,
+        "maximum": 14,
+        "default": 6,
+        "description": "Wall height of each storey in brick courses (a door needs 6)"
+       },
+       "top_courses": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 14,
+        "default": 0,
+        "description": "Courses of the top storey; 0 = same as the others"
+       },
+       "setback": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3,
+        "default": 0,
+        "description": "Studs each upper storey steps in on every side (rect footprints)"
+       },
+       "floors": {
+        "type": "boolean",
+        "default": true,
+        "description": "Fill the interior with floor plates (off = ring bands only)"
+       },
+       "band_projection": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0,
+        "description": "Studs the floor bands project as a cornice"
+       },
+       "eaves": {
+        "type": "boolean",
+        "default": false,
+        "description": "A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more"
+       },
+       "band_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Floor bands, floors and cornice"
+       },
+       "interior": {
+        "enum": [
+         "none",
+         "partition"
+        ],
+        "default": "none",
+        "description": "Rooms: a partition wall with a doorway on every storey (rectangular footprints)"
+       }
+      },
+      "default": {
+       "count": 2,
+       "courses": 6,
+       "top_courses": 0,
+       "setback": 0,
+       "floors": true,
+       "band_projection": 0,
+       "eaves": false,
+       "band_colour": "white",
+       "interior": "none"
+      }
+     },
+     "walls": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Walls",
+      "description": "Wall construction",
+      "properties": {
+       "style": {
+        "enum": [
+         "brick",
+         "timber",
+         "stone"
+        ],
+        "default": "brick",
+        "description": "brick; half-timber (posts and infill); stone (two-tone random bricks)"
+       },
+       "thickness": {
+        "enum": [
+         1,
+         2
+        ],
+        "default": 1,
+        "description": "Wall thickness in studs; 2 uses staggered rows"
+       },
+       "colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "tan",
+        "description": "Main wall colour"
+       },
+       "alt_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "light grey",
+        "description": "Second colour (stone mix, timber infill accent)"
+       },
+       "timber_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "reddish brown",
+        "description": "Timber posts and corner studs"
+       },
+       "plinth": {
+        "type": "boolean",
+        "default": false,
+        "description": "First course in a plinth colour"
+       },
+       "plinth_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "dark grey",
+        "description": "Plinth colour"
+       },
+       "accent_every": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 6,
+        "default": 0,
+        "description": "Every n-th course in the accent colour (0 = none)"
+       },
+       "accent_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "red",
+        "description": "Accent course colour"
+       }
+      },
+      "default": {
+       "style": "brick",
+       "thickness": 1,
+       "colour": "tan",
+       "alt_colour": "light grey",
+       "timber_colour": "reddish brown",
+       "plinth": false,
+       "plinth_colour": "dark grey",
+       "accent_every": 0,
+       "accent_colour": "red"
+      }
+     },
+     "openings": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Openings",
+      "description": "Doors and windows, sized from real parts",
+      "properties": {
+       "door": {
+        "enum": [
+         "none",
+         "plain",
+         "smooth",
+         "glazed",
+         "barred"
+        ],
+        "default": "plain",
+        "description": "Door leaf style (4 studs wide, 6 courses tall)"
+       },
+       "door_facade": {
+        "enum": [
+         "front",
+         "back",
+         "left",
+         "right"
+        ],
+        "default": "front",
+        "description": "Facade the door is on"
+       },
+       "door_position": {
+        "enum": [
+         "centre",
+         "left",
+         "right"
+        ],
+        "default": "centre",
+        "description": "Where the door sits along the facade"
+       },
+       "door_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "reddish brown",
+        "description": "Door leaf"
+       },
+       "frame_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Window and door frames"
+       },
+       "glass_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "clear",
+        "description": "Glass"
+       },
+       "ground_windows": {
+        "enum": [
+         "none",
+         "rect",
+         "small",
+         "tall",
+         "arch",
+         "slit",
+         "wide"
+        ],
+        "default": "tall",
+        "description": "Window kind on the ground floor (wide = two 4-stud windows side by side)"
+       },
+       "upper_windows": {
+        "enum": [
+         "none",
+         "rect",
+         "small",
+         "tall",
+         "arch",
+         "slit",
+         "wide"
+        ],
+        "default": "tall",
+        "description": "Window kind on upper floors"
+       },
+       "rhythm": {
+        "enum": [
+         "dense",
+         "regular",
+         "sparse"
+        ],
+        "default": "regular",
+        "description": "Spacing: minimum pier 1, 2 or 3 studs between openings"
+       },
+       "count": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 12,
+        "default": 0,
+        "description": "Windows per facade (0 = as many as fit)"
+       },
+       "sides": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+         "enum": [
+          "front",
+          "back",
+          "left",
+          "right"
+         ]
+        },
+        "default": [
+         "front",
+         "back",
+         "left",
+         "right"
+        ],
+        "description": "Facades that get windows"
+       },
+       "above_door": {
+        "type": "boolean",
+        "default": true,
+        "description": "A window above the door on upper floors"
+       },
+       "sills": {
+        "type": "boolean",
+        "default": false,
+        "description": "Projecting sill plate under every rect, small, tall and wide window that has a wall course below it"
+       },
+       "sill_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Window sills"
+       },
+       "shutters": {
+        "type": "boolean",
+        "default": false,
+        "description": "Coloured shutter bricks on both sides of every rect, small, tall and wide window"
+       },
+       "shutter_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "dark green",
+        "description": "Shutters"
+       },
+       "keystones": {
+        "type": "boolean",
+        "default": false,
+        "description": "Arch windows: a keystone brick in the course above the arch"
+       },
+       "keystone_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "light grey",
+        "description": "Keystone"
+       }
+      },
+      "default": {
+       "door": "plain",
+       "door_facade": "front",
+       "door_position": "centre",
+       "door_colour": "reddish brown",
+       "frame_colour": "white",
+       "glass_colour": "clear",
+       "ground_windows": "tall",
+       "upper_windows": "tall",
+       "rhythm": "regular",
+       "count": 0,
+       "sides": [
+        "front",
+        "back",
+        "left",
+        "right"
+       ],
+       "above_door": true,
+       "sills": false,
+       "sill_colour": "white",
+       "shutters": false,
+       "shutter_colour": "dark green",
+       "keystones": false,
+       "keystone_colour": "light grey"
+      }
+     },
+     "corners": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Corners",
+      "description": "Building corners",
+      "properties": {
+       "style": {
+        "enum": [
+         "plain",
+         "pillars",
+         "towers"
+        ],
+        "default": "plain",
+        "description": "plain interlocking corners, coloured pillars, or corner towers"
+       },
+       "pillar_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Pillar/quoin colour"
+       },
+       "tower_shape": {
+        "enum": [
+         "square",
+         "round"
+        ],
+        "default": "square",
+        "description": "Square tower (any size) or round tower (4x4 round bricks)"
+       },
+       "tower_size": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 6,
+        "default": 4,
+        "description": "Square tower size in studs (round towers are 4)"
+       },
+       "tower_proud": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2,
+        "default": 1,
+        "description": "Studs the tower sticks out of the corner"
+       },
+       "tower_extra_courses": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 12,
+        "default": 4,
+        "description": "Courses the tower rises above the top storey band"
+       },
+       "tower_at": {
+        "enum": [
+         "all",
+         "front",
+         "back",
+         "left",
+         "right",
+         "diagonal"
+        ],
+        "default": "all",
+        "description": "Which corners get a tower"
+       },
+       "tower_roof": {
+        "enum": [
+         "flat",
+         "cone"
+        ],
+        "default": "flat",
+        "description": "Flat with battlements, or cone/pyramid"
+       },
+       "tower_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "light grey",
+        "description": "Tower walls"
+       },
+       "tower_roof_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "dark red",
+        "description": "Tower cone/pyramid"
+       },
+       "tower_slits": {
+        "type": "boolean",
+        "default": true,
+        "description": "Arrow slits in the tower"
+       }
+      },
+      "default": {
+       "style": "plain",
+       "pillar_colour": "white",
+       "tower_shape": "square",
+       "tower_size": 4,
+       "tower_proud": 1,
+       "tower_extra_courses": 4,
+       "tower_at": "all",
+       "tower_roof": "flat",
+       "tower_colour": "light grey",
+       "tower_roof_colour": "dark red",
+       "tower_slits": true
+      }
+     },
+     "roof": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Roof",
+      "description": "Roof or top finish",
+      "properties": {
+       "style": {
+        "enum": [
+         "gable",
+         "hip",
+         "flat",
+         "none"
+        ],
+        "default": "gable",
+        "description": "gable, hip, flat deck (with optional parapet), or none"
+       },
+       "colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "dark red",
+        "description": "Roof slopes / deck"
+       },
+       "ridge": {
+        "enum": [
+         "auto",
+         "x",
+         "z"
+        ],
+        "default": "auto",
+        "description": "Ridge direction (auto = along the longer side)"
+       },
+       "overhang": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 1,
+        "description": "Eave overhang in studs"
+       },
+       "verge": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0,
+        "description": "Gable-end overhang in studs"
+       },
+       "tiers": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9,
+        "default": 0,
+        "description": "Slope courses; 0 = as steep as the depth allows"
+       },
+       "finial": {
+        "type": "boolean",
+        "default": false,
+        "description": "Hip roofs: a cone finial on the peak"
+       },
+       "parapet": {
+        "enum": [
+         "none",
+         "plain",
+         "battlement"
+        ],
+        "default": "none",
+        "description": "Flat roofs: parapet or battlements"
+       },
+       "merlon": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2,
+        "default": 1,
+        "description": "Battlement merlon width"
+       },
+       "gap": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2,
+        "default": 1,
+        "description": "Battlement gap width"
+       },
+       "parapet_courses": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 2,
+        "default": 1,
+        "description": "Parapet height in courses"
+       },
+       "crenel_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "tan",
+        "description": "Parapet and merlon colour"
+       },
+       "gable_windows": {
+        "type": "boolean",
+        "default": false,
+        "description": "Gable roofs: a small window in each gable end"
+       }
+      },
+      "default": {
+       "style": "gable",
+       "colour": "dark red",
+       "ridge": "auto",
+       "overhang": 1,
+       "verge": 0,
+       "tiers": 0,
+       "finial": false,
+       "parapet": "none",
+       "merlon": 1,
+       "gap": 1,
+       "parapet_courses": 1,
+       "crenel_colour": "tan",
+       "gable_windows": false
+      }
+     },
+     "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Details",
+      "description": "Add-ons",
+      "properties": {
+       "chimney": {
+        "enum": [
+         "none",
+         "left",
+         "centre",
+         "right"
+        ],
+        "default": "none",
+        "description": "Chimney on the ridge (gable/hip)"
+       },
+       "chimney_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "dark grey",
+        "description": "Chimney bricks"
+       },
+       "chimney_courses": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 6,
+        "default": 3,
+        "description": "Chimney height in courses"
+       },
+       "porch": {
+        "type": "boolean",
+        "default": false,
+        "description": "Pillared porch over the door"
+       },
+       "porch_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Porch pillars and floor"
+       },
+       "balcony": {
+        "type": "boolean",
+        "default": false,
+        "description": "Balcony over the door (needs 2+ storeys)"
+       },
+       "balcony_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Balcony floor and railing"
+       },
+       "sign": {
+        "enum": [
+         "none",
+         "fascia"
+        ],
+        "default": "none",
+        "description": "Shop sign band above the ground floor"
+       },
+       "sign_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "red",
+        "description": "Sign band colour"
+       },
+       "flower_boxes": {
+        "type": "boolean",
+        "default": false,
+        "description": "Flower boxes on the window sills (turns sills on)"
+       },
+       "planter_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "reddish brown",
+        "description": "Planter boxes"
+       },
+       "flower_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "red",
+        "description": "Flowers"
+       },
+       "fence": {
+        "type": "boolean",
+        "default": false,
+        "description": "Picket fence round the garden at the edge of the base plate, open where the path crosses it"
+       },
+       "fence_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Fence"
+       },
+       "connectors": {
+        "type": "boolean",
+        "default": false,
+        "description": "Technic pin bricks in the side walls near the top of every storey, to bolt modules together"
+       }
+      },
+      "default": {
+       "chimney": "none",
+       "chimney_colour": "dark grey",
+       "chimney_courses": 3,
+       "porch": false,
+       "porch_colour": "white",
+       "balcony": false,
+       "balcony_colour": "white",
+       "sign": "none",
+       "sign_colour": "red",
+       "flower_boxes": false,
+       "planter_colour": "reddish brown",
+       "flower_colour": "red",
+       "fence": false,
+       "fence_colour": "white",
+       "connectors": false
+      }
+     },
+     "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-component": "Base",
+      "description": "Ground",
+      "properties": {
+       "kind": {
+        "enum": [
+         "none",
+         "plate",
+         "modular"
+        ],
+        "default": "plate",
+        "description": "none, a plate round the building, or a 32x32 modular-building plate with a sidewalk"
+       },
+       "margin": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 8,
+        "default": 3,
+        "description": "Studs of ground around the building"
+       },
+       "colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "green",
+        "description": "Ground"
+       },
+       "path": {
+        "type": "boolean",
+        "default": true,
+        "description": "Path from the door to the edge"
+       },
+       "path_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "light grey",
+        "description": "Path"
+       },
+       "path_width": {
+        "enum": [
+         2,
+         4
+        ],
+        "default": 2,
+        "description": "Path width"
+       },
+       "sidewalk": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 8,
+        "default": 6,
+        "description": "Modular: studs of sidewalk in front of the building"
+       },
+       "lamps": {
+        "type": "boolean",
+        "default": false,
+        "description": "Modular: two street lamps on the sidewalk"
+       }
+      },
+      "default": {
+       "kind": "plate",
+       "margin": 3,
+       "colour": "green",
+       "path": true,
+       "path_colour": "light grey",
+       "path_width": 2,
+       "sidewalk": 6,
+       "lamps": false
+      }
+     },
+     "width": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 24,
+      "x-even": true,
+      "description": "House dialect: front wall width in studs (even)"
+     },
+     "depth": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 20,
+      "x-even": true,
+      "description": "House dialect: side wall length in studs (even)"
+     },
+     "courses": {
+      "type": "integer",
+      "minimum": 4,
+      "maximum": 14,
+      "description": "House dialect: wall height in courses (12 or more makes two storeys)"
+     },
+     "door_side": {
+      "enum": [
+       "left",
+       "centre",
+       "right",
+       "none"
+      ],
+      "description": "House dialect: where the door sits on the front"
+     },
+     "door_style": {
+      "enum": [
+       "traditional",
+       "glazed",
+       "hatch"
+      ],
+      "description": "House dialect: door style"
+     },
+     "windows": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 8,
+      "description": "House dialect: windows in total, spread over window_sides"
+     },
+     "window_sides": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+       "enum": [
+        "front",
+        "back",
+        "left",
+        "right"
+       ]
+      },
+      "description": "House dialect: facades with windows"
+     },
+     "roof_style": {
+      "enum": [
+       "gable",
+       "flat"
+      ],
+      "description": "House dialect: roof style"
+     },
+     "roof_tiers": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9,
+      "description": "House dialect: slope courses (0 = as steep as fits)"
+     },
+     "porch": {
+      "type": "boolean",
+      "description": "House dialect: pillared porch over the door"
+     },
+     "chimney": {
+      "enum": [
+       "none",
+       "left",
+       "right"
+      ],
+      "description": "House dialect: chimney on the ridge"
+     },
+     "dormer": {
+      "type": "boolean",
+      "description": "House dialect: dormer window (not built by the grammar yet; reported)"
+     },
+     "wall_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "House dialect: walls"
+     },
+     "trim_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "House dialect: window frames, bands"
+     },
+     "roof_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "House dialect: roof"
+     },
+     "door_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "House dialect: door leaf"
+     },
+     "glass_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "House dialect: window glass"
+     },
+     "chimney_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "House dialect: chimney"
+     }
+    }
+   },
+   "roles": [
+    "roof",
+    "wall",
+    "window",
+    "door",
+    "glass",
+    "base",
+    "tower",
+    "detail",
+    "trim",
+    "structure"
+   ],
+   "coverage": [
+    "rect/L/U/courtyard",
+    "storeys",
+    "brick/timber/stone",
+    "doors",
+    "windows",
+    "arrow slits",
+    "towers",
+    "gable/hip/flat",
+    "battlements",
+    "chimney",
+    "porch",
+    "balcony",
+    "sign",
+    "base and path"
+   ],
+   "quality": "Role-tagged, running-bond walls with real window and door parts; one connected component by construction.",
+   "defaults": {
+    "name": "building",
+    "footprint": {
+     "shape": "rect",
+     "width": 12,
+     "depth": 8,
+     "notch_width": 4,
+     "notch_depth": 4,
+     "notch_corner": "back-right",
+     "notch_side": "back",
+     "court_width": 4,
+     "court_depth": 4
+    },
+    "storeys": {
+     "count": 2,
+     "courses": 6,
+     "top_courses": 0,
+     "setback": 0,
+     "floors": true,
+     "band_projection": 0,
+     "eaves": false,
+     "band_colour": "white",
+     "interior": "none"
+    },
+    "walls": {
+     "style": "brick",
+     "thickness": 1,
+     "colour": "tan",
+     "alt_colour": "light grey",
+     "timber_colour": "reddish brown",
+     "plinth": false,
+     "plinth_colour": "dark grey",
+     "accent_every": 0,
+     "accent_colour": "red"
+    },
+    "openings": {
+     "door": "plain",
+     "door_facade": "front",
+     "door_position": "centre",
+     "door_colour": "reddish brown",
+     "frame_colour": "white",
+     "glass_colour": "clear",
+     "ground_windows": "tall",
+     "upper_windows": "tall",
+     "rhythm": "regular",
+     "count": 0,
+     "sides": [
+      "front",
+      "back",
+      "left",
+      "right"
+     ],
+     "above_door": true,
+     "sills": false,
+     "sill_colour": "white",
+     "shutters": false,
+     "shutter_colour": "dark green",
+     "keystones": false,
+     "keystone_colour": "light grey"
+    },
+    "corners": {
+     "style": "plain",
+     "pillar_colour": "white",
+     "tower_shape": "square",
+     "tower_size": 4,
+     "tower_proud": 1,
+     "tower_extra_courses": 4,
+     "tower_at": "all",
+     "tower_roof": "flat",
+     "tower_colour": "light grey",
+     "tower_roof_colour": "dark red",
+     "tower_slits": true
+    },
+    "roof": {
+     "style": "gable",
+     "colour": "dark red",
+     "ridge": "auto",
+     "overhang": 1,
+     "verge": 0,
+     "tiers": 0,
+     "finial": false,
+     "parapet": "none",
+     "merlon": 1,
+     "gap": 1,
+     "parapet_courses": 1,
+     "crenel_colour": "tan",
+     "gable_windows": false
+    },
+    "details": {
+     "chimney": "none",
+     "chimney_colour": "dark grey",
+     "chimney_courses": 3,
+     "porch": false,
+     "porch_colour": "white",
+     "balcony": false,
+     "balcony_colour": "white",
+     "sign": "none",
+     "sign_colour": "red",
+     "flower_boxes": false,
+     "planter_colour": "reddish brown",
+     "flower_colour": "red",
+     "fence": false,
+     "fence_colour": "white",
+     "connectors": false
+    },
+    "base": {
+     "kind": "plate",
+     "margin": 3,
+     "colour": "green",
+     "path": true,
+     "path_colour": "light grey",
+     "path_width": 2,
+     "sidewalk": 6,
+     "lamps": false
+    }
+   },
+   "presets": {
+    "house": {
+     "title": "House",
+     "description": "Two-storey brick house: gable roof with chimney, porch, plinth, tall windows.",
+     "keywords": [
+      "house",
+      "home",
+      "villa"
+     ],
+     "config": {
+      "name": "house",
+      "footprint": {
+       "width": 16,
+       "depth": 10
+      },
+      "storeys": {
+       "count": 2
+      },
+      "walls": {
+       "colour": "tan",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "roof": {
+       "style": "gable",
+       "colour": "dark red",
+       "verge": 1
+      },
+      "details": {
+       "chimney": "right",
+       "porch": true
+      }
+     }
+    },
+    "cottage": {
+     "title": "Cottage",
+     "description": "Low half-timbered cottage: one tall storey, steep gable roof, chimney, small windows.",
+     "keywords": [
+      "cottage",
+      "cabin",
+      "bungalow"
+     ],
+     "config": {
+      "name": "cottage",
+      "footprint": {
+       "width": 14,
+       "depth": 8
+      },
+      "storeys": {
+       "count": 1,
+       "courses": 7,
+       "band_colour": "reddish brown"
+      },
+      "walls": {
+       "style": "timber",
+       "colour": "white",
+       "timber_colour": "reddish brown",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "plain",
+       "ground_windows": "small",
+       "door_colour": "dark green",
+       "frame_colour": "reddish brown"
+      },
+      "roof": {
+       "style": "gable",
+       "colour": "dark tan",
+       "verge": 1,
+       "overhang": 1
+      },
+      "details": {
+       "chimney": "left"
+      }
+     }
+    },
+    "shop": {
+     "title": "Shop with flat roof",
+     "description": "Corner-shop style: glazed door beside a wide display window, sign band, flat roof with a plain parapet, flat above.",
+     "keywords": [
+      "shop",
+      "store",
+      "bakery",
+      "kiosk",
+      "market"
+     ],
+     "config": {
+      "name": "shop",
+      "footprint": {
+       "width": 16,
+       "depth": 10
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 7,
+       "band_colour": "light grey",
+       "band_projection": 1
+      },
+      "walls": {
+       "colour": "dark red",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "glazed",
+       "door_position": "left",
+       "ground_windows": "wide",
+       "upper_windows": "tall",
+       "frame_colour": "white"
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "plain",
+       "crenel_colour": "dark red"
+      },
+      "details": {
+       "sign": "fascia",
+       "sign_colour": "dark blue"
+      }
+     }
+    },
+    "townhouse": {
+     "title": "Two-storey townhouse",
+     "description": "Narrow brick townhouse with a hip roof, cornice bands, arched windows and a balcony over the door.",
+     "keywords": [
+      "townhouse",
+      "terrace",
+      "terraced"
+     ],
+     "config": {
+      "name": "townhouse",
+      "footprint": {
+       "width": 12,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 6,
+       "band_colour": "white",
+       "band_projection": 1
+      },
+      "walls": {
+       "colour": "sand red",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark blue",
+       "ground_windows": "arch",
+       "upper_windows": "arch"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark grey",
+       "overhang": 1
+      },
+      "details": {
+       "balcony": true,
+       "balcony_colour": "dark grey"
+      }
+     }
+    },
+    "cottage-garden": {
+     "title": "Cottage with garden",
+     "description": "Brick cottage with sills, green shutters, flower boxes, a gable window and a white picket fence.",
+     "keywords": [
+      "garden cottage",
+      "cottage with garden",
+      "detailed house"
+     ],
+     "config": {
+      "name": "cottage garden",
+      "footprint": {
+       "width": 14,
+       "depth": 10
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 6
+      },
+      "walls": {
+       "colour": "tan",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "openings": {
+       "ground_windows": "tall",
+       "upper_windows": "tall",
+       "sills": true,
+       "shutters": true
+      },
+      "roof": {
+       "style": "gable",
+       "colour": "dark red",
+       "verge": 1,
+       "gable_windows": true
+      },
+      "details": {
+       "chimney": "right",
+       "flower_boxes": true,
+       "fence": true
+      },
+      "base": {
+       "margin": 3
+      }
+     }
+    },
+    "arched-townhouse": {
+     "title": "Townhouse with keystones",
+     "description": "Townhouse with arched windows crowned by keystones, sills and shutters.",
+     "keywords": [
+      "keystone townhouse"
+     ],
+     "config": {
+      "name": "arched townhouse",
+      "footprint": {
+       "width": 12,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 7,
+       "band_colour": "white",
+       "band_projection": 1
+      },
+      "walls": {
+       "colour": "sand red",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark blue",
+       "ground_windows": "arch",
+       "upper_windows": "arch",
+       "keystones": true,
+       "shutters": true
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark grey",
+       "overhang": 1
+      }
+     }
+    },
+    "tower": {
+     "title": "Tower",
+     "description": "Tall square stone tower: arrow slits, a gate, battlements on top.",
+     "keywords": [
+      "tower",
+      "watchtower",
+      "lighthouse",
+      "keep tower"
+     ],
+     "config": {
+      "name": "tower",
+      "footprint": {
+       "width": 8,
+       "depth": 8
+      },
+      "storeys": {
+       "count": 3,
+       "courses": 6,
+       "band_colour": "dark grey"
+      },
+      "walls": {
+       "style": "stone",
+       "colour": "light grey",
+       "alt_colour": "dark grey",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "barred",
+       "door_colour": "dark grey",
+       "frame_colour": "dark grey",
+       "ground_windows": "slit",
+       "upper_windows": "slit",
+       "sides": [
+        "front",
+        "back",
+        "left",
+        "right"
+       ]
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "battlement",
+       "crenel_colour": "light grey"
+      },
+      "base": {
+       "colour": "dark green",
+       "path_colour": "dark grey"
+      }
+     }
+    },
+    "castle-keep": {
+     "title": "Castle keep",
+     "description": "Square keep with four corner towers, battlements, arrow slits and a barred gate.",
+     "keywords": [
+      "castle",
+      "keep",
+      "fort",
+      "fortress",
+      "stronghold"
+     ],
+     "config": {
+      "name": "castle keep",
+      "footprint": {
+       "width": 20,
+       "depth": 20
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 7,
+       "band_colour": "dark grey"
+      },
+      "walls": {
+       "style": "stone",
+       "colour": "light grey",
+       "alt_colour": "dark grey",
+       "thickness": 2,
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "barred",
+       "door_colour": "dark grey",
+       "frame_colour": "dark grey",
+       "ground_windows": "slit",
+       "upper_windows": "slit"
+      },
+      "corners": {
+       "style": "towers",
+       "tower_shape": "square",
+       "tower_size": 6,
+       "tower_proud": 2,
+       "tower_extra_courses": 4,
+       "tower_roof": "flat",
+       "tower_colour": "light grey"
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "battlement",
+       "crenel_colour": "light grey"
+      },
+      "base": {
+       "colour": "dark green",
+       "path_colour": "dark grey",
+       "path_width": 4
+      }
+     }
+    },
+    "pagoda": {
+     "title": "Pagoda (4 tiers)",
+     "description": "Four-tier pagoda: every storey steps in and carries its own hip roof; cone finial on the top roof.",
+     "keywords": [
+      "pagoda",
+      "stupa"
+     ],
+     "config": {
+      "name": "pagoda",
+      "footprint": {
+       "width": 18,
+       "depth": 18
+      },
+      "storeys": {
+       "count": 4,
+       "courses": 6,
+       "setback": 2,
+       "eaves": true,
+       "band_colour": "dark brown"
+      },
+      "walls": {
+       "colour": "red",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "dark brown"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "small",
+       "upper_windows": "arch"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "yellow",
+       "finial": true
+      },
+      "base": {
+       "colour": "dark green",
+       "path_colour": "light grey"
+      }
+     }
+    },
+    "temple-hall": {
+     "title": "Temple hall",
+     "description": "Chinese temple hall: red walls and pillars, broad yellow hip roof, pillared porch, cornice band.",
+     "keywords": [
+      "temple",
+      "shrine",
+      "pavilion"
+     ],
+     "config": {
+      "name": "temple hall",
+      "footprint": {
+       "width": 22,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 1,
+       "courses": 7,
+       "band_projection": 1,
+       "band_colour": "dark brown"
+      },
+      "walls": {
+       "colour": "red",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "dark brown"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "tall",
+       "rhythm": "sparse"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "yellow",
+       "overhang": 1
+      },
+      "details": {
+       "porch": true,
+       "porch_colour": "red"
+      },
+      "base": {
+       "colour": "light grey",
+       "path_colour": "dark grey",
+       "path_width": 4,
+       "margin": 4
+      }
+     }
+    },
+    "minka": {
+     "title": "Japanese farmhouse (minka)",
+     "description": "Japanese minka: low white-and-timber walls, deep dark hip roof, wide windows, timber porch.",
+     "keywords": [
+      "minka",
+      "ryokan",
+      "dojo"
+     ],
+     "config": {
+      "name": "minka",
+      "footprint": {
+       "width": 18,
+       "depth": 10
+      },
+      "storeys": {
+       "count": 1,
+       "courses": 7,
+       "band_colour": "dark brown"
+      },
+      "walls": {
+       "style": "timber",
+       "colour": "white",
+       "timber_colour": "dark brown",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "wide",
+       "door_position": "left"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark grey",
+       "overhang": 1
+      },
+      "details": {
+       "porch": true,
+       "porch_colour": "dark brown"
+      },
+      "base": {
+       "colour": "sand green",
+       "path_colour": "dark grey"
+      }
+     }
+    },
+    "gate-tower": {
+     "title": "City gate tower",
+     "description": "Two-storey gate tower: barred gate below, eave roof round the lower storey, yellow hip roof above.",
+     "keywords": [
+      "gate tower",
+      "city gate",
+      "drum tower"
+     ],
+     "config": {
+      "name": "gate tower",
+      "footprint": {
+       "width": 20,
+       "depth": 10
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 7,
+       "setback": 1,
+       "eaves": true,
+       "band_colour": "dark brown"
+      },
+      "walls": {
+       "colour": "dark red",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "dark brown"
+      },
+      "openings": {
+       "door": "barred",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "slit",
+       "upper_windows": "tall",
+       "rhythm": "sparse"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "yellow"
+      },
+      "base": {
+       "colour": "dark tan",
+       "path_colour": "dark grey",
+       "path_width": 4
+      }
+     }
+    },
+    "tea-room": {
+     "title": "Tea room",
+     "description": "Small square tea pavilion: white walls, brown pillars, steep green hip roof with a finial.",
+     "keywords": [
+      "tea room",
+      "gazebo",
+      "garden pavilion"
+     ],
+     "config": {
+      "name": "tea room",
+      "footprint": {
+       "width": 12,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 1,
+       "courses": 7,
+       "band_colour": "dark brown",
+       "band_projection": 1
+      },
+      "walls": {
+       "colour": "white",
+       "plinth": true,
+       "plinth_colour": "dark brown"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "dark brown"
+      },
+      "openings": {
+       "door": "glazed",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "small"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark green",
+       "finial": true
+      },
+      "base": {
+       "colour": "sand green",
+       "path_colour": "light grey"
+      }
+     }
+    },
+    "white-pagoda": {
+     "title": "Japanese pagoda (3 tiers)",
+     "description": "Three-tier pagoda: white plaster storeys, dark roofs, wide eaves, finial.",
+     "keywords": [
+      "japanese pagoda",
+      "tahoto"
+     ],
+     "config": {
+      "name": "white pagoda",
+      "footprint": {
+       "width": 16,
+       "depth": 16
+      },
+      "storeys": {
+       "count": 3,
+       "courses": 6,
+       "setback": 2,
+       "eaves": true,
+       "band_colour": "dark brown"
+      },
+      "walls": {
+       "colour": "white",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "dark brown"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "small",
+       "upper_windows": "small"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark grey",
+       "finial": true
+      },
+      "base": {
+       "colour": "sand green",
+       "path_colour": "dark grey"
+      }
+     }
+    },
+    "siheyuan": {
+     "title": "Courtyard house (siheyuan)",
+     "description": "Chinese courtyard house: a ring of rooms round an open yard, grey walls, red parapet, red door.",
+     "keywords": [
+      "siheyuan",
+      "courtyard house",
+      "hutong"
+     ],
+     "config": {
+      "name": "siheyuan",
+      "footprint": {
+       "shape": "courtyard",
+       "width": 22,
+       "depth": 20,
+       "court_width": 10,
+       "court_depth": 8
+      },
+      "storeys": {
+       "count": 1,
+       "courses": 7,
+       "band_colour": "dark red"
+      },
+      "walls": {
+       "colour": "light grey",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "red",
+       "frame_colour": "dark red",
+       "ground_windows": "tall"
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "plain",
+       "crenel_colour": "dark red"
+      },
+      "base": {
+       "colour": "dark tan",
+       "path_colour": "light grey",
+       "path_width": 4
+      }
+     }
+    },
+    "barn": {
+     "title": "Barn",
+     "description": "Big gabled barn: wide barred doors, small high windows, overhanging roof.",
+     "keywords": [
+      "barn",
+      "stable",
+      "shed"
+     ],
+     "config": {
+      "name": "barn",
+      "footprint": {
+       "width": 20,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 1,
+       "courses": 9
+      },
+      "walls": {
+       "colour": "dark red",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "barred",
+       "door_colour": "reddish brown",
+       "frame_colour": "white",
+       "ground_windows": "small",
+       "rhythm": "sparse"
+      },
+      "roof": {
+       "style": "gable",
+       "colour": "dark grey",
+       "verge": 1
+      },
+      "base": {
+       "colour": "dark tan",
+       "path_colour": "dark tan",
+       "path_width": 4
+      }
+     }
+    },
+    "town-hall": {
+     "title": "Town hall",
+     "description": "Civic building: hip roof, white corner pillars, cornice bands, wide windows, balcony over the door.",
+     "keywords": [
+      "town hall",
+      "townhall",
+      "museum",
+      "bank",
+      "library"
+     ],
+     "config": {
+      "name": "town hall",
+      "footprint": {
+       "width": 22,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 6,
+       "band_projection": 1,
+       "band_colour": "white"
+      },
+      "walls": {
+       "colour": "sand red",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "white"
+      },
+      "openings": {
+       "door": "glazed",
+       "door_colour": "white",
+       "frame_colour": "white",
+       "ground_windows": "rect",
+       "upper_windows": "rect"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark grey"
+      },
+      "details": {
+       "balcony": true,
+       "balcony_colour": "white",
+       "porch": false
+      }
+     }
+    },
+    "apartment-block": {
+     "title": "Apartment block",
+     "description": "Four-storey block: flat roof with parapet, rows of tall windows, projecting floor bands.",
+     "keywords": [
+      "apartment",
+      "flats",
+      "tenement",
+      "office"
+     ],
+     "config": {
+      "name": "apartment block",
+      "footprint": {
+       "width": 16,
+       "depth": 10
+      },
+      "storeys": {
+       "count": 4,
+       "courses": 6,
+       "band_projection": 1,
+       "band_colour": "light grey"
+      },
+      "walls": {
+       "colour": "bright light yellow",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "glazed",
+       "door_colour": "dark blue",
+       "frame_colour": "dark grey",
+       "ground_windows": "tall",
+       "upper_windows": "tall",
+       "rhythm": "dense"
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "plain",
+       "crenel_colour": "light grey"
+      }
+     }
+    },
+    "courtyard-fort": {
+     "title": "Courtyard fort",
+     "description": "Square fort round an open parade ground, four round corner towers with cone roofs, battlements.",
+     "keywords": [
+      "courtyard fort",
+      "citadel",
+      "bastion"
+     ],
+     "config": {
+      "name": "courtyard fort",
+      "footprint": {
+       "shape": "courtyard",
+       "width": 26,
+       "depth": 26,
+       "court_width": 14,
+       "court_depth": 14
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 7,
+       "band_colour": "dark grey"
+      },
+      "walls": {
+       "style": "stone",
+       "colour": "light grey",
+       "alt_colour": "dark grey",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "barred",
+       "door_colour": "dark grey",
+       "frame_colour": "dark grey",
+       "ground_windows": "slit",
+       "upper_windows": "slit",
+       "sides": [
+        "front",
+        "back",
+        "left",
+        "right"
+       ]
+      },
+      "corners": {
+       "style": "towers",
+       "tower_shape": "round",
+       "tower_roof": "cone",
+       "tower_colour": "light grey",
+       "tower_roof_colour": "dark red",
+       "tower_extra_courses": 5
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "battlement",
+       "crenel_colour": "light grey"
+      },
+      "base": {
+       "colour": "dark green",
+       "path_colour": "dark grey",
+       "path_width": 4
+      }
+     }
+    },
+    "lighthouse": {
+     "title": "Lighthouse",
+     "description": "Tall striped tower: red and white courses, arrow-slit windows, conical roof with a finial.",
+     "keywords": [
+      "lighthouse",
+      "beacon",
+      "silo"
+     ],
+     "config": {
+      "name": "lighthouse",
+      "footprint": {
+       "width": 6,
+       "depth": 6
+      },
+      "storeys": {
+       "count": 4,
+       "courses": 6,
+       "band_colour": "dark grey"
+      },
+      "walls": {
+       "colour": "white",
+       "accent_every": 2,
+       "accent_colour": "red",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark blue",
+       "frame_colour": "dark grey",
+       "ground_windows": "slit",
+       "upper_windows": "slit"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "red",
+       "finial": true
+      },
+      "base": {
+       "colour": "sand green",
+       "path_colour": "light grey",
+       "margin": 4
+      }
+     }
+    },
+    "warehouse": {
+     "title": "Warehouse",
+     "description": "Long low warehouse: flat roof with a plain parapet, loading gate, rows of wide windows.",
+     "keywords": [
+      "warehouse",
+      "factory",
+      "garage",
+      "depot"
+     ],
+     "config": {
+      "name": "warehouse",
+      "footprint": {
+       "width": 26,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 1,
+       "courses": 8,
+       "band_projection": 1,
+       "band_colour": "dark grey"
+      },
+      "walls": {
+       "colour": "dark bluish grey",
+       "plinth": true,
+       "plinth_colour": "black"
+      },
+      "openings": {
+       "door": "barred",
+       "door_colour": "light grey",
+       "frame_colour": "light grey",
+       "door_position": "left",
+       "ground_windows": "wide",
+       "rhythm": "sparse"
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "plain",
+       "crenel_colour": "dark grey"
+      },
+      "base": {
+       "colour": "dark grey",
+       "path_colour": "light grey",
+       "path_width": 4
+      }
+     }
+    },
+    "manor": {
+     "title": "Manor house",
+     "description": "U-shaped manor with a courtyard open to the front, stone walls, corner pillars and a flat battlemented roof.",
+     "keywords": [
+      "manor",
+      "chateau",
+      "palace"
+     ],
+     "config": {
+      "name": "manor",
+      "footprint": {
+       "shape": "U",
+       "width": 26,
+       "depth": 16,
+       "notch_width": 10,
+       "notch_depth": 8,
+       "notch_side": "front"
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 6,
+       "band_projection": 1,
+       "band_colour": "white"
+      },
+      "walls": {
+       "style": "stone",
+       "colour": "tan",
+       "alt_colour": "light grey",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "white"
+      },
+      "openings": {
+       "door": "glazed",
+       "door_colour": "dark green",
+       "frame_colour": "white",
+       "ground_windows": "tall",
+       "upper_windows": "arch"
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "battlement",
+       "crenel_colour": "tan"
+      },
+      "base": {
+       "colour": "green",
+       "path_colour": "light grey",
+       "path_width": 4
+      }
+     }
+    },
+    "modular-bakery": {
+     "title": "Modular bakery",
+     "description": "Three-storey modular bakery: shop front and glazed door with sign band, arched flats above, balcony, chimney, gable roof.",
+     "keywords": [
+      "modular bakery",
+      "modular building",
+      "modular shop"
+     ],
+     "config": {
+      "name": "modular bakery",
+      "footprint": {
+       "width": 32,
+       "depth": 24
+      },
+      "storeys": {
+       "count": 3,
+       "courses": 7,
+       "band_projection": 1,
+       "band_colour": "white",
+       "interior": "partition"
+      },
+      "walls": {
+       "colour": "sand red",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "white"
+      },
+      "openings": {
+       "door": "glazed",
+       "door_position": "left",
+       "door_colour": "dark blue",
+       "frame_colour": "white",
+       "ground_windows": "wide",
+       "upper_windows": "arch"
+      },
+      "roof": {
+       "style": "gable",
+       "colour": "dark grey",
+       "overhang": 0
+      },
+      "details": {
+       "sign": "fascia",
+       "sign_colour": "dark blue",
+       "chimney": "right",
+       "connectors": true
+      },
+      "base": {
+       "kind": "modular",
+       "colour": "dark grey",
+       "path_colour": "light grey",
+       "lamps": true
+      }
+     }
+    },
+    "modular-town-hall": {
+     "title": "Modular town hall",
+     "description": "Civic module: hip roof, white pillars, cornice bands, balcony over the central door, wide windows.",
+     "keywords": [
+      "modular town hall",
+      "modular bank"
+     ],
+     "config": {
+      "name": "modular town hall",
+      "footprint": {
+       "width": 32,
+       "depth": 22
+      },
+      "storeys": {
+       "count": 3,
+       "courses": 6,
+       "band_projection": 1,
+       "band_colour": "white",
+       "interior": "partition"
+      },
+      "walls": {
+       "colour": "tan",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "white"
+      },
+      "openings": {
+       "door": "glazed",
+       "door_colour": "dark green",
+       "frame_colour": "white",
+       "ground_windows": "rect",
+       "upper_windows": "rect"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark green",
+       "overhang": 0
+      },
+      "details": {
+       "balcony": true,
+       "balcony_colour": "white",
+       "connectors": true
+      },
+      "base": {
+       "kind": "modular",
+       "colour": "dark grey",
+       "path_colour": "light grey",
+       "lamps": true
+      }
+     }
+    },
+    "modular-flats": {
+     "title": "Modular apartment block",
+     "description": "Four-storey flats module: flat roof with parapet, tall windows in rows, projecting floor bands, shop door.",
+     "keywords": [
+      "modular flats",
+      "modular apartments"
+     ],
+     "config": {
+      "name": "modular flats",
+      "footprint": {
+       "width": 32,
+       "depth": 20
+      },
+      "storeys": {
+       "count": 4,
+       "courses": 6,
+       "band_projection": 1,
+       "band_colour": "light grey",
+       "interior": "partition"
+      },
+      "walls": {
+       "colour": "dark tan",
+       "plinth": true,
+       "plinth_colour": "dark grey",
+       "accent_every": 0
+      },
+      "openings": {
+       "door": "glazed",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "tall",
+       "upper_windows": "tall",
+       "rhythm": "regular"
+      },
+      "roof": {
+       "style": "flat",
+       "colour": "dark grey",
+       "parapet": "plain",
+       "crenel_colour": "light grey",
+       "overhang": 0
+      },
+      "details": {
+       "connectors": true,
+       "chimney": "none"
+      },
+      "base": {
+       "kind": "modular",
+       "colour": "dark grey",
+       "path_colour": "light grey",
+       "lamps": true
+      }
+     }
+    },
+    "modular-tea-house": {
+     "title": "Modular tea house",
+     "description": "Asian-style module: red walls, dark brown pillars, yellow hip roof, arched upper windows, sidewalk lamps.",
+     "keywords": [
+      "modular tea house",
+      "modular chinese"
+     ],
+     "config": {
+      "name": "modular tea house",
+      "footprint": {
+       "width": 32,
+       "depth": 20
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 7,
+       "band_projection": 1,
+       "band_colour": "dark brown",
+       "interior": "partition"
+      },
+      "walls": {
+       "colour": "red",
+       "plinth": true,
+       "plinth_colour": "dark grey"
+      },
+      "corners": {
+       "style": "pillars",
+       "pillar_colour": "dark brown"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark brown",
+       "frame_colour": "dark brown",
+       "ground_windows": "wide",
+       "upper_windows": "arch",
+       "door_position": "centre"
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "yellow",
+       "finial": true,
+       "overhang": 0
+      },
+      "details": {
+       "connectors": true,
+       "balcony": true,
+       "balcony_colour": "dark brown"
+      },
+      "base": {
+       "kind": "modular",
+       "colour": "dark grey",
+       "path_colour": "light grey",
+       "lamps": true
+      }
+     }
+    }
+   }
+  },
   {
    "id": "house",
    "title": "House",
@@ -968,7 +3602,9 @@
     "headlamp",
     "tail_lamp",
     "wheel",
-    "tyre"
+    "tyre",
+    "wing",
+    "engine"
    ],
    "coverage": [
     "colours"
@@ -1246,92 +3882,103 @@
     "colour": "black",
     "accent": "light grey"
    }
+  },
+  {
+   "id": "tree",
+   "title": "Tree",
+   "families": [
+    "garden",
+    "scene"
+   ],
+   "kinds": [
+    "tree",
+    "oak",
+    "oak tree",
+    "pine",
+    "pine tree",
+    "fir",
+    "bush",
+    "shrub",
+    "garden tree"
+   ],
+   "description": "Garden tree on a 4x4 plinth: round-brick trunk of adjustable height under four layers of foliage.",
+   "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "trunk_courses": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 10,
+      "default": 5,
+      "description": "Trunk height in brick courses (3 is a shrub, 10 a tall tree)"
+     },
+     "foliage_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Leaves (colour name or code)",
+      "default": "dark green"
+     },
+     "foliage_accent": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Second foliage layer (colour name or code)",
+      "default": "green"
+     },
+     "trunk_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Trunk (colour name or code)",
+      "default": "reddish brown"
+     },
+     "flower_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Flowers at the foot (colour name or code)",
+      "default": "dark pink"
+     },
+     "ground_colour": {
+      "type": [
+       "string",
+       "integer"
+      ],
+      "x-colour": true,
+      "description": "Plinth (colour name or code)",
+      "default": "tan"
+     }
+    }
+   },
+   "roles": [
+    "base",
+    "trunk",
+    "foliage",
+    "flower"
+   ],
+   "coverage": [
+    "trunk height",
+    "colours"
+   ],
+   "quality": "Small accent piece for a scene: one stylised tree",
+   "defaults": {
+    "trunk_courses": 5,
+    "foliage_colour": "dark green",
+    "foliage_accent": "green",
+    "trunk_colour": "reddish brown",
+    "flower_colour": "dark pink",
+    "ground_colour": "tan"
+   }
   }
- ],
- "colours": [
-  "azure",
-  "beige",
-  "black",
-  "blue",
-  "bright green",
-  "bright light blue",
-  "bright light orange",
-  "bright light yellow",
-  "bright pink",
-  "brown",
-  "burgundy",
-  "charcoal",
-  "chrome",
-  "clear",
-  "cream",
-  "dark azure",
-  "dark blue",
-  "dark bluish grey",
-  "dark brown",
-  "dark green",
-  "dark grey",
-  "dark orange",
-  "dark pink",
-  "dark red",
-  "dark tan",
-  "dark turquoise",
-  "flesh",
-  "gold",
-  "green",
-  "grey",
-  "lavender",
-  "light blue",
-  "light bluish grey",
-  "light brown",
-  "light green",
-  "light grey",
-  "light turquoise",
-  "light violet",
-  "light yellow",
-  "lilac",
-  "lime",
-  "magenta",
-  "maroon",
-  "medium azure",
-  "medium blue",
-  "medium green",
-  "medium lavender",
-  "medium lilac",
-  "navy",
-  "navy blue",
-  "nougat",
-  "olive",
-  "olive green",
-  "orange",
-  "pearl gold",
-  "pearl silver",
-  "pink",
-  "purple",
-  "red",
-  "reddish brown",
-  "rust",
-  "salmon",
-  "sand blue",
-  "sand green",
-  "sand red",
-  "silver",
-  "sky blue",
-  "smoke",
-  "tan",
-  "tinted",
-  "trans black",
-  "trans blue",
-  "trans clear",
-  "trans dark blue",
-  "trans green",
-  "trans light blue",
-  "trans orange",
-  "trans red",
-  "trans yellow",
-  "transparent",
-  "turquoise",
-  "white",
-  "yellow"
- ],
- "signature": "fixture"
+ ]
 }

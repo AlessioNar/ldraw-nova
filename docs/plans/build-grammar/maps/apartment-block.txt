@@ -1,0 +1,158 @@
+FRONT ELEVATION (top = roof)
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   RRRRRRRRRRRRRRRR   
+  RRRRRRRRRRRRRRRRRR  
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   tttttttttttttttt   
+  tttttttttttttttttt  
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   tttttttttttttttt   
+  tttttttttttttttttt  
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWooWWWooWWWooWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   WWWWWWWWWWWWWWWW   
+   tttttttttttttttt   
+  tttttttttttttttttt  
+   WWWWWWDDDDWWWWWW   
+   WWWWWWDDDDWWWWWW   
+   WWWWWWDDDDWWWWWW   
+   WWWWWWDDDDWWWWWW   
+   WWWWWWDDDDWWWWWW   
+   WWWWWWDDDDWWWWWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   WWooWWDDDDWWooWW   
+   ttttttDDDDtttttt   
+   ttttttDDDDtttttt   
+   ttttttD..Dtttttt   
+......................
+......................
+
+PLAN at plate 5
+                      
+                      
+                      
+   WWooWWDDDDWWooWW   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   WooWooWooWooWooW   
+                      
+                      
+                      
+
+PLAN at plate 25
+                      
+                      
+                      
+   WWooWWWooWWWooWW   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   WooWooWooWooWooW   
+                      
+                      
+                      
+
+PLAN at plate 45
+                      
+                      
+                      
+   WWooWWWooWWWooWW   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   WooWooWooWooWooW   
+                      
+                      
+                      
+
+PLAN at plate 65
+                      
+                      
+                      
+   WWooWWWooWWWooWW   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   W              W   
+   o              o   
+   o              o   
+   WooWooWooWooWooW   
+                      
+                      
+                      

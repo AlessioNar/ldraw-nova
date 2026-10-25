@@ -19,6 +19,7 @@ router = APIRouter()
 class Current(BaseModel):
     generator: str = Field(max_length=60)
     params: dict[str, Any] = Field(default_factory=dict)
+    manual_edits: bool = False        # the canvas has hand edits a change would replace: such a change is previewed first
 
 
 class DescribeBody(BaseModel):
@@ -49,9 +50,25 @@ async def describe(body: DescribeBody):
 
 @router.get("/api/describe/estimate")
 async def describe_estimate(text: str = Query(default="", max_length=understand.MAX_REQUEST_CHARS * 2),
-                      generator: Optional[str] = Query(default=None, max_length=60)):
-    """Rules-only guess for the composer hint: no model call, no toolkit call, milliseconds. Same route names."""
+                      generator: Optional[str] = Query(default=None, max_length=60),
+                      build_id: Optional[str] = Query(default=None, max_length=80)):
+    """Rules-only guess for the composer hint: no model call, no toolkit call, milliseconds. Same route names.
+
+    With `build_id` the hint sees the build the way the decision will (live generator source or divergence, role edits on
+    any other build, the last change), so the two agree whenever no model is needed."""
+    context = None
+    if build_id:
+        from .workspace_api import hint_context        # lazy: that router imports this package's siblings
+        current, context = hint_context(build_id)
+        generator = current["generator"] if current else None
+        params = (current or {}).get("params") or {}
+    else:
+        params = {}
     if generator and generator_bridge.cached() is None:
         await generator_bridge.ensure()       # cold start only: without the registry no edit rule can name its generator
-    current = {"generator": generator, "params": {}} if generator else None
-    return fast_path.rules_guess(text, current)
+    elif generator_bridge.cached() is None:
+        # A new request on a cold start or a stale cache after a toolkit update (a stale cache once sent "a lighthouse"
+        # to the AI instead of "building"): refresh in the background so the hint stays instant while typing.
+        generator_bridge.warm()
+    current = {"generator": generator, "params": params} if generator else None
+    return fast_path.rules_guess(text, current, context)

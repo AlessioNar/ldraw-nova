@@ -1,0 +1,100 @@
+{
+ "arcade-bay#0": {
+  "params": {},
+  "sha1": "15ef7d9456523ac328293d54939408ce589d5a8d"
+ },
+ "arcade-bay#1": {
+  "params": {
+   "colour": "red",
+   "height": 6
+  },
+  "sha1": "2e47f17ddbc091dabe6faedc99fb57b045a5ac85"
+ },
+ "courier-jet#0": {
+  "params": {},
+  "sha1": "479e2d316530f58c090e1087b9a09e5d9b688f85"
+ },
+ "delivery-van#0": {
+  "params": {},
+  "sha1": "c676c3e591489b4f97cfd881d2bd95496e6b6205"
+ },
+ "delivery-van#1": {
+  "params": {
+   "length": 24,
+   "wheelbase": 12
+  },
+  "sha1": "8ae9f40cd9d23e729305b596f9e3e68e8bb37b9f"
+ },
+ "grand-tourer#0": {
+  "params": {},
+  "sha1": "484f093355f2286836be5eb59bab432678c81779"
+ },
+ "grand-tourer#1": {
+  "params": {
+   "body": "red",
+   "glass": "trans black",
+   "roof": "white",
+   "trim": "blue",
+   "wheels": "dark grey"
+  },
+  "sha1": "0e2690db874e2c5a9ff0071cc790cf06677fa847"
+ },
+ "harbour-launch#0": {
+  "params": {},
+  "sha1": "991e5b7eaa00a5ecaabb0894ac4b4d31d0be5c62"
+ },
+ "house#0": {
+  "params": {},
+  "sha1": "7c845d78b5e92e4013bd304c55c445afec5b9d2f"
+ },
+ "house#1": {
+  "params": {
+   "chimney": "left",
+   "courses": 8,
+   "depth": 8,
+   "dormer": true,
+   "porch": true,
+   "width": 12,
+   "windows": 4
+  },
+  "sha1": "804ffc0df6e34f6ceab2d02946ae23e78c0d9b93"
+ },
+ "house#2": {
+  "params": {
+   "door_side": "centre",
+   "roof_colour": "blue",
+   "roof_style": "flat",
+   "wall_colour": "red"
+  },
+  "sha1": "bce4dfd18e27c7930eea65889095f45cefd7f82e"
+ },
+ "pickup#0": {
+  "params": {},
+  "sha1": "66077dd2c40795505f2ba96bcd53dbf7358bcec8"
+ },
+ "starfighter#0": {
+  "params": {},
+  "sha1": "a0918b0fc820ddd71b9bcaa5d733cf3062c77c69"
+ },
+ "starfighter#1": {
+  "params": {
+   "engines": 4,
+   "length": 24,
+   "wing_style": "swept",
+   "wingspan": 24
+  },
+  "sha1": "814ac8afd951194497edd563eeb22ed4724b3e36"
+ },
+ "street-lantern#0": {
+  "params": {},
+  "sha1": "b36972bc8cb4f102104230d08060379046a80b93"
+ },
+ "tipper-truck#0": {
+  "params": {},
+  "sha1": "ab9da32f0c5c2105292748420a92f528a242f786"
+ },
+ "touring-motorcycle#0": {
+  "params": {},
+  "sha1": "d02a45890767b9b83541e7f1cf712ecea81d2acb"
+ }
+}

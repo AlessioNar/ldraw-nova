@@ -1,6 +1,6 @@
 # Data and storage
 
-There is **no application database**. Everything is files on two Docker volumes, plus read-only data baked into the image.
+Models, parts lists, editor state and agent work folders are **files** on two Docker volumes, plus read-only data baked into the image. A PostgreSQL database (a third volume) holds the request log, the cost history and, once imported, the chats, messages, builds, version records, drafts and proposals; until then those stay JSON files too (`LDRAW_NOVA_STORAGE`, see [database.md](database.md)). The parts collection moves there in a later phase.
 
 ## Volumes
 
@@ -8,10 +8,12 @@ There is **no application database**. Everything is files on two Docker volumes,
 |---|---|---|---|
 | `ldraw-nova-docker_data` | `/data` | Builds, versions, chats, parts lists, agent work folders | Writable by the agent user only in its work folders |
 | `ldraw-nova-docker_config` | `/config` | `models.json` (LLM entries), `environment.json` (keys and env vars), `generators.json` (registry cache) | root-only (0700); agent code cannot read it |
+| `ldraw-nova-docker_db` | `/var/lib/postgresql` in the `db` container | PostgreSQL data: request log, cost history, chats and builds (after the import) | Not mounted in the app. Back up with `scripts/backup.sh` |
+| `ldraw-nova-docker_secrets` | `/run/secrets` (read-only in the app) | The generated database passwords | root-owned, 0440 |
 
 - Defined in `app/docker-compose.yml:20-25, 72-78`.
 - They are named volumes, not bind mounts, because bind-mount file access is slow on Windows and macOS.
-- **`docker compose down -v` deletes them.**
+- **`docker compose down -v` deletes them** (and the database volumes). Back up first: `bash scripts/backup.sh` writes a database dump and an archive of the data volume.
 - To copy models out: `docker cp ldraw-nova-app:/data/generated ./my-models`.
 
 ## Layout of `/data`
@@ -19,10 +21,12 @@ There is **no application database**. Everything is files on two Docker volumes,
 | Path | Contents | Served to the browser? |
 |---|---|---|
 | `/data/generated/` | Every saved model: `<slug>-vN.mpd` plus `.png` snapshot and `.csv` BOM. This is "My Builds". | yes |
-| `/data/builds/<slug>/` | `build.json`, `models.jsonl` (version log), `draft.json`, `edit.json`, `proposals/`, `output/` (editor `plan.json`, `state.json`, `preview.mpd`) | via API |
-| `/data/chats/<chat-id>/` | `chat.json`, `messages.jsonl` (with `_usage` per step), `models.jsonl`, `renders/`, `workers/<id>.jsonl` | yes |
+| `/data/builds/<slug>/` | In files mode `build.json`, `models.jsonl` (version log), `draft.json`, `proposals/<id>.json`; always `proposals/<id>.mpd`, `edit.json`, `output/` (editor `plan.json`, `state.json`, `preview.mpd`) | via API |
+| `/data/chats/<chat-id>/` | In files mode `chat.json`, `messages.jsonl` (with `_usage` per step), `models.jsonl`, `workers/<id>.jsonl`; always `renders/`, `workspace/` | yes |
+| `/data/_migration/` | Reports of the JSON importer (`report-<time>.json`) | no |
 | `/data/output/<chat-id>/` | The agent's work folder: scripts, plans, `NOTES.md`, renders | **no** (never served; reached only through the artifact API) |
-| `/data/inventories/` | Parts lists: `<id>.json` and `<id>.csv` | via API |
+| `/data/inventories/` | Parts lists: `<id>.json` and `<id>.csv` (files mode, or the frozen backup after the collection import) | via API |
+| `/data/collection-export/` | PostgreSQL mode only: derived JSON copy of the collection that the toolkit CLI reads | regenerated |
 
 - Paths come from `app/web/backend/settings.py:21-33`.
 - A new empty volume is seeded with 2 showcase models.
@@ -43,7 +47,7 @@ There is **no application database**. Everything is files on two Docker volumes,
 
 ## Where SQLite appears
 
-SQLite is used only as read-only reference data and as caches. It is never used for user data:
+SQLite is used only as read-only reference data and as caches. It is never used for user data (that is PostgreSQL or files):
 
 - `data/ldraw-info.db`: the `*_DESCRIPTIONS` tables, plus the `*_DESCRIPTIONS_JEV` views used by search;
 - the discovery `catalog.sqlite` (FTS5);

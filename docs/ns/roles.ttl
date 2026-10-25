@@ -1,0 +1,288 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix role: <https://alessionar.github.io/open-brick-designer/ns/role/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+role:accent a skos:Concept ;
+    skos:broader role:trim ;
+    skos:definition "Alias: a generator's own word for trim."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "accent"@en .
+
+role:canopy a skos:Concept ;
+    skos:broader role:glass ;
+    skos:definition "Alias: a generator's own word for glass."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "canopy"@en .
+
+role:chimney a skos:Concept ;
+    skos:broader role:roof ;
+    skos:definition "Alias: a generator's own word for roof."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "chimney"@en .
+
+role:grammar a skos:OrderedCollection ;
+    skos:memberList ( role:roof role:wall role:window role:door role:glass role:base role:tower role:detail role:trim role:structure ) ;
+    skos:prefLabel "roles stamped by the building grammar"@en .
+
+role:headlamp a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "headlamp"@en .
+
+role:hull a skos:Concept ;
+    skos:broader role:body ;
+    skos:definition "Alias: a generator's own word for body."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "hull"@en .
+
+role:light a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "light"@en .
+
+role:metal a skos:Concept ;
+    skos:broader role:trim ;
+    skos:definition "Alias: a generator's own word for trim."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "metal"@en .
+
+role:porch a skos:Concept ;
+    skos:broader role:trim ;
+    skos:definition "Alias: a generator's own word for trim."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "porch"@en .
+
+role:tail_lamp a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "tail_lamp"@en .
+
+role:wood a skos:Concept ;
+    skos:broader role:detail ;
+    skos:definition "Alias: a generator's own word for detail."@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wood"@en .
+
+role:chassis a skos:Concept ;
+    skos:altLabel "chassis"@en,
+        "frame"@en ;
+    skos:definition "Vehicle frame, axles, undercarriage"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "chassis"@en ;
+    obd:order 9 .
+
+role:engine a skos:Concept ;
+    skos:altLabel "engine"@en,
+        "engines"@en ;
+    skos:definition "Engines, thrusters, propellers"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "engine"@en ;
+    obd:order 12 .
+
+role:tower a skos:Concept ;
+    skos:altLabel "tower"@en,
+        "towers"@en,
+        "turret"@en,
+        "turrets"@en ;
+    skos:broader role:wall ;
+    skos:definition "Corner tower bodies (round bricks, tower walls) and tower caps; a kind of wall, see ALIAS"@en ;
+    skos:hiddenLabel "tower"@en,
+        "towers"@en,
+        "turret"@en,
+        "turrets"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "tower"@en ;
+    obd:order 13 .
+
+role:tyre a skos:Concept ;
+    skos:altLabel "tire"@en,
+        "tires"@en,
+        "tyre"@en,
+        "tyres"@en ;
+    skos:definition "Tyres"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "tyre"@en ;
+    obd:order 8 .
+
+role:wheel a skos:Concept ;
+    skos:altLabel "rim"@en,
+        "rims"@en,
+        "wheel"@en,
+        "wheels"@en ;
+    skos:definition "Wheels and rims"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wheel"@en ;
+    obd:order 7 .
+
+role:wing a skos:Concept ;
+    skos:altLabel "wing"@en,
+        "wings"@en ;
+    skos:definition "Wings and tail surfaces"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wing"@en ;
+    obd:order 11 .
+
+role:base a skos:Concept ;
+    skos:altLabel "base"@en,
+        "baseplate"@en,
+        "floor"@en,
+        "foundation"@en,
+        "ground"@en ;
+    skos:definition "Baseplate, ground, paths"@en ;
+    skos:hiddenLabel "base"@en,
+        "baseplate"@en,
+        "grass"@en,
+        "ground"@en,
+        "lawn"@en,
+        "path"@en,
+        "pavement"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "base"@en ;
+    skos:scopeNote "\"floor\" is an altLabel here (the classifier and vehicles read it as the ground plane); the building grammar reads it as role:structure via a hidden label. Scoping per domain is an open question (PROPOSAL.md)."@en ;
+    obd:order 6 .
+
+role:body a skos:Concept ;
+    skos:altLabel "body"@en,
+        "bodywork"@en ;
+    skos:definition "Vehicle or craft body: cabin, hull, fuselage"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "body"@en ;
+    obd:order 10 .
+
+role:door a skos:Concept ;
+    skos:altLabel "door"@en,
+        "doors"@en ;
+    skos:definition "Door frame and door leaf, gates"@en ;
+    skos:hiddenLabel "door"@en,
+        "doors"@en,
+        "entrance"@en,
+        "gate"@en,
+        "gates"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "door"@en ;
+    obd:order 4 .
+
+role:structure a skos:Concept ;
+    skos:definition "Interior floors and hidden supports"@en ;
+    skos:hiddenLabel "floor"@en,
+        "floors"@en,
+        "structure"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "structure"@en ;
+    obd:order 16 .
+
+role:window a skos:Concept ;
+    skos:altLabel "window"@en,
+        "windows"@en ;
+    skos:definition "Window frames and arch/slit infill that belongs to a window"@en ;
+    skos:hiddenLabel "window"@en,
+        "window frame"@en,
+        "window frames"@en,
+        "windows"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "window"@en ;
+    obd:order 3 .
+
+role:glass a skos:Concept ;
+    skos:altLabel "canopy"@en,
+        "glass"@en,
+        "glazing"@en,
+        "panes"@en,
+        "windscreen"@en,
+        "windshield"@en ;
+    skos:definition "Transparent panes"@en ;
+    skos:hiddenLabel "glass"@en,
+        "glazing"@en,
+        "panes"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "glass"@en ;
+    obd:order 5 .
+
+role:roof a skos:Concept ;
+    skos:altLabel "roof"@en,
+        "roofing"@en,
+        "roofs"@en ;
+    skos:definition "Roof surface: slopes, ridge caps, flat-roof deck, tower cones"@en ;
+    skos:hiddenLabel "roof"@en,
+        "roofing"@en,
+        "slates"@en,
+        "thatch"@en,
+        "tiles"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "roof"@en ;
+    obd:order 1 .
+
+role:wall a skos:Concept ;
+    skos:altLabel "brickwork"@en,
+        "masonry"@en,
+        "wall"@en,
+        "walls"@en ;
+    skos:definition "Load-bearing wall bricks, gable end walls, parapet merlons"@en ;
+    skos:hiddenLabel "bricks"@en,
+        "brickwork"@en,
+        "masonry"@en,
+        "stonework"@en,
+        "wall"@en,
+        "walls"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "wall"@en ;
+    obd:order 2 .
+
+role:trim a skos:Concept ;
+    skos:altLabel "cornice"@en,
+        "plinth"@en,
+        "trim"@en ;
+    skos:definition "Bands between storeys, cornices, corner pillars, plinth, window sills, keystones"@en ;
+    skos:hiddenLabel "band"@en,
+        "bands"@en,
+        "cornice"@en,
+        "pillars"@en,
+        "plinth"@en,
+        "quoins"@en,
+        "trim"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "trim"@en ;
+    obd:order 15 .
+
+role:detail a skos:Concept ;
+    skos:altLabel "detail"@en,
+        "details"@en ;
+    skos:definition "Chimney, porch, balcony, steps, sign, shutters, flower boxes, fences, crenellation extras"@en ;
+    skos:hiddenLabel "balcony"@en,
+        "chimney"@en,
+        "detail"@en,
+        "details"@en,
+        "porch"@en,
+        "sign"@en ;
+    skos:inScheme role: ;
+    skos:prefLabel "detail"@en ;
+    obd:order 14 .
+
+role: a owl:Ontology,
+        skos:ConceptScheme ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    dcterms:title "Open Brick Designer role vocabulary"@en ;
+    skos:definition "What a placement is for, independent of its part number or colour."@en ;
+    skos:hasTopConcept role:base,
+        role:body,
+        role:chassis,
+        role:detail,
+        role:door,
+        role:engine,
+        role:glass,
+        role:roof,
+        role:structure,
+        role:trim,
+        role:tyre,
+        role:wall,
+        role:wheel,
+        role:window,
+        role:wing .
+

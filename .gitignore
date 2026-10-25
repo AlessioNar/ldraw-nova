@@ -23,3 +23,9 @@ data/.models-annotated.stamp
 # SQLite sidecar files of the reference database
 data/*.db-shm
 data/*.db-wal
+
+# Local backups (scripts/backup.sh)
+backups/
+
+# Owner-local data fetched from third-party sites without a licence (tools/fetch_cada_sets.py); never commit
+data/local/

@@ -82,6 +82,38 @@ def tag_roles(plan, rules):
     return plan
 
 
+def inherit_roles(plan):
+    """Give every untagged submodel instance the role most of its parts carry (leaf roles come from construction).
+
+    Runs bottom-up, so an instance of an instance works too. Plans are changed in place and returned.
+    """
+    import collections
+    sections = {s['name'].casefold(): s for s in plan['sections']}
+    memo = {}
+
+    def deep(section, stack=()):
+        key = section['name'].casefold()
+        if key in memo or key in stack:
+            return memo.get(key, collections.Counter())
+        total = collections.Counter()
+        for step in section['steps']:
+            for p in step:
+                child = sections.get(p['ref'].casefold())
+                if child is None:
+                    if p.get('role'):
+                        total[p['role']] += 1
+                    continue
+                sub = deep(child, stack + (key,))
+                if 'role' not in p and sub:
+                    p['role'] = sub.most_common(1)[0][0]
+                total.update(sub)
+        memo[key] = total
+        return total
+    for section in plan['sections']:
+        deep(section)
+    return plan
+
+
 def digest_line(g):
     """One compact line: id | families | kinds | parameters."""
     colours, parts = [], []

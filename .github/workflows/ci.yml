@@ -54,6 +54,24 @@ jobs:
         working-directory: .
         run: python tools/models_pack.py verify --packed-only
 
+  # The ontology (ontology/*.ttl) is the source of truth; everything generated from
+  # it must be committed in sync. Toolkit-only deps, so a job of its own.
+  ontology:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[ontology,test]"   # also the runtime deps: obd.ttl is checked against the hand-kept schema
+      - run: python tools/build_role_vocab.py --check
+      - run: python tools/build_obd.py --check
+      - run: python tools/export_ontology.py --check
+      - run: python tools/validate_shapes.py --presets
+      # Cookbook queries run against docs/ns/; --noconftest because tests/conftest.py needs the LDraw library.
+      - run: pytest -q --noconftest tests/test_ontology_export.py tests/test_role_ontology.py tests/test_component_ontology.py tests/test_shapes.py
+
   # The only place the Dockerfile is built end to end and the tests that need
   # LeoCAD / the LDraw library can run. Real network access is required: the
   # image downloads LeoCAD, the LDraw library, bun, mpd2glb, uv, jev-rerank...
@@ -126,3 +144,37 @@ jobs:
           name: test-logs
           path: test-logs/
           if-no-files-found: ignore
+
+  # Known-vulnerability check of the three locked dependency sets. Only runtime
+  # dependencies are checked: the frontend's dev-server findings do not ship in
+  # the image, so `npm audit --omit=dev` is the gate. Fails on any known
+  # vulnerability in the pinned versions; bump the pin to clear it.
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 24   # same major as the Dockerfile's node:24-slim
+      - name: npm audit (frontend)
+        working-directory: app/web/frontend
+        run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (viewer-deps)
+        working-directory: app/web/viewer-deps
+        run: npm audit --omit=dev --audit-level=high
+
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.13"
+      # pip-audit reads the hash-locked file directly; --no-deps because it is
+      # already the full closure, --disable-pip so nothing gets installed.
+      - name: pip-audit (app/requirements.lock)
+        run: |
+          pip install pip-audit==2.10.1
+          pip-audit -r app/requirements.lock --no-deps --disable-pip
+      - name: pip-audit (toolkit uv.lock)
+        run: |
+          pip install uv==0.11.32 pip-audit==2.10.1
+          uv export --frozen --no-hashes --no-emit-project -o "$RUNNER_TEMP/toolkit-reqs.txt"
+          pip-audit -r "$RUNNER_TEMP/toolkit-reqs.txt" --no-deps --disable-pip

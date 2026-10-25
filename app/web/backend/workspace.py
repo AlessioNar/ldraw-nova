@@ -18,8 +18,7 @@ from collections import Counter, OrderedDict
 from pathlib import Path
 from typing import Optional
 
-import inventories
-import settings
+import collection_store
 
 PROPOSAL_RE = re.compile(r"^[0-9a-f]{12}$")
 MAX_PROPOSALS = 20
@@ -33,7 +32,14 @@ def draft_path(store, key: str) -> Path:
     return store.chat_dir(key) / "draft.json"
 
 
+def _slug(key: str) -> str:
+    return key[len("b-"):] if key.startswith("b-") else key
+
+
 def read_draft(store, key: str) -> Optional[dict]:
+    if store.pg:
+        import pg_builds
+        return pg_builds.read_draft(_slug(key))
     try:
         return json.loads(draft_path(store, key).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -42,6 +48,10 @@ def read_draft(store, key: str) -> Optional[dict]:
 
 def write_draft(store, key: str, record: dict) -> dict:
     record = {**record, "updated_at": time.time()}
+    if store.pg:
+        import pg_builds
+        pg_builds.write_draft(_slug(key), record)
+        return record
     path = draft_path(store, key)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
@@ -187,23 +197,14 @@ def diff_summary(before: str, after: str) -> dict:
 
 def owned_parts() -> tuple[dict, str]:
     """All of the person's parts lists added together, exact rows only (the Pileometer review pieces are in
-    `review`, not `rows`), and a signature that changes when any list does."""
-    owned: dict = {}
-    signature = []
-    folder = settings.INVENTORIES_DIR
-    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
-        if not inventories.valid_id(path.stem):
-            continue
-        try:
-            stat = path.stat()
-            data = inventories._load(path.stem)
-        except (OSError, inventories.InventoryError):
-            continue
-        signature.append(f"{path.stem}:{stat.st_mtime_ns}:{stat.st_size}")
-        for row in data.get("rows", []):
-            key = (str(row["part"]).casefold().removesuffix(".dat"), row["colour"])
-            owned[key] = owned.get(key, 0) + int(row["qty"])
-    return owned, "|".join(signature)
+    `review`, not `rows`), and a signature that changes when any list does. Read through the collection store."""
+    return collection_store.owned_totals()
+
+
+def available_parts(exclude_build: Optional[str] = None) -> tuple[dict, str]:
+    """Owned minus what built sets and reservations hold (not counting `exclude_build`'s own models), and its signature."""
+    import reservations
+    return reservations.available_totals(exclude_build)
 
 
 def check(usage: dict, owned: Optional[dict] = None, signature: str = "") -> dict:
@@ -243,7 +244,15 @@ def create_proposal(store, slug: str, mpd_text: str, chat_id: Optional[str], bas
     (folder / f"{pid}.mpd").write_text(mpd_text, encoding="utf-8")
     record = {"id": pid, "created_at": time.time(), "summary": diff_summary(base_text, mpd_text),
               "cost_eur": round(cost_eur, 4), "chat_id": chat_id, **({"warnings": warnings} if warnings else {})}
-    (folder / f"{pid}.json").write_text(json.dumps(record), encoding="utf-8")
+    if store.pg:
+        import pg_builds
+        try:
+            pg_builds.add_proposal(slug, record)
+        except Exception:
+            (folder / f"{pid}.mpd").unlink(missing_ok=True)
+            raise
+    else:
+        (folder / f"{pid}.json").write_text(json.dumps(record), encoding="utf-8")
     for old in list_proposals(store, slug)[:-MAX_PROPOSALS]:       # keep the newest few
         delete_proposal(store, slug, old["id"])
     return record
@@ -251,6 +260,9 @@ def create_proposal(store, slug: str, mpd_text: str, chat_id: Optional[str], bas
 
 def list_proposals(store, slug: str) -> list:
     """Oldest first."""
+    if store.pg:
+        import pg_builds
+        return [r for r in pg_builds.proposals(slug) if (proposals_dir(store, slug) / f"{r['id']}.mpd").is_file()]
     folder = proposals_dir(store, slug)
     found = []
     for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
@@ -267,9 +279,15 @@ def proposal_file(store, slug: str, pid: str) -> Optional[Path]:
     if not PROPOSAL_RE.match(pid or ""):
         return None
     path = proposals_dir(store, slug) / f"{pid}.mpd"
+    if store.pg:
+        import pg_builds
+        return path if path.is_file() and pg_builds.has_proposal(slug, pid) else None
     return path if path.is_file() and path.with_suffix(".json").is_file() else None
 
 
 def delete_proposal(store, slug: str, pid: str) -> None:
+    if store.pg:
+        import pg_builds
+        pg_builds.remove_proposal(slug, pid)
     for suffix in (".mpd", ".json"):
         (proposals_dir(store, slug) / f"{pid}{suffix}").unlink(missing_ok=True)

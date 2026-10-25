@@ -1,14 +1,18 @@
 """The generator registry as data, for the backend process.
 
+Templates (models turned into parametric starting points, ldraw_tools/templates) are listed next to the generators
+with ids "template:<id>"; the build worker dispatches on that prefix, so the decision engine treats both the same.
+
 The generators live in the toolkit interpreter (they need the ldraw library), which the backend does not import.
 One short subprocess dumps the registry metadata (ids, kinds, parameter schemas, colour names, digest); the result is
-kept in memory and in CONFIG_DIR/generators.json, keyed on the generator files' mtimes, so a restart costs nothing and
+kept in memory and in CONFIG_DIR/generators.json, keyed on a hash of the generator, grammar and template files, so a restart costs nothing and
 only a toolkit update triggers another dump. Building a plan stays with the build worker; the decision engine
 (fast_path.py) validates and clamps parameters against these schemas without calling the toolkit.
 """
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 from typing import Optional
@@ -20,17 +24,35 @@ log = logging.getLogger("ldraw-nova.generator-bridge")
 _DUMP = (
     "import json\n"
     "from ldraw_tools import generators as g\n"
+    "from ldraw_tools import templates as t\n"
     "from ldraw_tools.generators.colours import NAMES\n"
-    "print(json.dumps({'digest': g.digest(), 'entries': [x.entry() for x in g.REGISTRY.values()], 'colours': sorted(NAMES)}))\n"
+    "entries = [x.entry() for x in g.REGISTRY.values()]\n"
+    "entries += [dict(x.entry(), id='template:' + x.id) for x in t.REGISTRY.values()]\n"
+    "digest = g.digest() + ('\\n' + t.digest() if t.REGISTRY else '')\n"
+    "print(json.dumps({'digest': digest, 'entries': entries, 'colours': sorted(NAMES)}))\n"
+)
+_APPLY_TEXT = (
+    "import json, sys\n"
+    "from ldraw_tools.grammar.nl import apply_text\n"
+    "request = json.load(sys.stdin)\n"
+    "config, understood, missed = apply_text(request['config'], request['text'])\n"
+    "print(json.dumps({'understood': understood, 'missed': missed}))\n"
 )
 _memory: Optional[dict] = None
 _lock: Optional[asyncio.Lock] = None
 
 
 def _signature() -> str:
-    folder = settings.TOOLKIT_DIR / "ldraw_tools" / "generators"
+    """A content hash of everything the dump depends on. Contents, not mtimes: an image rebuild can keep old mtimes,
+    and the building grammar lives outside generators/ (a stale cache once hid the "building" generator)."""
+    root = settings.TOOLKIT_DIR / "ldraw_tools"
     try:
-        return ",".join(f"{p.name}:{p.stat().st_mtime_ns}" for p in sorted(folder.glob("*.py")))
+        files = sorted([*root.glob("generators/*.py"), *root.glob("grammar/**/*.py"), *root.glob("grammar/**/*.json"),
+                        *root.glob("templates/*.py"), *root.glob("data/templates/*.json")])
+        digest = hashlib.sha256()
+        for p in files:
+            digest.update(p.relative_to(root).as_posix().encode() + b"\0" + p.read_bytes())
+        return digest.hexdigest()
     except OSError:
         return ""
 
@@ -83,3 +105,33 @@ async def ensure() -> Optional[dict]:
         except Exception as exc:  # noqa: BLE001 - no toolkit (tests, broken install): the fast path simply is unavailable
             log.warning("generator registry unavailable: %s", exc)
     return _memory
+
+
+async def apply_text(config: dict, text: str) -> Optional[dict]:
+    """The building grammar's own text addressing ("three storeys", "arched windows"): {"understood": [{"text", "patch"}],
+    "missed": [clause]} for `text` read against `config`, or None when the toolkit is unavailable. Rules only, no model."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            str(settings.TOOLKIT_PYTHON), "-c", _APPLY_TEXT, cwd=str(settings.TOOLKIT_DIR),
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
+        out, _ = await asyncio.wait_for(proc.communicate(json.dumps({"config": config, "text": text}).encode()), timeout=20)
+        return json.loads(out.decode())
+    except Exception as exc:  # noqa: BLE001 - no toolkit: the request goes on to the understanding step
+        log.warning("grammar text addressing unavailable: %s", exc)
+        return None
+
+
+_warming: Optional[asyncio.Task] = None
+
+
+def warm() -> None:
+    """Start dumping the registry in the background if it isn't loaded (no waiting); called at start and on a stale
+    cache, so the instant hint and the decision use the current generators."""
+    global _warming
+    if cached() is not None or (_warming is not None and not _warming.done()):
+        return
+    try:
+        _warming = asyncio.get_running_loop().create_task(ensure())
+    except RuntimeError:          # no running loop (tests, scripts): the next ensure() call dumps
+        pass
+

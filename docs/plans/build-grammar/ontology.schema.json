@@ -1,0 +1,923 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Building grammar configuration",
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+  "name": {
+   "default": "building",
+   "description": "Model name",
+   "maxLength": 60,
+   "pattern": "^[A-Za-z0-9 _.-]*$",
+   "type": "string"
+  },
+  "footprint": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Footprint",
+   "description": "Plan shape of the ground floor",
+   "properties": {
+    "shape": {
+     "default": "rect",
+     "description": "rect, L, U (two wings round a notch) or courtyard (ring round an open yard)",
+     "enum": [
+      "rect",
+      "L",
+      "U",
+      "courtyard"
+     ]
+    },
+    "width": {
+     "default": 12,
+     "description": "Studs along x (the front width)",
+     "maximum": 40,
+     "minimum": 4,
+     "type": "integer"
+    },
+    "depth": {
+     "default": 8,
+     "description": "Studs along z",
+     "maximum": 32,
+     "minimum": 4,
+     "type": "integer"
+    },
+    "notch_width": {
+     "default": 4,
+     "description": "L/U: width of the cut-out",
+     "maximum": 20,
+     "minimum": 2,
+     "type": "integer"
+    },
+    "notch_depth": {
+     "default": 4,
+     "description": "L/U: depth of the cut-out",
+     "maximum": 16,
+     "minimum": 2,
+     "type": "integer"
+    },
+    "notch_corner": {
+     "default": "back-right",
+     "description": "L: which corner is cut away",
+     "enum": [
+      "back-right",
+      "back-left",
+      "front-right",
+      "front-left"
+     ]
+    },
+    "notch_side": {
+     "default": "back",
+     "description": "U: which side the notch opens to",
+     "enum": [
+      "back",
+      "front"
+     ]
+    },
+    "court_width": {
+     "default": 4,
+     "description": "Courtyard: width of the open yard",
+     "maximum": 24,
+     "minimum": 2,
+     "type": "integer"
+    },
+    "court_depth": {
+     "default": 4,
+     "description": "Courtyard: depth of the open yard",
+     "maximum": 20,
+     "minimum": 2,
+     "type": "integer"
+    }
+   },
+   "default": {
+    "shape": "rect",
+    "width": 12,
+    "depth": 8,
+    "notch_width": 4,
+    "notch_depth": 4,
+    "notch_corner": "back-right",
+    "notch_side": "back",
+    "court_width": 4,
+    "court_depth": 4
+   }
+  },
+  "storeys": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Storeys",
+   "description": "Storeys stacked on the footprint; each is wall courses plus a floor band",
+   "properties": {
+    "count": {
+     "default": 2,
+     "description": "Number of storeys",
+     "maximum": 6,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "courses": {
+     "default": 6,
+     "description": "Wall height of each storey in brick courses (a door needs 6)",
+     "maximum": 14,
+     "minimum": 3,
+     "type": "integer"
+    },
+    "top_courses": {
+     "default": 0,
+     "description": "Courses of the top storey; 0 = same as the others",
+     "maximum": 14,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "setback": {
+     "default": 0,
+     "description": "Studs each upper storey steps in on every side (rect footprints)",
+     "maximum": 3,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "floors": {
+     "default": true,
+     "description": "Fill the interior with floor plates (off = ring bands only)",
+     "type": "boolean"
+    },
+    "band_projection": {
+     "default": 0,
+     "description": "Studs the floor bands project as a cornice",
+     "maximum": 1,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "eaves": {
+     "default": false,
+     "description": "A small hip roof round every storey but the top (pagoda, temple); needs setback 1 or more",
+     "type": "boolean"
+    },
+    "band_colour": {
+     "default": "white",
+     "description": "Floor bands, floors and cornice",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "interior": {
+     "default": "none",
+     "description": "Rooms: a partition wall with a doorway on every storey (rectangular footprints)",
+     "enum": [
+      "none",
+      "partition"
+     ]
+    }
+   },
+   "default": {
+    "count": 2,
+    "courses": 6,
+    "top_courses": 0,
+    "setback": 0,
+    "floors": true,
+    "band_projection": 0,
+    "eaves": false,
+    "band_colour": "white",
+    "interior": "none"
+   }
+  },
+  "walls": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Walls",
+   "description": "Wall construction",
+   "properties": {
+    "style": {
+     "default": "brick",
+     "description": "brick; half-timber (posts and infill); stone (two-tone random bricks)",
+     "enum": [
+      "brick",
+      "timber",
+      "stone"
+     ]
+    },
+    "thickness": {
+     "default": 1,
+     "description": "Wall thickness in studs; 2 uses staggered rows",
+     "enum": [
+      1,
+      2
+     ]
+    },
+    "colour": {
+     "default": "tan",
+     "description": "Main wall colour",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "alt_colour": {
+     "default": "light grey",
+     "description": "Second colour (stone mix, timber infill accent)",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "timber_colour": {
+     "default": "reddish brown",
+     "description": "Timber posts and corner studs",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "plinth": {
+     "default": false,
+     "description": "First course in a plinth colour",
+     "type": "boolean"
+    },
+    "plinth_colour": {
+     "default": "dark grey",
+     "description": "Plinth colour",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "accent_every": {
+     "default": 0,
+     "description": "Every n-th course in the accent colour (0 = none)",
+     "maximum": 6,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "accent_colour": {
+     "default": "red",
+     "description": "Accent course colour",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    }
+   },
+   "default": {
+    "style": "brick",
+    "thickness": 1,
+    "colour": "tan",
+    "alt_colour": "light grey",
+    "timber_colour": "reddish brown",
+    "plinth": false,
+    "plinth_colour": "dark grey",
+    "accent_every": 0,
+    "accent_colour": "red"
+   }
+  },
+  "openings": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Openings",
+   "description": "Doors and windows, sized from real parts",
+   "properties": {
+    "door": {
+     "default": "plain",
+     "description": "Door leaf style (4 studs wide, 6 courses tall)",
+     "enum": [
+      "none",
+      "plain",
+      "smooth",
+      "glazed",
+      "barred"
+     ]
+    },
+    "door_facade": {
+     "default": "front",
+     "description": "Facade the door is on",
+     "enum": [
+      "front",
+      "back",
+      "left",
+      "right"
+     ]
+    },
+    "door_position": {
+     "default": "centre",
+     "description": "Where the door sits along the facade",
+     "enum": [
+      "centre",
+      "left",
+      "right"
+     ]
+    },
+    "door_colour": {
+     "default": "reddish brown",
+     "description": "Door leaf",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "frame_colour": {
+     "default": "white",
+     "description": "Window and door frames",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "glass_colour": {
+     "default": "clear",
+     "description": "Glass",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "ground_windows": {
+     "default": "tall",
+     "description": "Window kind on the ground floor (wide = two 4-stud windows side by side)",
+     "enum": [
+      "none",
+      "rect",
+      "small",
+      "tall",
+      "arch",
+      "slit",
+      "wide"
+     ]
+    },
+    "upper_windows": {
+     "default": "tall",
+     "description": "Window kind on upper floors",
+     "enum": [
+      "none",
+      "rect",
+      "small",
+      "tall",
+      "arch",
+      "slit",
+      "wide"
+     ]
+    },
+    "rhythm": {
+     "default": "regular",
+     "description": "Spacing: minimum pier 1, 2 or 3 studs between openings",
+     "enum": [
+      "dense",
+      "regular",
+      "sparse"
+     ]
+    },
+    "count": {
+     "default": 0,
+     "description": "Windows per facade (0 = as many as fit)",
+     "maximum": 12,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "sides": {
+     "default": [
+      "front",
+      "back",
+      "left",
+      "right"
+     ],
+     "description": "Facades that get windows",
+     "items": {
+      "enum": [
+       "front",
+       "back",
+       "left",
+       "right"
+      ]
+     },
+     "type": "array",
+     "uniqueItems": true
+    },
+    "above_door": {
+     "default": true,
+     "description": "A window above the door on upper floors",
+     "type": "boolean"
+    },
+    "sills": {
+     "default": false,
+     "description": "Projecting sill plate under every rect, small, tall and wide window that has a wall course below it",
+     "type": "boolean"
+    },
+    "sill_colour": {
+     "default": "white",
+     "description": "Window sills",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "shutters": {
+     "default": false,
+     "description": "Coloured shutter bricks on both sides of every rect, small, tall and wide window",
+     "type": "boolean"
+    },
+    "shutter_colour": {
+     "default": "dark green",
+     "description": "Shutters",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "keystones": {
+     "default": false,
+     "description": "Arch windows: a keystone brick in the course above the arch",
+     "type": "boolean"
+    },
+    "keystone_colour": {
+     "default": "light grey",
+     "description": "Keystone",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    }
+   },
+   "default": {
+    "door": "plain",
+    "door_facade": "front",
+    "door_position": "centre",
+    "door_colour": "reddish brown",
+    "frame_colour": "white",
+    "glass_colour": "clear",
+    "ground_windows": "tall",
+    "upper_windows": "tall",
+    "rhythm": "regular",
+    "count": 0,
+    "sides": [
+     "front",
+     "back",
+     "left",
+     "right"
+    ],
+    "above_door": true,
+    "sills": false,
+    "sill_colour": "white",
+    "shutters": false,
+    "shutter_colour": "dark green",
+    "keystones": false,
+    "keystone_colour": "light grey"
+   }
+  },
+  "corners": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Corners",
+   "description": "Building corners",
+   "properties": {
+    "style": {
+     "default": "plain",
+     "description": "plain interlocking corners, coloured pillars, or corner towers",
+     "enum": [
+      "plain",
+      "pillars",
+      "towers"
+     ]
+    },
+    "pillar_colour": {
+     "default": "white",
+     "description": "Pillar/quoin colour",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "tower_shape": {
+     "default": "square",
+     "description": "Square tower (any size) or round tower (4x4 round bricks)",
+     "enum": [
+      "square",
+      "round"
+     ]
+    },
+    "tower_size": {
+     "default": 4,
+     "description": "Square tower size in studs (round towers are 4)",
+     "maximum": 6,
+     "minimum": 4,
+     "type": "integer"
+    },
+    "tower_proud": {
+     "default": 1,
+     "description": "Studs the tower sticks out of the corner",
+     "maximum": 2,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "tower_extra_courses": {
+     "default": 4,
+     "description": "Courses the tower rises above the top storey band",
+     "maximum": 12,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "tower_at": {
+     "default": "all",
+     "description": "Which corners get a tower",
+     "enum": [
+      "all",
+      "front",
+      "back",
+      "left",
+      "right",
+      "diagonal"
+     ]
+    },
+    "tower_roof": {
+     "default": "flat",
+     "description": "Flat with battlements, or cone/pyramid",
+     "enum": [
+      "flat",
+      "cone"
+     ]
+    },
+    "tower_colour": {
+     "default": "light grey",
+     "description": "Tower walls",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "tower_roof_colour": {
+     "default": "dark red",
+     "description": "Tower cone/pyramid",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "tower_slits": {
+     "default": true,
+     "description": "Arrow slits in the tower",
+     "type": "boolean"
+    }
+   },
+   "default": {
+    "style": "plain",
+    "pillar_colour": "white",
+    "tower_shape": "square",
+    "tower_size": 4,
+    "tower_proud": 1,
+    "tower_extra_courses": 4,
+    "tower_at": "all",
+    "tower_roof": "flat",
+    "tower_colour": "light grey",
+    "tower_roof_colour": "dark red",
+    "tower_slits": true
+   }
+  },
+  "roof": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Roof",
+   "description": "Roof or top finish",
+   "properties": {
+    "style": {
+     "default": "gable",
+     "description": "gable, hip, flat deck (with optional parapet), or none",
+     "enum": [
+      "gable",
+      "hip",
+      "flat",
+      "none"
+     ]
+    },
+    "colour": {
+     "default": "dark red",
+     "description": "Roof slopes / deck",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "ridge": {
+     "default": "auto",
+     "description": "Ridge direction (auto = along the longer side)",
+     "enum": [
+      "auto",
+      "x",
+      "z"
+     ]
+    },
+    "overhang": {
+     "default": 1,
+     "description": "Eave overhang in studs",
+     "maximum": 1,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "verge": {
+     "default": 0,
+     "description": "Gable-end overhang in studs",
+     "maximum": 1,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "tiers": {
+     "default": 0,
+     "description": "Slope courses; 0 = as steep as the depth allows",
+     "maximum": 9,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "finial": {
+     "default": false,
+     "description": "Hip roofs: a cone finial on the peak",
+     "type": "boolean"
+    },
+    "parapet": {
+     "default": "none",
+     "description": "Flat roofs: parapet or battlements",
+     "enum": [
+      "none",
+      "plain",
+      "battlement"
+     ]
+    },
+    "merlon": {
+     "default": 1,
+     "description": "Battlement merlon width",
+     "maximum": 2,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "gap": {
+     "default": 1,
+     "description": "Battlement gap width",
+     "maximum": 2,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "parapet_courses": {
+     "default": 1,
+     "description": "Parapet height in courses",
+     "maximum": 2,
+     "minimum": 1,
+     "type": "integer"
+    },
+    "crenel_colour": {
+     "default": "tan",
+     "description": "Parapet and merlon colour",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "gable_windows": {
+     "default": false,
+     "description": "Gable roofs: a small window in each gable end",
+     "type": "boolean"
+    }
+   },
+   "default": {
+    "style": "gable",
+    "colour": "dark red",
+    "ridge": "auto",
+    "overhang": 1,
+    "verge": 0,
+    "tiers": 0,
+    "finial": false,
+    "parapet": "none",
+    "merlon": 1,
+    "gap": 1,
+    "parapet_courses": 1,
+    "crenel_colour": "tan",
+    "gable_windows": false
+   }
+  },
+  "details": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Details",
+   "description": "Add-ons",
+   "properties": {
+    "chimney": {
+     "default": "none",
+     "description": "Chimney on the ridge (gable/hip)",
+     "enum": [
+      "none",
+      "left",
+      "centre",
+      "right"
+     ]
+    },
+    "chimney_colour": {
+     "default": "dark grey",
+     "description": "Chimney bricks",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "chimney_courses": {
+     "default": 3,
+     "description": "Chimney height in courses",
+     "maximum": 6,
+     "minimum": 2,
+     "type": "integer"
+    },
+    "porch": {
+     "default": false,
+     "description": "Pillared porch over the door",
+     "type": "boolean"
+    },
+    "porch_colour": {
+     "default": "white",
+     "description": "Porch pillars and floor",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "balcony": {
+     "default": false,
+     "description": "Balcony over the door (needs 2+ storeys)",
+     "type": "boolean"
+    },
+    "balcony_colour": {
+     "default": "white",
+     "description": "Balcony floor and railing",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "sign": {
+     "default": "none",
+     "description": "Shop sign band above the ground floor",
+     "enum": [
+      "none",
+      "fascia"
+     ]
+    },
+    "sign_colour": {
+     "default": "red",
+     "description": "Sign band colour",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "flower_boxes": {
+     "default": false,
+     "description": "Flower boxes on the window sills (turns sills on)",
+     "type": "boolean"
+    },
+    "planter_colour": {
+     "default": "reddish brown",
+     "description": "Planter boxes",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "flower_colour": {
+     "default": "red",
+     "description": "Flowers",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "fence": {
+     "default": false,
+     "description": "Picket fence round the garden at the edge of the base plate, open where the path crosses it",
+     "type": "boolean"
+    },
+    "fence_colour": {
+     "default": "white",
+     "description": "Fence",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "connectors": {
+     "default": false,
+     "description": "Technic pin bricks in the side walls near the top of every storey, to bolt modules together",
+     "type": "boolean"
+    }
+   },
+   "default": {
+    "chimney": "none",
+    "chimney_colour": "dark grey",
+    "chimney_courses": 3,
+    "porch": false,
+    "porch_colour": "white",
+    "balcony": false,
+    "balcony_colour": "white",
+    "sign": "none",
+    "sign_colour": "red",
+    "flower_boxes": false,
+    "planter_colour": "reddish brown",
+    "flower_colour": "red",
+    "fence": false,
+    "fence_colour": "white",
+    "connectors": false
+   }
+  },
+  "base": {
+   "type": "object",
+   "additionalProperties": false,
+   "x-component": "Base",
+   "description": "Ground",
+   "properties": {
+    "kind": {
+     "default": "plate",
+     "description": "none, a plate round the building, or a 32x32 modular-building plate with a sidewalk",
+     "enum": [
+      "none",
+      "plate",
+      "modular"
+     ]
+    },
+    "margin": {
+     "default": 3,
+     "description": "Studs of ground around the building",
+     "maximum": 8,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "colour": {
+     "default": "green",
+     "description": "Ground",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "path": {
+     "default": true,
+     "description": "Path from the door to the edge",
+     "type": "boolean"
+    },
+    "path_colour": {
+     "default": "light grey",
+     "description": "Path",
+     "type": [
+      "string",
+      "integer"
+     ],
+     "x-colour": true
+    },
+    "path_width": {
+     "default": 2,
+     "description": "Path width",
+     "enum": [
+      2,
+      4
+     ]
+    },
+    "sidewalk": {
+     "default": 6,
+     "description": "Modular: studs of sidewalk in front of the building",
+     "maximum": 8,
+     "minimum": 0,
+     "type": "integer"
+    },
+    "lamps": {
+     "default": false,
+     "description": "Modular: two street lamps on the sidewalk",
+     "type": "boolean"
+    }
+   },
+   "default": {
+    "kind": "plate",
+    "margin": 3,
+    "colour": "green",
+    "path": true,
+    "path_colour": "light grey",
+    "path_width": 2,
+    "sidewalk": 6,
+    "lamps": false
+   }
+  }
+ }
+}

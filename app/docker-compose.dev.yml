@@ -59,3 +59,10 @@ services:
       WATCHFILES_FORCE_POLLING: "true"  # Windows/macOS bind mounts don't deliver file events to --reload
     command: ["uvicorn", "main:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0", "--port", "8000",
               "--reload", "--reload-dir", "/app/web/backend"]
+  db:
+    # So psql and a GUI on this machine can connect: psql -h 127.0.0.1 -p 5433 -U obd_admin obd (the admin has no
+    # network password access: use `docker compose exec db psql -U obd_admin obd`, or connect as obd_app with the
+    # password in the secrets volume). Docker publishes ports only from a non-internal network, hence `default`.
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks: [db-net, default]

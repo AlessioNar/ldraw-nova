@@ -372,7 +372,7 @@ async def _run_worker(ctx: ToolContext, contract: Contract, entry: dict, model: 
     guard = ctx.limits.guard
     cap_eur = ledger.reserve(contract.id, contract.max_eur, ctx.store.messages(ctx.chat_id))   # clamped to what is left
     guard.enter(ctx.work_dir)
-    sink = FileSink(ctx.chat_dir / "workers" / f"{contract.id}.jsonl")
+    sink = ctx.store.worker_sink(ctx.chat_id, contract.id)
     worker_events.start(ctx, contract, model, cap_eur)
     sink.add({"role": "user", "content": _task_message(contract)})
     system = worker_prompt(contract)
@@ -425,7 +425,8 @@ async def _run_worker(ctx: ToolContext, contract: Contract, entry: dict, model: 
         return await run_steps(entry=entry, params=params, sink=sink, tools=schemas, max_steps=steps,
                                build_messages=build_messages, run_tool=run_tool,
                                ref=lambda png: ctx.store.ref(ctx.chat_id, png), before_step=before_step,
-                               after_message=record_usage)
+                               after_message=record_usage,
+                               usage_context={"kind": "worker", "chat_id": ctx.chat_id, "worker_id": contract.id})
 
     ended, error, finished, repaired = "", "", False, False
     strays: list[str] = []

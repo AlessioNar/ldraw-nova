@@ -1,0 +1,157 @@
+FRONT ELEVATION (top = roof)
+      R       
+      R       
+      RR      
+      RR      
+     RRRR     
+     RRRR     
+     RRRR     
+    RRRRRR    
+    RRRRRR    
+    RRRRRR    
+    tttttt    
+    tttttt    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tttttt    
+    WWWWWW    
+    WWWWWW    
+    WWWWWW    
+    tttttt    
+    tttttt    
+    tDDDDt    
+    tDDDDt    
+    tDDDDt    
+    WDDDDW    
+    WDDDDW    
+    WDDDDW    
+    tDDDDt    
+    tDDDDt    
+    tDDDDt    
+    WDDDDW    
+    WDDDDW    
+    WDDDDW    
+    tDDDDt    
+    tDDDDt    
+    tDDDDt    
+    tDDDDt    
+    tDDDDt    
+    tD..Dt    
+..............
+..............
+
+PLAN at plate 5
+              
+              
+              
+              
+    tDDDDt    
+    t    t    
+    t    t    
+    t    t    
+    t    t    
+    tttttt    
+              
+              
+              
+              
+
+PLAN at plate 25
+              
+              
+              
+              
+    tttttt    
+    t    t    
+    t    t    
+    t    t    
+    t    t    
+    tttttt    
+              
+              
+              
+              
+
+PLAN at plate 45
+              
+              
+              
+              
+    tttttt    
+    t    t    
+    t    t    
+    t    t    
+    t    t    
+    tttttt    
+              
+              
+              
+              
+
+PLAN at plate 65
+              
+              
+              
+              
+    tttttt    
+    t    t    
+    t    t    
+    t    t    
+    t    t    
+    tttttt    
+              
+              
+              
+              

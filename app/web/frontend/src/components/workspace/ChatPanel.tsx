@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { api, buildsApi, estimateLabel, type ChatDetail, type DescribeHint, type DocumentUpload, type Message, type TurnOptions } from "../../api";
 import { useApp } from "../../context";
 import { useChatStream } from "../../hooks/useChatStream";
@@ -62,6 +63,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     setDetail(d);
     return d;
   }, [chatId]);
+  const prompt = (useLocation().state as { prompt?: string } | null)?.prompt;   // handed over by /new
   const { running, setRunning, draft, persisting, tools, error, setError, approvals, workers, contextNotice, now, subscribe, reset } =
     useChatStream(chatId ?? "", reload, useCallback(() => { refreshChats(); ws.reloadAll().catch(() => {}); }, [refreshChats, ws.reloadAll]));  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -84,8 +86,8 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     setHint(null);
     const long = text.trim().length >= 3;
     setTyped(long);
-    if (long) hintTimer.current = setTimeout(() => buildsApi.hint(text, generator).then(setHint).catch(() => {}), 350);
-  }, [generator]);
+    if (long) hintTimer.current = setTimeout(() => buildsApi.hint(text, generator, id).then(setHint).catch(() => {}), 350);
+  }, [generator, id]);
 
   const messages = detail?.messages ?? [];
   const lastId = messages.filter((m) => !m._hidden && m.role !== "tool").at(-1)?.id;
@@ -154,8 +156,10 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       return (
         <div className="ws-fp" data-route="clarify">
           <div className="ws-fp-line"><span>{f.question}</span></div>
-          {live && !!choices.length && (
+          {!!f.notes?.length && <ul className="ws-fp-notes">{f.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
+          {live && (!!choices.length || !!f.highlight?.length) && (
             <div className="ws-chips" role="group" aria-label="Quick replies">
+              {!!f.highlight?.length && <button className="ws-chip-btn" onClick={() => ws.showParts(f.highlight!)}>Show them</button>}
               {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}
               {choices.some((c) => c !== "Ask the AI") && <button className="ws-chip-btn pick" onClick={() => reply(choices.find((c) => c !== "Ask the AI")!)}>Just pick for me</button>}
             </div>
@@ -208,7 +212,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       <div className="ws-composer">
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
-        <Composer key={chatId ?? "new"} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
+        <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
           onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<span className="ws-hint-line" role="status" aria-live="polite">{line}</span>}
           llmId={llmId} onLlmChange={setLlmId} onSend={send} onStop={() => chatId && api.cancel(chatId)} running={running} />
       </div>

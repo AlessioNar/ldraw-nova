@@ -17,16 +17,16 @@ import json
 import logging
 import re
 import shutil
-import tempfile
-import threading
 from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+import fsutil
 import sandbox
 import settings
 import toolkit
+from fsutil import atomic_write  # noqa: F401  (kept importable from here)
 
 log = logging.getLogger(__name__)
 
@@ -34,12 +34,16 @@ MAX_CSV_BYTES = 25 * 1024 * 1024            # the toolkit parser's own limit
 MAX_NAME_CHARS = 80
 MAX_IDS = 20
 IMPORT_TIMEOUT = 180
+IMPORT_FORMATS = ("rebrickable-csv", "brickit-pileometer", "bricklink-xml", "brickstore-bsx", "bricklink-csv", "generic-csv")
+COLOUR_SYSTEMS = ("bricklink", "rebrickable", "ldraw", "name")
+MAPPING_ROLES = ("part", "colour", "qty", "system")
 MAX_REPORT_BYTES = 256 * 1024 * 1024
 PARTS_MODES = ("off", "prefer", "only")
 ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]{0,59}")
-RESERVED_IDS = ("buildable",)               # /api/inventories/buildable is a route, not an inventory
+LOOSE_ID = "loose"                          # the built-in editable source for manual and quick adds (collection.py)
+RESERVED_IDS = ("buildable", LOOSE_ID)      # /api/inventories/buildable is a route; "loose" is created by the collection
 
-_lock = threading.Lock()                    # check-then-write of ids and names
+_lock = fsutil.lock                         # check-then-write of ids and names
 _cache: OrderedDict[tuple, dict] = OrderedDict()
 
 
@@ -49,6 +53,14 @@ class InventoryError(Exception):
     def __init__(self, status: int, message: str):
         super().__init__(message)
         self.status = status
+
+
+class NeedsMapping(InventoryError):
+    """A CSV no importer recognises: `info` holds its headers, a few rows and a guess at the columns."""
+
+    def __init__(self, message: str, info: dict):
+        super().__init__(422, message)
+        self.info = info
 
 
 # --- per-chat options --------------------------------------------------------
@@ -108,24 +120,14 @@ def _path(inventory_id: str, ext: str = "json") -> Path:
     return settings.INVENTORIES_DIR / f"{inventory_id}.{ext}"
 
 
+def _store():
+    """The collection store (files or PostgreSQL); imported late because the store's file backend imports this module."""
+    import collection_store
+    return collection_store
+
+
 def exists(inventory_id: str) -> bool:
-    return valid_id(inventory_id) and _path(inventory_id).is_file()
-
-
-def atomic_write(path: Path, data: bytes) -> None:
-    """Temp file in the same folder, then rename: readers never see a partial inventory."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = None
-    try:
-        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".", suffix=".tmp", delete=False) as f:
-            tmp = Path(f.name)
-            f.write(data)
-        tmp.chmod(0o644)
-        tmp.replace(path)
-        tmp = None
-    finally:
-        if tmp:
-            tmp.unlink(missing_ok=True)
+    return valid_id(inventory_id) and _store().exists(inventory_id)
 
 
 def _load(inventory_id: str) -> dict:
@@ -154,11 +156,18 @@ def _load(inventory_id: str) -> dict:
 
 
 def summary(data: dict) -> dict:
+    """List-card facts of one source. Counts cover exact rows only; colour-family pieces (`review`) are counted apart."""
     rows = data.get("rows", [])
     review = data.get("review", [])         # colour-family pieces not counted as owned (Pileometer); keys only when present
     extra = {"review_items": len(review), "review_pieces": sum(r["qty"] for r in review)} if review else {}
+    set_info = data.get("set")
+    if isinstance(set_info, dict):
+        set_info = {**set_info, "brand": set_info.get("brand") or "LEGO", "image": set_info.get("image") or None}
     return {
         **extra,
+        "kind": data.get("kind") or "import", "schema": data.get("schema", 1),
+        **({"set": set_info} if isinstance(set_info, dict) else {}),
+        **({"origin": data["origin"]} if isinstance(data.get("origin"), dict) else {}),
         "id": data["id"], "name": data.get("name", data["id"]), "created_at": data.get("created_at", 0.0),
         "source_filename": data.get("source_filename") or None,
         "distinct_parts": len({r["part"] for r in rows}), "distinct_colours": len({r["colour"] for r in rows}),
@@ -168,15 +177,13 @@ def summary(data: dict) -> dict:
 
 
 def list_inventories() -> list[dict]:
-    folder = settings.INVENTORIES_DIR
+    store = _store()
     found = []
-    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
-        if not valid_id(path.stem):
-            continue
+    for source_id in store.source_ids():
         try:
-            found.append(summary(_load(path.stem)))
+            found.append(summary(store.load(source_id)))
         except InventoryError as exc:
-            log.warning("skipping inventory %s: %s", path.name, exc)
+            log.warning("skipping inventory %s: %s", source_id, exc)
     return sorted(found, key=lambda s: (-s["created_at"], s["id"]))
 
 
@@ -203,21 +210,19 @@ def clean_name(name: Any) -> str:
 def rename(inventory_id: str, name: str) -> dict:
     name = clean_name(name)
     with _lock:
-        data = dict(_load(inventory_id))
+        data = dict(_store().load(inventory_id))
         if _name_taken(name, exclude=inventory_id):
             raise InventoryError(409, f"An inventory called {name!r} already exists")
         data["name"] = name
-        atomic_write(_path(inventory_id), (json.dumps(data, indent=2) + "\n").encode())
+        _store().save(data)
     return summary(data)
 
 
 def delete(inventory_id: str) -> None:
     with _lock:
-        path = _path(inventory_id)
-        if not path.is_file():
+        if not valid_id(inventory_id):
             raise InventoryError(404, "no such inventory")
-        path.unlink()
-        _path(inventory_id, "csv").unlink(missing_ok=True)
+        _store().delete(inventory_id)
 
 
 # --- LDraw library names -----------------------------------------------------
@@ -249,7 +254,7 @@ def clear_caches() -> None:
 
 
 def detail(inventory_id: str, query: str = "", colour: int | None = None, limit: int = 50, offset: int = 0) -> dict:
-    data = _load(inventory_id)
+    data = _store().load(inventory_id)
     descriptions, names = _descriptions(), _colour_names()
     rows = data.get("rows", [])
     totals: dict[int, int] = {}
@@ -292,34 +297,49 @@ def clean_family_colours(value: Any) -> dict[str, int]:
 
 def remap_families(inventory_id: str) -> tuple[str, str]:
     """(name, stored CSV text) of an inventory whose colour families are being mapped again."""
-    data = _load(inventory_id)
-    path = _path(inventory_id, "csv")
-    if (data.get("import") or {}).get("dialect") != "pileometer" or not path.is_file():
+    data = _store().load(inventory_id)
+    csv_text = _store().read_csv(inventory_id)
+    if (data.get("import") or {}).get("dialect") != "pileometer" or csv_text is None:
         raise InventoryError(400, "Only a Pileometer import has colour families")
-    return data.get("name", inventory_id), path.read_text(encoding="utf-8")
+    return data.get("name", inventory_id), csv_text
 
 
-async def import_csv(name: str, csv_text: str, include_spares: bool = False, family_colours: dict | None = None,
-                     replace: str = "") -> dict:
-    """Parses and stores an upload with the toolkit CLI; returns {"inventory": summary, "report": {...}}.
+def clean_mapping(mapping: dict | None) -> dict[str, str]:
+    """The owner's column choice for a generic CSV: part, colour, qty (header names) and system (how colours are written)."""
+    if not mapping:
+        return {}
+    if not isinstance(mapping, dict):
+        raise InventoryError(400, "mapping must be an object")
+    out = {}
+    for role, value in mapping.items():
+        if role not in MAPPING_ROLES or not isinstance(value, str) or not value or len(value) > 200 or "\0" in value:
+            raise InventoryError(400, f"mapping: {role!r} must be one of {', '.join(MAPPING_ROLES)} with a text value")
+        out[role] = value
+    if out.get("system", "name") not in COLOUR_SYSTEMS:
+        raise InventoryError(400, f"mapping: system must be one of {', '.join(COLOUR_SYSTEMS)}")
+    return out
 
-    `replace` is the id of an inventory to overwrite in place (same name), used to map colour families again.
+
+async def parse_csv(name: str, csv_text: str, include_spares: bool = False, family_colours: dict | None = None,
+                    replace: str = "", import_format: str = "", mapping: dict | None = None) -> dict:
+    """Parses an upload with the toolkit CLI (`inventory import --dry-run`) and stores nothing.
+
+    Returns {"id", "data": the inventory dict, "report": {...what the UI shows...}, "raw": the CSV bytes}. Storing, the
+    name check and the history are collection.py's job, so every import can be previewed before it is committed.
+    `replace` is the id of an inventory whose id the result takes (same name), used to map colour families again.
     """
     name = clean_name(name)
     family_colours = clean_family_colours(family_colours)
+    mapping = clean_mapping(mapping)
+    if import_format and import_format not in IMPORT_FORMATS:
+        raise InventoryError(400, f"Unknown import format {import_format!r}")
     if not isinstance(csv_text, str):
         raise InventoryError(400, "csv must be text")
     raw = csv_text.encode("utf-8")
     if len(raw) > MAX_CSV_BYTES:
         raise InventoryError(413, f"File exceeds the {MAX_CSV_BYTES // (1024 * 1024)} MB limit")
     inventory_id = replace or slugify(name)      # a replaced inventory keeps its id even after a rename
-    if inventory_id in RESERVED_IDS:
-        raise InventoryError(400, f"The name {name!r} is reserved; choose another one")
-    if not replace and _name_taken(name):
-        raise InventoryError(409, f"An inventory called {name!r} already exists")
-    folder = settings.INVENTORIES_DIR
-    folder.mkdir(parents=True, exist_ok=True)
-    work = Path(tempfile.mkdtemp(prefix=".import-", dir=folder))
+    work = _store().scratch_dir(".import-")
     try:
         work.chmod(0o755)
         (work / "upload.csv").write_bytes(raw)
@@ -328,8 +348,10 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False, fam
         # The report is the CLI's stdout, redirected to a file: it carries every row, far past the
         # sandbox's output cap. Arguments follow the script as positional parameters, never the shell text.
         argv = ["bash", "-c", 'exec "$@" > report.json', "import", str(settings.TOOLKIT_PYTHON), "-m", "ldraw_tools.cli",
-                "inventory", "import", "upload.csv", f"--name={replace or name}", "--store", "store", "--json",
+                "inventory", "import", "upload.csv", f"--name={replace or name}", "--dry-run", "--json",
                 *(["--include-spares"] if include_spares else []),
+                *([f"--format={import_format}"] if import_format else []),
+                *(f"--map={role}={value}" for role, value in mapping.items()),
                 *(f"--family-colour={family}={code}" for family, code in family_colours.items())]
         result = await sandbox.run(argv, work, timeout=IMPORT_TIMEOUT, env_extra=toolkit.environment())
         if result.timed_out:
@@ -343,6 +365,8 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False, fam
             log.error("inventory import failed (exit %s): %s %s", result.exit_code, exc, result.stderr[-2000:])
             raise InventoryError(500, "The toolkit could not import the file") from None
         if result.exit_code != 0 or "inventory" not in report:
+            if report.get("error_type") == "NeedsMapping" and isinstance(report.get("mapping_needed"), dict):
+                raise NeedsMapping(str(report.get("error", "Choose the columns")), report["mapping_needed"])
             if report.get("error_type") == "ParseError":
                 raise InventoryError(400, str(report.get("error", "Not a valid inventory CSV")))
             log.error("inventory import failed (exit %s): %s %s", result.exit_code, report.get("error"), result.stderr[-2000:])
@@ -357,17 +381,14 @@ async def import_csv(name: str, csv_text: str, include_spares: bool = False, fam
                           for key in ("dialect", "total_rows", "total_pieces", "spare_pieces")}
         if report.get("pileometer"):
             data["import"]["pileometer"] = report["pileometer"]
-        with _lock:
-            if not replace and _name_taken(name):
-                raise InventoryError(409, f"An inventory called {name!r} already exists")
-            atomic_write(_path(inventory_id, "csv"), raw)
-            atomic_write(_path(inventory_id), (json.dumps(data, indent=2) + "\n").encode())
-        return {"inventory": summary(data), "report": {
-            "dialect": report.get("dialect", ""), "total_rows": report.get("total_rows", 0),
+        out_report = {
+            "dialect": report.get("dialect", ""), "format": report.get("format", ""), "total_rows": report.get("total_rows", 0),
             "total_pieces": report.get("total_pieces", 0), "spare_pieces": report.get("spare_pieces", 0),
             "unmapped_parts": data.get("unmapped_parts", []), "unmapped_colours": data.get("unmapped_colours", []),
             "warnings": report.get("warnings", []),
             **({"pileometer": report["pileometer"]} if report.get("pileometer") else {}),
-        }}
+            **({"mapping": report["mapping"], "header_signature": report.get("header_signature", "")} if report.get("mapping") else {}),
+        }
+        return {"id": inventory_id, "data": data, "report": out_report, "raw": raw}
     finally:
         await asyncio.to_thread(shutil.rmtree, work, True)

@@ -446,9 +446,10 @@
   }
 
   // The server's answer to an edit, an undo, a reload: draw what changed.
-  async function applyConfirmed(session, reframe) {
+  // `nodes`: the picture already worked out from the server's difference (then there is no MPD to read).
+  async function applyConfirmed(session, reframe, nodes) {
     const started = performance.now();
-    const flat = Core.flatten(session.mpd, session.plan);
+    const flat = nodes ? { nodes, truncated: state.shown ? state.shown.truncated : false } : Core.flatten(session.mpd, session.plan);
     state.session = session;
     if (!state.shown) {
       if (!await showFull(session, { reframe: true })) return false;
@@ -456,6 +457,7 @@
       await setNodes(flat.nodes);
       resetView(state.shown);
     } else {
+      await slideIn(flat.nodes);
       await setNodes(flat.nodes);
     }
     state.confirmed = { session, nodes: flat.nodes };
@@ -463,6 +465,25 @@
     state.shown.truncated = flat.truncated;
     afterShow();
     return performance.now() - started;
+  }
+
+  // A part that appeared where it was dropped slides to where the server put it (a snap moves it a few studs).
+  const TWEEN_MS = 120;
+  async function slideIn(finalNodes) {
+    const shown = state.shown;
+    const from = state.nodes || [];
+    const pending = new Map(from.filter(n => n.pending).map(n => [n.key, n]));
+    if (!pending.size || document.hidden || !finalNodes.some(n => {
+      const a = pending.get(n.key);
+      return a && Math.hypot(n.position[0] - a.position[0], n.position[1] - a.position[1], n.position[2] - a.position[2]) > 0.5;
+    })) return;
+    const t0 = performance.now();
+    for (;;) {
+      const t = Math.min(1, (performance.now() - t0) / TWEEN_MS);
+      if (state.shown !== shown || t >= 1) return;
+      paint(Core.tweenNodes(from, finalNodes, 1 - (1 - t) * (1 - t)), false);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }
   }
 
   function afterShow() {
@@ -502,7 +523,7 @@
   // ---- overlay: selection boxes, hover, the add tool's ghost, and the gizmo -----------------------
 
   const AXIS_COLOURS = { x: 0xe03131, y: 0x2f9e44, z: 0x1c7ed6 };
-  const SELECT_COLOUR = 0xff8800, HOVER_COLOUR = 0x3b8bff;
+  const SELECT_COLOUR = 0xff8800, HOVER_COLOUR = 0x3b8bff, PENDING_COLOUR = 0x8a94a6;
   const sceneAxis = axis => { const a = Core.AXES[axis]; return new THREE.Vector3(a[0], -a[1], -a[2]); };   // LDraw axis in scene space
 
   // A box outline in the frame of a placement (matrix m, 9 numbers, at LDraw position `at`).
@@ -565,6 +586,13 @@
         shown.gizmo = gizmo;
         shown.pivot = pivot;
       }
+    }
+    const pending = shown.leaves.filter(p => p.pending);        // parts shown before the server has confirmed them
+    if (pending.length && pending.length <= MANY_SELECTED) {
+      const group = new THREE.Group();
+      group.matrixAutoUpdate = false;
+      for (const p of pending) group.add(outline(boxOf(shown, p), p.matrix, p.position, PENDING_COLOUR, true));
+      overlay.add(group);
     }
     scene.scene.add(overlay);
     scaleGizmo(scene);
@@ -986,11 +1014,11 @@
   let pumping = false;
 
   // Show what the edits will give, then send them. `retry` runs when the server refuses (400) the first form.
-  function send(edits, { optimistic = true, retry } = {}) {
-    const entry = { kind: edits.map(e => e.op).join('+'), edits, t0: performance.now() };
-    if (optimistic && state.shown) {
+  function send(edits, { optimistic = true, retry, predicted: given, label } = {}) {
+    const entry = { kind: edits.map(e => e.op).join('+'), edits, t0: performance.now(), label };
+    if ((optimistic || given) && state.shown) {
       try {
-        const predicted = Core.predictEdits(state.nodes, edits);
+        const predicted = given || Core.predictEdits(state.nodes, edits);
         indexNodes(state.shown, predicted);
         state.selected = state.selected.filter(key => state.shown.byKey.has(key));
         paint(predicted, true);
@@ -998,7 +1026,7 @@
       } catch (e) { /* not predictable: the answer will show it */ }
     }
     entry.optimisticMs = performance.now() - entry.t0;
-    enqueue({ entry, run: () => call('/edits', Core.editsBody(edits, state.session.revision)), retry });
+    enqueue({ entry, run: () => call('/edits', { ...Core.editsBody(edits, state.session.revision), delta: true }), retry });
   }
 
   function enqueue(job) {
@@ -1007,7 +1035,21 @@
     pump();
   }
 
+  // The server answers an edit with the difference (`delta`) or, for anything it cannot describe so, the whole model.
+  // A difference is applied to the last confirmed plan and picture; when that cannot be done the whole model is fetched.
+  async function resolveReply(reply) {
+    if (!reply.delta) return { session: reply, nodes: null };
+    const base = state.confirmed;
+    const merged = base && Core.applyDelta(base.session.plan, base.nodes, reply.splices);
+    if (merged) {
+      const { splices, delta, ...rest } = reply;
+      return { session: { ...base.session, ...rest, plan: merged.plan, mpd: null }, nodes: merged.nodes };
+    }
+    return { session: await call(''), nodes: null };
+  }
+
   async function pump() {
+    let failed = null;
     if (pumping) return;
     pumping = true;
     state.busy = true;
@@ -1016,18 +1058,20 @@
     try {
       while (queue.length) {
         const job = queue.shift();
+        failed = job.entry;
         const sent = performance.now();
-        let session;
-        try { session = await job.run(); }
+        let reply;
+        try { reply = await job.run(); }
         catch (e) {
-          if (job.retry && e.status === 400) session = await job.retry();
+          if (job.retry && e.status === 400) reply = await job.retry();
           else throw e;
         }
         const requestMs = performance.now() - sent;
+        const { session, nodes } = await resolveReply(reply);
         state.session = session;                               // revision and depths: the next queued edit builds on them
         let applyMs = 0;
-        if (!queue.length) applyMs = await applyConfirmed(session) || 0;
-        else state.confirmed = { session, nodes: Core.flatten(session.mpd, session.plan).nodes };
+        if (!queue.length) applyMs = await applyConfirmed(session, false, nodes) || 0;
+        else state.confirmed = { session, nodes: nodes || Core.flatten(session.mpd, session.plan).nodes };
         job.entry.requestMs = requestMs; job.entry.applyMs = applyMs; job.entry.totalMs = performance.now() - job.entry.t0;
         state.perf.push(job.entry);
         post({ type: 'obd:changed', revision: session.revision, undo_depth: session.undo_depth, redo_depth: session.redo_depth });
@@ -1040,7 +1084,7 @@
         fail(`${e.message}. Reloaded the current model.`);
       } else {
         await rollback().catch(() => {});
-        fail(`${e.message} (the model is unchanged)`);
+        fail(`${failed && failed.label ? `Could not ${failed.label}: ` : ''}${e.message} (the model is unchanged)`);
       }
     } finally {
       pumping = false;
@@ -1058,9 +1102,9 @@
   };
 
   const undo = () => state.session && state.session.undo_depth > 0 && needEdit('undo') &&
-    enqueue({ label: 'undo', run: () => call('/undo', { base_revision: state.session.revision }) });
+    enqueue({ label: 'undo', run: () => call('/undo', { base_revision: state.session.revision, delta: true }) });
   const redo = () => state.session && state.session.redo_depth > 0 && needEdit('redo') &&
-    enqueue({ label: 'redo', run: () => call('/redo', { base_revision: state.session.revision }) });
+    enqueue({ label: 'redo', run: () => call('/redo', { base_revision: state.session.revision, delta: true }) });
 
   // Delete these placements (by key): the sub-model a lone part sits in goes with it, as before.
   function removeParts(keys) {
@@ -1087,13 +1131,22 @@
     const placement = Core.placementFor(ray, shown.leaves, shown.boxes, shown.boxes[ref] || FALLBACK_BOX, groundY(), rootSection());
     if (!placement) { setStatus('Nothing to place it on there: click on the model or the ground.', false); return; }
     const plan = state.session.plan;
-    const withSnap = Core.addEdits(plan, state.add.part, state.add.colour, placement, true);
-    const without = Core.addEdits(plan, state.add.part, state.add.colour, placement, false);
+    const id = Core.nextEntryId(plan, state.nodes);           // what the server will call it (adds still queued count)
+    const withSnap = Core.addEdits(plan, state.add.part, state.add.colour, placement, true, id);
+    const without = Core.addEdits(plan, state.add.part, state.add.colour, placement, false, id);
+    // The part shows where it was dropped at once (outlined until the server answers); the answer slides it onto its
+    // snap or, when the add is refused, takes it away again with the reason.
+    let predicted = null;
+    if (!shown.leafScene.missing([{ ref: without[0].part }]).length) {
+      predicted = Core.optimisticAdd(state.nodes, plan, id, placement.section, state.add.part, state.add.colour, placement.local);
+    }
     // One batch (add + snap), so one undo removes the part. If the snap is refused (nothing to snap to) the part is
     // added where it was dropped; an add that is refused itself (inventory) fails the same way again.
     send(withSnap, {
       optimistic: false,
-      retry: () => call('/edits', Core.editsBody(without, state.session.revision)),
+      predicted,
+      label: `add ${state.add.part}`,
+      retry: () => call('/edits', { ...Core.editsBody(without, state.session.revision), delta: true }),
     });
   }
 
@@ -1283,6 +1336,12 @@
 
   async function enterPlayer() {
     if (!state.session) return;
+    if (state.session.mpd == null) {                           // an edit was answered with a difference: fetch the model's text
+      try {
+        const full = await call('');
+        if (full.revision === state.session.revision) state.session.mpd = full.mpd; else await applyConfirmed(full);
+      } catch (e) { fail(`Could not load the model for the player (${e.message})`); return; }
+    }
     $('player-stage').hidden = false;
     stage.style.visibility = 'hidden';
     try {
@@ -1376,6 +1435,9 @@
       case 'reload': if (state.readonly) { if (parked) parked.stale = true; } else refresh(false, true); break;
       case 'view-version': viewVersion(command.url); break;
       case 'back-to-draft': backToDraft(); break;
+      case 'select':
+        if (state.shown && selecting()) { setSelected(Core.keysForIds(state.shown.placements, command.ids)); frameSelection(); }
+        break;
       case 'focus': if (state.shown) resetView(state.shown); break;
       case 'step':
         if (state.mode === 'player' && playerInstance) playerInstance.showStep(command.n);

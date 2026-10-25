@@ -260,7 +260,7 @@ def stocked(monkeypatch):
 def test_list_summary_counts(client, stocked):
     [inv] = client.get("/api/inventories").json()["inventories"]
     assert inv == {"id": "box", "name": "Box", "created_at": 1000.0, "source_filename": "box.csv", "distinct_parts": 4,
-                   "distinct_colours": 3, "total_pieces": 29, "spare_pieces": 2, "unmapped_parts": 1, "unmapped_colours": 0}
+                   "distinct_colours": 3, "total_pieces": 29, "spare_pieces": 2, "unmapped_parts": 1, "unmapped_colours": 0, "kind": "import", "schema": 1}
 
 
 def test_list_empty_without_directory(client):

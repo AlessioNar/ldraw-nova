@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, type ModelFile } from "../api";
+import { api, reservationsApi, type ModelFile, type Reservation } from "../api";
 import ModelCard from "../components/ModelCard";
+import BuiltButton from "../components/parts/BuiltButton";
 
 // Opening the page scans data/generated; the backend queues snapshots for models
 // that have none, and we poll until they're all rendered.
 const POLL_MS = 1500;
 
-export default function Models() {
+/** The per-file gallery (downloads, per-file delete, zip of everything): mounted only when its disclosure on My Builds is open. */
+export default function ModelFiles() {
   const [models, setModels] = useState<ModelFile[] | null>(null);
   const [pending, setPending] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [reserved, setReserved] = useState<Record<string, Reservation>>({});
   const deleted = useRef(new Set<string>());
   const navigate = useNavigate();
 
@@ -37,6 +40,9 @@ export default function Models() {
     };
   }, []);
 
+  const loadReserved = () => reservationsApi.list().then(r => setReserved(Object.fromEntries(r.reservations.map(x => [x.model, x]))), () => undefined);
+  useEffect(() => { void loadReserved(); }, []);
+
   const q = query.trim().toLowerCase();
   const shown = (models ?? []).filter(
     (m) =>
@@ -48,12 +54,11 @@ export default function Models() {
   );
 
   return (
-    <div className="page">
+    <div className="model-files">
       <header className="page-head">
         <div>
-          <h1>My Builds</h1>
           <p className="muted">
-            Your generated models and models you’ve added. Open a model to explore it in 3D.
+            Every model file on disk, including ones no build owns. Open a model to explore it in 3D.
             {pending > 0 && (
               <>
                 {" "}
@@ -81,12 +86,14 @@ export default function Models() {
       {models && models.length > 0 && shown.length === 0 && <p className="muted">No models match your search.</p>}
       <div className="card-grid">
         {shown.map((m) => (
-          <ModelCard key={m.file} model={m} showChats buildId={m.build} onEdit={async () => {
+          <ModelCard key={m.file} model={m} showChats buildId={m.build}
+            extraActions={<BuiltButton file={m.file} title={m.description || m.file} reservation={reserved[m.file]} onChanged={() => void loadReserved()} />} onEdit={async () => {
             const opened = await api.editModel(m.file);
             navigate(`/build/${encodeURIComponent(opened.build)}/edit`);
           }} onDelete={async () => {
             await api.deleteModel(m.file);
             deleted.current.add(m.file);
+            void loadReserved();
             setModels(current => current?.filter(model => model.file !== m.file) ?? null);
           }} />
         ))}

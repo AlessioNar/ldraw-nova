@@ -82,6 +82,7 @@ def workspace(store, chat_id: str) -> Path:
 
 
 def environment() -> dict[str, str]:
+    import collection_store      # late: the store's file backend imports inventories, which imports this module
     source = root()
     env = environment_config.snapshot()
     return {
@@ -93,7 +94,7 @@ def environment() -> dict[str, str]:
         "XDG_CACHE_HOME": str(source / ".cache"),
         "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1",
         "LDRAW_DIR": env.get("LDRAW_DIR") or env.get("LDRAWDIR") or str(settings.LDRAW_DIR),
-        "LDRAW_NOVA_INVENTORY_DIR": str(settings.INVENTORIES_DIR),
+        **collection_store.cli_environment(),
     }
 
 

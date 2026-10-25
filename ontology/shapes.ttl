@@ -1,0 +1,127 @@
+# SHACL shapes for the building grammar (issue #93, epic #89; design: docs/plans/build-ontology/PROPOSAL.md).
+# Each validity rule of ldraw_tools/grammar/schema.py CONSTRAINTS is one sh:NodeShape whose dcterms:identifier is the rule id. A rule
+# is a sh:sparql constraint that selects the buildings BREAKING it, so a conforming graph is a valid combination.
+# The shapes validate a NORMALISED build (defaults filled, repairs applied), as tools/validate_shapes.py loads it: normalise() repairs
+# what it can, the shapes state what must hold afterwards. Parameter ranges and enums are the OWL ranges in obd.ttl (#92), not repeated here.
+# Not here: door-fits and window-height (the generators degrade those at build time and need the facade length, which is not a parameter).
+# SHACL-SPARQL runs in pyshacl (toolkit-only); the app keeps reading JSON.
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix obd: <https://alessionar.github.io/open-brick-designer/ns/obd#> .
+@prefix obdsh: <https://alessionar.github.io/open-brick-designer/ns/shapes#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://alessionar.github.io/open-brick-designer/ns/shapes> a owl:Ontology ;
+    dcterms:title "Open Brick Designer build validity shapes"@en ;
+    dcterms:license <https://creativecommons.org/licenses/by-sa/4.0/> ;
+    owl:imports <https://alessionar.github.io/open-brick-designer/ns/obd> ;
+    sh:declare [ sh:prefix "obd" ; sh:namespace "https://alessionar.github.io/open-brick-designer/ns/obd#"^^xsd:anyURI ] .
+
+obdsh:BuildingShape a sh:NodeShape ; sh:targetClass obd:Building ;
+    rdfs:comment "A building has exactly one component of each kind, and a name."@en ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Footprint ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Footprint." ] ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Storeys ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Storeys." ] ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Walls ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Walls." ] ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Openings ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Openings." ] ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Corners ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Corners." ] ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Roof ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Roof." ] ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Details ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Details." ] ;
+    sh:property [ sh:path [ sh:inversePath obd:partOf ] ; sh:qualifiedValueShape [ sh:class obd:Base ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ; sh:message "A building has exactly one Base." ] ;
+    sh:property [ sh:path obd:buildingName ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+obdsh:DoorHeight a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "door-height" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A door is 6 courses tall, so the ground storey needs 6 or more courses (door-height)" ;
+        sh:select """SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?st obd:storeysCourses ?courses . ?op obd:openingsDoor ?door . FILTER (?door != "none" && ?courses < 6) }""" ] .
+
+obdsh:PitchedNeedsRect a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "pitched-needs-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Gable and hip roofs need a rectangular footprint (pitched-needs-rect)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?rf obd:roofStyle ?style . FILTER (?style IN ("gable","hip") && ?shape != "rect") }""" ] .
+
+obdsh:TowersFlat a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "towers-flat" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Corner towers need a flat main roof (towers-flat)" ;
+        sh:select """SELECT $this WHERE { ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?co obd:cornersStyle "towers" . ?rf obd:roofStyle ?style . FILTER (?style IN ("gable","hip")) }""" ] .
+
+obdsh:SetbackRect a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "setback-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Setbacks only apply to rectangular footprints (setback-rect)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysSetback ?setback . FILTER (?shape != "rect" && ?setback > 0) }""" ] .
+
+obdsh:ThickWalls a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "thick-walls" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Wall thickness t needs a footprint at least 2t+2 studs wide and deep (thick-walls)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?wl a obd:Walls ; obd:partOf $this . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?wl obd:wallsThickness ?t . FILTER (?w < 2*?t+2 || ?d < 2*?t+2) }""" ] .
+
+obdsh:NotchFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "notch-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "L and U notches and courtyards must leave at least 4 studs of wall (notch-fits)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?wl a obd:Walls ; obd:partOf $this . ?fp obd:footprintShape ?shape ; obd:footprintWidth ?w ; obd:footprintDepth ?d ; obd:footprintNotchWidth ?nw ; obd:footprintNotchDepth ?nd ; obd:footprintCourtWidth ?cw ; obd:footprintCourtDepth ?cd . ?wl obd:wallsThickness ?t . FILTER ((?shape = "L" && (?nw > ?w-4 || ?nd > ?d-4)) || (?shape = "U" && (?nw > IF(?w-8 > 2, ?w-8, 2) || ?nd > ?d-4)) || (?shape = "courtyard" && (?cw > ?w-2*(?t+1) || ?cd > ?d-2*(?t+1)))) }""" ] .
+
+obdsh:ChimneyPitched a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "chimney-pitched" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A chimney needs a gable or hip roof (chimney-pitched)" ;
+        sh:select """SELECT $this WHERE { ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?rf obd:roofStyle ?style . ?dt obd:detailsChimney ?chimney . FILTER (?style NOT IN ("gable","hip") && ?chimney != "none") }""" ] .
+
+obdsh:PorchDoor a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "porch-door" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A porch needs a front door (porch-door)" ;
+        sh:select """SELECT $this WHERE { ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsPorch true . ?op obd:openingsDoor ?door ; obd:openingsDoorFacade ?facade . FILTER (?door = "none" || ?facade != "front") }""" ] .
+
+obdsh:BalconyStoreys a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "balcony-storeys" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A balcony needs a door and at least 2 storeys (balcony-storeys)" ;
+        sh:select """SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsBalcony true . ?op obd:openingsDoor ?door . ?st obd:storeysCount ?count . FILTER (?door = "none" || ?count < 2) }""" ] .
+
+obdsh:ParapetFlat a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "parapet-flat" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Parapets and battlements only exist on flat roofs; a towered flat roof has battlements (parapet-flat)" ;
+        sh:select """SELECT $this WHERE { ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?rf obd:roofStyle ?style ; obd:roofParapet ?parapet . ?co obd:cornersStyle ?corners . FILTER ((?style != "flat" && ?parapet != "none") || (?style = "flat" && ?parapet = "none" && ?corners = "towers")) }""" ] .
+
+obdsh:ModularFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "modular-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors (modular-fits)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?rf obd:roofVerge ?verge ; obd:roofOverhang ?overhang . ?st obd:storeysEaves ?eaves ; obd:storeysFloors ?floors . ?co obd:cornersStyle ?corners . ?dt obd:detailsConnectors ?connectors . FILTER ((?kind = "modular" && (?w != 32 || ?d > 32-?sidewalk || ?verge != 0 || ?overhang != 0 || ?eaves || !?floors || ?corners = "towers")) || (?kind != "modular" && ?connectors)) }""" ] .
+
+obdsh:InteriorRect a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "interior-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Interior partitions only go into rectangular footprints (interior-rect)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysInterior "partition" . FILTER (?shape != "rect") }""" ] .
+
+obdsh:EavesSetback a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "eaves-setback" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Eave roofs round storeys need a cornice (band projection) and each upper storey to step in by 1 or more (eaves-setback)" ;
+        sh:select """SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?st obd:storeysEaves true ; obd:storeysBandProjection ?band ; obd:storeysSetback ?setback ; obd:storeysCount ?count . FILTER (?band < 1 || (?count > 1 && ?setback < 1)) }""" ] .
+
+obdsh:SetbackFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "setback-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "The top storey must stay at least 4 studs wide after all setbacks (setback-fits)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?wl a obd:Walls ; obd:partOf $this . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?st obd:storeysSetback ?setback ; obd:storeysCount ?count . ?wl obd:wallsThickness ?t . BIND (IF(?w < ?d, ?w, ?d) AS ?m) FILTER (?setback > 0 && ?m - 2*?setback*(?count-1) < 2+2*?t) }""" ] .
+
+obdsh:EavesRect a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "eaves-rect" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Eave roofs only go round rectangular storeys (eaves-rect)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?fp obd:footprintShape ?shape . ?st obd:storeysEaves true . FILTER (?shape != "rect") }""" ] .
+
+obdsh:FenceBase a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "fence-base" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A fence needs a plain base plate with a margin of 2 studs or more (fence-base)" ;
+        sh:select """SELECT $this WHERE { ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?dt obd:detailsFence true . ?bs obd:baseKind ?kind ; obd:baseMargin ?margin . FILTER (?kind != "plate" || ?margin < 2) }""" ] .
+
+obdsh:FlowersSills a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "flowers-sills" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "Flower boxes stand on window sills, so they turn sills on (flowers-sills)" ;
+        sh:select """SELECT $this WHERE { ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsFlowerBoxes true . ?op obd:openingsSills false . }""" ] .
+
+obdsh:GableWindowFits a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "gable-window-fits" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A gable-end window needs a gable roof at least 8 studs deep (gable-window-fits)" ;
+        sh:select """SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?rf obd:roofGableWindows true ; obd:roofStyle ?style ; obd:roofOverhang ?overhang . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . BIND (IF(?w < ?d, ?w, ?d) AS ?m) FILTER (?style != "gable" || ?m + 2*?overhang < 8) }""" ] .
+
+obdsh:SignShop a sh:NodeShape ; sh:targetClass obd:Building ; dcterms:identifier "sign-shop" ;
+    sh:sparql [ a sh:SPARQLConstraint ; sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
+        sh:message "A fascia sign needs a door and a ground storey of 7 or more courses (sign-shop)" ;
+        sh:select """SELECT $this WHERE { ?st a obd:Storeys ; obd:partOf $this . ?op a obd:Openings ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?dt obd:detailsSign ?sign . ?op obd:openingsDoor ?door . ?st obd:storeysCourses ?courses . FILTER (?sign != "none" && (?door = "none" || ?courses < 7)) }""" ] .

@@ -305,6 +305,13 @@ COPY --from=nova docs/ /opt/ldraw-nova/docs/
 COPY --from=nova examples/ /opt/ldraw-nova/examples/
 COPY --from=nova prompts/ /opt/ldraw-nova/prompts/
 COPY --from=nova *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent /opt/ldraw-nova/
+# The set catalog builder: tests/test_sets.py loads it, and the root tests run in this image
+COPY --from=nova tools/build_set_catalog.py /opt/ldraw-nova/tools/build_set_catalog.py
+# The CaDA set-list fetcher: tests/test_fetch_cada_sets.py imports it (parsing only, no network)
+COPY --from=nova tools/fetch_cada_sets.py /opt/ldraw-nova/tools/fetch_cada_sets.py
+# tests/test_fetch_cada_sets.py reads .gitignore; tests/test_templates.py reads the backend's registry-dump source
+COPY --from=nova .gitignore /opt/ldraw-nova/.gitignore
+COPY --from=nova app/web/backend/generator_bridge.py /opt/ldraw-nova/app/web/backend/generator_bridge.py
 RUN --mount=type=cache,target=/root/.cache/uv \
     cd /opt/ldraw-nova && uv sync --locked --no-dev --python "${PYTHON_VERSION}" \
     && mkdir -p .cache && chown agent:agent .cache \
@@ -318,6 +325,11 @@ ENV LDRAW_DIR=/opt/ldraw/ldraw LDRAW_NOVA_TOOLKIT_DIR=/opt/ldraw-nova
 # same paths the app uses at run time: the cache directory is keyed by the models, database and library paths.
 RUN cd /opt/ldraw-nova \
     && runuser -u agent -- env XDG_CACHE_HOME=/opt/ldraw-nova/.cache ./ldraw-agent discover search parts wing --engine fts --limit 1 > /dev/null
+
+# Precompute every bundled model's parts list now, so "what can I build" answers on the first request instead of after a
+# warm-up of minutes. Keyed by file content and part names/sizes, so the cache stays valid across restarts and rebuilds.
+RUN cd /opt/ldraw-nova \
+    && runuser -u agent -- ./ldraw-agent inventory buildable --warm --max-build-seconds 3000 > /dev/null
 
 # --- scripts/: the whole folder, on everyone's PATH ----------------------------
 # Whatever is in scripts/ runs from anywhere in the container, by name, for

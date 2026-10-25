@@ -31,6 +31,14 @@ retained unchanged. [The study index](examples/technic-studies/README.md) and
 The underlying 42083/42110 LDraw models credit Philippe Hurbain [Philo] and retain
 their CCAL 2.0 notices. Documentation reuse does not replace model or part licences.
 
+## BrickLink colour table
+
+`ldraw_tools/data/bricklink-colours.json` (BrickLink colour id and name to LDraw colour code, used by the BrickLink and
+BrickStore importers and the BrickLink wanted-list export) pairs colours using the `legoCols` table of the R package
+[legocolors](https://cran.r-project.org/package=legocolors) 0.4.0 (MIT licence, Copyright (c) 2019 Matthew Leonawicz),
+completed by colour name from the Rebrickable mapping above. `tools/build_bricklink_colours.py` regenerates it. Colours
+with no certain LDraw equivalent are listed as unmapped in the file and are never guessed.
+
 ## Rebrickable data
 
 `ldraw_tools/data/set-catalog.bin` (set numbers, names, years, themes, piece counts and parts lists of about 20,000
@@ -45,3 +53,12 @@ acknowledge Rebrickable as your data source." This notice is that acknowledgemen
 files or derivatives. The terms are recorded in `docs/plans/set-catalog.md`.
 
 LEGO(R) is a trademark of the LEGO Group of companies, which does not sponsor, authorize or endorse this project.
+
+## CaDA set list (local, not distributed)
+
+`tools/fetch_cada_sets.py` lets the owner fetch the list of CaDA set numbers, names, years and piece counts from
+[Merlins Bricks](https://www.merlinsbricks.com/setdb/brand/cada/) once, into `data/local/set-catalog-local.json`.
+The site is copyrighted (Kai Zimmermann) and publishes no licence, so that list is local user data: the path is
+gitignored, nothing fetched is committed or bundled, and the tool makes three requests per run (robots.txt, the
+brand page, one JSON file), honours robots.txt, and refuses to run twice without `--force`. CaDA is a trademark of
+its owner, which does not sponsor or endorse this project.

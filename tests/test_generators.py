@@ -1,6 +1,7 @@
 """Generator registry: interface, colour names, the digest budget, and a corner sweep of every parameter range."""
 import itertools
 import json
+import os
 import random
 
 import jsonschema
@@ -45,11 +46,11 @@ def extremes(spec):
     return []  # colours and arrays keep their defaults in the structured sweep
 
 
-def corner_cases(generator):
-    """One-at-a-time extremes, all-min, all-max, and a few seeded mixes of the extremes."""
+def corner_cases(generator, full=True):
+    """One-at-a-time extremes (full only), all-min, all-max, and a few seeded mixes of the extremes."""
     options = {k: extremes(v) for k, v in generator.params.items()}
     options = {k: v for k, v in options.items() if v}
-    cases = [{k: v} for k, vs in options.items() for v in vs]
+    cases = [{k: v} for k, vs in options.items() for v in vs] if full else []
     cases.append({k: vs[0] for k, vs in options.items()})
     cases.append({k: vs[-1] for k, vs in options.items()})
     rng = random.Random(generator.id)
@@ -64,7 +65,7 @@ def corner_cases(generator):
 
 def test_registry_entries_are_uniform_and_valid():
     assert {'house', 'starfighter', 'grand-tourer', 'delivery-van', 'pickup', 'tipper-truck', 'touring-motorcycle',
-            'harbour-launch', 'courier-jet', 'arcade-bay', 'street-lantern'} <= set(IDS)
+            'harbour-launch', 'courier-jet', 'arcade-bay', 'street-lantern', 'tree'} <= set(IDS)
     for generator in generators.REGISTRY.values():
         entry = generator.entry()
         assert entry['id'] and entry['title'] and entry['families'] and entry['kinds'] and entry['roles']
@@ -158,7 +159,10 @@ def test_defaults_build_without_validation_errors(official, gid):
 @pytest.mark.parametrize('gid', IDS)
 def test_parameter_range_corners_build_without_validation_errors(official, gid):
     generator = generators.get(gid)
-    for case in corner_cases(generator):
+    # ponytail: the full sweep took ~10 min (dozens of builds per generator). By default only all-min, all-max,
+    # the seeded mixes and the length/wheelbase box; LDRAW_NOVA_FULL_SWEEP=1 adds every one-at-a-time extreme
+    # (run it when a generator changes).
+    for case in corner_cases(generator, full=os.environ.get('LDRAW_NOVA_FULL_SWEEP') == '1'):
         try:
             result = generator.generate(case)
             check(official, result['plan'], profile=PROFILES.get(gid))
@@ -187,7 +191,8 @@ def test_cli_generate_lists_digests_and_writes_a_plan(tmp_path, capsys):
         args = cli.parser().parse_args(['generate', *argv])
         return cli.run(args)
     listed, status = run('list', '--family', 'house')
-    assert status == 0 and listed[0]['id'] == 'house'
+    ids = [row['id'] for row in listed]
+    assert status == 0 and ids[0] == 'building' and 'house' in ids      # the grammar answers house requests; the old generator stays
     assert run('list', '--kind', 'pickup truck')[0][0]['id'] == 'pickup'
     digest, _ = run('digest')
     assert digest['approx_tokens'] < 1500
@@ -203,3 +208,16 @@ def test_cli_generate_plan_checks_the_build(official, tmp_path):
     args = cli.parser().parse_args(['generate', 'plan', 'house', '--output', str(tmp_path / 'h.json')])
     report, status = cli.run(args)
     assert status == 0 and report['checks_passed'] and (tmp_path / 'h.json').is_file()
+
+
+def test_tree_defaults_match_the_atlas_tree_and_the_trunk_grows_by_courses():
+    from ldraw_tools.architecture import tree
+    flat = lambda plan: [{k: v for k, v in p.items() if k not in ('role', 'id')} for s in plan['sections'] for st in s['steps'] for p in st]
+    default = generators.generate('tree', dict(foliage_colour=288, foliage_accent=2, trunk_colour=70, flower_colour=5, ground_colour=19))
+    assert flat(default['plan']) == flat(tree().plan())
+    short, tall = (generators.generate('tree', dict(trunk_courses=n))['plan'] for n in (3, 10))
+    height = lambda plan: -min(p['at'][1] for s in plan['sections'] for st in s['steps'] for p in st)
+    assert height(tall) - height(short) == 7 * 24
+    roles = {p['role'] for s in tall['sections'] for st in s['steps'] for p in st}
+    assert roles == {'base', 'trunk', 'foliage', 'flower'}
+    assert generators.find(kind='oak tree')[0].id == 'tree'
