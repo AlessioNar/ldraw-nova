@@ -50,6 +50,28 @@ export default function MessageList({ detail, running, draft, persisting, tools,
     const w = workers.find(x => !claimed.has(x.id) && task.trim().startsWith(x.task.trim()));
     if (w) { claimed.add(w.id); workerFor.set(call.id, w); }
   }
+  // "I used: ..." goes under the last prose answer of a turn whose message carried files; a failed message is marked and its error says which.
+  const usedLine = new Map<number, string>();
+  const failed = new Set<number>();
+  let turnFiles: string[] = [], turnAnswer: number | undefined, turnUser: Message | undefined;
+  const endTurn = () => { if (turnAnswer !== undefined && turnFiles.length) usedLine.set(turnAnswer, turnFiles.join(", ")); };
+  for (const m of messages) {
+    if (m._hidden || m.role === "tool" || m.role === "system") continue;
+    if (m.role === "user" && !m._editor_publish) {
+      endTurn();
+      const images = Array.isArray(m.content) ? (m.content as ContentBlock[]).filter(b => b.type === "image_url").length : 0;
+      turnFiles = [...(m._documents ?? []).map(d => d.name), ...Array.from({ length: images }, (_, i) => images > 1 ? `image ${i + 1}` : "image")];
+      turnAnswer = undefined; turnUser = m;
+    } else if (m._error && turnUser) failed.add(turnUser.id);
+    else if (m.role === "assistant" && !m._ui_only && !m._fast_path && text(m)) turnAnswer = m.id;
+  }
+  endTurn();
+  const lastUser = [...messages].reverse().find(m => m.role === "user" && !m._hidden && !m._editor_publish);
+  if (error && lastUser) failed.add(lastUser.id);
+  const excerpt = (m?: Message) => { const t = m ? text(m).trim() : ""; return t.length > 60 ? `${t.slice(0, 57)}…` : t; };
+  const failedBanner = (key: string | number, body: ReactNode, user?: Message) => (
+    <div key={key} className="banner error msg-failed">{fast && user && <span className="msg-failed-for">Failed: “{excerpt(user)}”</span>}{body}</div>
+  );
   const idle = running && !draft && !persisting && tools.length === 0;
   const cards = placeChatModels(messages, detail.models);
   const publishedModels = Object.values(detail.models);
@@ -87,13 +109,16 @@ export default function MessageList({ detail, running, draft, persisting, tools,
     if (m._hidden || m.role === "tool" || m.role === "system") continue;
     if (m._ui_only) {
       flush();
-      nodes.push(<div key={m.id} className={`banner ${m._error ? "error" : ""}`}>{m._error ? <ErrorText text={text(m)} /> : text(m)}</div>);
+      if (m._error) {
+        const owner = [...messages.slice(0, messages.indexOf(m))].reverse().find(x => x.role === "user" && !x._hidden && !x._editor_publish);
+        nodes.push(failedBanner(m.id, <ErrorText text={text(m)} />, owner));
+      } else nodes.push(<div key={m.id} className="banner">{text(m)}</div>);
       continue;
     }
     if (m.role === "user") {
       flush();
       nodes.push(
-        <div key={m.id} className="msg user">
+        <div key={m.id} className="msg user" data-failed={failed.has(m.id) || undefined}>
           <div className="bubble">{fast && !m._editor_publish && <Badge kind="you" />}{m._editor_publish ? m._label ?? text(m) : text(m)}
             {Array.isArray(m.content) && <div className="attachments">{(m.content as ContentBlock[]).filter(b => b.type === "image_url").map((b, i) => <img key={i} src={b.image_url?.url} alt={`Attached image ${i + 1}`} />)}</div>}
             {!!m._documents?.length && <div className="document-attachments">{m._documents.map((d, i) =>
@@ -115,7 +140,7 @@ export default function MessageList({ detail, running, draft, persisting, tools,
     }
     if (text(m)) {
       flush();
-      nodes.push(<div key={m.id} className="msg assistant">{fast && <Badge kind="ai" />}<Markdown models={publishedModels}>{text(m)}</Markdown></div>);
+      nodes.push(<div key={m.id} className="msg assistant">{fast && <Badge kind="ai" />}<Markdown models={publishedModels}>{text(m)}</Markdown>{fast && usedLine.has(m.id) && <p className="msg-used muted small">I used: {usedLine.get(m.id)}</p>}</div>);
     }
     for (const call of m.tool_calls ?? []) {
       const result = results.get(call.id);
@@ -161,7 +186,7 @@ export default function MessageList({ detail, running, draft, persisting, tools,
           </span>
         </div>
       )}
-      {error && !messages.some((m) => m._error && text(m) === error) && <div className="banner error"><ErrorText text={error} /></div>}
+      {error && !messages.some((m) => m._error && text(m) === error) && failedBanner("live-error", <ErrorText text={error} />, lastUser)}
       <div ref={bottomRef} />
     </div>
   );

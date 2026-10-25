@@ -316,3 +316,9 @@
 /* What the canvas selection is, above the composer. */
 .ws-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-xs); color: var(--muted); }
 .ws-diff-parts { font-size: var(--fs-xs); } .ws-diff-parts ul { margin: 2px 0 0; padding-left: 16px; }
+
+/* The AI's answer names the files it read; a failed message is marked and its error says which message it was. */
+.ws-chat .msg-used { margin: 4px 0 0; }
+.ws-chat .msg.user[data-failed] .bubble { border-color: var(--danger); }
+.ws-chat .msg-failed { display: flex; flex-direction: column; gap: 2px; }
+.ws-chat .msg-failed-for { font-weight: 600; }
