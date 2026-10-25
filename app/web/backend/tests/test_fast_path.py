@@ -149,7 +149,8 @@ def test_real_world_requests_pick_the_right_generator(provider):
              "a black touring motorbike": "touring-motorcycle", "a small blue harbour launch": "harbour-launch",
              "white courier jet with red accents": "courier-jet", "Build a small white and blue starship": "starfighter",
              "a house with a red roof and a chimney": "building",
-             "a steam train": "toy-train", "a cargo ship": "cargo-ship"}
+             "a steam train": "toy-train", "a cargo ship": "cargo-ship",
+             "a dining table": "dining-table", "a double bed": "bed", "a blue sofa": "sofa", "a bookcase": "bookshelf"}
     for g in GOLDEN:
         provider.specs[g["prompt"]] = g["expected"]
     for text, generator in cases.items():

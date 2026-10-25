@@ -26,10 +26,11 @@ FILES = {
     'shapes.ttl': 'Validity rules (SHACL)',
     'vehicles.ttl': 'Vehicles and spaceships (OWL, SHACL)',
     'sets.ttl': 'Sets, brands and parts-list sources (OWL, SKOS, PROV-O)',
+    'furniture.ttl': 'Furniture kinds from the reference sets and the furniture designs (OWL, SKOS)',
 }
 MERGED = 'ontology.ttl'
 PREFIXES = {
-    'obd': BASE + 'obd#', 'role': BASE + 'role/', 'build': BASE + 'build/', 'brand': BASE + 'brand/', 'psrc': BASE + 'partssource/',
+    'obd': BASE + 'obd#', 'role': BASE + 'role/', 'build': BASE + 'build/', 'brand': BASE + 'brand/', 'furn': BASE + 'furniture/', 'psrc': BASE + 'partssource/',
     'prov': 'http://www.w3.org/ns/prov#',
     'owl': 'http://www.w3.org/2002/07/owl#', 'skos': 'http://www.w3.org/2004/02/skos/core#',
     'sh': 'http://www.w3.org/ns/shacl#', 'dcterms': 'http://purl.org/dc/terms/',

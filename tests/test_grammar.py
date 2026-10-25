@@ -659,7 +659,7 @@ def test_registered_as_one_generator_without_disturbing_house():
 
 
 def test_digest_stays_small():
-    assert len(generators.digest()) / 3 < 1500 and 'building |' in generators.digest()
+    assert len(generators.digest()) / 3 < 1700 and 'building |' in generators.digest()
 
 
 @pytest.mark.parametrize('name', PRESET_NAMES)

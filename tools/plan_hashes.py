@@ -18,6 +18,10 @@ CASES = {
     'arcade-bay': [{}, dict(height=6, colour='red')], 'street-lantern': [{}],
     'toy-train': [{}, dict(wagons=0), dict(wagons=5, loco_colour='green', wagon_colour='yellow')],
     'cargo-ship': [{}, dict(length=16, bays=7), dict(length=36, bays=6, hull_colour='black', cargo_colour='red')],
+    'stool': [{}, dict(courses=4, seat_colour='yellow')], 'chair': [{}, dict(back_courses=4, frame_colour='black')],
+    'dining-table': [{}, dict(width=8, depth=6, leg_courses=3, top_colour='white'), dict(width=2, depth=2, leg_courses=1)],
+    'bed': [{}, dict(width=6, length=10, mattress_colour='light blue')], 'sofa': [{}, dict(width=10, depth=5, cushion_colour='red')],
+    'bookshelf': [{}, dict(width=7, shelves=4, books=False), dict(width=3, shelves=1, book_colour='blue')],
 }
 
 

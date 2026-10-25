@@ -1,0 +1,1114 @@
+{
+ "description": "Furniture found in the reference sets: counts, typical size and the parts used most. Regenerate with tools/harvest_furniture.py.",
+ "kinds": {
+  "armchair": {
+   "example_sets": [
+    "10246-1",
+    "10297-1",
+    "3315-1"
+   ],
+   "footprint_studs": [
+    3,
+    3
+   ],
+   "height_plates": 10,
+   "parts": [
+    {
+     "part": "3068b",
+     "pieces": 2
+    },
+    {
+     "part": "3679",
+     "pieces": 2
+    },
+    {
+     "part": "4079",
+     "pieces": 2
+    },
+    {
+     "part": "99207",
+     "pieces": 2
+    },
+    {
+     "part": "11211",
+     "pieces": 1
+    },
+    {
+     "part": "14769",
+     "pieces": 1
+    },
+    {
+     "part": "24201",
+     "pieces": 1
+    },
+    {
+     "part": "2877",
+     "pieces": 1
+    },
+    {
+     "part": "3021",
+     "pieces": 1
+    },
+    {
+     "part": "3023",
+     "pieces": 1
+    },
+    {
+     "part": "3031",
+     "pieces": 1
+    },
+    {
+     "part": "3069b",
+     "pieces": 1
+    },
+    {
+     "part": "3176",
+     "pieces": 1
+    },
+    {
+     "part": "32952",
+     "pieces": 1
+    },
+    {
+     "part": "3680",
+     "pieces": 1
+    },
+    {
+     "part": "3839b",
+     "pieces": 1
+    },
+    {
+     "part": "41682",
+     "pieces": 1
+    },
+    {
+     "part": "49307",
+     "pieces": 1
+    },
+    {
+     "part": "6091",
+     "pieces": 1
+    },
+    {
+     "part": "6191",
+     "pieces": 1
+    },
+    {
+     "part": "93273",
+     "pieces": 1
+    }
+   ],
+   "pieces": 4,
+   "sets": 3
+  },
+  "bed": {
+   "example_sets": [
+    "10243-1",
+    "10278-1",
+    "10297-1",
+    "1680-1",
+    "31025-1",
+    "31048-1",
+    "3185-1",
+    "3315-1"
+   ],
+   "footprint_studs": [
+    6,
+    6
+   ],
+   "height_plates": 10,
+   "parts": [
+    {
+     "part": "3023",
+     "pieces": 13
+    },
+    {
+     "part": "6141",
+     "pieces": 12
+    },
+    {
+     "part": "3069b",
+     "pieces": 11
+    },
+    {
+     "part": "3020",
+     "pieces": 9
+    },
+    {
+     "part": "3710",
+     "pieces": 8
+    },
+    {
+     "part": "85984",
+     "pieces": 8
+    },
+    {
+     "part": "3032",
+     "pieces": 7
+    },
+    {
+     "part": "6091",
+     "pieces": 7
+    },
+    {
+     "part": "6191",
+     "pieces": 6
+    },
+    {
+     "part": "2431",
+     "pieces": 5
+    },
+    {
+     "part": "3010",
+     "pieces": 5
+    },
+    {
+     "part": "3004",
+     "pieces": 4
+    },
+    {
+     "part": "3021",
+     "pieces": 4
+    },
+    {
+     "part": "3022",
+     "pieces": 4
+    },
+    {
+     "part": "3035",
+     "pieces": 4
+    },
+    {
+     "part": "33291",
+     "pieces": 4
+    },
+    {
+     "part": "3666",
+     "pieces": 4
+    },
+    {
+     "part": "3794b",
+     "pieces": 4
+    },
+    {
+     "part": "3795",
+     "pieces": 4
+    },
+    {
+     "part": "4032a",
+     "pieces": 4
+    },
+    {
+     "part": "4070",
+     "pieces": 4
+    },
+    {
+     "part": "59900",
+     "pieces": 4
+    },
+    {
+     "part": "87079",
+     "pieces": 4
+    },
+    {
+     "part": "11477",
+     "pieces": 3
+    }
+   ],
+   "pieces": 28,
+   "sets": 20
+  },
+  "bench": {
+   "example_sets": [
+    "10182-1",
+    "10243-1",
+    "10246-1",
+    "10251-1",
+    "10261-1",
+    "2150-1",
+    "3187-1",
+    "41071-1"
+   ],
+   "footprint_studs": [
+    6,
+    3
+   ],
+   "height_plates": 6,
+   "parts": [
+    {
+     "part": "3023",
+     "pieces": 4
+    },
+    {
+     "part": "3069b",
+     "pieces": 4
+    },
+    {
+     "part": "2431",
+     "pieces": 3
+    },
+    {
+     "part": "3034",
+     "pieces": 3
+    },
+    {
+     "part": "6141",
+     "pieces": 3
+    },
+    {
+     "part": "6636",
+     "pieces": 3
+    },
+    {
+     "part": "3021",
+     "pieces": 2
+    },
+    {
+     "part": "3022",
+     "pieces": 2
+    },
+    {
+     "part": "3623",
+     "pieces": 2
+    },
+    {
+     "part": "3710",
+     "pieces": 2
+    },
+    {
+     "part": "4079",
+     "pieces": 2
+    },
+    {
+     "part": "60478",
+     "pieces": 2
+    },
+    {
+     "part": "63868",
+     "pieces": 2
+    },
+    {
+     "part": "14719",
+     "pieces": 1
+    },
+    {
+     "part": "15573",
+     "pieces": 1
+    },
+    {
+     "part": "2456",
+     "pieces": 1
+    },
+    {
+     "part": "3003",
+     "pieces": 1
+    },
+    {
+     "part": "3004",
+     "pieces": 1
+    },
+    {
+     "part": "3005",
+     "pieces": 1
+    },
+    {
+     "part": "3020",
+     "pieces": 1
+    },
+    {
+     "part": "30413",
+     "pieces": 1
+    },
+    {
+     "part": "30925",
+     "pieces": 1
+    },
+    {
+     "part": "33291",
+     "pieces": 1
+    },
+    {
+     "part": "3666",
+     "pieces": 1
+    }
+   ],
+   "pieces": 11,
+   "sets": 11
+  },
+  "cabinet": {
+   "example_sets": [
+    "10243-1",
+    "10246-1",
+    "10278-1",
+    "31025-1"
+   ],
+   "footprint_studs": [
+    2,
+    3
+   ],
+   "height_plates": 10,
+   "parts": [
+    {
+     "part": "15573",
+     "pieces": 6
+    },
+    {
+     "part": "3023",
+     "pieces": 4
+    },
+    {
+     "part": "92410",
+     "pieces": 3
+    },
+    {
+     "part": "3069b",
+     "pieces": 2
+    },
+    {
+     "part": "32028",
+     "pieces": 2
+    },
+    {
+     "part": "3710",
+     "pieces": 2
+    },
+    {
+     "part": "4070",
+     "pieces": 2
+    },
+    {
+     "part": "4533",
+     "pieces": 2
+    },
+    {
+     "part": "6141",
+     "pieces": 2
+    },
+    {
+     "part": "12825",
+     "pieces": 1
+    },
+    {
+     "part": "22885",
+     "pieces": 1
+    },
+    {
+     "part": "2412b",
+     "pieces": 1
+    },
+    {
+     "part": "2429",
+     "pieces": 1
+    },
+    {
+     "part": "3022",
+     "pieces": 1
+    },
+    {
+     "part": "30374",
+     "pieces": 1
+    },
+    {
+     "part": "30414",
+     "pieces": 1
+    },
+    {
+     "part": "3062b",
+     "pieces": 1
+    },
+    {
+     "part": "3069bp01",
+     "pieces": 1
+    },
+    {
+     "part": "3070b",
+     "pieces": 1
+    },
+    {
+     "part": "33909",
+     "pieces": 1
+    },
+    {
+     "part": "3899",
+     "pieces": 1
+    },
+    {
+     "part": "4529",
+     "pieces": 1
+    },
+    {
+     "part": "4536",
+     "pieces": 1
+    },
+    {
+     "part": "61506",
+     "pieces": 1
+    }
+   ],
+   "pieces": 9,
+   "sets": 4
+  },
+  "chair": {
+   "example_sets": [
+    "10182-1",
+    "10243-1",
+    "10246-1",
+    "10251-1",
+    "10297-1",
+    "21009-1",
+    "31009-1",
+    "31048-1"
+   ],
+   "footprint_studs": [
+    2,
+    3
+   ],
+   "height_plates": 8,
+   "parts": [
+    {
+     "part": "3069b",
+     "pieces": 8
+    },
+    {
+     "part": "3022",
+     "pieces": 6
+    },
+    {
+     "part": "3023",
+     "pieces": 5
+    },
+    {
+     "part": "3679",
+     "pieces": 5
+    },
+    {
+     "part": "48336",
+     "pieces": 5
+    },
+    {
+     "part": "6141",
+     "pieces": 5
+    },
+    {
+     "part": "3002",
+     "pieces": 3
+    },
+    {
+     "part": "3004",
+     "pieces": 3
+    },
+    {
+     "part": "3020",
+     "pieces": 3
+    },
+    {
+     "part": "4032a",
+     "pieces": 3
+    },
+    {
+     "part": "99207",
+     "pieces": 3
+    },
+    {
+     "part": "11203",
+     "pieces": 2
+    },
+    {
+     "part": "15068",
+     "pieces": 2
+    },
+    {
+     "part": "2335",
+     "pieces": 2
+    },
+    {
+     "part": "2343",
+     "pieces": 2
+    },
+    {
+     "part": "2540",
+     "pieces": 2
+    },
+    {
+     "part": "3039",
+     "pieces": 2
+    },
+    {
+     "part": "3062b",
+     "pieces": 2
+    },
+    {
+     "part": "4032b",
+     "pieces": 2
+    },
+    {
+     "part": "4175",
+     "pieces": 2
+    },
+    {
+     "part": "4865a",
+     "pieces": 2
+    },
+    {
+     "part": "11477",
+     "pieces": 1
+    },
+    {
+     "part": "15712",
+     "pieces": 1
+    },
+    {
+     "part": "18649",
+     "pieces": 1
+    }
+   ],
+   "pieces": 21,
+   "sets": 16
+  },
+  "desk": {
+   "example_sets": [
+    "10185-1",
+    "10246-1",
+    "10251-1",
+    "10278-1",
+    "10297-1",
+    "30102-1",
+    "3674-1",
+    "3682-1"
+   ],
+   "footprint_studs": [
+    6,
+    3
+   ],
+   "height_plates": 12,
+   "parts": [
+    {
+     "part": "3795",
+     "pieces": 10
+    },
+    {
+     "part": "15573",
+     "pieces": 8
+    },
+    {
+     "part": "3022",
+     "pieces": 6
+    },
+    {
+     "part": "3069b",
+     "pieces": 6
+    },
+    {
+     "part": "3004",
+     "pieces": 5
+    },
+    {
+     "part": "3023",
+     "pieces": 5
+    },
+    {
+     "part": "6141",
+     "pieces": 5
+    },
+    {
+     "part": "15712",
+     "pieces": 4
+    },
+    {
+     "part": "3068b",
+     "pieces": 4
+    },
+    {
+     "part": "4070",
+     "pieces": 4
+    },
+    {
+     "part": "4216",
+     "pieces": 4
+    },
+    {
+     "part": "64644",
+     "pieces": 4
+    },
+    {
+     "part": "2431",
+     "pieces": 3
+    },
+    {
+     "part": "3005",
+     "pieces": 3
+    },
+    {
+     "part": "3024",
+     "pieces": 3
+    },
+    {
+     "part": "3659",
+     "pieces": 3
+    },
+    {
+     "part": "3710",
+     "pieces": 3
+    },
+    {
+     "part": "3899",
+     "pieces": 3
+    },
+    {
+     "part": "85984pc4",
+     "pieces": 3
+    },
+    {
+     "part": "20482",
+     "pieces": 2
+    },
+    {
+     "part": "3009",
+     "pieces": 2
+    },
+    {
+     "part": "30367c",
+     "pieces": 2
+    },
+    {
+     "part": "3062b",
+     "pieces": 2
+    },
+    {
+     "part": "3070b",
+     "pieces": 2
+    }
+   ],
+   "pieces": 18,
+   "sets": 12
+  },
+  "shelf": {
+   "example_sets": [
+    "10185-1",
+    "10270-1",
+    "10297-1",
+    "3796-1",
+    "3933-1",
+    "71006-1"
+   ],
+   "footprint_studs": [
+    5,
+    2
+   ],
+   "height_plates": 17,
+   "parts": [
+    {
+     "part": "3020",
+     "pieces": 4
+    },
+    {
+     "part": "3069b",
+     "pieces": 4
+    },
+    {
+     "part": "3023",
+     "pieces": 3
+    },
+    {
+     "part": "4070",
+     "pieces": 3
+    },
+    {
+     "part": "6141",
+     "pieces": 3
+    },
+    {
+     "part": "3062b",
+     "pieces": 2
+    },
+    {
+     "part": "32028",
+     "pieces": 2
+    },
+    {
+     "part": "32952",
+     "pieces": 2
+    },
+    {
+     "part": "3794b",
+     "pieces": 2
+    },
+    {
+     "part": "3795",
+     "pieces": 2
+    },
+    {
+     "part": "4162",
+     "pieces": 2
+    },
+    {
+     "part": "87552",
+     "pieces": 2
+    },
+    {
+     "part": "87580",
+     "pieces": 2
+    },
+    {
+     "part": "11211",
+     "pieces": 1
+    },
+    {
+     "part": "14769",
+     "pieces": 1
+    },
+    {
+     "part": "15573",
+     "pieces": 1
+    },
+    {
+     "part": "22885",
+     "pieces": 1
+    },
+    {
+     "part": "2431",
+     "pieces": 1
+    },
+    {
+     "part": "26604",
+     "pieces": 1
+    },
+    {
+     "part": "3001",
+     "pieces": 1
+    },
+    {
+     "part": "3003",
+     "pieces": 1
+    },
+    {
+     "part": "3004",
+     "pieces": 1
+    },
+    {
+     "part": "3024",
+     "pieces": 1
+    },
+    {
+     "part": "30414",
+     "pieces": 1
+    }
+   ],
+   "pieces": 8,
+   "sets": 6
+  },
+  "sofa": {
+   "example_sets": [
+    "10297-1",
+    "3315-1",
+    "341-2",
+    "350-3",
+    "41015-1",
+    "71006-1"
+   ],
+   "footprint_studs": [
+    8,
+    4
+   ],
+   "height_plates": 8,
+   "parts": [
+    {
+     "part": "3710",
+     "pieces": 4
+    },
+    {
+     "part": "3004",
+     "pieces": 3
+    },
+    {
+     "part": "3035",
+     "pieces": 3
+    },
+    {
+     "part": "4032a",
+     "pieces": 3
+    },
+    {
+     "part": "6191",
+     "pieces": 3
+    },
+    {
+     "part": "87079",
+     "pieces": 3
+    },
+    {
+     "part": "3009",
+     "pieces": 2
+    },
+    {
+     "part": "3010",
+     "pieces": 2
+    },
+    {
+     "part": "3020",
+     "pieces": 2
+    },
+    {
+     "part": "3021",
+     "pieces": 2
+    },
+    {
+     "part": "3069b",
+     "pieces": 2
+    },
+    {
+     "part": "25269",
+     "pieces": 1
+    },
+    {
+     "part": "3005",
+     "pieces": 1
+    },
+    {
+     "part": "3006",
+     "pieces": 1
+    },
+    {
+     "part": "30165",
+     "pieces": 1
+    },
+    {
+     "part": "3024",
+     "pieces": 1
+    },
+    {
+     "part": "3031",
+     "pieces": 1
+    },
+    {
+     "part": "3034",
+     "pieces": 1
+    },
+    {
+     "part": "3068b",
+     "pieces": 1
+    },
+    {
+     "part": "33243",
+     "pieces": 1
+    },
+    {
+     "part": "3460",
+     "pieces": 1
+    },
+    {
+     "part": "37352",
+     "pieces": 1
+    },
+    {
+     "part": "4510",
+     "pieces": 1
+    },
+    {
+     "part": "6091",
+     "pieces": 1
+    }
+   ],
+   "pieces": 7,
+   "sets": 6
+  },
+  "stool": {
+   "example_sets": [
+    "3315-1",
+    "3316-1",
+    "3930-1",
+    "41092-1"
+   ],
+   "footprint_studs": [
+    2,
+    2
+   ],
+   "height_plates": 6,
+   "parts": [
+    {
+     "part": "3062b",
+     "pieces": 2
+    },
+    {
+     "part": "3941",
+     "pieces": 2
+    },
+    {
+     "part": "4032a",
+     "pieces": 2
+    },
+    {
+     "part": "4150",
+     "pieces": 2
+    },
+    {
+     "part": "11203",
+     "pieces": 1
+    },
+    {
+     "part": "15395",
+     "pieces": 1
+    },
+    {
+     "part": "2343",
+     "pieces": 1
+    },
+    {
+     "part": "2432",
+     "pieces": 1
+    },
+    {
+     "part": "3020",
+     "pieces": 1
+    },
+    {
+     "part": "3068b",
+     "pieces": 1
+    },
+    {
+     "part": "33291",
+     "pieces": 1
+    },
+    {
+     "part": "41092",
+     "pieces": 1
+    },
+    {
+     "part": "4589",
+     "pieces": 1
+    },
+    {
+     "part": "59900",
+     "pieces": 1
+    },
+    {
+     "part": "60474",
+     "pieces": 1
+    },
+    {
+     "part": "6141",
+     "pieces": 1
+    }
+   ],
+   "pieces": 5,
+   "sets": 4
+  },
+  "table": {
+   "example_sets": [
+    "10182-1",
+    "10243-1",
+    "10246-1",
+    "3061-1",
+    "31009-1",
+    "31025-1",
+    "31038-1",
+    "31048-1"
+   ],
+   "footprint_studs": [
+    4,
+    4
+   ],
+   "height_plates": 10,
+   "parts": [
+    {
+     "part": "6141",
+     "pieces": 15
+    },
+    {
+     "part": "3899",
+     "pieces": 10
+    },
+    {
+     "part": "59900",
+     "pieces": 8
+    },
+    {
+     "part": "60474",
+     "pieces": 8
+    },
+    {
+     "part": "3062b",
+     "pieces": 7
+    },
+    {
+     "part": "3941",
+     "pieces": 7
+    },
+    {
+     "part": "3022",
+     "pieces": 6
+    },
+    {
+     "part": "3023",
+     "pieces": 6
+    },
+    {
+     "part": "3031",
+     "pieces": 6
+    },
+    {
+     "part": "3020",
+     "pieces": 5
+    },
+    {
+     "part": "3004",
+     "pieces": 4
+    },
+    {
+     "part": "3710",
+     "pieces": 4
+    },
+    {
+     "part": "4032a",
+     "pieces": 4
+    },
+    {
+     "part": "15573",
+     "pieces": 3
+    },
+    {
+     "part": "3005",
+     "pieces": 3
+    },
+    {
+     "part": "3021",
+     "pieces": 3
+    },
+    {
+     "part": "3068b",
+     "pieces": 3
+    },
+    {
+     "part": "3069b",
+     "pieces": 3
+    },
+    {
+     "part": "33291",
+     "pieces": 3
+    },
+    {
+     "part": "3626c",
+     "pieces": 3
+    },
+    {
+     "part": "3795",
+     "pieces": 3
+    },
+    {
+     "part": "3940",
+     "pieces": 3
+    },
+    {
+     "part": "4740",
+     "pieces": 3
+    },
+    {
+     "part": "54200",
+     "pieces": 3
+    }
+   ],
+   "pieces": 38,
+   "sets": 28
+  }
+ }
+}

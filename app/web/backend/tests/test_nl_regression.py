@@ -25,7 +25,8 @@ PROMPTS = HERE / "nl_prompts.json"
 REGISTRY = json.loads((HERE / "generators_registry.json").read_text(encoding="utf-8"))
 ENTRIES = {e["id"]: e for e in REGISTRY["entries"]}
 # What the workspace passes for each context: a generator build at its defaults, or nothing.
-OPEN_BUILD = {"new": None, "house": "house", "car": "grand-tourer", "nongen": None, "tree": "tree", "train": "toy-train", "ship": "cargo-ship"}
+OPEN_BUILD = {"new": None, "house": "house", "car": "grand-tourer", "nongen": None, "tree": "tree", "train": "toy-train", "ship": "cargo-ship",
+              "chair": "chair", "table": "dining-table", "bed": "bed", "shelf": "bookshelf", "sofa": "sofa"}
 ROWS = json.loads(PROMPTS.read_text(encoding="utf-8"))["prompts"]
 
 
@@ -66,7 +67,8 @@ def test_prompt_routes_as_recorded(row):
 
 def test_every_generator_is_reached_by_some_prompt():
     reached = {r["expect"].get("generator") for r in ROWS}
-    for gid in ("building", "grand-tourer", "pickup", "starfighter", "touring-motorcycle", "tree", "toy-train", "cargo-ship"):
+    for gid in ("building", "grand-tourer", "pickup", "starfighter", "touring-motorcycle", "tree", "toy-train", "cargo-ship",
+                "stool", "chair", "dining-table", "bed", "sofa", "bookshelf"):
         assert gid in reached, gid
 
 
