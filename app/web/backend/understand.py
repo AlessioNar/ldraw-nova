@@ -43,7 +43,7 @@ log = logging.getLogger("ldraw-nova.understand")
 
 DEFAULT_MODEL = "anthropic/claude-haiku-5-5"
 MAX_REQUEST_CHARS = 2000          # a longer message is cut: the step reads a request, not a document
-MAX_OUTPUT_TOKENS = 500           # per-message cap from the proposal (3k in, 500 out)
+MAX_OUTPUT_TOKENS = 500           # per-message cap from the proposal (3.5k in, 500 out)
 TOOL_NAME = "emit_spec"
 _HERE = Path(__file__).parent
 

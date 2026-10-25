@@ -307,6 +307,11 @@ COPY --from=nova prompts/ /opt/ldraw-nova/prompts/
 COPY --from=nova *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent /opt/ldraw-nova/
 # The set catalog builder: tests/test_sets.py loads it, and the root tests run in this image
 COPY --from=nova tools/build_set_catalog.py /opt/ldraw-nova/tools/build_set_catalog.py
+# The CaDA set-list fetcher: tests/test_fetch_cada_sets.py imports it (parsing only, no network)
+COPY --from=nova tools/fetch_cada_sets.py /opt/ldraw-nova/tools/fetch_cada_sets.py
+# tests/test_fetch_cada_sets.py reads .gitignore; tests/test_templates.py reads the backend's registry-dump source
+COPY --from=nova .gitignore /opt/ldraw-nova/.gitignore
+COPY --from=nova app/web/backend/generator_bridge.py /opt/ldraw-nova/app/web/backend/generator_bridge.py
 RUN --mount=type=cache,target=/root/.cache/uv \
     cd /opt/ldraw-nova && uv sync --locked --no-dev --python "${PYTHON_VERSION}" \
     && mkdir -p .cache && chown agent:agent .cache \
