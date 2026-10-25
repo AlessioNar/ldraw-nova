@@ -17,16 +17,16 @@ import json
 import logging
 import re
 import shutil
-import tempfile
-import threading
 from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+import fsutil
 import sandbox
 import settings
 import toolkit
+from fsutil import atomic_write  # noqa: F401  (kept importable from here)
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ ID_PATTERN = re.compile(r"[a-z0-9][a-z0-9-]{0,59}")
 LOOSE_ID = "loose"                          # the built-in editable source for manual and quick adds (collection.py)
 RESERVED_IDS = ("buildable", LOOSE_ID)      # /api/inventories/buildable is a route; "loose" is created by the collection
 
-_lock = threading.Lock()                    # check-then-write of ids and names
+_lock = fsutil.lock                         # check-then-write of ids and names
 _cache: OrderedDict[tuple, dict] = OrderedDict()
 
 
@@ -120,24 +120,14 @@ def _path(inventory_id: str, ext: str = "json") -> Path:
     return settings.INVENTORIES_DIR / f"{inventory_id}.{ext}"
 
 
+def _store():
+    """The collection store (files or PostgreSQL); imported late because the store's file backend imports this module."""
+    import collection_store
+    return collection_store
+
+
 def exists(inventory_id: str) -> bool:
-    return valid_id(inventory_id) and _path(inventory_id).is_file()
-
-
-def atomic_write(path: Path, data: bytes) -> None:
-    """Temp file in the same folder, then rename: readers never see a partial inventory."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = None
-    try:
-        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".", suffix=".tmp", delete=False) as f:
-            tmp = Path(f.name)
-            f.write(data)
-        tmp.chmod(0o644)
-        tmp.replace(path)
-        tmp = None
-    finally:
-        if tmp:
-            tmp.unlink(missing_ok=True)
+    return valid_id(inventory_id) and _store().exists(inventory_id)
 
 
 def _load(inventory_id: str) -> dict:
@@ -187,15 +177,13 @@ def summary(data: dict) -> dict:
 
 
 def list_inventories() -> list[dict]:
-    folder = settings.INVENTORIES_DIR
+    store = _store()
     found = []
-    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
-        if not valid_id(path.stem):
-            continue
+    for source_id in store.source_ids():
         try:
-            found.append(summary(_load(path.stem)))
+            found.append(summary(store.load(source_id)))
         except InventoryError as exc:
-            log.warning("skipping inventory %s: %s", path.name, exc)
+            log.warning("skipping inventory %s: %s", source_id, exc)
     return sorted(found, key=lambda s: (-s["created_at"], s["id"]))
 
 
@@ -222,22 +210,19 @@ def clean_name(name: Any) -> str:
 def rename(inventory_id: str, name: str) -> dict:
     name = clean_name(name)
     with _lock:
-        data = dict(_load(inventory_id))
+        data = dict(_store().load(inventory_id))
         if _name_taken(name, exclude=inventory_id):
             raise InventoryError(409, f"An inventory called {name!r} already exists")
         data["name"] = name
-        atomic_write(_path(inventory_id), (json.dumps(data, indent=2) + "\n").encode())
+        _store().save(data)
     return summary(data)
 
 
 def delete(inventory_id: str) -> None:
     with _lock:
-        path = _path(inventory_id)
-        if not path.is_file():
+        if not valid_id(inventory_id):
             raise InventoryError(404, "no such inventory")
-        path.unlink()
-        _path(inventory_id, "csv").unlink(missing_ok=True)
-        (settings.INVENTORIES_DIR / f"{inventory_id}.log.jsonl").unlink(missing_ok=True)
+        _store().delete(inventory_id)
 
 
 # --- LDraw library names -----------------------------------------------------
@@ -269,7 +254,7 @@ def clear_caches() -> None:
 
 
 def detail(inventory_id: str, query: str = "", colour: int | None = None, limit: int = 50, offset: int = 0) -> dict:
-    data = _load(inventory_id)
+    data = _store().load(inventory_id)
     descriptions, names = _descriptions(), _colour_names()
     rows = data.get("rows", [])
     totals: dict[int, int] = {}
@@ -312,11 +297,11 @@ def clean_family_colours(value: Any) -> dict[str, int]:
 
 def remap_families(inventory_id: str) -> tuple[str, str]:
     """(name, stored CSV text) of an inventory whose colour families are being mapped again."""
-    data = _load(inventory_id)
-    path = _path(inventory_id, "csv")
-    if (data.get("import") or {}).get("dialect") != "pileometer" or not path.is_file():
+    data = _store().load(inventory_id)
+    csv_text = _store().read_csv(inventory_id)
+    if (data.get("import") or {}).get("dialect") != "pileometer" or csv_text is None:
         raise InventoryError(400, "Only a Pileometer import has colour families")
-    return data.get("name", inventory_id), path.read_text(encoding="utf-8")
+    return data.get("name", inventory_id), csv_text
 
 
 def clean_mapping(mapping: dict | None) -> dict[str, str]:
@@ -354,9 +339,7 @@ async def parse_csv(name: str, csv_text: str, include_spares: bool = False, fami
     if len(raw) > MAX_CSV_BYTES:
         raise InventoryError(413, f"File exceeds the {MAX_CSV_BYTES // (1024 * 1024)} MB limit")
     inventory_id = replace or slugify(name)      # a replaced inventory keeps its id even after a rename
-    folder = settings.INVENTORIES_DIR
-    folder.mkdir(parents=True, exist_ok=True)
-    work = Path(tempfile.mkdtemp(prefix=".import-", dir=folder))
+    work = _store().scratch_dir(".import-")
     try:
         work.chmod(0o755)
         (work / "upload.csv").write_bytes(raw)

@@ -33,6 +33,7 @@ from db import migrate as db_migrate
 from routers import builds_api, chats, collection, costs_api, describe_api, editor, editor_palette, environment, files, inventories, llm_models, models_gallery, pipeline, reservations, spa, understand_api, workspace_api
 import builds
 import migrate_json
+import collection_store
 import storage
 from store import get_store, reset_store
 
@@ -70,6 +71,8 @@ async def lifespan(_app: FastAPI):
         await _import_json_on_first_start()
     storage.refresh()
     reset_store()
+    collection_store.refresh()
+    await asyncio.to_thread(collection_store.start)      # PostgreSQL: regenerate the derived JSON copy the toolkit CLI reads
     if get_store().pg:
         await asyncio.to_thread(builds.reconcile, get_store())      # a version record for every model file of a recorded build
     pruning = asyncio.create_task(_prune_request_log_daily())
