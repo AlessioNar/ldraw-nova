@@ -137,7 +137,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
 
   const fast = (m: Message): ReactNode => {
     const f = m._fast_path!;
-    const live = m.id === lastId && !running && !acting;
+    const live = m.id === lastId && !running && !acting;   // only the latest answer may still be undone
     if (f.route === "generator" || f.route === "edit") {
       const summary = f.history ? "Went back one step"
         : f.route === "generator" ? `Built ${f.title ?? f.generator} from the generator`
@@ -152,18 +152,10 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       );
     }
     if (f.route === "clarify") {
-      const choices = f.choices ?? [];
       return (
         <div className="ws-fp" data-route="clarify">
           <div className="ws-fp-line"><span>{f.question}</span></div>
           {!!f.notes?.length && <ul className="ws-fp-notes">{f.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
-          {live && (!!choices.length || !!f.highlight?.length) && (
-            <div className="ws-chips" role="group" aria-label="Quick replies">
-              {!!f.highlight?.length && <button className="ws-chip-btn" onClick={() => ws.showParts(f.highlight!)}>Show them</button>}
-              {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}
-              {choices.some((c) => c !== "Ask the AI") && <button className="ws-chip-btn pick" onClick={() => reply(choices.find((c) => c !== "Ask the AI")!)}>Just pick for me</button>}
-            </div>
-          )}
         </div>
       );
     }
@@ -171,18 +163,39 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
     const minutes = est?.minutes_low != null ? `about ${est.minutes_low}–${est.minutes_high ?? est.minutes_low} min` : null;
     const what = [estimateLabel(est), minutes].filter(Boolean).join(", ");
     return (
-      <div className={`ws-ai-card ws-fp-ai${live ? "" : " past"}`} data-route="needs_ai">
+      <div className="ws-ai-card ws-fp-ai past" data-route="needs_ai">
         <div className="ws-fp-title">This needs the AI{what ? `: ${what}` : ""}</div>
         {f.reason && <div className="muted small">{f.reason}. Nothing is spent until you ask.</div>}
-        {live && (
-          <div className="ws-ai-actions">
-            <button className="primary" onClick={askAi}>Ask the AI</button>
-            <button onClick={() => note("Cancelled. Nothing was spent.")}>Cancel</button>
-          </div>
-        )}
       </div>
     );
   };
+
+  // What waits for the person lives in one tray above the composer; the transcript keeps the question as plain text.
+  const waiting = messages.find((m) => m.id === lastId && m._fast_path && (m._fast_path.route === "clarify" || m._fast_path.route === "needs_ai"));
+  const tray = waiting && !running && !acting ? (() => {
+    const f = waiting._fast_path!;
+    if (f.route === "needs_ai") return (
+      <div className="ws-tray" role="region" aria-label="Needs you">
+        <div className="label">Needs you</div>
+        <div className="ws-ai-actions">
+          <button className="primary" onClick={askAi}>Ask the AI</button>
+          <button onClick={() => note("Cancelled. Nothing was spent.")}>Cancel</button>
+        </div>
+      </div>
+    );
+    const choices = f.choices ?? [];
+    if (!choices.length && !f.highlight?.length) return null;
+    return (
+      <div className="ws-tray" role="region" aria-label="Needs you">
+        <div className="label">Needs you</div>
+        <div className="ws-chips" role="group" aria-label="Quick replies">
+          {!!f.highlight?.length && <button className="ws-chip-btn" onClick={() => ws.showParts(f.highlight!)}>Show them</button>}
+          {choices.map((c) => <button key={c} className="ws-chip-btn" onClick={() => reply(c)}>{c}</button>)}
+          {choices.some((c) => c !== "Ask the AI") && <button className="ws-chip-btn pick" onClick={() => reply(choices.find((c) => c !== "Ask the AI")!)}>Just pick for me</button>}
+        </div>
+      </div>
+    );
+  })() : null;
 
   const cost = detail?.usage?.cost_eur;
   const toAi = mode === "ai" ? !flip : flip;
@@ -211,6 +224,7 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
       </div>
       <div className="ws-composer">
         {cost != null && cost > 0 && <p className="muted small ws-cost">Spent in this chat: about €{cost.toFixed(2)}</p>}
+        {tray}
         <TurnStatus chatId={chatId ?? ""} approvals={approvals} contextNotice={contextNotice} onError={setError} />
         <Composer key={chatId ?? "new"} initialText={prompt} initialOptions={detail?.chat.options} allowNoModel placeholder={toAi ? "Tell the AI what to do" : "Describe a change, e.g. make the roof blue"}
           onTextChange={onTextChange} onOptions={(o) => { options.current = o; }} hint={<span className="ws-hint-line" role="status" aria-live="polite">{line}</span>}
