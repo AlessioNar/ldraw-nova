@@ -96,16 +96,16 @@ def refresh() -> bool:
 def _decide() -> bool:
     chosen = mode()
     if chosen == "files":
-        log.info("storage: JSON files (LDRAW_NOVA_STORAGE=files)")
+        log.info("JSON files (LDRAW_NOVA_STORAGE=files)")
         return False
     if not schema_ready():
-        (log.error if chosen == "postgres" else log.info)("storage: JSON files (the database is not available or not migrated)")
+        (log.error if chosen == "postgres" else log.info)("JSON files (the database is not available or not migrated)")
         return False
     if chosen == "auto" and json_state_present() and not import_done():
-        log.warning("storage: JSON files. The database is ready but the chats and builds on disk were not imported; run "
+        log.warning("JSON files. The database is ready but the chats and builds on disk were not imported; run "
                     "`python -m migrate_json --dry-run`, then `--commit` (docs/system/database.md), or set LDRAW_NOVA_STORAGE=postgres")
         return False
-    log.info("storage: PostgreSQL")
+    log.info("PostgreSQL")
     return True
 
 

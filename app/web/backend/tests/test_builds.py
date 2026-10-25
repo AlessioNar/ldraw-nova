@@ -55,7 +55,7 @@ def test_create_list_detail_rename(client):
     body = created.json()
     assert body["id"] == "my-red-car" and body["build"]["key"] == "b-my-red-car"
     assert body["versions"] == [] and body["build"]["versions"] == 0 and body["source"]["kind"] == "generator"
-    stored = json.loads((get_store().builds_dir / "my-red-car" / "build.json").read_text())
+    stored = builds.read(get_store(), "my-red-car")
     assert stored["id"] == "b-my-red-car" and stored["title"] == "My Red Car" and stored["chats"] == []
     again = client.post("/api/builds", json={"title": "My Red Car"}).json()
     assert again["id"] == "my-red-car-2"                       # the same title never reuses a build
@@ -99,7 +99,7 @@ def test_legacy_models_are_builds_and_nothing_is_lost(client, legacy):
     assert detail["chats"][0]["id"] == legacy["chat"] and detail["versions"][1]["chat"]["id"] == legacy["chat"]
     # the first action stores the record; the files and the chat are untouched
     assert client.patch("/api/builds/old-barn", json={"title": "Barn"}).status_code == 200
-    stored = json.loads((get_store().builds_dir / "old-barn" / "build.json").read_text())
+    stored = builds.read(get_store(), "old-barn")
     assert stored["title"] == "Barn" and stored["chats"] == [legacy["chat"]]
     assert sorted(p.read_text() for p in legacy["paths"]) == before
     assert get_store().get_chat(legacy["chat"])["title"] == "Make a barn"

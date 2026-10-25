@@ -32,6 +32,12 @@ def read_build(key: str) -> Optional[dict]:
         if row is None:
             return None
         chats = list(session.scalars(select(Chat.id).where(Chat.build_id == key).order_by(Chat.created_at, Chat.id)))
+        # chats that published one of the build's model files without being attached (what a derived build.json listed)
+        import builds
+        for chat_id, file in session.execute(select(ModelRecord.chat_id, ModelRecord.file).where(
+                ModelRecord.chat_id.is_not(None), ModelRecord.file.like(f"%{key}%")).order_by(ModelRecord.created_at)):
+            if chat_id not in chats and builds.slug_of_file(Path(file).name) == key:
+                chats.append(chat_id)
         return {"id": "b-" + row.id, "title": row.title, "created_at": to_float(row.created_at),
                 "updated_at": to_float(row.updated_at), "chats": chats, "source": row.source}
 
@@ -117,14 +123,12 @@ def reconcile(store, groups: dict[str, dict[int, Path]]) -> int:
     """Adopt the model files of every recorded build that has no model_record yet (files dropped into data/generated,
     or saved before the database was used). Returns the number of rows added. Builds without a record stay derived
     from their files, as before."""
-    import builds
     added = 0
     with db.session_scope() as session:
         known = set(session.scalars(select(Build.id)))
         have = set(session.execute(select(ModelRecord.build_id, ModelRecord.version).where(ModelRecord.build_id.is_not(None))).all())
     if not known:
         return 0
-    index = builds.Index(store)
     rows = []
     for slug in sorted(known & set(groups)):
         for version, path in sorted(groups[slug].items()):
@@ -132,7 +136,7 @@ def reconcile(store, groups: dict[str, dict[int, Path]]) -> int:
                 continue
             rows.append(dict(id=secrets.token_hex(6), build_id=slug, version=version, name=slug, file=store.file_value(path),
                              sha256=file_sha256(path), parts=part_count(path), warnings=[],
-                             origin=builds.origin_of(store, slug, path, index),
+                             origin=None,           # not recorded: the origin stays derived from the chats, as for a build without a record
                              created_at=to_dt(path.stat().st_mtime if path.exists() else time.time())))
     if rows:
         with db.session_scope() as session:

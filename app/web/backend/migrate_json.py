@@ -286,7 +286,6 @@ class Importer:
                      for t, c in ((Build, Build.id), (ModelRecord, ModelRecord.build_id), (BuildDraft, BuildDraft.build_id), (Proposal, Proposal.build_id))]
         for name, b, a in zip(("builds", "build_versions", "build_drafts", "proposals"), before, after):
             self.report.count(f"{name}_added", a - b)
-            self.report.count(f"{name}_skipped_existing", 0)
         self.report.count("build_versions_in_files", len(rows))
         self.report.count("build_drafts_in_files", 1 if draft is not None else 0)
         self.report.count("proposals_in_files", len(proposals))

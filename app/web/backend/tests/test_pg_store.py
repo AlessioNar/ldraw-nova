@@ -270,7 +270,7 @@ def test_reconcile_adopts_files_nobody_recorded(database, clean_data):
     assert builds.reconcile(store) == 2 and builds.reconcile(store) == 0
     with database.session_scope() as session:
         rows = session.scalars(select(ModelRecord).where(ModelRecord.build_id == slug).order_by(ModelRecord.version)).all()
-    assert [(r.version, r.origin, r.parts) for r in rows] == [(1, "import", 2), (2, "import", 2)] and all(r.sha256 for r in rows)
+    assert [(r.version, r.origin, r.parts) for r in rows] == [(1, None, 2), (2, None, 2)] and all(r.sha256 for r in rows)
 
 
 def test_a_proposal_outlives_its_chat(database, clean_data):

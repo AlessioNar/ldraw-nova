@@ -30,7 +30,7 @@ docker compose up -d
 Open **http://localhost:8765**, then add an LLM provider key in **Settings**. Stop with `docker compose down`.
 
 - The app only listens on `localhost`. To reach it from other devices, set `LDRAW_NOVA_WEB_BIND=0.0.0.0` in `app/.env`. There is no login, so only do this on networks you trust.
-- Builds, chats and parts live in the Docker volume `ldraw-nova-docker_data`, and the request log and cost history in PostgreSQL. `docker compose down -v` deletes both; `bash scripts/backup.sh` backs them up (see [docs/system/database.md](docs/system/database.md)). Copy models out with `docker cp ldraw-nova-app:/data/generated ./my-models`.
+- Builds, chats and parts live in the Docker volume `ldraw-nova-docker_data`, and the request log, the cost history and (after the one-time import, see [docs/system/database.md](docs/system/database.md)) the chats and builds in PostgreSQL. `docker compose down -v` deletes both; `bash scripts/backup.sh` backs them up (see [docs/system/database.md](docs/system/database.md)). Copy models out with `docker cp ldraw-nova-app:/data/generated ./my-models`.
 - A [TypeSafe](https://typesafe.ai/) key (optional, in **Settings**) turns on [Jev](https://github.com/anteloc/jev-rerank) semantic search for the AI agent's part and model lookups. Without it, search falls back to full-text (BM25) ranking.
 
 ## Reference models

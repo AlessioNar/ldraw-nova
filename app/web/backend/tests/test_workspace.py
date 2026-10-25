@@ -62,7 +62,7 @@ def test_open_latest_resume_and_changes_count(client):
     view = opened.json()
     assert view["build"] == slug and view["draft"]["base_version"] == 2 and view["draft"]["changes"] == 0
     assert sum(len(step) for step in view["plan"]["sections"][0]["steps"]) == 3
-    assert (get_store().builds_dir / slug / "draft.json").is_file()
+    assert workspace.read_draft(get_store(), get_store().build_key(slug)) is not None
     moved = edit(client, slug, view, MOVE)
     ws = client.get(f"/api/builds/{slug}/workspace").json()
     assert ws["draft"]["changes"] == 1 and ws["draft"]["revision"] == moved["revision"] and ws["draft"]["undo_depth"] == 1
