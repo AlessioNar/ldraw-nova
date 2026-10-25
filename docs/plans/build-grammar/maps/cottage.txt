@@ -1,0 +1,65 @@
+FRONT ELEVATION (top = roof)
+     dd             
+     dd             
+     dd             
+     dd             
+     dd             
+     dd             
+     dd             
+     dd             
+     dd             
+  RRRddRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+  RRRRRRRRRRRRRRRR  
+   tttttttttttttt   
+   tttttttttttttt   
+   tWWWtWWWtWWWtt   
+   tWWWtWWWtWWWtt   
+   tWWWtWWWtWWWtt   
+   tWWWtDDDDtWWtt   
+   tWWWtDDDDtWWtt   
+   tWWWtDDDDtWWtt   
+   tWWWtDDDDtWWtt   
+   tWWWtDDDDtWWtt   
+   tWWWtDDDDtWWtt   
+   ttootDDDDttoot   
+   ttootDDDDttoot   
+   ttootDDDDttoot   
+   ttootDDDDttoot   
+   ttootDDDDttoot   
+   ttootDDDDttoot   
+   tWWWtDDDDtWWtt   
+   tWWWtDDDDtWWtt   
+   tWWWtDDDDtWWtt   
+   tttttDDDDttttt   
+   tttttDDDDttttt   
+   tttttD..Dttttt   
+....................
+....................
+
+PLAN at plate 5
+                    
+                    
+                    
+   tWWWtDDDDtWWtt   
+   W            W   
+   W            W   
+   W            W   
+   t            t   
+   W            W   
+   W            W   
+   tWWWtWWWtWWWtt   
+                    
+                    
+                    

@@ -1,0 +1,65 @@
+FRONT ELEVATION (top = roof)
+         RRRRRRRRRRRR         
+         RRRRRRRRRRRR         
+        RRRRRRRRRRRRRR        
+        RRRRRRRRRRRRRR        
+        RRRRRRRRRRRRRR        
+       RRRRRRRRRRRRRRRR       
+       RRRRRRRRRRRRRRRR       
+       RRRRRRRRRRRRRRRR       
+      RRRRRRRRRRRRRRRRRR      
+      RRRRRRRRRRRRRRRRRR      
+      RRRRRRRRRRRRRRRRRR      
+     RRRRRRRRRRRRRRRRRRRR     
+     RRRRRRRRRRRRRRRRRRRR     
+     RRRRRRRRRRRRRRRRRRRR     
+    RRRRRRRRRRRRRRRRRRRRRR    
+    RRRRRRRRRRRRRRRRRRRRRR    
+    RRRRRRRRRRRRRRRRRRRRRR    
+    tttttttttttttttttttttt    
+   tttttttttttttttttttttttt   
+    tWWWWWWWWWWWWWWWWWWWWt    
+    tWWWWWWWddddddWWWWWWWt    
+    tWWWWWWWddddddWWWWWWWt    
+    tWWWWWWWdDDDDdWWWWWWWt    
+    tWWWWWWWdDDDDdWWWWWWWt    
+    tWWWWWWWdDDDDdWWWWWWWt    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tooWWWoodDDDDdooWWWoot    
+    tWWWWWWWdDDDDdWWWWWWWt    
+    tWWWWWWWdDDDDdWWWWWWWt    
+    tWWWWWWWdDDDDdWWWWWWWt    
+    ttttttttdDDDDdtttttttt    
+    ttttttttdDDDDdtttttttt    
+    ttttttttd....dtttttttt    
+..............................
+..............................
+
+PLAN at plate 5
+                              
+                              
+            d    d            
+                              
+    tWWWWWWWWDDDDWWWWWWWWt    
+    W                    W    
+    W                    W    
+    W                    W    
+    W                    W    
+    W                    W    
+    W                    W    
+    W                    W    
+    W                    W    
+    W                    W    
+    W                    W    
+    tWWWWWWWWWWWWWWWWWWWWt    
+                              
+                              
+                              
+                              
