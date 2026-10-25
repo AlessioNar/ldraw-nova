@@ -125,7 +125,7 @@ export default function Parts() {
       <div className="segmented parts-tabs" role="group" aria-label="My Parts view">
         <button type="button" aria-pressed={view === "collection"} onClick={() => go("collection")}>Collection</button>
         <button type="button" aria-pressed={view === "sources"} onClick={() => go("sources")}>Sources ({lists.length})</button>
-        <button type="button" aria-pressed={view === "review"} onClick={() => go("review")}>Review{reviewPieces > 0 ? ` (${reviewPieces.toLocaleString()})` : ""}</button>
+        {(reviewPieces > 0 || view === "review") && <button type="button" aria-pressed={view === "review"} onClick={() => go("review")}>Colour review{reviewPieces > 0 ? ` (${reviewPieces.toLocaleString()})` : ""}</button>}
       </div>
       {view === "collection" && <CollectionView version={version} source={sourceFilter} onSource={s => setSearch(s ? { source: s } : {})}
         onChanged={changed} onReview={() => go("review")} onAdd={() => setDialog({ kind: "quick" })} />}
