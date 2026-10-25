@@ -42,7 +42,7 @@ Studs (x right, z back; the front is the low-z side) and plates (1 brick = 3 pla
 
 ## Roles
 
-Every placement carries one `role` (vocabulary in `ldraw_tools/grammar/roles.py`; the plan schema already has the optional field):
+Every placement carries one `role` (vocabulary in `ldraw_tools/role_vocab.py`, shared with the classifier; `tower` is an alias of `wall` there; the plan schema already has the optional field):
 
 | role | what it is |
 |---|---|
