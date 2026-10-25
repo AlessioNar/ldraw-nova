@@ -14,6 +14,10 @@ def wall_colours(ctx, st, course, cell, axis, corners, carved):
         return ctx.code(w['plinth_colour']), 'trim'
     if w['accent_every'] and gc % w['accent_every'] == w['accent_every'] - 1:
         return ctx.code(w['accent_colour']), 'trim'
+    if cell in st.shutters.get(course, ()):
+        return ctx.code(ctx.cfg['openings']['shutter_colour']), 'detail'
+    if cell in st.keystones.get(course, ()):
+        return ctx.code(ctx.cfg['openings']['keystone_colour']), 'trim'
     main = ctx.code(ctx.cfg['corners']['tower_colour'] if in_tower else w['colour'])
     if co['style'] == 'pillars' and cell in corners and not in_tower:
         return ctx.code(co['pillar_colour']), 'trim'

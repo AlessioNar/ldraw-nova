@@ -123,6 +123,96 @@ def plan_storey(ctx, st):
                     st.openings.append(dict(kind=kind, side=side, line=fac['line'], u0=u0, width=w,
                                             c0=base_course(kind, n, ground), courses=catalog.WINDOWS[kind]['courses']))
     carve(ctx, st)
+    dress(ctx, st)
+
+
+SILL_KINDS = ('rect', 'small', 'tall', 'wide')
+
+
+def dress(ctx, st):
+    """Sills, shutters and keystones: they change which wall cells are left open or recoloured, so they are planned
+    with the openings, before the walls are laid."""
+    cfg = ctx.cfg['openings']
+    if not (cfg['sills'] or cfg['shutters'] or cfg['keystones']):
+        return
+    for o in st.openings:
+        if o['kind'] == 'door':
+            continue
+        if cfg['sills'] and o['kind'] in SILL_KINDS and o['c0'] >= 1:
+            o['sill'] = True
+            cells = st.carve.setdefault(o['c0'] - 1, set())
+            for u in range(o['u0'], o['u0'] + o['width']):
+                for k in range(ctx.t):
+                    cells.add(cell_of(o, u, k))
+        if cfg['keystones'] and o['kind'] == 'arch' and o['c0'] + o['courses'] < st.courses:
+            cells = st.keystones.setdefault(o['c0'] + o['courses'], set())
+            for u in range(o['u0'], o['u0'] + o['width']):
+                for k in range(ctx.t):
+                    cells.add(cell_of(o, u, k))
+    if cfg['shutters']:
+        for o in st.openings:
+            if o['kind'] in ('door', 'slit'):
+                continue
+            for course in range(o['c0'], o['c0'] + o['courses']):
+                open_cells = st.carve.get(course, set())
+                for u in (o['u0'] - 1, o['u0'] + o['width']):
+                    for k in range(ctx.t):
+                        cell = cell_of(o, u, k)
+                        if cell in st.walls.mass and cell not in open_cells and cell not in st.walls.corner_cells():
+                            st.shutters.setdefault(course, set()).add(cell)
+
+
+def sill_pose(o, t):
+    """(x, z, yaw) of the sill's wall-cell plate and of its overhanging top plate."""
+    side, line = o['side'], o['line']
+    mid = o['u0'] + o['width'] / 2
+    yaw = YAW[side]
+    near = side in ('front', 'left')
+    inner = line + t / 2 if near else line + 1 - t / 2
+    over = line if near else line + 1
+    if side in ('front', 'back'):
+        return (mid, inner, yaw), (mid, over, yaw)
+    return (inner, mid, yaw), (over, mid, yaw)
+
+
+def emit_sill(ctx, st, o):
+    colour = ctx.code(ctx.cfg['openings']['sill_colour'])
+    w = o['width']
+    y = st.y_floor + 3 * (o['c0'] - 1)
+    (x, z, yaw), (ox, oz, _) = sill_pose(o, ctx.t)
+    if ctx.t == 1:
+        for k in range(2):
+            ctx.canvas.put(catalog.PLATE[w], colour, 'trim', x, z, y + k, yaw, label='window sill')
+        outer_cells = [cell_of(o, u, -1) for u in range(o['u0'], o['u0'] + w)]
+        if ctx.canvas.all_free(outer_cells, y + 2, 1):
+            ctx.canvas.put(catalog.PLATE2[w], colour, 'trim', ox, oz, y + 2, yaw, label='window sill')
+            o['sill_over'] = True
+        else:
+            ctx.canvas.put(catalog.PLATE[w], colour, 'trim', x, z, y + 2, yaw, label='window sill')
+    else:
+        for k in range(3):
+            ctx.canvas.put(catalog.PLATE2[w], colour, 'trim', x, z, y + k, yaw, label='window sill')
+
+
+def emit_flower_box(ctx, st, o):
+    """A two-plate planter on the overhanging sill, with a row of flowers on top."""
+    cfg = ctx.cfg['details']
+    w = o['width']
+    cells = [cell_of(o, u, -1) for u in range(o['u0'], o['u0'] + w)]
+    y = st.y_floor + 3 * (o['c0'] - 1) + 3
+    if not ctx.canvas.all_free(cells, y, 3):
+        return
+    side, line = o['side'], o['line']
+    mid = o['u0'] + w / 2
+    edge = line - .5 if side in ('front', 'left') else line + 1.5
+    x, z = (mid, edge) if side in ('front', 'back') else (edge, mid)
+    planter = ctx.code(cfg['planter_colour'])
+    for k in range(2):
+        ctx.canvas.put(catalog.PLATE[w], planter, 'detail', x, z, y + k, YAW[side], label='flower box')
+    flower, leaf = ctx.code(cfg['flower_colour']), ctx.code('green')
+    for n, cell in enumerate(cells):
+        ctx.canvas.put(catalog.ROUND_PLATE_1, flower if n % 2 == 0 else leaf, 'detail', cell[0] + .5, cell[1] + .5, y + 2, 0,
+                       label='flowers')
 
 
 def cell_of(o, u, k):
@@ -157,6 +247,10 @@ def emit(ctx, st):
         x, z = origin(o)
         y0 = st.y_floor + 3 * o['c0']
         label = f"{kind} {side} s{st.index}"
+        if o.get('sill'):
+            emit_sill(ctx, st, o)
+            if ctx.cfg['details']['flower_boxes'] and o.get('sill_over'):
+                emit_flower_box(ctx, st, o)
         if kind == 'door':
             door = canvas.put(catalog.DOOR_FRAME, frame, 'door', x, z, y0, yaw, label='door frame ' + side)
             style = cfg['door']
