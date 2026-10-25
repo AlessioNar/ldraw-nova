@@ -1,81 +1,19 @@
-# Roadmap: done, in progress, planned
+# Status and roadmap
 
-The statuses below are inferred from the plan documents, the code and the git history. The plan docs rarely carry a status line themselves. **PLANNED** means not in the code.
+This manual describes what is built on `master`. What is in progress and what comes next is tracked on GitHub, not here, so that it cannot go stale in two places.
 
-## Done
+| Where | What it holds |
+|---|---|
+| [Epics](https://github.com/AlessioNar/open-brick-designer/issues?q=is%3Aissue+label%3Aepic) | Large pieces of work, each with sub-issues |
+| [Owner decisions](https://github.com/AlessioNar/open-brick-designer/issues?q=is%3Aissue+label%3Aowner-decision) | Questions waiting on the owner |
+| [In progress](https://github.com/AlessioNar/open-brick-designer/issues?q=is%3Aissue+is%3Aopen+label%3Ain-progress) | Issues someone is working on now |
+| [Plans index](../plans/README.md) | Design documents and their status: active, done, reference, superseded |
 
-| Area | What | Plan |
-|---|---|---|
-| Reference models packed | 1,821 models as 130 xz shards, verified by sha256 | [models-pack.md](../plans/done/models-pack.md), [data-audit.md](../plans/done/data-audit.md) |
-| Rebrickable mapping | Part and colour maps for parts list imports | [rebrickable-mapping.md](../plans/done/rebrickable-mapping.md) |
-| Agent loop performance | Rolling cache breakpoint, volatile state after history, masking of old tool output | [loop-perf/](../plans/done/loop-perf/REPORT.md) |
-| 3D editor core | Plan editing, palette, colours, agent handover | [manual-builder/](../plans/done/manual-builder/README.md) |
-| Chat redesign | Sidebar (since replaced by the app bar), four-control composer, build header, grouped transcript (the doc header still says "nothing implemented") | [chat-redesign/PROPOSAL.md](../plans/done/chat-redesign/PROPOSAL.md) |
-| Design system | "Blueprint with a hint of Toy box" applied; follows the OS light/dark theme | [design-system/applied](../plans/done/design-system/applied/README.md) |
-| Deterministic first, core | Generator registry, understanding step, resident build worker with cache, fast path | [deterministic-first/PROPOSAL.md](../plans/done/deterministic-first/PROPOSAL.md) (tasks 1–3) |
-| Fast path API | `POST /api/describe`, selectable understanding model | [phase2/fast-path.md](../plans/done/phase2/fast-path.md) |
-| Build workspace | Builds, versions, one draft, always-3D workspace, proposals, editor speed-ups | [build-workspace/](../plans/done/build-workspace/README.md), [CONTRACT.md](../plans/done/build-workspace/CONTRACT.md) |
-| App shell | Sidebar replaced by a slim app bar; Home is a four-tile menu; My Builds is a card grid of every build | (no plan doc) |
-| Brickit Pileometer import | Including colour-family review | [parts-catalogue/PROPOSAL.md](../plans/active/parts-catalogue/PROPOSAL.md) (pre-existing part) |
-| Security pass and hardening | Firewall, Host allowlist, separate Jev key, hash locks | [security pass](../security/2026-10-24-security-pass.md) |
-| UX journeys | Three audits with ranked friction lists; many fixes delivered since | [journeys/](../plans/done/journeys/01-first-run-and-building.md) |
-| Sets catalogue data | About 20k sets with a CLI (**not wired into the app**) | [set-catalog.md](../plans/done/set-catalog.md) |
+## How a plan becomes code
 
-## In progress, or built but not verified
+1. A plan or proposal is written under `docs/plans/active/` and discussed.
+2. The owner's decisions are recorded in the plan and, when open, as `owner-decision` issues.
+3. The work is split into an epic with sub-issues. Every change has its issue.
+4. Pull requests close those issues. When the work is merged, the plan moves to `docs/plans/done/` and stays as the record, and the matching page in this manual is updated to describe how it works.
 
-| Area | State | Plan |
-|---|---|---|
-| Swarm of worker models | The code is in (`subagents.py`, budget ledger, isolation, UI cards). **The end-to-end cost/quality run was never done**, and the worker capability measurement was partial. | [swarm-subagents/](../plans/done/swarm-subagents/README.md), [E2E.md](../plans/done/swarm-subagents/E2E.md) |
-| NL pipeline quality | The review is done and the fix plan is written. No fixes yet, and the live LLM evaluation has not run. | [nl-review/REVIEW.md](../plans/active/nl-review/REVIEW.md) |
-
-## Planned (not built)
-
-### NL pipeline, REVIEW.md section 6 (about 22–30 person-days)
-
-- **Wave 1, about 8–10 days:**
-  - role- and selection-based text edits on **any** build;
-  - a guard against stale generator sources;
-  - conversation context;
-  - clarify-first with chips and honest hints;
-  - seeding the agent with the spec and the nearest generator;
-  - word-boundary kind matching with "closest design" notes;
-  - colour harmony;
-  - show the model first and check it in the background, with the worker warmed at start;
-  - a local pipeline log.
-- **Wave 2, about 6–8 days:**
-  - broader rules (target: 50% of follow-ups with no LLM call);
-  - multi-intent requests;
-  - preview before big changes;
-  - errors as chips.
-- **Wave 3, about 8–12 days:**
-  - every chat message goes through the fast path first;
-  - **new generators by measured demand**: tower/castle/lighthouse/windmill, tree/garden, train, helicopter/plane, ship, furniture;
-  - role-aware retrieval;
-  - CI-lite evaluation.
-- **Open owner questions** (REVIEW.md:269-275): the stale-source policy, how many clarifying questions to allow, language support, telemetry, and whether stand-in designs are acceptable.
-
-### Deterministic first, remaining tasks
-
-- **Task 4, retrieve + recolour reference models.** This is what "templates" would be. It is the natural place for FTS, and optionally Jev, outside the agent. See [jev-and-search.md](jev-and-search.md#recommendation).
-- **Task 5, an edit executor with bounded repair** (`edits.py`, `repair.py`).
-- **Task 6, a family-card option form.**
-
-### Parts catalogue, waves 1–4 (owner decisions 2026-10-24)
-
-- collection page structure;
-- adding whole sets;
-- loose parts;
-- BrickLink and BSX import;
-- exports;
-- part notes, then locations;
-- reservations for built models;
-- "maybe" counts for colour families;
-- a rule-based quick add;
-- part thumbnails;
-- later, own photo-based part detection.
-
-### Other
-
-- Wiring the sets catalogue into what-can-I-build.
-- Dependabot or Renovate and audits in CI.
-- Telemetry: a local JSONL log of describe decisions, as proposed in REVIEW.md:261-267.
+When a plan and the code disagree, the code is what runs, and this manual describes the code.

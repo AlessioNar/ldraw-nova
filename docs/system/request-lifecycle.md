@@ -1,115 +1,193 @@
 # What happens when someone types a request
 
-Backend paths are relative to `app/web/backend/`, and frontend paths to `app/web/frontend/src/`. Measured numbers come from `docs/plans/active/nl-review/REVIEW.md` (warm container, 8 cores, software GL) and `docs/plans/done/deterministic-first/PROPOSAL.md`. **Caveat:** the NL review could not call the understanding model live (no key), so its LLM numbers are estimates.
+When a person types a sentence into the workspace chat ("a small red car", "make the roof blue", "two more windows"), the app does not send it straight to the paid AI agent. It tries a ladder of cheaper steps first: plain rules, one small and cheap language-model call that only reads the sentence, and then deterministic builders called generators. The expensive agent runs only if nothing cheaper can do the job and the person agrees. This page describes that ladder, the data it passes around, and the files to touch when you change it.
 
-## The five layers, cheapest first
+## How it works
 
-| # | Layer | Cost | Time | Code |
+### The layers, cheapest first
+
+| # | Layer | Costs money? | What it does | Code |
 |---|---|---|---|---|
-| 1 | **Hint** while typing (rules only) | 0 | 0.2 ms median | `GET /api/describe/estimate` → `fast_path.rules_guess` |
-| 2 | **Rules shortcut** at submit | 0 | 1–11 ms | `understand.rules_shortcut` (`understand.py:246`) |
-| 3 | **Understanding call**: one small LLM reads the sentence into `spec.v1` | about EUR 0.0002 (cached) to 0.0004 (cold) | about 1.5 s (estimated) | `understand.understand` |
-| 4 | **Generator** builds the model | 0 | 11–21 s warm; 17–67 s on a cold worker | `build_worker.py` → `ldraw_tools/pipeline.py` |
-| 5 | **Paid AI agent**, only after the person agrees | EUR 1–2 typical | 15–30 min | `agent.py`, `turn.py`, `agent_loop.py` |
+| 1 | Hint while typing | no | Guesses the route from keywords, never calls a model, and shows a line under the chat box ("Fast path: free" or "Needs the AI, about EUR 1-2"). The frontend asks for it, debounced by 350 ms, in `ChatPanel.tsx` `onTextChange()` through `buildsApi.hint()` | `app/web/backend/fast_path.py` `rules_guess()` |
+| 2 | Rules shortcut | no | Regular expressions that read the easy cases: undo, revert, "make the roof blue", "two more windows", "again", and four preset sentences | `app/web/backend/understand.py` `rules_shortcut()`, `role_rules()`, `rules_edits()` |
+| 3 | Understanding call | a fraction of a cent | One structured call to a small model (default Claude Haiku 5.5). It turns the sentence into a `spec.v1` JSON document and builds nothing | `app/web/backend/understand.py` `understand()` |
+| 4 | Generator or role edit | no | Deterministic code builds the model or edits the draft | `app/web/backend/build_worker.py`, `ldraw_tools/generators/`, `ldraw_tools/role_edits.py` |
+| 5 | Paid AI agent | yes, EUR 1-2 typical | A tool-using agent loop with its own budget | `app/web/backend/turn.py`, `agent_loop.py`, `agent.py` |
 
-## Hint vs decision
+The "fast path" is the name used throughout the code for layers 1 to 4 together: everything that answers a request for free (or almost free) without the agent. The whole decision is made by `fast_path.describe()`.
 
-- **Hint** = `GET /api/describe/estimate?text=&generator=` (`routers/describe_api.py:50`). It uses keywords only and never calls a model. It shows "Fast path: free, ~N s" or "AI build: ~EUR a–b, ~m–n min", prefixed "Probably:" when confidence is below 0.7 (`components/workspace/BottomBar.tsx`).
-- **Decision** = `POST /api/describe` (`describe_api.py:35`), or `POST /api/builds/{id}/draft/describe` inside a build. It may spend one cheap call, and it is the only one that triggers a build or an edit.
-- The two use different readers, and they **disagree on 15 of 54 realistic prompts** (REVIEW.md:160). For example, the hint says "AI build EUR 1–2" where the decision would ask a question or use a generator.
+The understanding model only reads language. It never sees parts, plans or tools. Its output is data (`spec.v1`) that ordinary code routes. If the model is missing, fails twice, or returns invalid JSON, `understand()` falls back to `heuristic_spec()`, a keyword reader, and the answer is marked `rules_fallback`.
 
-## What the decision returns
+### Who answers a message in the workspace chat
 
-`fast_path.describe` (`fast_path.py:531`) returns one of four routes:
+Each build has one chat. The server decides whether the next message goes to the fast path ("quick" mode) or to the agent ("ai" mode). `chat_routing.state()` reads the saved chat to decide.
 
-| Route | Meaning | What the UI does |
+- The agent is "engaged" when its turn is the latest real turn and it either asked the person something or has not delivered a proposal since the person last wrote. While engaged, every message goes to the agent, whatever words it contains.
+- Quick-change turns made in between do not end an agent conversation (they are marked `_fast_path` in the saved messages).
+- The person can override per message with "Quick change instead". The chat panel (`app/web/frontend/src/components/workspace/ChatPanel.tsx`) sends `quick: true` in that case.
+- In quick mode, replies and follow-ups such as "yes", "go on", "step 4" or any question are not commands. `chat_routing.is_continuation()` spots them and the server answers with a question about the build instead of guessing a colour or size.
+- An edit that the model (not the rules) understood is applied only if the whole message is one short edit command (`chat_routing.whole_edit_command()`) and the model's confidence is at least 0.6. Otherwise the person is asked.
+
+### The route a decision returns
+
+`fast_path.describe()` returns a dictionary whose `route` is one of:
+
+| Route | Meaning | What happens next |
 |---|---|---|
-| `generator` | A new model that a generator can build. Includes params, notes, `cost_eur: 0` and a time estimate. | Creates the build, runs the generator, and opens the workspace |
-| `edit` | A change to the current generator build. Includes `changes[]` (from→to) and new params, or `history: undo/revert`. | Regenerates into the draft as **one undoable step** |
-| `needs_ai` | The request cannot be done deterministically. Includes a reason and a cost/time estimate. | Shows "Build with AI for ~EUR x–y?" with Cancel and "Build with AI" |
-| `clarify` | One question back to the person | Shows the question; nothing is spent |
+| `generator` | A new model that a generator can build; carries `generator`, `params`, `notes`, `cost_eur: 0` | The build worker builds it into the draft |
+| `edit` | A change to the current build: either new generator `params` plus `changes`, or `role_edits` for a build without a live generator, or `history: undo/revert` | Applied to the draft as one undoable step |
+| `needs_ai` | Nothing deterministic fits; carries a `reason` and an `estimate` | The chat shows "This needs the AI" and waits. Nothing is spent until the person presses "Ask the AI" |
+| `clarify` | One question back to the person, with optional `choices` (chips) | Shown in the chat; nothing is spent |
+| `agent` | Only from `draft/describe`: the agent is engaged, so the message was not handled here | The frontend sends the message to the agent chat |
 
-**Why a request becomes `needs_ai`** (`fast_path._unsupported_reason`, `fast_path.py:162`; `route`, line 415):
-- it names a real set or franchise (`reference_hint`);
-- it asks to prefer or use only owned parts (`parts_mode`);
-- it needs a feature no generator has;
-- no generator matches and the request has 3 or more words.
+A request becomes `needs_ai` (see `fast_path._unsupported_reason()` and `route()`) when it names a real set or franchise (`reference_hint`), asks to prefer or use only owned parts, needs a required feature no generator has, or no generator matches the family and kind. The estimate defaults to EUR 1-2 and 15-30 minutes. After three finished chats exist it becomes the quartiles of the person's own past turns (`fast_path.ai_estimate()`, `history_stats()`).
 
-**Estimate shown for AI.** By default it is EUR 1–2 and 15–30 min. Once there are 3 finished chats, it becomes the quartiles of your own past turns (`fast_path.ai_estimate`, `history_stats`).
-
-## New build
-
-`/new` has no screen of its own. It creates an empty build (`POST /api/builds` with `source: {kind: "empty"}`) and opens it in the workspace (`pages/NewBuild.tsx`). The person then describes what they want in the workspace chat, which goes through the same fast path, or places parts by hand. A prompt handed to `/new` ("Design something like this" on What can I build?) is put in the chat's composer. Importing a model file starts from My Builds → Import a model file (`POST /api/builds`, then `POST /api/builds/{id}/import`).
-
-The describe box that used to sit on Home and on the New build page, with its own create-then-generate and "Build with AI" flow, was removed with the app shell redesign (October 2026).
-
-## Change to an existing build (workspace bottom bar)
+### The full flow for one message
 
 ```mermaid
-sequenceDiagram
-  actor P as Person
-  participant BB as Workspace bottom bar
-  participant API as POST /builds/{id}/draft/describe
-  participant FP as fast_path
-  participant W as Build worker
-  participant D as Draft (editor plan)
-
-  P->>BB: "make it longer"
-  BB->>API: {text}
-  API->>FP: describe(text, current = build.source generator + params)
-  FP-->>API: route edit (new params) or needs_ai or clarify
-  alt edit
-    API->>W: regenerate with new params (no geometry check)
-    W-->>API: new plan
-    API->>D: replace_plan (ONE undo step)
-    API-->>BB: changes + notes (toast)
-  else needs_ai / clarify
-    API-->>BB: returned untouched, nothing spent
-  end
+flowchart TD
+  A[Person types in the workspace chat] --> B{chat_routing.state: agent engaged?}
+  B -- yes, not quick --> AG[Message goes to the agent chat]
+  B -- no --> C{Pending question or explicit regenerate?}
+  C -- yes --> R[Reuse the saved decision]
+  C -- no --> D{Rules read it? understand.rules_shortcut / role_rules}
+  D -- yes --> RT[fast_path.route]
+  D -- no --> E{Building grammar reads the whole sentence?}
+  E -- yes --> RT
+  E -- no --> F[understand.understand: one cheap model call, one retry, keyword fallback]
+  F --> RT
+  RT --> G{route}
+  G -- generator --> H[build_worker builds, replace_plan: one undo step]
+  G -- edit --> I[regenerate with new params, or role edit in place]
+  G -- clarify --> J[Question with chips]
+  G -- needs_ai --> K[Ask the AI card with estimate]
+  K -- person agrees --> AG
+  R --> G
 ```
 
-- Code: `routers/workspace_api.py:240` (`draft_describe`), `_regenerate`, and `fast_path._route_edit` (line 436).
-- Edits change only the **generator params**: colour, size and feature toggles (`fast_path.edit_params`).
-- **Routing in the workspace chat.** There is one chat per build and the server decides who answers (`chat_routing.state`; `chat_mode` in `GET /workspace`). While the AI agent is engaged (its turn is the latest real one and it asked a question or has not delivered a proposal since the person wrote) every message goes to the agent and `draft/describe` returns `route: "agent"` without applying or saving anything; only the per-message "Quick change instead" (`quick: true`) reaches the fast path. In quick mode, replies and follow-ups (yes, go on, step N, questions) get a clarify about the build instead of a guess, and an understood edit is applied only if the whole message is one short edit command with a confident reading. Details in workspace-and-editor.md.
+The step "Building grammar reads the whole sentence" is `fast_path.grammar_decision()`. For a build made by the `building` generator it asks the toolkit's rule-based text reader (`ldraw_tools/grammar/nl.py` `apply_text()`, called through `generator_bridge.apply_text()`) to read phrases like "three storeys" or "arched windows". It is used only when it understands every clause, so nothing is applied half-way.
 
-## How the person agrees to spend
+### Understanding step in detail
 
-1. **The estimate hint** shows under the workspace chat before an AI turn starts.
-2. **Per-tool approval** applies when the chat's permission is "ask" (the default). Every tool that is not read-only waits up to 600 s for Approve or Deny (`agent.execute_tool`, `tool_policy.py:9`).
-3. **A EUR budget per request**: the UI default is EUR 2, with choices 1/2/5/10/20/custom/none (`components/ChatSettings.tsx:7-8`). See [ai-agent.md](ai-agent.md).
+1. **Rules first** (`understand.rules_shortcut()`): the four home-page preset sentences, `undo`, `revert`, "make the roof blue", chains of simple edits ("2 studs longer, then add a chimney"), "again" (repeats the last change the rules understood). The keyword tables also fold a few Italian, Spanish and French words onto English, for the rule path only. The model reads any language.
+2. **Model call** (`understand.understand()`): a cacheable system prompt (instructions, a digest of the generator registry, the colour list) plus a variable tail (options, `CURRENT_SPEC` for follow-ups, a short `CONTEXT` of the build and last turns, then the `REQUEST`). The tool schema is `spec.v1`. Output is capped at 500 tokens and requests are cut at 2000 characters. One retry tells the model what was invalid. The call is recorded in the cost history (`usage_log.record`, kind `understand`).
+3. **Which model**: `understand.model_params()` picks, in order, an explicit id, the environment variable `LDRAW_NOVA_UNDERSTAND_LLM_ID`, the "Understanding model" chosen in Settings, a configured Haiku 5.5 entry, then the main model. Any model that can do a forced tool call works.
+4. **Routing** (`fast_path.route()`): for a new model it picks the generator (`choose()`, by kind and family, matching whole words so "lighthouse" no longer means "house"), maps the spec's size, colours and features onto the generator's parameters (`params_from_spec()`), picks a preset for the building generator (`pick_preset()`), chooses a roof and trim that go with a single named wall colour (`_harmony()`), then clamps every value to the generator's schema and notes each adjustment (`clamp()`). For an edit it changes parameters (`edit_params()`), or builds role edits if the build has no live generator.
+5. **Unsure readings are asked about**: a model reading with confidence below 0.5, or with an ambiguity question (for example "6 x 8 in studs or in bricks?"), becomes a `clarify` with the options as chips instead of being applied.
+6. **Several steps in one sentence**: "a red car, then make it longer" is split by `split_steps()`; the first part builds, the rest is applied to the result in a scratch plan, and the answer lists both steps.
 
-## How agent results reach a build
+### Edits on builds without a live generator
 
-- An agent chat attached to a build never writes a version. `publish_model` validates the model and creates a **proposal** (`tools.py` `_propose` → `workspace.create_proposal`).
-- The person sees Keep / Preview / Discard. Keep replaces the draft as one undoable step (`workspace_api.py:286`).
-- Then "Save as vN" makes a version. See [workspace-and-editor.md](workspace-and-editor.md).
+A generator build remembers its generator id and parameters in `build.source`. If the person hand-edits the draft, accepts an AI proposal, or imports a file, the draft no longer matches that source. `workspace_api.build_context()` reports this (`diverged`, `has_model`, role counts). In that case:
 
-## Measured timings
+- "make the roof blue", "remove the chimney", "paint this red" (with a canvas selection) become **role edits**: recolour or remove all placements that carry a role such as `roof`, resolved by the toolkit (`ldraw_tools/role_edits.py` `resolve()`) and applied as one undoable batch (`routers/editor.py` `apply_role_edit()`).
+- If the role is unknown, nothing matches, or the roles were guessed with low confidence, the answer is a `clarify`. The person can confirm ("Yes, change them") and the edit is then forced.
+- A whole new model over an existing, non-generator draft is never applied silently. The chat asks "Start over with X?" first, and the old model stays in its versions.
+- "regenerate", "start over" or "reset" rebuilds from the saved settings and replaces manual edits, explicitly.
 
-| Request (REVIEW.md, `results-journey.json`) | Decision | Cold first build | Cache hit | Warm regenerate (no check) | Warm new version with check |
-|---|---|---|---|---|---|
-| small red car | 1.4 ms | 33.8 s | 0.03 s | 0.32 s | 15.2 s (check 14.9 s) |
-| 10x8 house + chimney + porch | 0.9 ms | 66.7 s | 0.01 s | 0.45 s | 19.5 s |
-| white/blue starship | 0.8 ms | 17.4 s | 0.02 s | 0.50 s | 11.3 s |
+How roles work is in [generators-and-grammar.md](generators-and-grammar.md).
 
-- **Almost all of a new build's time is the geometry check.** The generator already guarantees most of what it checks.
-- **Before the resident worker**, every CLI call paid 15–25 s of start-up, so a car took 79 s (PROPOSAL.md:31-40).
-- **Agent vs fast path.** In the measured Sonnet 5.5 runs, an agent build took 24–25 min and cost EUR 1.51–2.05 (`swarm-subagents/E2E.md:15-28`). A generator build takes about 15 s and costs nothing.
-- **Session cost.** One build plus 10 edits, all through the LLM, costs about EUR 0.003 (REVIEW.md:182-189).
+### The hint versus the decision
 
-## Where it is weak today
+The hint (`GET /api/describe/estimate`) uses `rules_guess()` and never calls a model. It reads the same rules and the same build context as the decision, so the two agree whenever no model is needed. The decision (`POST /api/builds/{id}/draft/describe`) may spend one cheap call and is the only one that changes the draft. When the hint is unsure it says "Probably".
 
-From REVIEW.md section 5, ranked by the reviewer:
+## Where the code is
 
-1. **Edits on non-generator builds.** AI-built, imported or hand-edited builds cannot be edited by text. "Make the roof blue" gets "AI build EUR 1–2" or "There is nothing to change yet".
-2. **Stale generator source.** After you accept a proposal or edit by hand, a text edit regenerates from the old params and **silently overwrites your work**. You only learn this afterwards.
-3. **Handover sends only the raw sentence.** The agent does not receive the spec, the nearest generator or the draft summary.
-4. **"Can't place it" means "spend EUR 1–2".** There is no clarify-first policy and no choice chips.
-5. **No conversation memory.** Each message is read alone. "Again" works only in tests, because no caller sends `previous_text`.
-6. **LLM-first in practice.** Rules answer 3 of 54 realistic prompts (10 of 74 golden prompts). Without an understanding model, the keyword fallback drops about half of a request.
-7. **Wrong picks without a note.** The substring match maps "lighthouse" to a house, "scarecrow" to a car, "fire truck" to the tipper truck and "cargo ship" to the small launch (`fast_path.py:129`).
-8. **Notes are thrown away.** The Home and New build pages never show the assumptions made.
-9. **Slow first build.** People wait 11–21 s for a check, and the worker is not warmed when the app starts.
-10. **Other gaps.** There is no colour harmony, no tower, castle, train, tree, helicopter or furniture generator, and no telemetry.
+| File | What it holds |
+|---|---|
+| `app/web/backend/routers/workspace_api.py` | `draft_describe()` (the endpoint), `build_context()`, `_regenerate()`, `_role_edit()`, pending-question handling, saving the turn into the chat (`_persist_turn()`) |
+| `app/web/backend/routers/describe_api.py` | `POST /api/describe` (no build, no draft) and `GET /api/describe/estimate` (the hint) |
+| `app/web/backend/fast_path.py` | `describe()`, `route()`, `choose()`, `params_from_spec()`, `edit_params()`, `clamp()`, `rules_guess()`, `ai_estimate()`, `grammar_decision()`, `split_steps()` |
+| `app/web/backend/understand.py` | Rules, keyword fallback, the prompt, `understand()`, `validate()`, `normalise()`, `model_params()` |
+| `app/web/backend/chat_routing.py` | `state()`, `is_continuation()`, `whole_edit_command()`, `contextual_clarify()` |
+| `app/web/backend/generator_bridge.py` | The generator registry as data in the backend process, `apply_text()` |
+| `app/web/backend/build_worker.py` | The resident toolkit process that builds plans |
+| `app/web/backend/turn.py`, `agent_loop.py`, `agent.py` | The paid agent: `run_turn()` streams a model reply, runs tools, repeats until done, a budget is reached or the step cap is hit |
+| `app/web/backend/request_log.py` | The local request log |
+| `app/web/backend/spec.v1.schema.json`, `edit-intent.v1.schema.json` | The data contracts |
+| `app/web/backend/understand_golden.json`, `understand_eval.py` | The golden prompts and the live scorer |
+| `app/web/backend/routers/understand_api.py` | `POST /api/understand`, an internal test endpoint for the understanding step alone |
+| `app/web/frontend/src/components/workspace/ChatPanel.tsx` | The chat: quick or AI toggle, hint line, clarify chips, the "Ask the AI" tray |
 
-The fix plan is REVIEW.md section 6. Wave 1 takes about 8–10 days: role-based edits on any build, a divergence guard, context, clarify chips, agent seeding, word-boundary matching, colour harmony, and "show first, check later". See [roadmap.md](roadmap.md).
+## Reference
+
+### API endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/builds/{id}/draft/describe` | The real entry point. Body: `text`, optional `previous_text`, `quick`, `selection`, `persist`. Applies the answer to the draft and saves the turn in the build's chat |
+| `GET /api/builds/{id}/workspace` | Includes `chat_mode` (`quick` or `ai`) and `agent_chat` |
+| `GET /api/describe/estimate?text=&build_id=` | The hint. Rules only, milliseconds |
+| `POST /api/describe` | The same decision without a build or a draft. The current UI does not call it; it is there for tests and tools |
+| `POST /api/understand` | Runs only the understanding step and returns the spec, cost and source |
+| `GET/PUT /api/request-log/settings` | Whether the full sentence is stored in the request log |
+
+### Spec and edit-intent schemas
+
+`spec.v1.schema.json` is "what the user wants, as understood from one message" and the only input of the router. The model is forced to call a tool whose parameters are this schema.
+
+| Field | Meaning |
+|---|---|
+| `intent` | `new_model`, `edit`, `question` or `other` (required) |
+| `subject` | `family` (required: car, truck, van, motorcycle, boat, aircraft, spaceship, train, house, building, tower, garden, technic, mechanism, scene, other), `kind` (free noun), `style` |
+| `size` | `scale` (micro to large), `studs` (width, depth, length, height_courses), `unit_ambiguous` |
+| `colours` | role to colour name, e.g. `{"body": "Red", "wheels": "Black"}` |
+| `features` | list of `name`, `count`, `where`, `required` |
+| `constraints` | `parts_mode` (off, prefer, only), `max_parts`, `budget_eur`, `must_use`, `avoid` |
+| `edits` | up to 8 edit objects (below) |
+| `reference_hint` | a named real set or franchise; routes to `needs_ai` |
+| `ambiguities`, `confidence` | questions worth asking and a 0 to 1 score |
+
+An edit object has `op` and `target` (required), plus `value`, `delta`, `amount`, `unit`, `where`, `count`. The ops are `set_colour`, `set_param`, `scale_param`, `add_feature`, `remove_feature`, `swap_part`, `replace_model`, `undo`, `revert`.
+
+`edit-intent.v1.schema.json` is a stricter view for `intent: edit` (at least one edit, and the edit object must be identical to the one in spec.v1; a test enforces that). `understand.validate()` checks a spec against spec.v1 and, for edits, also against edit-intent.v1.
+
+### The request log
+
+`request_log.py` writes one row per describe or estimate request into the `request_log` table (see [database.md](database.md)): surface, route, who decided (`rules`, `llm`, `grammar`, `rules_fallback`), family, kind, generator, latency, a 12-character hash of the text, and a few fields such as confidence and the understanding cost. The sentence itself is stored only when the owner switches on `keep_request_text` (through `PUT /api/request-log/settings`, or `LDRAW_NOVA_KEEP_REQUEST_TEXT=1`; the frontend has no switch for it yet). Rows older than 180 days are pruned. Writes never fail a request, and nothing leaves the machine. Columns `applied`, `undone_within_60s`, `went_to_agent` and `lang` exist in the table but nothing fills them yet.
+
+### Golden tests
+
+`understand_golden.json` holds 74 prompts with the spec each should produce (new models, follow-up edits with a `current_spec`, the owner's three example prompts). `understand_eval.py` scores a run per dimension: intent, family, colours, edits. The target is at least 0.90 on family, colours and edits and a median cost under USD 0.0005. A live run calls a real model about 70 times (a cent or two) and is manual by design:
+
+```sh
+docker compose exec ldraw-nova-app bash -c "cd /app/web/backend && python3 understand_eval.py --live"
+```
+
+Options: `--llm-id <entry>`, `--limit N`, `--rules` (let rules answer what they can), `--json FILE`. Without `--live` it refuses to run.
+
+## Changing it
+
+- **A new phrase the rules should read**: add a pattern in `understand.py` (`_clause_edit()` for follow-ups, `_PRESET_SPECS` for exact sentences). Rules must be all-or-nothing: if any clause is not understood, return `None` so the whole message goes to the model. Add a golden prompt with `"rules": true`.
+- **A new spec field or edit op**: change both schema files (keep `$defs.edit` identical), update the `INSTRUCTIONS` text in `understand.py`, and handle the field in `fast_path.params_from_spec()` or `edit_params()`. Changing the prompt or schema changes the cached prefix; tests pin that it is byte-stable.
+- **A new generator or preset**: you do not change the router. The registry digest in the prompt and the routing both read the registry. See [generators-and-grammar.md](generators-and-grammar.md).
+- **Routing wording or thresholds**: `fast_path.py` (`BIG_CHANGE` 0.30 sends a large size change to a preview proposal; confidence 0.5 and 0.6 limits are in `describe()` and `_unsure()`).
+- **Do not** make the hint call a model, or make a decision apply an understood edit from a long sentence. Both rules are what keep the free path predictable.
+- After a prompt or routing change, re-run the model-less regression (below), and run the live golden check once.
+
+## Testing it
+
+Backend tests live in `app/web/backend/tests/`. They stub the model, so they are free and deterministic. In the container:
+
+```sh
+cd /app/web/backend && pytest -q tests/test_understand.py tests/test_fast_path.py tests/test_chat_routing.py tests/test_nl_wave1.py tests/test_nl_regression.py
+```
+
+| Test file | Covers |
+|---|---|
+| `tests/test_understand.py` | Schemas, golden set through a mocked provider, retry and fallback, prompt prefix stability, cost |
+| `tests/test_fast_path.py` | Routing, clamping, edits, presets, estimates |
+| `tests/test_chat_routing.py` | Quick versus AI mode |
+| `tests/test_nl_wave1.py` | Role edits on any build, divergence guard, context, hint and decision agreement |
+| `tests/test_nl_regression.py` | `nl_prompts.json`: 54 review prompts plus more, with recorded routes. Re-record on purpose with `NL_REGRESSION_RECORD=1 pytest tests/test_nl_regression.py` and review the diff |
+| `tests/test_database.py` | Request log hashing and the opt-in to keep the sentence |
+
+## Related
+
+- [ai-agent.md](ai-agent.md): the paid agent, budgets and approvals
+- [workspace-and-editor.md](workspace-and-editor.md): drafts, versions, proposals and undo
+- [generators-and-grammar.md](generators-and-grammar.md): what the router routes to
+- [settings-and-providers.md](settings-and-providers.md): the understanding model setting
+- [database.md](database.md): the `request_log` table
+- [roadmap.md](roadmap.md)
+- Plans: `docs/plans/active/nl-review/REVIEW.md` (measurements and the ranked weak points; its numbers predate the role-edit and context work), `docs/plans/done/deterministic-first/PROPOSAL.md`, `docs/plans/done/phase2/fast-path.md`

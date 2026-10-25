@@ -1,11 +1,13 @@
-# Operations: running, changing, testing
+# Operations: running and maintaining the app
+
+How to run the app day to day: normal and dev mode, what to rebuild after a change, where the logs are, backups, and common tasks. For a first setup, start with [Getting started](getting-started.md).
 
 ## Normal and dev mode
 
 | | Command | What runs |
 |---|---|---|
 | Production-style | `cd app && docker compose up -d --build` | The image as built: UI from the image, no reload |
-| **Dev mode** | `cd app && docker compose up -d` **if `app/.env` sets `COMPOSE_FILE=docker-compose.yml,docker-compose.dev.yml`** (your `.env` does) | The backend is mounted read-only from your checkout, `uvicorn --reload` (polling), and the UI comes from `app/web/frontend/dist` |
+| **Dev mode** | `cd app && docker compose up -d` **if `app/.env` sets `COMPOSE_FILE=docker-compose.yml,docker-compose.dev.yml`**  | The backend is mounted read-only from your checkout, `uvicorn --reload` (polling), and the UI comes from `app/web/frontend/dist` |
 
 Dev mode details (`app/docker-compose.dev.yml`):
 
@@ -35,17 +37,7 @@ Dev mode details (`app/docker-compose.dev.yml`):
 
 ## Tests
 
-| Suite | Where | How |
-|---|---|---|
-| Backend (about 55 files) | `app/web/backend/tests/` | In the container: `pip install -r requirements-dev.txt` then `cd /app/web/backend && pytest -q`. They need LeoCAD and the library; `conftest.py` redirects `/data` and `/config` to temp folders. |
-| Toolkit (27 files) | `tests/` | CI mounts them into the image and runs `uv run pytest` (`.github/workflows/ci.yml`) |
-| Viewer/editor in a browser | `app/web/viewer-deps/test/` (Playwright) | `npm test`, `npm run test:editor`, `test:canvas`, `test:core` against a **throwaway** container |
-| Workspace end-to-end | `app/web/viewer-deps/test/workspace.e2e.mjs` | By hand, against a throwaway container seeded from a volume copy |
-| Frontend type-check and build | `app/web/frontend` | `npm run build` (no unit tests) |
-| Lint | repo root | `ruff check` |
-
-- **CI jobs**: `quick` runs the frontend build, ruff and the models-pack verify. `image` runs the full build, smoke checks (including `jev-rerank --help`) and both test suites.
-- **Rule of thumb from your memory notes**: test against throwaway containers, never the running `ldraw-nova-app` or its volumes. Live API tests have a small euro budget.
+Every suite, how to run it and what CI checks is on [Testing and CI](testing-and-ci.md). Test against throwaway containers, never the running `ldraw-nova-app` or its volumes.
 
 ## Backups
 

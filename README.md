@@ -8,7 +8,7 @@ Open Brick Designer is a web app for designing LEGO© models as [LDraw](https://
 - **Builds:** every model is a build with numbered versions and one editable draft. Start one empty, describe it in words, or import a model file.
 - **Workspace:** an always-3D editor where you place and edit parts, with the build's chat beside the canvas. You can view, play step by step, render, and export (`.mpd`, Blender-ready `.glb`).
 - **Deterministic first:** one cheap LLM call reads your request, then generators build what they can for free (buildings, houses, vehicles, spaceships). The paid AI agent runs only after you agree to a price.
-- **Building grammar:** one compositional generator for buildings, with 24 presets from cottages and shops to pagodas, lighthouses and modular buildings.
+- **Building grammar:** one compositional generator for buildings, with 26 presets from cottages and shops to pagodas, lighthouses and modular buildings.
 - **Roles and templates:** parts in any model get roles (wall, roof, trim, glass…), so you can edit by role ("make the roof red") and stretch templates derived from real builds.
 - **My Parts:** your loose pieces and imported lists (Brickit/Pileometer, Rebrickable, BrickLink), searched and edited together, with a colour review for uncertain pieces. Builds can check what you are missing.
 - **My Sets:** the sets you own, added by number from an offline catalogue of about 20k LEGO sets, from another brand, or by hand, as picture cards with part counts. Also here: which sets and models are built and holding parts, and what you can build from what you own.

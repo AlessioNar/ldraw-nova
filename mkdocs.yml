@@ -5,10 +5,44 @@ repo_name: AlessioNar/open-brick-designer
 edit_uri: edit/master/docs/
 docs_dir: docs
 
+nav:
+  - Home: index.md
+  - Technical documentation:
+      - Overview: system/README.md
+      - Getting started: system/getting-started.md
+      - The app:
+          - Frontend: system/frontend.md
+          - Workspace and editor: system/workspace-and-editor.md
+          - Backend and API: system/backend.md
+          - Request lifecycle: system/request-lifecycle.md
+      - Building models:
+          - Generators, grammar and templates: system/generators-and-grammar.md
+          - Toolkit and CLI: system/toolkit.md
+          - AI agent: system/ai-agent.md
+          - Jev and search: system/jev-and-search.md
+      - Parts and sets:
+          - My Parts: system/parts-and-collection.md
+          - My Sets: system/sets.md
+          - Ontology: system/ontology.md
+      - Data:
+          - Data and storage: system/data-and-storage.md
+          - Database: system/database.md
+      - Running it:
+          - Settings and providers: system/settings-and-providers.md
+          - Operations: system/operations.md
+          - Testing and CI: system/testing-and-ci.md
+          - Security: system/security.md
+          - Status and roadmap: system/roadmap.md
+  - Plans: plans/README.md
+  - SPARQL cookbook: ontology/SPARQL.md
+  - UX:
+      - Editor chat journeys: ux/editor-chat-journeys.md
+
 theme:
   name: material
   features:
     - navigation.indexes
+    - navigation.sections
     - navigation.top
     - search.suggest
     - content.code.copy
@@ -24,7 +58,12 @@ markdown_extensions:
   - toc:
       permalink: true
   - admonition
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      # Material renders ```mermaid blocks as diagrams.
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 # Docs link to source files that live outside docs/ (they resolve on GitHub,
 # not on the site), so a missing target is not worth a warning.
