@@ -66,7 +66,7 @@ def load(path=TTL):
         props = sorted(g.subjects(RDFS.domain, domain), key=lambda p: int(g.value(p, OBD.order)))
         return {str(g.value(p, DCT.identifier)): _spec(g, p) for p in props if (p, RDF.type, OWL.DatatypeProperty) in g}
 
-    comps = sorted(g.subjects(RDFS.subClassOf, OBD.Component), key=lambda c: int(g.value(c, OBD.order)))
+    comps = sorted((c for c in g.subjects(RDFS.subClassOf, OBD.Component) if (c, OBD.partOf, OBD.Building) in g), key=lambda c: int(g.value(c, OBD.order)))
     groups = {str(g.value(c, DCT.identifier)): {
         'component': str(g.value(c, RDFS.label)), 'description': str(g.value(c, RDFS.comment)),
         'roles': sorted(str(r)[len(ROLE):] for r in g.objects(c, OBD.role)), 'properties': params(c)} for c in comps}
