@@ -105,7 +105,7 @@ def scenario(store, tag: str) -> dict:
     key = store.build_key(slug)
     out["no_draft"] = workspace.read_draft(store, key)
     workspace.write_draft(store, key, {"base_version": 2, "base_file": f"{slug}-v2.mpd", "base_revision": 5, "saved_revision": 5,
-                                       "base_undo_depth": 3, "forked": False, "drift": 0})
+                                               "base_undo_depth": 3, "forked": False, "drift": 0})
     workspace.touch_draft(store, key, "edit", {"undo_depth": 1})
     workspace.write_draft(store, key, {**workspace.read_draft(store, key), "sources": {"2": {"id": "house"}}})
     out["draft"] = shape(workspace.read_draft(store, key))
