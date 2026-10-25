@@ -94,6 +94,7 @@ def environment() -> dict[str, str]:
         "XDG_CACHE_HOME": str(source / ".cache"),
         "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1",
         "LDRAW_DIR": env.get("LDRAW_DIR") or env.get("LDRAWDIR") or str(settings.LDRAW_DIR),
+        "LDRAW_NOVA_TEMPLATES_DIR": str(settings.TEMPLATES_DIR),       # the person's templates, read by every toolkit process
         **collection_store.cli_environment(),
     }
 

@@ -99,7 +99,8 @@ class Pipeline:
         generated = None
         if generator is not None and generator.startswith("template:"):
             from . import templates                  # a model turned into a template (docs/plans/build-templates)
-            generated = templates.generate(generator.removeprefix("template:"), params)
+            templates.refresh()                      # one the person saved since this worker started
+            generated = dict(templates.generate(generator.removeprefix("template:"), params), generator=generator)
             plan = generated["plan"]
         elif generator is not None:
             from .generators import generate
@@ -240,10 +241,17 @@ def _handle(pipeline: Pipeline, request: dict) -> dict:
         from .commands.editor import run_request
         pipeline.load()
         return run_request(request, pipeline.library, pipeline.parts, idle=pipeline.idle)
+    if op == "template":
+        from .templates import job
+        return job.run_request(request, pipeline)
     if op == "generators":
+        from . import templates
         from .generators import REGISTRY
         from .generators.colours import NAMES
-        return dict(ok=True, generators=[g.entry() for g in REGISTRY.values()], colours=dict(NAMES))
+        templates.refresh()
+        entries = [g.entry() for g in REGISTRY.values()]
+        entries += [dict(t.entry(), id="template:" + t.id) for t in templates.REGISTRY.values()]     # offered next to the generators
+        return dict(ok=True, generators=entries, colours=dict(NAMES))
     if op == "build":
         keys = ("plan", "vehicle", "palette", "name", "geometry", "glb", "renders", "force", "generator", "params")
         return pipeline.run(request["outdir"], **{k: request[k] for k in keys if k in request})

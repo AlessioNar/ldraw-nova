@@ -12,7 +12,7 @@ from leocad_render import DATA_DIR, GENERATED_DIR, OUTPUT_DIR
 
 __all__ = [
     "DATA_DIR", "GENERATED_DIR", "CHATS_DIR", "OUTPUT_DIR", "INVENTORIES_DIR", "COLLECTION_EXPORT_DIR", "WEB_DIRS",
-    "CONFIG_DIR", "LDRAW_DIR", "INDEX_DIR", "STATIC_DIR",
+    "TEMPLATES_DIR", "CONFIG_DIR", "LDRAW_DIR", "INDEX_DIR", "STATIC_DIR",
     "VIEWER_DIR", "VIEWER_VENDOR_DIR", "PLAYER_VENDOR_DIR", "PROMPTS_DIR",
     "COALESCE_REASONING",
 ]
@@ -22,8 +22,10 @@ __all__ = [
 #   chats/<chat-id>/    one folder per chat: chat.json, messages.jsonl, models.jsonl, renders/
 #   output/<chat-id>/   each chat's agent work folder (notes, plans, scratch files) — never served
 #   inventories/        the user's parts inventories: <id>.json + the uploaded <id>.csv — never served
+#   templates/          the person's own build templates (Make this a template): <id>.json — never served
 CHATS_DIR = DATA_DIR / "chats"
 INVENTORIES_DIR = Path(os.environ.get("LDRAW_NOVA_INVENTORIES_DIR", DATA_DIR / "inventories"))
+TEMPLATES_DIR = Path(os.environ.get("LDRAW_NOVA_TEMPLATES_DIR", DATA_DIR / "templates"))
 # With the collection on PostgreSQL: the derived JSON copy of it that the toolkit CLI reads (`--store`); never the original files.
 COLLECTION_EXPORT_DIR = Path(os.environ.get("LDRAW_NOVA_COLLECTION_EXPORT_DIR", DATA_DIR / "collection-export"))
 

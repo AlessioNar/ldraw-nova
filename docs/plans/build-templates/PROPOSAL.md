@@ -186,7 +186,7 @@ Problems the renders caught that validation did not, all fixed (in the derivatio
 
 ## 6. Making a template from a build
 
-How a person does it (UI idea, not built): in the workspace, the build menu gets **Make this a template**.
+How a person does it (built, #55): in the workspace, the build menu (the ⋯ menu) has **Make this a template…**, which opens a Template tab beside the chat.
 
 0. The button is offered only when the build passes the quality gate (no validation errors, connectivity not worse than a threshold).
 1. First a role-coloured preview with a legend (the renders in `renders/roles/`): the person can click a part or a group and correct its role; a corrected role is stored on the placement and the classifier never overwrites it.
@@ -195,7 +195,17 @@ How a person does it (UI idea, not built): in the workspace, the build menu gets
 4. Saving writes `<data>/templates/<id>.json` for that person (`templates.load_dir`), and the registry dump picks it up (the bridge signature includes the templates folder). From then on "another one of those, but longer and in green" is a free fast-path build.
 5. The template keeps the source build's id and version, author and licence, and `generate` writes them into the plan header, so derived builds stay attributed. A template from a reference model keeps the model's author and licence line, and the UI shows it.
 
-Today the same thing is one command: `python docs/plans/build-templates/derive_templates.py OUTDIR SPEC.json` (see `templates.spec.json`).
+What is built, and where: the gate, the role preview, the job and the knob card are `ldraw_tools/templates/make.py` and `job.py` (worker op `template`: `check`, `make`, `finalize`); the endpoints are `app/web/backend/routers/templates_api.py`; the panel is `TemplatePanel.tsx`. Differences from the sketch above:
+
+- The gate (`make.gate`): no validation error, at least 8 and at most 1,500 parts, at most one disconnected component per four parts (the shipped templates sit between 0.01 and 0.18). When it fails the panel lists why and stops.
+- Role correction: the canvas shows the role-coloured model (read-only); the classifier's least sure parts are listed with a role picker each, and pieces selected on the canvas can be given a role in one go. A correction is stamped on the placement (`role`), and `tag_plan` never overwrites a stamped role. Clicking a part in the role-coloured model to correct it is not built.
+- The job runs in its own toolkit process (not the build worker or the editor's), one at a time, with a progress file the panel polls; closing the panel does not stop it and reopening resumes it. The thumbnail of each extreme value is a LeoCAD render of the template itself; when no renderer exists the knob shows its text only.
+- Saving writes `<data>/templates/<id>.json` from the backend (the toolkit processes only read that folder through `LDRAW_NOVA_TEMPLATES_DIR`, re-read before each build and registry dump). Knobs can be switched off at save; nothing can be switched on.
+- Words ("it answers to") are pre-filled from the build's title and its generator's kinds; the understanding step's reading is not used.
+- `source` stays plain: the build's title, id and version (plus `draft_changes` when the draft had unsaved edits), and the plan's author and licence. It is the part to move to PROV-O under the RDF epic (#89).
+- The saved template is listed with the generators (`/api/generators`, id `template:<id>`) and in the decision engine's registry; `GET/DELETE /api/templates` list and remove them.
+
+The same derivation is still one command for reference models: `python docs/plans/build-templates/derive_templates.py OUTDIR SPEC.json` (see `templates.spec.json`).
 
 ## 7. Template vs generator vs AI in the fast path
 
@@ -239,7 +249,7 @@ How the two fit together: a grammar building has exact roles, so it is the ideal
 **Wave 1: role edits everywhere, templates on the fast path (about 6-8 days).**
 1. Role edits in the workspace on any build (REVIEW wave 1, item 1): `draft/describe` resolves `set_colour`/`remove_feature` edits with `role_edits` when the build has no live generator source or the draft diverged; the canvas selection becomes `selection`; low-confidence roles are shown as chips the person can correct (2-3 d).
 2. Templates in routing: the bridge already lists them; teach `params_from_spec` the size words for `x_delta`/`z_delta`/`courses_delta`/`*_repeat` and the feature words for `include_*`; show "starting from: Flatbed truck (4915), by <author>" in the result (1-2 d).
-3. Derivation as a background job in the build worker with progress, cached by (model hash, toolkit version); per-person template folder; "Make this a template" card (2-3 d).
+3. Derivation as a background job with progress; per-person template folder; "Make this a template" card (2-3 d). Built in #55 (not built: caching by model hash).
 4. Role evaluation in CI: the generator ground truth (fail on a drop of more than 2 points) and a growing hand-labelled reference set, started from parts the owner corrects in the preview.
 5. Run the backend suite once in the container. Here it ran in a throwaway environment with the app's locked dependencies: 679 passed, 17 failed, 43 skipped; master in the same environment: 678 passed and the same 17 failures (tests that need the container: LeoCAD with a display, mpd2glb, the baked library and its indexes). The one extra pass is the new routing test (`test_a_template_wins_only_a_kind_no_generator_owns`).
 

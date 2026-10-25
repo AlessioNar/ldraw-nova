@@ -7,7 +7,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { wsApi } from "./wsApi";
 import type { CanvasCommand, CanvasEvent, CanvasMode, CanvasPiece, DescribeResult, DraftInfo, PartsCheckData, Proposal, Tool, WorkspaceData, WsVersion } from "./types";
 
-export type Tab = "chat" | "parts" | "piece" | "settings";
+export type Tab = "chat" | "parts" | "piece" | "settings" | "template";
 export type Viewing = { kind: "version"; version: number } | { kind: "proposal"; id: string } | null;
 export type VersionRow = WsVersion & { detail?: BuildVersion };
 export type Toast = { text: string; error?: boolean; action?: { label: string; run: () => void } };
