@@ -5,7 +5,7 @@
 #
 # Keep this in sync with the `COPY --from=nova` lines in app/Dockerfile:
 # data/, docs/, examples/, prompts/, ldraw_tools/, and the top-level
-# *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent, tools/build_set_catalog.py, plus
+# *.md *.sh LICENSE CC-BY-SA-4.0 ldraw-agent, tools/build_set_catalog.py, tools/fetch_cada_sets.py, .gitignore, app/web/backend/generator_bridge.py, plus
 # models-packed/ and tools/models_pack.py for the `models` stage (the reference models are unpacked
 # there, not copied from a materialised checkout folder).
 data/models-annotated
@@ -30,3 +30,7 @@ output
 .pytest_cache
 *.egg-info
 **/node_modules
+
+# Needed by root tests in the image (see the COPY lines after build_set_catalog.py in app/Dockerfile)
+!.gitignore
+!app/web/backend/generator_bridge.py
