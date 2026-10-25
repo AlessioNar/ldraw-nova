@@ -12,6 +12,7 @@ Open Brick Designer is a web app for designing LEGO© models as [LDraw](https://
 - **Roles and templates:** parts in any model get roles (wall, roof, trim, glass…), so you can edit by role ("make the roof red") and stretch templates derived from real builds.
 - **My Parts:** your own collections, imported from Brickit/Pileometer, added by set number from an offline catalogue of about 20k LEGO sets, or by hand. Builds can check what you are missing.
 - **Reference library:** 1,821 annotated real LEGO models that the generators and the agent learn from.
+- **Ontology:** roles, build components and validity rules are RDF (SKOS, OWL, SHACL) in `ontology/`, published as Turtle in [docs/ns/](docs/ns/) with a [SPARQL cookbook](docs/ontology/SPARQL.md).
 - **LLM providers:** Anthropic, OpenAI, Mistral and OpenRouter via LiteLLM, with per-request cost tracking.
 
 How it all fits together is in [docs/system/](docs/system/README.md). Plans and their status are in [docs/plans/](docs/plans/README.md); open work is tracked in [GitHub issues](https://github.com/AlessioNar/ldraw-nova/issues).
