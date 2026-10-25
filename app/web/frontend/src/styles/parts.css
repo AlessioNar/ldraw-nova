@@ -101,3 +101,14 @@
 .mapping-sample table { border-collapse: collapse; font-size: 12px; width: 100%; }
 .mapping-sample th, .mapping-sample td { padding: 3px 8px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border); }
 .import-format select { max-width: 100%; }
+
+/* My sets */
+.set-fetch { margin: 4px 0 12px; align-items: flex-start; }
+.set-fetch small { display: block; }
+.set-card { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.set-card p { margin: 0; }
+.set-card-link { color: inherit; text-decoration: none; display: block; border-radius: var(--radius); }
+.set-card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.set-card-link h2 { font-size: 16px; margin: 8px 0 2px; }
+.set-card-image { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--surface-2); border-radius: var(--radius); }
+.set-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
