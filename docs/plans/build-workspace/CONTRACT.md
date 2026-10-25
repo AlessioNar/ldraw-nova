@@ -55,7 +55,7 @@ In (parent → canvas): `{type: "obd:command", cmd, ...args}` with `cmd`:
 `add-part {part, colour}` (arm the add tool with this part), `set-mode {mode}`,
 `reload` (re-fetch the editor view after a backend change: regenerate, accept, discard, open),
 `view-version {url}` (read-only display of an MPD URL) and `back-to-draft`, `focus` (frame the model),
-`step {n}` (player).
+`step {n}` (player), `select {ids}` (select the parts named "section:id", every copy of a sub-model's part, and frame them; Edit mode only).
 
 ## Workspace UI (agent W3: workspace-ui)
 
