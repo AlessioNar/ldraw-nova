@@ -366,6 +366,8 @@ export type ColumnMapping = { part: string; colour: string; qty: string; system:
 export type NeedsMapping = {
   needs_mapping: { headers: string[]; sample: string[][]; guess: Partial<ColumnMapping>; saved: ColumnMapping | null; signature: string; systems: ColourSystem[] };
 };
+export type PageLine = { part: string; colour: string; qty: number; confidence: number; flags: string[]; text: string; page: number; needs_review: boolean };
+export type PageRead = { method: "pdf-text" | "ocr"; csv: string; lines: PageLine[]; warnings: string[]; review_below: number };
 export type ImportPreview = {
   preview_id: string; name: string; format: string; report: ImportReport; same_name: string | null;
   mapping?: ColumnMapping; mapping_remembered?: boolean;
@@ -411,6 +413,7 @@ export const collectionApi = {
   review: () => request<{ groups: ReviewGroup[]; items: number; pieces: number }>("/api/collection/review"),
   resolveReview: (body: { source: string; id?: string; family?: string; colour?: number; qty?: number; discard?: boolean }) =>
     request<OpsResult>("/api/collection/review", { method: "POST", body: json(body) }),
+  readPage: (data: string) => request<PageRead>("/api/collection/imports/read-page", { method: "POST", body: json({ data }) }),
   previewImport: (name: string, csv: string, include_spares: boolean, filename: string, family_colours?: Record<string, number>,
                   how?: { format?: string; mapping?: ColumnMapping }) =>
     request<ImportPreview | NeedsMapping>("/api/collection/imports/preview", { method: "POST", body: json({ name, csv, include_spares, filename, family_colours, ...how }) }),

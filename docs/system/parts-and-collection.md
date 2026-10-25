@@ -27,6 +27,8 @@ flowchart LR
 - **Rebrickable mapping.** 99.74% of colour uses and about 94% of pieces map by identity, plus 2.6% by alias (`docs/plans/done/rebrickable-mapping.md`).
 - **Pileometer** is Brickit's export. Its columns are Scan, Part, PartName, Color (a family) and Quantity (`ldraw_tools/inventory.py` `_parse_pileometer`).
 
+- **PDF and photo parts pages** (`ldraw_tools/partslist_reader.py`, `inventory read-page`, `POST /api/collection/imports/read-page`). PDF text is read first (`pypdf`, else `pdftotext`); a PDF without text, or a photo, goes through OCR with the `tesseract` command (PDF pages are rendered by `pypdfium2` or `pdftoppm`). Every tool is optional: without one the import dialog says what to install, and the rest of the app is unchanged. The lines come back as BrickLink CSV with a confidence each; lines below 0.8 (no colour, no `x` on the quantity, OCR look-alike repairs, low OCR confidence) start unticked in a check step, and the confirmed lines go through the normal preview. The patterns were written against generated pages and may need tuning once a real instruction page is available.
+
 ### "Maybe" pieces: colour families to review
 
 - Brickit reports colour **families** such as "Grays", not exact colours. Those pieces go to `review`, not to `rows`, and are **not counted as owned** (`inventory.py:67, 98`).

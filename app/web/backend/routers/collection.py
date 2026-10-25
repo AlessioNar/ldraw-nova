@@ -4,6 +4,7 @@ The older /api/inventories routes keep working; a "source" here is one of those 
 """
 from __future__ import annotations
 
+import base64
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -40,6 +41,10 @@ class NewPreview(BaseModel):
     filename: Optional[str] = ""
     format: Optional[str] = ""          # override the detected format
     mapping: Optional[dict] = None      # generic CSV: {part, colour, qty, system}
+
+
+class PageUpload(BaseModel):
+    data: str                           # the PDF or image, base64
 
 
 class Diff(BaseModel):
@@ -188,6 +193,19 @@ async def import_preview(body: NewPreview):
     try:
         return await collection.preview_import(body.name, body.csv, bool(body.include_spares), body.family_colours, body.filename or "",
                                                body.format or "", body.mapping)
+    except InventoryError as exc:
+        raise failure(exc) from None
+
+
+@router.post("/api/collection/imports/read-page")
+async def import_read_page(body: PageUpload):
+    """A parts list from a PDF or photo as reviewable lines plus BrickLink CSV; the CSV then goes through /imports/preview."""
+    try:
+        raw = base64.b64decode(body.data, validate=True)
+    except ValueError:
+        raise HTTPException(400, "The file was not sent correctly") from None
+    try:
+        return await inventories.read_page(raw)
     except InventoryError as exc:
         raise failure(exc) from None
 
