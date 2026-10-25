@@ -12,6 +12,7 @@ export default function PartsCheckCard({ check }: { check: PartsCheck }) {
       <span className="muted small">{check.mode === "only" ? "Only my parts" : "Prefer my parts"}</span>
     </header>
     <p className="small">{check.summary || `You own ${check.owned_total.toLocaleString()} of the ${check.needed_total.toLocaleString()} parts this model needs.`}</p>
+    {!!check.sources?.length && <p className="small parts-sources">From: {check.sources.map(s => `${s.name} (${s.pieces.toLocaleString()})`).join(" · ")}</p>}
     {short.length > 0 && <details open={short.length <= 8}>
       <summary>{short.length} part{short.length === 1 ? "" : "s"} to find</summary>
       <div className="table-wrap"><table className="parts-table">

@@ -295,6 +295,7 @@ export type InventoryDetail = {
 export type PartsCheck = {
   mode: PartsMode; complete: boolean; needed_total: number; owned_total: number; summary: string;
   short: { part: string; colour: number; colour_name: string; needed: number; owned: number; missing: number }[];
+  sources?: { name: string; kind: string; pieces: number }[];   // where the covered pieces come from, in list order
 };
 
 export const inventoryApi = {

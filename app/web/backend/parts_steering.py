@@ -196,8 +196,10 @@ def check_payload(report: dict) -> dict:
     text = " ".join(str(report.get("summary") or "").split())[:300]
     if len(short) > len(kept):
         text += f" Showing the {len(kept)} largest of {len(short)} short lines."
+    sources = [dict(name=safe_name(x.get("name") or "Parts list"), kind=str(x.get("kind") or "import")[:12], pieces=int(x["pieces"]))
+               for x in (report.get("sources") or [])[:MAX_CHECK_LINES] if isinstance(x, dict) and int(x.get("pieces") or 0) > 0]
     return dict(mode=report["mode"], complete=bool(report["complete"]), needed_total=int(report["needed_total"]),
-                owned_total=int(report["owned_total"]), short=kept, summary=text)
+                owned_total=int(report["owned_total"]), short=kept, summary=text, sources=sources)
 
 
 def check_note(check: dict, ids: str, shown: int = 8) -> str:
