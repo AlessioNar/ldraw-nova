@@ -1,0 +1,55 @@
+name: Docs
+
+# Builds docs/ with MkDocs Material and publishes it to GitHub Pages from master.
+# Needs Settings > Pages > Source: GitHub Actions. Nothing here touches the Docker image.
+on:
+  pull_request:
+    paths: [docs/**, mkdocs.yml, docs-requirements.txt, .github/workflows/docs.yml]
+  push:
+    branches: [master]
+    paths: [docs/**, mkdocs.yml, docs-requirements.txt, .github/workflows/docs.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: docs-requirements.txt
+      - run: pip install -r docs-requirements.txt
+      - run: mkdocs build --site-dir site
+      # The ontology IRIs (https://alessionar.github.io/open-brick-designer/ns/...) must resolve.
+      - name: Check the Turtle files are served and docs/security is not
+        run: |
+          test -f site/ns/obd.ttl && test -f site/ns/index.html
+          test ! -e site/security
+      - uses: actions/upload-pages-artifact@v3.0.1
+        if: github.event_name != 'pull_request'
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4.0.5

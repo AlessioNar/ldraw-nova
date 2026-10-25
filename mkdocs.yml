@@ -1,0 +1,35 @@
+site_name: Open Brick Designer
+site_url: https://alessionar.github.io/open-brick-designer/
+repo_url: https://github.com/AlessioNar/open-brick-designer
+repo_name: AlessioNar/open-brick-designer
+edit_uri: edit/master/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+# Not published. Everything else under docs/ is, including ns/ (the Turtle
+# files and index.html that the ontology IRIs resolve to, e.g.
+# .../open-brick-designer/ns/obd.ttl), which MkDocs copies verbatim.
+exclude_docs: |
+  security/
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - admonition
+  - pymdownx.superfences
+
+# Docs link to source files that live outside docs/ (they resolve on GitHub,
+# not on the site), so a missing target is not worth a warning.
+validation:
+  links:
+    not_found: info
+    absolute_links: info
+  anchors: info
