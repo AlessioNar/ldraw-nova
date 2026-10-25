@@ -426,7 +426,7 @@ def _persist_turn(store, build_id: str, text: str, decision: dict, took_ms: floa
     chat = attached_chat(store, build_id)
     store.add_message(chat["id"], {"role": "user", "content": text, "_fast_path": {"by": "person"}})   # a quick-change turn
     keep = ("route", "title", "generator", "changes", "notes", "history", "question", "choices", "reason", "estimate", "spec",
-            "understood_by", "replaced_manual_edits", "pending", "highlight", "preset", "closest", "final")
+            "understood_by", "replaced_manual_edits", "pending", "highlight", "preset", "closest", "final", "parts_offer")
     meta = {k: decision[k] for k in keep if decision.get(k) is not None}
     meta.update(cost_eur=0.0, took_ms=round(took_ms))
     store.add_message(chat["id"], {"role": "assistant", "content": _spoken(decision), "_fast_path": meta})

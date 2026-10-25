@@ -21,6 +21,12 @@ export function loadSteering(): PartsSteering {
 export function saveSteering(s: PartsSteering) {
   try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage unavailable */ }
 }
+export const STEERING_EVENT = "obd:steering";
+/** Saves the scope and tells an open composer, which keeps its own copy. */
+export function applySteering(s: PartsSteering) {
+  saveSteering(s);
+  window.dispatchEvent(new CustomEvent(STEERING_EVENT, { detail: s }));
+}
 
 /** One-line summary for the settings popover row ("Only · My parts"). */
 export function partsSummary(value: PartsSteering, inventories: Inventory[]): string {
