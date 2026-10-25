@@ -4,7 +4,7 @@
     python tools/export_ontology.py --check   exit 1 if docs/ns/ is out of date (CI)
 
 Needs rdflib (toolkit-only: `pip install rdflib`); the app never imports this. Each source file is re-serialised
-byte-stably (blank nodes relabelled canonically, subjects sorted, no timestamps), the three are also merged into one
+byte-stably (blank nodes relabelled canonically, subjects sorted, no timestamps), the files are also merged into one
 ontology.ttl for loading in a single call, and index.html links them. GitHub Pages serves docs/, so
 https://alessionar.github.io/open-brick-designer/ns/obd.ttl is docs/ns/obd.ttl.
 """
@@ -24,10 +24,13 @@ FILES = {
     'obd.ttl': 'Component classes and parameters (OWL)',
     'roles.ttl': 'Role vocabulary (SKOS)',
     'shapes.ttl': 'Validity rules (SHACL)',
+    'vehicles.ttl': 'Vehicles and spaceships (OWL, SHACL)',
+    'sets.ttl': 'Sets, brands and parts-list sources (OWL, SKOS, PROV-O)',
 }
 MERGED = 'ontology.ttl'
 PREFIXES = {
-    'obd': BASE + 'obd#', 'role': BASE + 'role/', 'build': BASE + 'build/',
+    'obd': BASE + 'obd#', 'role': BASE + 'role/', 'build': BASE + 'build/', 'brand': BASE + 'brand/', 'psrc': BASE + 'partssource/',
+    'prov': 'http://www.w3.org/ns/prov#',
     'owl': 'http://www.w3.org/2002/07/owl#', 'skos': 'http://www.w3.org/2004/02/skos/core#',
     'sh': 'http://www.w3.org/ns/shacl#', 'dcterms': 'http://purl.org/dc/terms/',
 }
@@ -56,7 +59,7 @@ def render():
         '<h1>Open Brick Designer ontology</h1>\n'
         f'<p>Licence: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Namespace <code>{BASE}</code>.'
         ' Generated from <code>ontology/</code> by <code>tools/export_ontology.py</code>.</p>\n'
-        f'<ul>{links}<li><a href="{MERGED}">{MERGED}</a>: all three in one file</li></ul>\n'
+        f'<ul>{links}<li><a href="{MERGED}">{MERGED}</a>: all of them in one file</li></ul>\n'
     )
     return files
 

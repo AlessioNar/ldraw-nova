@@ -22,18 +22,21 @@ obd:unit a owl:AnnotationProperty ; rdfs:comment "Unit of a numeric parameter: s
 obd:order a owl:AnnotationProperty ; rdfs:comment "Display order of a component, or of a parameter within its component."@en .
 
 obd:Component a owl:Class ; rdfs:label "Component"@en ;
-    rdfs:comment "A construction stage of a building; it is part of exactly one Building and stamps placements with its roles."@en .
+    rdfs:comment "A construction stage of a build; it is part of exactly one Build and stamps placements with its roles."@en .
 obd:Parameter a owl:Class ; rdfs:subClassOf rdf:Property ; rdfs:label "Parameter"@en .
 obd:ColourParameter a owl:Class ; rdfs:subClassOf obd:Parameter ; rdfs:label "Colour parameter"@en ;
     rdfs:comment "The value is an LDraw colour name or code (x-colour in the JSON Schema)."@en .
 obd:LdrawColour a rdfs:Datatype ; owl:unionOf ( xsd:string xsd:integer ) ; rdfs:label "LDraw colour name or code"@en .
 
-obd:partOf a owl:ObjectProperty, owl:FunctionalProperty ; rdfs:domain obd:Component ; rdfs:range obd:Building ;
-    rdfs:comment "The building a component belongs to."@en .
+obd:partOf a owl:ObjectProperty, owl:FunctionalProperty ; rdfs:domain obd:Component ; rdfs:range obd:Build ;
+    rdfs:comment "The build (a building or, see vehicles.ttl, a vehicle) a component belongs to."@en .
 obd:role a owl:ObjectProperty ; rdfs:domain obd:Component ; rdfs:range skos:Concept ;
     rdfs:comment "A role (concept of the role scheme) the component's placements carry."@en .
 
-obd:Building a owl:Class ; rdfs:label "Building"@en ; rdfs:comment "One grammar configuration: a footprint carrying storeys, walls, openings, corners, a roof, details and a base."@en ; obd:order 0 .
+obd:Build a owl:Class ; rdfs:label "Build"@en ;
+    rdfs:comment "What a grammar produces from one configuration: a Building here, a Vehicle in vehicles.ttl."@en .
+
+obd:Building a owl:Class ; rdfs:subClassOf obd:Build ; rdfs:label "Building"@en ; rdfs:comment "One grammar configuration: a footprint carrying storeys, walls, openings, corners, a roof, details and a base."@en ; obd:order 0 .
 
 obd:buildingName a owl:DatatypeProperty, owl:FunctionalProperty, obd:Parameter ;
     rdfs:domain obd:Building ;
