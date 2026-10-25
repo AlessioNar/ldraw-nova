@@ -116,7 +116,7 @@ Exact means an LDraw colour code (the existing `colour` int; names from `parts_s
 All writes go through one backend module `app/web/backend/collection.py` (new) with `apply_ops(source_id, ops, note) -> batch`, so every way in gets history, undo and validation for free. All parsers are deterministic Python; none calls a model.
 
 ### 3.1 Add a whole set by number (wave 1, S-M)
-- `GET /api/sets?query=8448&limit=20` wraps `sets.search_sets`; `GET /api/sets/{num}` returns metadata and part count. The catalogue is static, so read it once through a tiny exporter CLI `ldraw_tools.cli sets export --json` and cache the result in `data/cache/sets.json`, rather than spawning a subprocess per keystroke.
+- `GET /api/catalog/sets?query=8448&limit=20` wraps `sets.search_sets`; `GET /api/catalog/sets/{num}` returns metadata and part count. The catalogue is static, so read it once through a tiny exporter CLI `ldraw_tools.cli sets export --json` and cache the result in `data/cache/sets.json`, rather than spawning a subprocess per keystroke.
 - `POST /api/collection/sets {set_num, copies, state}` materialises `set_bom(set_num)` into a `kind:"set"` source named "8448 <set name>". Pieces whose Rebrickable part has no LDraw equivalent are reported as import does today (`dropped_part`, `dropped_colour` in the catalogue meta).
 - UX: type "8448" or "tipper truck", see name, year, piece count, a thumbnail if a bundled model exists, click Add. No typing of parts: the fastest path for boxed sets.
 

@@ -54,6 +54,7 @@ class NewSet(BaseModel):
     set_num: str
     copies: Optional[int] = 1
     state: Optional[str] = "parts"
+    brand: Optional[str] = None
 
 
 class QuickText(BaseModel):
@@ -260,12 +261,12 @@ def _set_json(s: dict) -> dict:
             "mapped_pieces": s["mapped_pieces"], "dropped_pieces": s["dropped_part"] + s["dropped_colour"]}
 
 
-@router.get("/api/sets")
+@router.get("/api/catalog/sets")
 def sets_search(query: str = "", limit: int = Query(20, ge=1, le=50)):
     return {"sets": [_set_json(s) for s in _catalog().search(query[:100], limit)]}
 
 
-@router.get("/api/sets/{set_num}")
+@router.get("/api/catalog/sets/{set_num}")
 def sets_get(set_num: str):
     catalog = _catalog()
     found = catalog.get(set_num)
@@ -276,10 +277,16 @@ def sets_get(set_num: str):
             "owned_sources": [s["id"] for s in inventories.list_inventories() if (s.get("set") or {}).get("set_num") == found["set_num"]]}
 
 
+@router.get("/api/sets")
+def sets_owned():
+    """The sets the owner has, as records with brand, image, copies and piece counts."""
+    return {"sets": collection.owned_sets()}
+
+
 @router.post("/api/collection/sets")
 def sets_add(body: NewSet):
     try:
-        return collection.add_set(body.set_num, 1 if body.copies is None else body.copies, body.state or "parts")
+        return collection.add_set(body.set_num, 1 if body.copies is None else body.copies, body.state or "parts", body.brand)
     except InventoryError as exc:
         raise failure(exc) from None
 
