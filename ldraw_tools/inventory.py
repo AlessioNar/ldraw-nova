@@ -523,6 +523,33 @@ def match_bom(needed, owned):
     return ok, short
 
 
+def review_pool(inventories):
+    """[(part, candidates, qty)] of the colour-family (review) items of the inventories: the "maybe" pieces, never in `owned`."""
+    return [(str(r["part"]).casefold().removesuffix(".dat"), frozenset(r.get("candidates", ())), int(r["qty"]))
+            for inv in inventories for r in inv.review if int(r.get("qty", 0)) > 0]
+
+
+def maybe_pieces(short, pool):
+    """Extra pieces the review items could cover for the short lines of `match_bom`, each review piece used at most once.
+
+    A line (part, colour, needed, owned) can take review pieces of the same part whose family lists that colour as a candidate.
+    Exact counts are never changed; this is the separate "maybe" number.
+    """
+    left = [[part, cands, qty] for part, cands, qty in pool]
+    total = 0
+    for part, col, need, have in short:
+        gap = need - have
+        for item in left:
+            if gap <= 0:
+                break
+            if item[0] == part and col in item[1] and item[2] > 0:
+                take = min(gap, item[2])
+                item[2] -= take
+                gap -= take
+                total += take
+    return total
+
+
 def substituted_pieces(needed, by_part):
     """Matched pieces when any owned colour of a part may stand in for a missing one: sum over parts of min(needed, owned)."""
     need_by_part = Counter()
