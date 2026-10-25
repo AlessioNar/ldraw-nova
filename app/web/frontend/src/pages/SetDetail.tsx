@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { inventoryApi, reservationsApi } from "../api";
+import { collectionApi, inventoryApi, reservationsApi, type Inventory } from "../api";
+import ExportDialog from "../components/parts/ExportDialog";
+import SourceHistory from "../components/parts/SourceHistory";
+import UploadDialog from "../components/parts/UploadDialog";
 import PartThumb from "../components/parts/PartThumb";
 import { colourHex } from "../ldrawColours";
 import { setDetailApi, type OwnedSetDetail, type SetRow } from "../setDetailApi";
@@ -26,9 +29,15 @@ export default function SetDetail() {
   const [format, setFormat] = useState(WANTED_FORMATS[0].id);
   const [imageKey, setImageKey] = useState(0);
   const [imageFailed, setImageFailed] = useState(false);
+  const [source, setSource] = useState<Inventory | null>(null);
+  const [dialog, setDialog] = useState<"" | "export" | "import">("");
+  const [history, setHistory] = useState(false);
+  const [version, setVersion] = useState(0);
 
   const load = useCallback(() => setDetailApi.get(id).then(r => { setData(r); setError(""); }, e => setError((e as Error).message)), [id]);
   useEffect(() => { setData(null); void load(); }, [load]);
+  useEffect(() => { void collectionApi.overview().then(r => setSource(r.sources.find(x => x.id === id) ?? null), () => undefined); }, [id, version]);
+  const changed = (text: string) => { setNotice(text); setVersion(v => v + 1); void load(); };
 
   async function act(work: () => Promise<string | void>) {
     setBusy(true); setNotice(""); setError("");
@@ -114,11 +123,18 @@ export default function SetDetail() {
             <input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy} onChange={upload} />
           </label>
           <button type="button" disabled={busy} onClick={() => void removeImage()}>Remove my picture</button>
-          <Link className="button" to={`/parts/${encodeURIComponent(s.id)}`}>Open in Collection</Link>
+          <Link className="button" to={`/parts?source=${encodeURIComponent(s.id)}`}>Show in Collection</Link>
+          {source?.set?.manual && <button type="button" disabled={busy} onClick={() => setDialog("import")}>Import parts</button>}
+          <button type="button" disabled={busy} onClick={() => setDialog("export")}>Export</button>
+          <button type="button" disabled={busy} aria-expanded={history} onClick={() => setHistory(!history)}>History</button>
           <button type="button" className="danger" disabled={busy} onClick={() => void remove(s)}>Remove set</button>
         </div>
       </div>
     </header>
+
+    {history && <SourceHistory source={s.id} version={version} onChanged={changed} />}
+    {dialog === "export" && <ExportDialog scope={`source:${s.id}`} name={s.name} onClose={() => setDialog("")} />}
+    {dialog === "import" && source && <UploadDialog sources={[source]} replaceId={s.id} onClose={() => setDialog("")} onChanged={changed} />}
 
     <section aria-label="Parts of this set">
       <div className="set-controls">

@@ -47,6 +47,7 @@ export default function Parts() {
   const changed: OnChanged = useCallback((text, undo) => { setNotice({ text, source: undo?.source }); setVersion(v => v + 1); }, []);
   const go = (v: View, extra: Record<string, string> = {}) => setSearch(v === "collection" && !Object.keys(extra).length ? {} : { view: v, ...extra });
   const real = (sources ?? []).filter(s => !s.virtual);
+  const lists = real.filter(s => s.kind !== "set");           // sets live in My Sets
   const reviewPieces = real.reduce((n, s) => n + (s.review_pieces ?? 0), 0);
   const current = id ? real.find(i => i.id === id) : undefined;
 
@@ -84,6 +85,7 @@ export default function Parts() {
   </div>;
 
   if (asked === "sets" || asked === "reserved" || asked === "build") return <Navigate to={asked === "sets" ? "/sets" : `/sets?view=${asked}`} replace />;
+  if (id && sources && real.find(i => i.id === id)?.kind === "set") return <Navigate to={`/sets/${encodeURIComponent(id)}`} replace />;
   if (id) {
     return <div className="page parts-page">
       <p className="small"><Link to="/parts?view=sources">← Sources</Link></p>
@@ -122,12 +124,12 @@ export default function Parts() {
     {sources && <>
       <div className="segmented parts-tabs" role="group" aria-label="My Parts view">
         <button type="button" aria-pressed={view === "collection"} onClick={() => go("collection")}>Collection</button>
-        <button type="button" aria-pressed={view === "sources"} onClick={() => go("sources")}>Sources ({real.length})</button>
+        <button type="button" aria-pressed={view === "sources"} onClick={() => go("sources")}>Sources ({lists.length})</button>
         <button type="button" aria-pressed={view === "review"} onClick={() => go("review")}>Review{reviewPieces > 0 ? ` (${reviewPieces.toLocaleString()})` : ""}</button>
       </div>
       {view === "collection" && <CollectionView version={version} source={sourceFilter} onSource={s => setSearch(s ? { source: s } : {})}
         onChanged={changed} onReview={() => go("review")} onAdd={() => setDialog({ kind: "quick" })} />}
-      {view === "sources" && <SourcesView sources={sources} version={version} onChanged={changed} onRemoved={() => setVersion(v => v + 1)}
+      {view === "sources" && <SourcesView sources={lists} version={version} onChanged={changed} onRemoved={() => setVersion(v => v + 1)}
         onShow={s => go("collection", { source: s })} onReplace={s => setDialog({ kind: "import", replace: s })} />}
       {view === "review" && <ReviewQueue version={version} onChanged={changed} />}
     </>}
