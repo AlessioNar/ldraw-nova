@@ -296,6 +296,7 @@ def test_sidewalk_lamps_and_connectors():
     tech = items(r, code=catalog.TECHNIC_BRICK)
     assert len(tech) == 12 and {i.role for i in tech} == {'structure'}          # 2 per side, 3 storeys
     assert {i.cells[0][0] for i in tech} == {0, 31}
+    assert {(i.y0 - 2, min(c[1] for c in i.cells) - r['base_rect'][1]) for i in tech if i.cells[0][0] == 0} >= {(12, 12), (12, 20)}
     none = build({'details': {'connectors': True}})
     assert not items(none, code=catalog.TECHNIC_BRICK) and any('modular' in n for n in none['notes'])
 
@@ -338,7 +339,7 @@ def test_corner_module_has_two_street_sides(corner):
     side_cells = {c for i in walk for c in i.cells if (c[0] < min(xs) + sw if corner == 'left' else c[0] > max(xs) - sw)}
     assert len(side_cells) >= sw * 22                                   # the second sidewalk runs the depth of the building
     windows = {i.label.split()[-2] for i in r['canvas'].items if i.role == 'window'}
-    assert windows <= {'front', corner}
+    assert windows == {'front', corner}
     tech = items(r, code=catalog.TECHNIC_BRICK)
     assert tech and {i.cells[0][0] for i in tech} == {max(xs) if corner == 'left' else min(xs)}   # bolted on the far side only
 
@@ -795,3 +796,39 @@ def test_detail_combinations_stay_one_piece(cfg):
 def test_detail_presets_are_registered():
     for name in ('cottage-garden', 'arched-townhouse'):
         assert name in PRESETS
+
+
+# ---------------------------------------------------------------- street composer
+
+from ldraw_tools.grammar import compose_street, street as street_module  # noqa: E402
+
+
+def test_modular_side_walls_have_no_windows():
+    r = modular({'openings': {'sides': ['front', 'back', 'left', 'right']}})
+    assert r['config']['openings']['sides'] == ['front', 'back'] and any('modular-fits' in n for n in r['notes'])
+    assert not [i for i in r['canvas'].items if i.role == 'window' and i.label.split()[-2] in ('left', 'right')]
+
+
+def test_street_lays_modules_32_studs_apart_and_pins_line_up():
+    s = compose_street('modular-street')
+    assert s['stats']['modules'] == 5 and s['ok'] and s['stats']['components'] == 5      # pinned, not studded
+    assert all(j['ground_aligned'] >= 2 for j in s['joints'])
+    xs = [c[0] for i in s['canvas'].items if i.role == 'base' for c in i.cells]
+    assert min(xs) % 32 == 0 and max(xs) - min(xs) + 1 == 5 * 32
+    zs = {min(c[1] for c in i.cells) for i in s['canvas'].items if i.role == 'base' and i.y0 == 0}
+    assert min(zs) == 0                                                                  # every module front is in line
+
+
+def test_street_corner_modules_must_end_the_street():
+    with pytest.raises(ValueError, match='must come first'):
+        compose_street(['modular-bakery', 'modular-corner-cafe'])
+    with pytest.raises(ValueError, match='must come last'):
+        compose_street([{'base': {'kind': 'modular', 'corner': 'right'}}, 'modular-bakery'])
+    with pytest.raises(ValueError, match='not modular'):
+        compose_street(['house'] if 'house' in PRESETS else [{}])
+
+
+def test_street_reports_a_joint_without_pins():
+    s = compose_street(['modular-bakery', {'base': {'kind': 'modular'}, 'footprint': {'depth': 20}, 'details': {'connectors': False}}])
+    assert not s['ok'] and not s['joints'][0]['ok'] and any('joint 1-2' in n for n in s['notes'])
+    assert street_module.MIN_PINS == 2

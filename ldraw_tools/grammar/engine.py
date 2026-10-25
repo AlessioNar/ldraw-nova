@@ -46,5 +46,5 @@ def build(config, inventory=None):
     plan = canvas.plan(name.replace(' ', '-'), desc)
     comps = canvas.components()
     stats = dict(parts=len(canvas.items), components=len(comps), largest=len(comps[0]) if comps else 0)
-    return dict(config=cfg, notes=ctx.notes, plan=plan, canvas=canvas, stats=stats,
+    return dict(config=cfg, notes=ctx.notes, plan=plan, canvas=canvas, stats=stats, base_rect=ctx.base_rect, y_ground=ctx.y_ground,
                 inventory=inventory.report() if inventory is not None else None)

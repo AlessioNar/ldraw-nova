@@ -15,9 +15,10 @@ from .nl import apply_text
 from .presets import PRESETS
 from .roles import ROLE_NAMES, ROLES
 from .schema import CONSTRAINTS, SCHEMA, defaults, deep_merge, normalise
+from .street import compose as compose_street
 
 __all__ = ['generate', 'build', 'normalise', 'apply_text', 'PRESETS', 'SCHEMA', 'CONSTRAINTS', 'ROLES', 'ROLE_NAMES',
-           'Inventory', 'defaults', 'preset_config']
+           'Inventory', 'defaults', 'preset_config', 'compose_street']
 
 
 def preset_config(name):
@@ -40,6 +41,8 @@ def generate(config=None, *, preset=None, inventory=None, mode='prefer', validat
         inv = inventory if isinstance(inventory, Inventory) else Inventory.from_rows(inventory, mode)
     result = build(cfg, inv)
     result.pop('canvas')
+    result.pop('base_rect', None)
+    result.pop('y_ground', None)
     if validate:
         from .validate import check
         result['validation'] = check(result['plan'])

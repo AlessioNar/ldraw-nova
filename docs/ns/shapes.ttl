@@ -143,7 +143,7 @@
 <https://alessionar.github.io/open-brick-designer/ns/shapes#ModularFits> a sh:NodeShape ;
     dcterms:identifier "modular-fits" ;
     sh:sparql [ a sh:SPARQLConstraint ;
-            sh:message "A modular building fills the 32 studs beside its sidewalks, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors (modular-fits)" ;
+            sh:message "A modular building fills the 32 studs beside its sidewalks, at most 32 minus the sidewalk deep, with no overhang, lift-out floors, no towers and the connectors; its side walls have no windows (modular-fits)" ;
             sh:prefixes <https://alessionar.github.io/open-brick-designer/ns/shapes> ;
             sh:select "SELECT $this WHERE { ?fp a obd:Footprint ; obd:partOf $this . ?st a obd:Storeys ; obd:partOf $this . ?co a obd:Corners ; obd:partOf $this . ?rf a obd:Roof ; obd:partOf $this . ?dt a obd:Details ; obd:partOf $this . ?bs a obd:Base ; obd:partOf $this . ?bs obd:baseKind ?kind ; obd:baseSidewalk ?sidewalk ; obd:baseCorner ?corner . ?fp obd:footprintWidth ?w ; obd:footprintDepth ?d . ?rf obd:roofVerge ?verge ; obd:roofOverhang ?overhang . ?st obd:storeysEaves ?eaves ; obd:storeysFloors ?floors . ?co obd:cornersStyle ?corners . ?dt obd:detailsConnectors ?connectors . FILTER ((?kind = \"modular\" && (?w != 32 - IF(?corner != \"none\", ?sidewalk, 0) || ?d > 32-?sidewalk || ?verge != 0 || ?overhang != 0 || ?eaves || !?floors || ?corners = \"towers\")) || (?kind != \"modular\" && ?connectors)) }" ] ;
     sh:targetClass obd:Building .

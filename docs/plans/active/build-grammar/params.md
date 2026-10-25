@@ -166,7 +166,7 @@ Ground.
 | `porch-door` | A porch needs a front door |
 | `balcony-storeys` | A balcony needs a door and at least 2 storeys |
 | `parapet-flat` | Parapets and battlements only exist on flat roofs and tower tops |
-| `modular-fits` | A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang and lift-out floors |
+| `modular-fits` | A modular building is 32 studs wide, at most 32 minus the sidewalk deep, with no overhang and lift-out floors; its side walls are shared with the neighbours, so they have no windows |
 | `interior-rect` | Interior partitions only go into rectangular footprints |
 | `eaves-setback` | Eave roofs round storeys need each upper storey to step in by 1 or more |
 | `setback-fits` | The top storey must stay at least 4 studs wide after all setbacks |

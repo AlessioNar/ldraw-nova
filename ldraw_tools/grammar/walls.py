@@ -76,14 +76,20 @@ def tile_course(ctx, st, course, y0, joints, override=None):
     joints['h'], joints['v'] = cur['h'], cur['v']
 
 
+PIN_ROWS = (12, 20)       # studs behind the module's front edge: the same on every module, so any two bolt together
+PIN_COURSE = 4            # ground storey: the same height on every module (upper storeys: the second course from the top)
+
+
 def technic_bricks(ctx, st, course, y0, free):
-    """Technic bricks with a pin hole in the side walls at the standard module positions (the second course from the top of every storey)."""
-    if not ctx.cfg['details']['connectors'] or course != st.courses - 2 or st.kind != 'main':
+    """Technic bricks with a pin hole in the side walls at the standard module positions."""
+    if not ctx.cfg['details']['connectors'] or st.kind != 'main':
         return set()
-    x0, x1, z0, z1 = footprint_bbox(st)
-    depth = z1 - z0
+    if course != (PIN_COURSE if st.index == 0 else st.courses - 2):
+        return set()
+    x0, x1, _, _ = footprint_bbox(st)
+    front = ctx.base_rect[1]
     taken = set()
-    for j in (z0 + depth // 4, z0 + 3 * depth // 4 - 1):
+    for j in (front + PIN_ROWS[0], front + PIN_ROWS[1]):
         for i in (x0, x1 - 1):
             if ctx.cfg['base']['corner'] == ('left' if i == x0 else 'right'):
                 continue                      # a street side is not bolted to a neighbour

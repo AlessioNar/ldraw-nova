@@ -107,7 +107,9 @@ Built now: four presets ([gallery](renders/gallery-modular.png)): bakery, town h
 
 ![Modular buildings](renders/gallery-modular.png)
 
-Next, in order of what a Creator Expert modular has and these lack: furniture and staircases in the rooms (a `Rooms` component with real-part furniture catalogue), a corner module (two facades, L-shaped module with the sidewalk on two sides), a hinged or lift-off roof as a separate submodel, richer facades (shop fronts with awnings, window sills, shutters, arches with keystones), interior lighting-free details (wall prints are out of scope), and a **street** composer that places modules side by side and checks that the Technic holes line up. Those are new components in the same ontology, not a new generator.
+Done since (#206, #214, #221): furnished rooms (table with chairs, bed, cupboards, shop counter; `storeys.interior: furnished`), a striped shop awning (`details.awning`), a corner module (`base.corner`: a second sidewalk, windows and cornice on the two street sides), and a **street composer** (`grammar.compose_street`) that lays modules 32 studs apart with their fronts in line and reports how many Technic pins meet at each joint. Connector rows are now fixed relative to the module front (12 and 20 studs back; ground-floor pins at course 4), so any two modules bolt together; side walls are shared and carry no windows. Decision on open question 3 (#77): the roof and floors stay one model, no submodels.
+
+Still open: staircases, a hinged or lift-off roof (not planned, see above), richer facades beyond sills, shutters, keystones and the flat awning (sloped awnings, shop-front prints are out of scope), a rounded or cut corner entrance, and upper-floor pins that only meet when storey heights match.
 
 ## Open questions
 
