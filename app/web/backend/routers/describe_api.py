@@ -65,5 +65,9 @@ async def describe_estimate(text: str = Query(default="", max_length=understand.
         params = {}
     if generator and generator_bridge.cached() is None:
         await generator_bridge.ensure()       # cold start only: without the registry no edit rule can name its generator
+    elif generator_bridge.cached() is None:
+        # A new request on a cold start or a stale cache after a toolkit update (a stale cache once sent "a lighthouse"
+        # to the AI instead of "building"): refresh in the background so the hint stays instant while typing.
+        generator_bridge.warm()
     current = {"generator": generator, "params": params} if generator else None
     return fast_path.rules_guess(text, current, context)

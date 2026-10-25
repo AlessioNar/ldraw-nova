@@ -1,5 +1,5 @@
 {
- "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,courtyard fort,courtyard house,depot,dojo,drum tower,factory,flats,fort,fortress,garage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat,ship | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\nbrick-house | house,building | brick house,red brick house,house on a baseplate | x_delta=0|1|2 courses_delta=0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\nflatbed-truck | truck | flatbed truck,flatbed,flat-bed truck | z_delta=0|1|2|3|4|6 swap_tile_1x2=keep|3069b|2412b include_part_trailer_p2? colours:colour_body,colour_chassis,colour_door,colour_glass,colour_roof,colour_trim,colour_tyre,colour_wheel | template\npassenger-car | train | passenger car,railway carriage,train carriage,coach,train | z_delta=0|1|4 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_padding_all? colours:colour_body,colour_chassis,colour_detail,colour_door,colour_glass,colour_roof,colour_wheel,colour_window | template\nsmall-house | house,building | house with garden,garden house | z_delta=0|2 courses_delta=-1|0|1 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_chair_p105? include_part_lamp_p144? include_part_plant_p27? include_part_bush_all? colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntractor-trailer | truck,tractor | tractor,tractor and trailer,farm tractor | z_delta=-2|0|1|2|3|4|6|8|10|12 swap_brick_1x2=keep|3004|2877|98283|3065 swap_tile_1x2=keep|3069b|2412b colours:colour_body,colour_chassis,colour_glass,colour_roof,colour_tyre,colour_wheel | template\nwillowbank-cottage | house,building | cottage,farmhouse,country cottage | z_delta=0|2 courses_delta=-1|0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 include_part_entry_porch? include_part_garden_field? include_part_bench_70_p0114? include_part_flower_box_5_p0115? include_part_ridge_chimney? include_part_fence_25_70_p0182? colours:colour_base,colour_detail,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template",
+ "digest": "GENERATORS (id | families | kinds | params). Integers are studs unless named courses/tiers; colour params take a colour name or LDraw code; name? is a yes/no flag; ranges are name:lo-hi (suffix e = even only); omit a param for its default. Colour names: black, blue, green, dark turquoise, red, dark pink, brown, light grey, dark grey, light blue, bright green, light turquoise, salmon, pink, yellow, white, light green, light yellow, tan, light violet, purple, orange, magenta, lime, ...\nbuilding | house,building | apartment,bakery,bank,barn,bastion,beacon,bungalow,cabin,castle,chateau,citadel,city gate,cottage,cottage with garden,courtyard fort,courtyard house,depot,detailed house,dojo,drum tower,factory,flats,fort,fortress,garage,garden cottage,garden pavilion,gate tower,gazebo,hall,home,house,hutong,japanese pagoda,keep,keep tower,keystone townhouse,kiosk,library,lighthouse,manor,market,minka,modular apartments,modular bakery,modular bank,modular building,modular chinese,modular flats,modular shop,modular tea house,modular town hall,museum,office,pagoda,palace,pavilion,ryokan,shed,shop,shrine,siheyuan,silo,stable,store,stronghold,stupa,tahoto,tea room,temple,tenement,terrace,terraced,tower,town hall,townhall,townhouse,villa,warehouse,watchtower | name footprint storeys walls openings corners roof details base width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\nhouse | house,building | house,cottage,home,bungalow,villa,barn,cabin,shop,townhouse | width:6-24e depth:6-20e courses:4-14 door_side=left|centre|right|none door_style=traditional|glazed|hatch windows:0-8 window_sides=[front|back|left|right] roof_style=gable|flat roof_tiers:0-9 porch? chimney=none|left|right dormer? colours:wall_colour,trim_colour,roof_colour,door_colour,glass_colour,chimney_colour\ngrand-tourer | car | car,coupe,sports car,sedan,racing car,roadster,supercar | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ndelivery-van | van,truck | van,delivery van,minibus,camper,bus | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\npickup | truck,car | pickup,pickup truck,ute,truck | length:18-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntipper-truck | truck | tipper,dump truck,lorry,truck,construction truck | length:14-32e wheelbase:6-24e palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\ntouring-motorcycle | motorcycle | motorcycle,motorbike,bike,scooter | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,wheels,glass,accent\nharbour-launch | boat | boat,launch,motorboat,speedboat,ship | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\ncourier-jet | aircraft | plane,jet,aeroplane,airplane,aircraft,airliner | palette=heritage-racing|coastal-delivery|desert-utility colours:body,roof,trim,glass,accent\nstarfighter | spaceship | starfighter,spaceship,starship,spacecraft,fighter,space fighter,rocket ship,x-wing | length:12-28e wingspan:8-28e wing_style=delta|swept|straight nose engines=1|2|4 colours:hull_colour,wing_colour,accent_colour,canopy_colour,engine_colour,engine_core\narcade-bay | building,scene | arcade,arch,archway,colonnade,bay,gateway | height:2-10 colours:colour,accent\nstreet-lantern | garden,scene | lamp,lantern,street lamp,lamppost,streetlight | height:2-10 colours:colour,accent\nbrick-house | house,building | brick house,red brick house,house on a baseplate | x_delta=0|1|2 courses_delta=0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\nflatbed-truck | truck | flatbed truck,flatbed,flat-bed truck | z_delta=0|1|2|3|4|6 swap_tile_1x2=keep|3069b|2412b include_part_trailer_p2? colours:colour_body,colour_chassis,colour_door,colour_glass,colour_roof,colour_trim,colour_tyre,colour_wheel | template\npassenger-car | train | passenger car,railway carriage,train carriage,coach,train | z_delta=0|1|4 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_padding_all? colours:colour_body,colour_chassis,colour_detail,colour_door,colour_glass,colour_roof,colour_wheel,colour_window | template\nsmall-house | house,building | house with garden,garden house | z_delta=0|2 courses_delta=-1|0|1 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 swap_tile_1x2=keep|3069b|2412b include_part_chair_p105? include_part_lamp_p144? include_part_plant_p27? include_part_bush_all? colours:colour_base,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template\ntractor-trailer | truck,tractor | tractor,tractor and trailer,farm tractor | z_delta=-2|0|1|2|3|4|6|8|10|12 swap_brick_1x2=keep|3004|2877|98283|3065 swap_tile_1x2=keep|3069b|2412b colours:colour_body,colour_chassis,colour_glass,colour_roof,colour_tyre,colour_wheel | template\nwillowbank-cottage | house,building | cottage,farmhouse,country cottage | z_delta=0|2 courses_delta=-1|0|1|2|3|4|5|6 swap_brick_1x2=keep|3004|2877|98283|3065 swap_brick_1x4=keep|3010|30137 include_part_entry_porch? include_part_garden_field? include_part_bench_70_p0114? include_part_flower_box_5_p0115? include_part_ridge_chimney? include_part_fence_25_70_p0182? colours:colour_base,colour_detail,colour_door,colour_roof,colour_trim,colour_wall,colour_window | template",
  "colours": [
   "azure",
   "beige",
@@ -85,7 +85,7 @@
   "white",
   "yellow"
  ],
- "signature": "__init__.py:1792917806140827700,base.py:1792918795150292700,building.py:1792917806141826700,colours.py:1792833663434475700,house.py:1792918795153292800,recipes.py:1792918795155291600,spaceship.py:1792918795157291400,vehicles.py:1792918795160290800,brick-house.json:1792918795135293500,flatbed-truck.json:1792918795137290600,passenger-car.json:1792918795140295600,small-house.json:1792918795142292500,tractor-trailer.json:1792918795144291100,willowbank-cottage.json:1792918795147299700",
+ "signature": "ad022967108c03c051020e68c743412c94953adc9e8c041bb2a1deb5e7f119be",
  "entries": [
   {
    "id": "building",
@@ -108,9 +108,11 @@
     "citadel",
     "city gate",
     "cottage",
+    "cottage with garden",
     "courtyard fort",
     "courtyard house",
     "depot",
+    "detailed house",
     "dojo",
     "drum tower",
     "factory",
@@ -118,6 +120,7 @@
     "fort",
     "fortress",
     "garage",
+    "garden cottage",
     "garden pavilion",
     "gate tower",
     "gazebo",
@@ -128,6 +131,7 @@
     "japanese pagoda",
     "keep",
     "keep tower",
+    "keystone townhouse",
     "kiosk",
     "library",
     "lighthouse",
@@ -172,7 +176,7 @@
     "warehouse",
     "watchtower"
    ],
-   "description": "One grammar for buildings: footprint (rect, L, U, courtyard), storeys, wall style, openings, corner towers, roof (gable, hip, flat, battlements, eave roofs), details. Also accepts the house generator's flat parameters. Presets: house, cottage, shop, townhouse, tower, castle-keep, pagoda, temple-hall, minka, gate-tower, tea-room, white-pagoda, siheyuan, barn, town-hall, apartment-block, courtyard-fort, lighthouse, warehouse, manor, modular-bakery, modular-town-hall, modular-flats, modular-tea-house.",
+   "description": "One grammar for buildings: footprint (rect, L, U, courtyard), storeys, wall style, openings, corner towers, roof (gable, hip, flat, battlements, eave roofs), details. Also accepts the house generator's flat parameters. Presets: house, cottage, shop, townhouse, cottage-garden, arched-townhouse, tower, castle-keep, pagoda, temple-hall, minka, gate-tower, tea-room, white-pagoda, siheyuan, barn, town-hall, apartment-block, courtyard-fort, lighthouse, warehouse, manor, modular-bakery, modular-town-hall, modular-flats, modular-tea-house.",
    "params": {
     "type": "object",
     "additionalProperties": false,
@@ -575,6 +579,48 @@
         "type": "boolean",
         "default": true,
         "description": "A window above the door on upper floors"
+       },
+       "sills": {
+        "type": "boolean",
+        "default": false,
+        "description": "Projecting sill plate under every rect, small, tall and wide window that has a wall course below it"
+       },
+       "sill_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Window sills"
+       },
+       "shutters": {
+        "type": "boolean",
+        "default": false,
+        "description": "Coloured shutter bricks on both sides of every rect, small, tall and wide window"
+       },
+       "shutter_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "dark green",
+        "description": "Shutters"
+       },
+       "keystones": {
+        "type": "boolean",
+        "default": false,
+        "description": "Arch windows: a keystone brick in the course above the arch"
+       },
+       "keystone_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "light grey",
+        "description": "Keystone"
        }
       },
       "default": {
@@ -594,7 +640,13 @@
         "left",
         "right"
        ],
-       "above_door": true
+       "above_door": true,
+       "sills": false,
+       "sill_colour": "white",
+       "shutters": false,
+       "shutter_colour": "dark green",
+       "keystones": false,
+       "keystone_colour": "light grey"
       }
      },
      "corners": {
@@ -806,6 +858,11 @@
         "x-colour": true,
         "default": "tan",
         "description": "Parapet and merlon colour"
+       },
+       "gable_windows": {
+        "type": "boolean",
+        "default": false,
+        "description": "Gable roofs: a small window in each gable end"
        }
       },
       "default": {
@@ -820,7 +877,8 @@
        "merlon": 1,
        "gap": 1,
        "parapet_courses": 1,
-       "crenel_colour": "tan"
+       "crenel_colour": "tan",
+       "gable_windows": false
       }
      },
      "details": {
@@ -900,6 +958,43 @@
         "default": "red",
         "description": "Sign band colour"
        },
+       "flower_boxes": {
+        "type": "boolean",
+        "default": false,
+        "description": "Flower boxes on the window sills (turns sills on)"
+       },
+       "planter_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "reddish brown",
+        "description": "Planter boxes"
+       },
+       "flower_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "red",
+        "description": "Flowers"
+       },
+       "fence": {
+        "type": "boolean",
+        "default": false,
+        "description": "Picket fence round the garden at the edge of the base plate, open where the path crosses it"
+       },
+       "fence_colour": {
+        "type": [
+         "string",
+         "integer"
+        ],
+        "x-colour": true,
+        "default": "white",
+        "description": "Fence"
+       },
        "connectors": {
         "type": "boolean",
         "default": false,
@@ -916,6 +1011,11 @@
        "balcony_colour": "white",
        "sign": "none",
        "sign_colour": "red",
+       "flower_boxes": false,
+       "planter_colour": "reddish brown",
+       "flower_colour": "red",
+       "fence": false,
+       "fence_colour": "white",
        "connectors": false
       }
      },
@@ -1212,7 +1312,13 @@
       "left",
       "right"
      ],
-     "above_door": true
+     "above_door": true,
+     "sills": false,
+     "sill_colour": "white",
+     "shutters": false,
+     "shutter_colour": "dark green",
+     "keystones": false,
+     "keystone_colour": "light grey"
     },
     "corners": {
      "style": "plain",
@@ -1239,7 +1345,8 @@
      "merlon": 1,
      "gap": 1,
      "parapet_courses": 1,
-     "crenel_colour": "tan"
+     "crenel_colour": "tan",
+     "gable_windows": false
     },
     "details": {
      "chimney": "none",
@@ -1251,6 +1358,11 @@
      "balcony_colour": "white",
      "sign": "none",
      "sign_colour": "red",
+     "flower_boxes": false,
+     "planter_colour": "reddish brown",
+     "flower_colour": "red",
+     "fence": false,
+     "fence_colour": "white",
      "connectors": false
     },
     "base": {
@@ -1268,6 +1380,11 @@
     "house": {
      "title": "House",
      "description": "Two-storey brick house: gable roof with chimney, porch, plinth, tall windows.",
+     "keywords": [
+      "house",
+      "home",
+      "villa"
+     ],
      "config": {
       "name": "house",
       "footprint": {
@@ -1291,16 +1408,16 @@
        "chimney": "right",
        "porch": true
       }
-     },
-     "keywords": [
-      "house",
-      "home",
-      "villa"
-     ]
+     }
     },
     "cottage": {
      "title": "Cottage",
      "description": "Low half-timbered cottage: one tall storey, steep gable roof, chimney, small windows.",
+     "keywords": [
+      "cottage",
+      "cabin",
+      "bungalow"
+     ],
      "config": {
       "name": "cottage",
       "footprint": {
@@ -1334,16 +1451,18 @@
       "details": {
        "chimney": "left"
       }
-     },
-     "keywords": [
-      "cottage",
-      "cabin",
-      "bungalow"
-     ]
+     }
     },
     "shop": {
      "title": "Shop with flat roof",
      "description": "Corner-shop style: glazed door beside a wide display window, sign band, flat roof with a plain parapet, flat above.",
+     "keywords": [
+      "shop",
+      "store",
+      "bakery",
+      "kiosk",
+      "market"
+     ],
      "config": {
       "name": "shop",
       "footprint": {
@@ -1378,18 +1497,16 @@
        "sign": "fascia",
        "sign_colour": "dark blue"
       }
-     },
-     "keywords": [
-      "shop",
-      "store",
-      "bakery",
-      "kiosk",
-      "market"
-     ]
+     }
     },
     "townhouse": {
      "title": "Two-storey townhouse",
      "description": "Narrow brick townhouse with a hip roof, cornice bands, arched windows and a balcony over the door.",
+     "keywords": [
+      "townhouse",
+      "terrace",
+      "terraced"
+     ],
      "config": {
       "name": "townhouse",
       "footprint": {
@@ -1422,16 +1539,100 @@
        "balcony": true,
        "balcony_colour": "dark grey"
       }
-     },
+     }
+    },
+    "cottage-garden": {
+     "title": "Cottage with garden",
+     "description": "Brick cottage with sills, green shutters, flower boxes, a gable window and a white picket fence.",
      "keywords": [
-      "townhouse",
-      "terrace",
-      "terraced"
-     ]
+      "garden cottage",
+      "cottage with garden",
+      "detailed house"
+     ],
+     "config": {
+      "name": "cottage garden",
+      "footprint": {
+       "width": 14,
+       "depth": 10
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 6
+      },
+      "walls": {
+       "colour": "tan",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "openings": {
+       "ground_windows": "tall",
+       "upper_windows": "tall",
+       "sills": true,
+       "shutters": true
+      },
+      "roof": {
+       "style": "gable",
+       "colour": "dark red",
+       "verge": 1,
+       "gable_windows": true
+      },
+      "details": {
+       "chimney": "right",
+       "flower_boxes": true,
+       "fence": true
+      },
+      "base": {
+       "margin": 3
+      }
+     }
+    },
+    "arched-townhouse": {
+     "title": "Townhouse with keystones",
+     "description": "Townhouse with arched windows crowned by keystones, sills and shutters.",
+     "keywords": [
+      "keystone townhouse"
+     ],
+     "config": {
+      "name": "arched townhouse",
+      "footprint": {
+       "width": 12,
+       "depth": 12
+      },
+      "storeys": {
+       "count": 2,
+       "courses": 7,
+       "band_colour": "white",
+       "band_projection": 1
+      },
+      "walls": {
+       "colour": "sand red",
+       "plinth": true,
+       "plinth_colour": "light grey"
+      },
+      "openings": {
+       "door": "smooth",
+       "door_colour": "dark blue",
+       "ground_windows": "arch",
+       "upper_windows": "arch",
+       "keystones": true,
+       "shutters": true
+      },
+      "roof": {
+       "style": "hip",
+       "colour": "dark grey",
+       "overhang": 1
+      }
+     }
     },
     "tower": {
      "title": "Tower",
      "description": "Tall square stone tower: arrow slits, a gate, battlements on top.",
+     "keywords": [
+      "tower",
+      "watchtower",
+      "lighthouse",
+      "keep tower"
+     ],
      "config": {
       "name": "tower",
       "footprint": {
@@ -1473,17 +1674,18 @@
        "colour": "dark green",
        "path_colour": "dark grey"
       }
-     },
-     "keywords": [
-      "tower",
-      "watchtower",
-      "lighthouse",
-      "keep tower"
-     ]
+     }
     },
     "castle-keep": {
      "title": "Castle keep",
      "description": "Square keep with four corner towers, battlements, arrow slits and a barred gate.",
+     "keywords": [
+      "castle",
+      "keep",
+      "fort",
+      "fortress",
+      "stronghold"
+     ],
      "config": {
       "name": "castle keep",
       "footprint": {
@@ -1530,18 +1732,15 @@
        "path_colour": "dark grey",
        "path_width": 4
       }
-     },
-     "keywords": [
-      "castle",
-      "keep",
-      "fort",
-      "fortress",
-      "stronghold"
-     ]
+     }
     },
     "pagoda": {
      "title": "Pagoda (4 tiers)",
      "description": "Four-tier pagoda: every storey steps in and carries its own hip roof; cone finial on the top roof.",
+     "keywords": [
+      "pagoda",
+      "stupa"
+     ],
      "config": {
       "name": "pagoda",
       "footprint": {
@@ -1580,15 +1779,16 @@
        "colour": "dark green",
        "path_colour": "light grey"
       }
-     },
-     "keywords": [
-      "pagoda",
-      "stupa"
-     ]
+     }
     },
     "temple-hall": {
      "title": "Temple hall",
      "description": "Chinese temple hall: red walls and pillars, broad yellow hip roof, pillared porch, cornice band.",
+     "keywords": [
+      "temple",
+      "shrine",
+      "pavilion"
+     ],
      "config": {
       "name": "temple hall",
       "footprint": {
@@ -1632,16 +1832,16 @@
        "path_width": 4,
        "margin": 4
       }
-     },
-     "keywords": [
-      "temple",
-      "shrine",
-      "pavilion"
-     ]
+     }
     },
     "minka": {
      "title": "Japanese farmhouse (minka)",
      "description": "Japanese minka: low white-and-timber walls, deep dark hip roof, wide windows, timber porch.",
+     "keywords": [
+      "minka",
+      "ryokan",
+      "dojo"
+     ],
      "config": {
       "name": "minka",
       "footprint": {
@@ -1680,16 +1880,16 @@
        "colour": "sand green",
        "path_colour": "dark grey"
       }
-     },
-     "keywords": [
-      "minka",
-      "ryokan",
-      "dojo"
-     ]
+     }
     },
     "gate-tower": {
      "title": "City gate tower",
      "description": "Two-storey gate tower: barred gate below, eave roof round the lower storey, yellow hip roof above.",
+     "keywords": [
+      "gate tower",
+      "city gate",
+      "drum tower"
+     ],
      "config": {
       "name": "gate tower",
       "footprint": {
@@ -1729,16 +1929,16 @@
        "path_colour": "dark grey",
        "path_width": 4
       }
-     },
-     "keywords": [
-      "gate tower",
-      "city gate",
-      "drum tower"
-     ]
+     }
     },
     "tea-room": {
      "title": "Tea room",
      "description": "Small square tea pavilion: white walls, brown pillars, steep green hip roof with a finial.",
+     "keywords": [
+      "tea room",
+      "gazebo",
+      "garden pavilion"
+     ],
      "config": {
       "name": "tea room",
       "footprint": {
@@ -1775,16 +1975,15 @@
        "colour": "sand green",
        "path_colour": "light grey"
       }
-     },
-     "keywords": [
-      "tea room",
-      "gazebo",
-      "garden pavilion"
-     ]
+     }
     },
     "white-pagoda": {
      "title": "Japanese pagoda (3 tiers)",
      "description": "Three-tier pagoda: white plaster storeys, dark roofs, wide eaves, finial.",
+     "keywords": [
+      "japanese pagoda",
+      "tahoto"
+     ],
      "config": {
       "name": "white pagoda",
       "footprint": {
@@ -1823,15 +2022,16 @@
        "colour": "sand green",
        "path_colour": "dark grey"
       }
-     },
-     "keywords": [
-      "japanese pagoda",
-      "tahoto"
-     ]
+     }
     },
     "siheyuan": {
      "title": "Courtyard house (siheyuan)",
      "description": "Chinese courtyard house: a ring of rooms round an open yard, grey walls, red parapet, red door.",
+     "keywords": [
+      "siheyuan",
+      "courtyard house",
+      "hutong"
+     ],
      "config": {
       "name": "siheyuan",
       "footprint": {
@@ -1868,16 +2068,16 @@
        "path_colour": "light grey",
        "path_width": 4
       }
-     },
-     "keywords": [
-      "siheyuan",
-      "courtyard house",
-      "hutong"
-     ]
+     }
     },
     "barn": {
      "title": "Barn",
      "description": "Big gabled barn: wide barred doors, small high windows, overhanging roof.",
+     "keywords": [
+      "barn",
+      "stable",
+      "shed"
+     ],
      "config": {
       "name": "barn",
       "footprint": {
@@ -1910,16 +2110,18 @@
        "path_colour": "dark tan",
        "path_width": 4
       }
-     },
-     "keywords": [
-      "barn",
-      "stable",
-      "shed"
-     ]
+     }
     },
     "town-hall": {
      "title": "Town hall",
      "description": "Civic building: hip roof, white corner pillars, cornice bands, wide windows, balcony over the door.",
+     "keywords": [
+      "town hall",
+      "townhall",
+      "museum",
+      "bank",
+      "library"
+     ],
      "config": {
       "name": "town hall",
       "footprint": {
@@ -1957,18 +2159,17 @@
        "balcony_colour": "white",
        "porch": false
       }
-     },
-     "keywords": [
-      "town hall",
-      "townhall",
-      "museum",
-      "bank",
-      "library"
-     ]
+     }
     },
     "apartment-block": {
      "title": "Apartment block",
      "description": "Four-storey block: flat roof with parapet, rows of tall windows, projecting floor bands.",
+     "keywords": [
+      "apartment",
+      "flats",
+      "tenement",
+      "office"
+     ],
      "config": {
       "name": "apartment block",
       "footprint": {
@@ -2000,17 +2201,16 @@
        "parapet": "plain",
        "crenel_colour": "light grey"
       }
-     },
-     "keywords": [
-      "apartment",
-      "flats",
-      "tenement",
-      "office"
-     ]
+     }
     },
     "courtyard-fort": {
      "title": "Courtyard fort",
      "description": "Square fort round an open parade ground, four round corner towers with cone roofs, battlements.",
+     "keywords": [
+      "courtyard fort",
+      "citadel",
+      "bastion"
+     ],
      "config": {
       "name": "courtyard fort",
       "footprint": {
@@ -2064,16 +2264,16 @@
        "path_colour": "dark grey",
        "path_width": 4
       }
-     },
-     "keywords": [
-      "courtyard fort",
-      "citadel",
-      "bastion"
-     ]
+     }
     },
     "lighthouse": {
      "title": "Lighthouse",
      "description": "Tall striped tower: red and white courses, arrow-slit windows, conical roof with a finial.",
+     "keywords": [
+      "lighthouse",
+      "beacon",
+      "silo"
+     ],
      "config": {
       "name": "lighthouse",
       "footprint": {
@@ -2109,16 +2309,17 @@
        "path_colour": "light grey",
        "margin": 4
       }
-     },
-     "keywords": [
-      "lighthouse",
-      "beacon",
-      "silo"
-     ]
+     }
     },
     "warehouse": {
      "title": "Warehouse",
      "description": "Long low warehouse: flat roof with a plain parapet, loading gate, rows of wide windows.",
+     "keywords": [
+      "warehouse",
+      "factory",
+      "garage",
+      "depot"
+     ],
      "config": {
       "name": "warehouse",
       "footprint": {
@@ -2155,17 +2356,16 @@
        "path_colour": "light grey",
        "path_width": 4
       }
-     },
-     "keywords": [
-      "warehouse",
-      "factory",
-      "garage",
-      "depot"
-     ]
+     }
     },
     "manor": {
      "title": "Manor house",
      "description": "U-shaped manor with a courtyard open to the front, stone walls, corner pillars and a flat battlemented roof.",
+     "keywords": [
+      "manor",
+      "chateau",
+      "palace"
+     ],
      "config": {
       "name": "manor",
       "footprint": {
@@ -2211,16 +2411,16 @@
        "path_colour": "light grey",
        "path_width": 4
       }
-     },
-     "keywords": [
-      "manor",
-      "chateau",
-      "palace"
-     ]
+     }
     },
     "modular-bakery": {
      "title": "Modular bakery",
      "description": "Three-storey modular bakery: shop front and glazed door with sign band, arched flats above, balcony, chimney, gable roof.",
+     "keywords": [
+      "modular bakery",
+      "modular building",
+      "modular shop"
+     ],
      "config": {
       "name": "modular bakery",
       "footprint": {
@@ -2268,16 +2468,15 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     },
-     "keywords": [
-      "modular bakery",
-      "modular building",
-      "modular shop"
-     ]
+     }
     },
     "modular-town-hall": {
      "title": "Modular town hall",
      "description": "Civic module: hip roof, white pillars, cornice bands, balcony over the central door, wide windows.",
+     "keywords": [
+      "modular town hall",
+      "modular bank"
+     ],
      "config": {
       "name": "modular town hall",
       "footprint": {
@@ -2323,15 +2522,15 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     },
-     "keywords": [
-      "modular town hall",
-      "modular bank"
-     ]
+     }
     },
     "modular-flats": {
      "title": "Modular apartment block",
      "description": "Four-storey flats module: flat roof with parapet, tall windows in rows, projecting floor bands, shop door.",
+     "keywords": [
+      "modular flats",
+      "modular apartments"
+     ],
      "config": {
       "name": "modular flats",
       "footprint": {
@@ -2376,15 +2575,15 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     },
-     "keywords": [
-      "modular flats",
-      "modular apartments"
-     ]
+     }
     },
     "modular-tea-house": {
      "title": "Modular tea house",
      "description": "Asian-style module: red walls, dark brown pillars, yellow hip roof, arched upper windows, sidewalk lamps.",
+     "keywords": [
+      "modular tea house",
+      "modular chinese"
+     ],
      "config": {
       "name": "modular tea house",
       "footprint": {
@@ -2432,11 +2631,7 @@
        "path_colour": "light grey",
        "lamps": true
       }
-     },
-     "keywords": [
-      "modular tea house",
-      "modular chinese"
-     ]
+     }
     }
    }
   },

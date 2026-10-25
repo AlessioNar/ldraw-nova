@@ -23,6 +23,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 import build_worker
+import generator_bridge
 import db
 import request_log
 import run_state
@@ -52,6 +53,7 @@ async def lifespan(_app: FastAPI):
     if await asyncio.to_thread(db_migrate.upgrade_when_ready):
         await asyncio.to_thread(request_log.prune)
     pruning = asyncio.create_task(_prune_request_log_daily())
+    generator_bridge.warm()      # refresh the generator registry after a toolkit update, before the first request
     yield
     pruning.cancel()
     await asyncio.to_thread(db.dispose)
