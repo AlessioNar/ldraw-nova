@@ -192,7 +192,7 @@ def diff_summary(before: str, after: str) -> dict:
     moved = sum(min(a, b) for a, b in pairs.values())
     # what changed, by part: moved placements cancel out, so only real additions and removals are listed
     by_part: dict = {}
-    for (name, ref, colour), (out, into) in pairs.items():
+    for (_name, ref, _colour), (out, into) in pairs.items():
         net = into - out
         if net:
             row = by_part.setdefault(ref.removesuffix(".dat"), [0, 0])
