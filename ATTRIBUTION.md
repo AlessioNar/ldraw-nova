@@ -52,4 +52,12 @@ Rebrickable's downloads page states (read 2026-10-21): "Free for personal and co
 acknowledge Rebrickable as your data source." This notice is that acknowledgement; keep it when you redistribute the
 files or derivatives. The terms are recorded in `docs/plans/set-catalog.md`.
 
+### Set pictures
+
+Pictures of sets are not part of this repository. When the owner switches on remote fetching (Settings, off by default,
+or `LDRAW_NOVA_SET_IMAGE_FETCH=1`), the backend downloads the picture of a set the owner has from Rebrickable's image
+CDN (`cdn.rebrickable.com/media/sets/<set number>.jpg`) once and keeps it under `<data>/cache/set-images/` on that
+machine, for offline use. These cached files are never committed or redistributed. **Images and data from Rebrickable,
+rebrickable.com.** Pictures the owner uploads stay on the owner's machine too.
+
 LEGO(R) is a trademark of the LEGO Group of companies, which does not sponsor, authorize or endorse this project.

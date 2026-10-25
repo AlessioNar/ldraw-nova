@@ -18,6 +18,7 @@ import collection
 import collection_store
 import inventories
 import part_images
+import set_images
 import part_info
 import parts_steering
 import quick_add
@@ -722,7 +723,7 @@ def test_owned_sets_list_records_with_brand_and_counts(client, catalog):
     client.post("/api/collection/sets", json={"set_num": "100", "brand": "  CADA "})
     sets = {s["id"]: s for s in client.get("/api/sets").json()["sets"]}
     big, racer = sets["set-8448-1"], sets["set-100-1"]
-    assert (big["brand"], big["image"], big["copies"], big["state"], big["set_num"]) == ("LEGO", None, 2, "built", "8448-1")
+    assert (big["brand"], big["image"], big["copies"], big["state"], big["set_num"]) == ("LEGO", "/files/set-image/8448-1", 2, "built", "8448-1")
     assert (big["pieces"], big["reserved"], big["missing"], big["on_hand"]) == (16, 16, 0, 16)
     assert (racer["brand"], racer["state"], racer["pieces"], racer["reserved"]) == ("CADA", "parts", 4, 0)
     assert client.post("/api/collection/sets", json={"set_num": "100", "brand": "x" * 41}).status_code == 400
@@ -734,6 +735,98 @@ def test_set_stored_before_brands_reads_as_lego_without_a_rewrite(client, catalo
     del data["set"]["brand"], data["set"]["image"]
     collection_store.save(data)
     [old] = client.get("/api/sets").json()["sets"]
-    assert (old["brand"], old["image"], old["copies"]) == ("LEGO", None, 1)
+    assert (old["brand"], old["image"], old["copies"]) == ("LEGO", "/files/set-image/100-1", 1)
     assert client.get("/api/collection").json()["sources"][0]["set"]["brand"] == "LEGO"
     assert "brand" not in stored("set-100-1")["set"]
+
+
+# --- set pictures ----------------------------------------------------------------
+
+PNG = b"\x89PNG\r\n\x1a\n" + b"fake"
+JPG = b"\xff\xd8\xff\xe0" + b"fake"
+
+
+@pytest.fixture
+def pictures(tmp_path, monkeypatch):
+    monkeypatch.delenv("LDRAW_NOVA_SET_IMAGE_FETCH", raising=False)
+    set_images._failed.clear()
+    downloads = []
+
+    def fake_download(url):
+        downloads.append(url)
+        return JPG
+    monkeypatch.setattr(set_images, "_download", fake_download)
+    return downloads
+
+
+def test_set_picture_is_a_placeholder_and_nothing_is_downloaded_until_opted_in(client, catalog, pictures):
+    client.post("/api/collection/sets", json={"set_num": "8448"})
+    r = client.get("/files/set-image/8448-1")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/svg+xml" and r.headers["cache-control"] == "no-store"
+    assert pictures == [] and client.get("/api/set-images/settings").json()["remote_fetch"] is False
+
+
+def test_opted_in_fetch_happens_once_for_an_owned_set_and_is_cached(client, catalog, pictures):
+    client.post("/api/collection/sets", json={"set_num": "8448"})
+    assert client.put("/api/set-images/settings", json={"remote_fetch": True}).json()["remote_fetch"] is True
+    assert client.get("/files/set-image/100-1").headers["content-type"] == "image/svg+xml"      # not owned: never fetched
+    for _ in range(2):
+        r = client.get("/files/set-image/8448-1")
+        assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg" and r.content == JPG
+    assert pictures == ["https://cdn.rebrickable.com/media/sets/8448-1.jpg"]
+    assert (set_images.cache_dir() / "8448-1.catalog.jpg").is_file()
+
+
+def test_failed_fetch_serves_the_placeholder_and_is_not_retried_at_once(client, catalog, pictures, monkeypatch):
+    client.post("/api/collection/sets", json={"set_num": "8448"})
+    client.put("/api/set-images/settings", json={"remote_fetch": True})
+    calls = []
+
+    def offline(url):
+        calls.append(url)
+        raise OSError("offline")
+    monkeypatch.setattr(set_images, "_download", offline)
+    for _ in range(2):
+        assert client.get("/files/set-image/8448-1").headers["content-type"] == "image/svg+xml"
+    assert len(calls) == 1
+
+
+def test_upload_works_for_any_set_and_wins_over_the_catalogue_picture(client, catalog, pictures):
+    client.post("/api/collection/sets", json={"set_num": "100", "brand": "CADA"})
+    r = client.post("/api/sets/set-100-1/image", content=PNG, headers={"content-type": "image/png"})
+    assert r.status_code == 200 and r.json()["image"] == "/files/set-image/100-1"
+    got = client.get("/files/set-image/100-1")
+    assert got.headers["content-type"] == "image/png" and got.content == PNG
+    client.put("/api/set-images/settings", json={"remote_fetch": True})
+    assert client.get("/files/set-image/100-1").content == PNG and pictures == []
+    assert client.delete("/api/sets/set-100-1/image").json() == {"removed": True}
+    client.put("/api/set-images/settings", json={"remote_fetch": False})
+    assert client.get("/files/set-image/100-1").headers["content-type"] == "image/svg+xml"
+
+
+def test_upload_is_checked_for_type_size_and_set(client, catalog, pictures):
+    client.post("/api/collection/sets", json={"set_num": "100"})
+    assert client.post("/api/sets/set-100-1/image", content=b"<svg onload=alert(1)>").status_code == 415
+    assert client.post("/api/sets/set-100-1/image", content=b"").status_code == 400
+    assert client.post("/api/sets/set-100-1/image", content=PNG + b"x" * set_images.MAX_BYTES).status_code == 413
+    assert client.post("/api/sets/nope/image", content=PNG).status_code == 404
+    assert client.get("/files/set-image/..%2Fsecret").status_code == 404
+
+
+def test_set_with_a_bundled_model_falls_back_to_a_render(client, catalog, pictures, tmp_path, monkeypatch):
+    models = tmp_path / "toolkit" / "data" / "models-annotated"
+    models.mkdir(parents=True)
+    (models / "8448-1.mpd").write_text("0 model\n", encoding="utf-8")
+    monkeypatch.setattr(settings, "TOOLKIT_DIR", tmp_path / "toolkit")
+    renders = []
+
+    async def fake_render(model, out, **kwargs):
+        renders.append(model.name)
+        out.write_bytes(PNG)
+        return out
+    monkeypatch.setattr(set_images.render, "render", fake_render)
+    client.post("/api/collection/sets", json={"set_num": "8448"})
+    for _ in range(2):
+        r = client.get("/files/set-image/8448-1")
+        assert r.headers["content-type"] == "image/png" and r.content == PNG
+    assert renders == ["8448-1.mpd"] and pictures == []
