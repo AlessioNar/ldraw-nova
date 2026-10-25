@@ -43,9 +43,9 @@ export function budgetLabel(b: number | null | undefined) {
 }
 
 /** The per-chat settings that used to crowd the composer toolbar. A popover on desktop, a bottom sheet on a phone (CSS). */
-export default function ChatSettings({ options, onChange, profile, defaultWorkerId, inventories, steering, onSteering, disabled, focus, onClose }: {
+export default function ChatSettings({ options, onChange, profile, defaultWorkerId, inventories, steering, onSteering, onInventoriesChanged, disabled, focus, onClose }: {
   options: TurnOptions; onChange: (next: TurnOptions) => void; profile?: ModelProfile; defaultWorkerId: string | null;
-  inventories: Inventory[]; steering: PartsSteering; onSteering: (next: PartsSteering) => void;
+  inventories: Inventory[]; steering: PartsSteering; onSteering: (next: PartsSteering) => void; onInventoriesChanged?: () => void;
   disabled: boolean; focus: "settings" | "budget"; onClose: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -99,7 +99,7 @@ export default function ChatSettings({ options, onChange, profile, defaultWorker
           {options.permissions === "full" && <label className="small"><input type="checkbox" disabled={disabled} checked={options.confirm_with_documents === true}
             onChange={e => onChange({ ...options, confirm_with_documents: e.target.checked })} /> Still ask before running code when documents are attached</label>}</div></div>}
       <div className="setting-row"><label>Parts<small className="muted">{partsSummary(steering, inventories)}</small></label>
-        <PartsControl inventories={inventories} value={steering} onChange={onSteering} disabled={disabled} /></div>
+        <PartsControl inventories={inventories} value={steering} onChange={onSteering} disabled={disabled} onChanged={onInventoriesChanged} /></div>
       <div className="setting-row"><label>Workers</label>
         <WorkerModelPicker value={options.worker_model_id !== undefined ? options.worker_model_id : defaultWorkerId} disabled={disabled}
           onChange={id => onChange({ ...options, worker_model_id: id })} /></div>

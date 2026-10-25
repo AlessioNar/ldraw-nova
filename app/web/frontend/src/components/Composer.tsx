@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../context";
 import { inventoryApi, type TurnOptions, type DocumentUpload, type Inventory } from "../api";
-import { loadSteering, saveSteering, type PartsSteering } from "./parts/PartsControl";
+import { loadSteering, saveSteering, partsSummary, type PartsSteering } from "./parts/PartsControl";
 import ModelPicker from "./ModelPicker";
 import ChatSettings, { budgetLabel, loadChatDefaults, saveChatDefaults } from "./ChatSettings";
 import { rememberModel } from "../modelChoices";
@@ -89,7 +89,8 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     setPanel(null);
     opener?.focus();
   }
-  useEffect(() => { inventoryApi.list().then(r => setInventories(r.inventories), () => {}); }, []);
+  const loadInventories = useCallback(() => inventoryApi.list().then(r => setInventories(r.inventories), () => {}), []);
+  useEffect(() => { void loadInventories(); }, [loadInventories]);
   // Only ids that still exist count; a mode other than off needs at least one, so fall back to the newest list.
   const known = inventories.filter(i => steering.ids.includes(i.id)).map(i => i.id);
   const effective: PartsSteering = { mode: steering.mode, ids: steering.mode !== "off" && !known.length && inventories.length ? [inventories[0].id] : known };
@@ -189,6 +190,10 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
     <div className="composer-toolbar">
       <div className="turn-options">
         <ModelPicker value={llmId} onChange={chooseModel} disabled={disabled || !llms.length} />
+        {!!inventories.length && <button type="button" className="compact-control chat-settings-trigger parts-chip" aria-haspopup="dialog" aria-expanded={panel === "settings"}
+          title="Which of My Parts this build may use. Click to change." onClick={() => setPanel(panel === "settings" ? null : "settings")}>
+          Parts: {partsSummary(effective, inventories)}
+        </button>}
         <button type="button" ref={budgetButton} className={`compact-control chat-settings-trigger budget-chip${budgetReached ? " over" : ""}`} aria-haspopup="dialog" aria-expanded={panel === "budget"}
           title="Spend limit for each request: planner and workers stop when a message has cost about this much. Click to change." onClick={() => setPanel(panel === "budget" ? null : "budget")}>
           {budgetLabel(options.budget_eur)}{options.budget_eur ? <small> per request</small> : null}
@@ -206,7 +211,7 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
         <button type="submit" className="primary send-button" disabled={!text.trim() || busy || (!model && !allowNoModel)}>Send <span aria-hidden>↑</span></button>}
     </div>
     {panel && <ChatSettings options={options} onChange={setOptions} profile={profile} defaultWorkerId={defaultWorkerId ?? null} inventories={inventories}
-      steering={effective} onSteering={changeSteering} disabled={disabled} focus={panel} onClose={closePanel} />}
+      steering={effective} onSteering={changeSteering} onInventoriesChanged={() => void loadInventories()} disabled={disabled} focus={panel} onClose={closePanel} />}
     <div className="composer-hint muted">{hint ?? "Enter to send · Shift+Enter for a new line"}</div>
   </form>;
 }

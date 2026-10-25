@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import type { Inventory, PartsMode } from "../../api";
+import { useState } from "react";
+import { reservationsApi, type Inventory, type PartsMode } from "../../api";
 
 export type PartsSteering = { mode: PartsMode; ids: string[] };
 
@@ -30,9 +31,12 @@ export function partsSummary(value: PartsSteering, inventories: Inventory[]): st
 }
 
 /** How the agent uses the user's inventories; rendered inline inside the chat settings popover. */
-export default function PartsControl({ inventories, value, onChange, disabled }: {
+export default function PartsControl({ inventories, value, onChange, disabled, onChanged }: {
   inventories: Inventory[]; value: PartsSteering; onChange: (next: PartsSteering) => void; disabled?: boolean;
+  onChanged?: () => void;   // a set was taken apart: the lists changed, reload them
 }) {
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
   if (!inventories.length) {
     return <Link className="parts-empty" to="/parts">Upload a parts list under My Parts</Link>;
   }
@@ -45,20 +49,34 @@ export default function PartsControl({ inventories, value, onChange, disabled }:
     const ids = active.map(i => i.id);
     onChange({ mode: value.mode, ids: ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id] });
   };
+  const takeApart = async (inv: Inventory) => {
+    setBusy(inv.id); setError("");
+    try { await reservationsApi.setSetState(inv.id, "parts"); onChanged?.(); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(""); }
+  };
+  const loose = inventories.filter(i => i.kind === "loose");
   return <div className="parts-control">
     <div className="segmented" role="radiogroup" aria-label="Parts mode">
       {MODES.map(m => <button type="button" key={m.value} role="radio" aria-checked={value.mode === m.value} aria-pressed={value.mode === m.value}
         title={m.hint} disabled={disabled} onClick={() => setMode(m.value)}>{m.label}</button>)}
     </div>
     <p className="muted small">{MODES.find(m => m.value === value.mode)?.hint}.</p>
+    {value.mode !== "off" && <div className="parts-presets" role="group" aria-label="Which parts">
+      <button type="button" disabled={disabled} onClick={() => onChange({ mode: value.mode, ids: inventories.map(i => i.id) })}>All of My Parts</button>
+      {!!loose.length && <button type="button" disabled={disabled} onClick={() => onChange({ mode: value.mode, ids: loose.map(i => i.id) })}>Loose parts only</button>}
+    </div>}
     {value.mode !== "off" && <fieldset className="parts-lists"><legend className="picker-label">Inventories</legend>
       {inventories.map(inv => {
         const checked = active.some(i => i.id === inv.id);
         return <label className="check" key={inv.id}>
           <input type="checkbox" checked={checked} disabled={disabled || (checked && active.length === 1)} onChange={() => toggle(inv.id)} />
           <span className="ellipsis">{inv.name}</span><span className="muted small">{inv.total_pieces.toLocaleString()} pcs</span>
+          {inv.set?.state === "built" && <button type="button" className="small" disabled={disabled || busy === inv.id} title="It is built, so its parts are held back. Take it apart to use them in this build."
+            onClick={e => { e.preventDefault(); void takeApart(inv); }}>Take apart</button>}
         </label>;
       })}
     </fieldset>}
+    {error && <p className="warn-text small" role="alert">{error}</p>}
   </div>;
 }
