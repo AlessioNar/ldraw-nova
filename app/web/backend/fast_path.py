@@ -23,6 +23,7 @@ import settings
 import understand
 import usage
 import chat_routing
+import parts_phrase
 from store import get_store
 
 # Seconds a generator takes in the resident worker (build + checks + preview), from the proposal's measurements.
@@ -882,6 +883,12 @@ async def describe(text: str, *, current: Optional[dict] = None, build_id: Optio
     started = time.monotonic()
     await generator_bridge.ensure()
     context = context or {}
+    if offered := parts_phrase.offer(text):
+        offered.update(understanding_cost_eur=0.0, understood_by="rules", understanding_model=None)
+        if build_id:
+            offered["build_id"] = build_id
+        await asyncio.to_thread(request_log.record_describe, text, offered, spec=None, started=started, current=current)
+        return offered
     if not current and not context.get("has_model") and (steps := split_steps(text)):
         combined = await _describe_steps(*steps, build_id=build_id, llm_id=llm_id)
         if combined:

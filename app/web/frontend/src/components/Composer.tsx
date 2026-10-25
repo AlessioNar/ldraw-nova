@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type Keyboard
 import { Link } from "react-router-dom";
 import { useApp } from "../context";
 import { inventoryApi, type TurnOptions, type DocumentUpload, type Inventory } from "../api";
-import { loadSteering, saveSteering, partsSummary, type PartsSteering } from "./parts/PartsControl";
+import { loadSteering, saveSteering, partsSummary, STEERING_EVENT, type PartsSteering } from "./parts/PartsControl";
 import ModelPicker from "./ModelPicker";
 import ChatSettings, { budgetLabel, loadChatDefaults, saveChatDefaults } from "./ChatSettings";
 import { rememberModel } from "../modelChoices";
@@ -52,6 +52,11 @@ export default function Composer({ llmId, onLlmChange, onSend, onStop, running, 
   const [inventories, setInventories] = useState<Inventory[]>([]);
   const [steering, setSteering] = useState<PartsSteering>(() => initialOptions?.parts_mode
     ? { mode: initialOptions.parts_mode, ids: initialOptions.inventory_ids ?? [] } : loadSteering());
+  useEffect(() => {
+    const on = (e: Event) => setSteering((e as CustomEvent<PartsSteering>).detail);
+    window.addEventListener(STEERING_EVENT, on);
+    return () => window.removeEventListener(STEERING_EVENT, on);
+  }, []);
   const model = llms.find(m => m.id === llmId);
   const profile = model?.profile;
   const disabled = running || busy;

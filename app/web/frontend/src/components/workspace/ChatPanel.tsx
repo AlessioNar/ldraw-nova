@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { api, buildsApi, estimateLabel, type ChatDetail, type DescribeHint, type DocumentUpload, type Message, type TurnOptions } from "../../api";
+import { api, buildsApi, estimateLabel, type ChatDetail, type DescribeHint, type DocumentUpload, type Message, type PartsMode, type TurnOptions } from "../../api";
 import { useApp } from "../../context";
 import { useChatStream } from "../../hooks/useChatStream";
 import type { Proposal } from "../../workspace/types";
@@ -9,6 +9,7 @@ import { wsApi } from "../../workspace/wsApi";
 import Composer from "../Composer";
 import MessageList from "../MessageList";
 import TurnStatus from "../TurnStatus";
+import { applySteering } from "../parts/PartsControl";
 
 function ProposalCard({ p, ws }: { p: Proposal; ws: Workspace }) {
   const previewing = ws.viewing?.kind === "proposal" && ws.viewing.id === p.id;
@@ -206,6 +207,20 @@ export default function ChatPanel({ ws }: { ws: Workspace }) {
         </div>
       </div>
     );
+    if (f.parts_offer) {
+      const o = f.parts_offer;
+      const use = (mode: PartsMode) => { applySteering({ mode, ids: [o.id] }); void note(`Parts: ${mode === "only" ? "only" : "preferring"} ${o.name}.`); };
+      return (
+        <div className="ws-tray" role="region" aria-label="Needs you">
+          <div className="label">Needs you</div>
+          <div className="ws-chips" role="group" aria-label="Parts scope">
+            <button className="ws-chip-btn pick" onClick={() => use(o.mode)}>{o.mode === "only" ? "Only" : "Prefer"} {o.name}</button>
+            <button className="ws-chip-btn" onClick={() => use(o.mode === "only" ? "prefer" : "only")}>{o.mode === "only" ? "Prefer" : "Only"} instead</button>
+            <button className="ws-chip-btn" onClick={() => note("No change to the parts.")}>Not now</button>
+          </div>
+        </div>
+      );
+    }
     const choices = f.choices ?? [];
     if (!choices.length && !f.highlight?.length) return null;
     return (
