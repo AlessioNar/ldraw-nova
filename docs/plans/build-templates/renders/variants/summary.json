@@ -1,0 +1,206 @@
+{
+ "small-house-source": {
+  "parts": 390,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [],
+  "geometry_errors": 26,
+  "components": 50,
+  "seconds": 23.4
+ },
+ "small-house-z+2": {
+  "parts": 411,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [],
+  "geometry_errors": 26,
+  "components": 50,
+  "seconds": 18.7
+ },
+ "small-house-courses+1": {
+  "parts": 398,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [],
+  "geometry_errors": 26,
+  "components": 50,
+  "seconds": 17.4
+ },
+ "small-house-courses-1": {
+  "parts": 382,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [],
+  "geometry_errors": 26,
+  "components": 50,
+  "seconds": 16.7
+ },
+ "small-house-red-roof-no-bushes": {
+  "parts": 361,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [],
+  "geometry_errors": 26,
+  "components": 39,
+  "seconds": 17.1
+ },
+ "flatbed-truck-source": {
+  "parts": 59,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 4,
+  "seconds": 3.4
+ },
+ "flatbed-truck-z+6": {
+  "parts": 60,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 4,
+  "seconds": 2.1
+ },
+ "flatbed-truck-z+12-red": {
+  "parts": 61,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 4,
+  "seconds": 2.7
+ },
+ "flatbed-truck-no-trailer": {
+  "parts": 37,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 1,
+  "seconds": 1.7
+ },
+ "passenger-car-source": {
+  "parts": 389,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 28,
+  "seconds": 14.8
+ },
+ "passenger-car-z+4": {
+  "parts": 394,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 28,
+  "seconds": 14.4
+ },
+ "passenger-car-z+4-blue": {
+  "parts": 394,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 28,
+  "seconds": 13.8
+ },
+ "willowbank-cottage-source": {
+  "parts": 1163,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 205,
+  "seconds": 87.6
+ },
+ "willowbank-cottage-z+2": {
+  "parts": 1197,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 205,
+  "seconds": 83.8
+ },
+ "willowbank-cottage-courses+3": {
+  "parts": 1223,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 205,
+  "seconds": 79.2
+ },
+ "willowbank-cottage-recoloured-no-porch-chimney-field": {
+  "parts": 914,
+  "errors": [],
+  "notes": [],
+  "geometry_errors": 0,
+  "components": 37,
+  "seconds": 53.8
+ },
+ "edit-4956-house-roof-blue": {
+  "parts": 618,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [
+   "recolour_role ['roof', 'blue']: 262 ops, 262 matched; "
+  ],
+  "seconds": 5.7
+ },
+ "edit-4956-house-source": {
+  "parts": 618,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [],
+  "seconds": 2.0
+ },
+ "edit-4993-truck-body-lime": {
+  "parts": 637,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [
+   "recolour_role ['body', 'lime']: 73 ops, 73 matched; "
+  ],
+  "seconds": 8.2
+ },
+ "edit-4993-truck-source": {
+  "parts": 637,
+  "errors": [
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored.",
+   "Use a proper rotation: physical parts must not be scaled, sheared, or mirrored."
+  ],
+  "notes": [],
+  "seconds": 2.4
+ },
+ "edit-31045-aircraft-wings-red": {
+  "parts": 141,
+  "errors": [],
+  "notes": [
+   "recolour_role ['wing', 'red']: 21 ops, 30 matched; "
+  ],
+  "seconds": 2.6
+ },
+ "edit-31045-aircraft-source": {
+  "parts": 141,
+  "errors": [],
+  "notes": [],
+  "seconds": 1.6
+ }
+}

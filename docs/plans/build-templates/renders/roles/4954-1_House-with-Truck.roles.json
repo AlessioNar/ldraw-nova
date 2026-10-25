@@ -1,0 +1,20 @@
+{
+ "domain": "building",
+ "counts": {
+  "body": 65,
+  "wall": 271,
+  "chassis": 21,
+  "door": 31,
+  "roof": 180,
+  "glass": 3,
+  "wheel": 4,
+  "tyre": 4,
+  "detail": 2,
+  "base": 11,
+  "trim": 235,
+  "window": 45
+ },
+ "low_confidence": 177,
+ "seconds": 2.0,
+ "warnings": 0
+}

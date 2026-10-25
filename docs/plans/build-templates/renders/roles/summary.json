@@ -1,0 +1,188 @@
+{
+ "5891-1_Small-House": {
+  "domain": "building",
+  "counts": {
+   "trim": 190,
+   "base": 18,
+   "wall": 65,
+   "window": 18,
+   "door": 2,
+   "roof": 95
+  },
+  "low_confidence": 26,
+  "seconds": 7.2,
+  "warnings": 0
+ },
+ "4915-1_Flat-Bed": {
+  "domain": "vehicle",
+  "counts": {
+   "body": 22,
+   "chassis": 18,
+   "door": 1,
+   "trim": 4,
+   "glass": 3,
+   "wheel": 6,
+   "tyre": 6,
+   "roof": 1
+  },
+  "low_confidence": 2,
+  "seconds": 1.9,
+  "warnings": 0
+ },
+ "10183-1_Passenger-car": {
+  "domain": "vehicle",
+  "counts": {
+   "chassis": 21,
+   "body": 137,
+   "door": 6,
+   "window": 6,
+   "glass": 30,
+   "roof": 120,
+   "wheel": 30,
+   "detail": 4
+  },
+  "low_confidence": 0,
+  "seconds": 3.7,
+  "warnings": 0
+ },
+ "4956-1_House-with-Arch": {
+  "domain": "building",
+  "counts": {
+   "trim": 160,
+   "roof": 263,
+   "base": 23,
+   "wall": 111,
+   "window": 26,
+   "door": 30,
+   "detail": 5
+  },
+  "low_confidence": 11,
+  "seconds": 4.8,
+  "warnings": 0
+ },
+ "4993-1_Truck": {
+  "domain": "vehicle",
+  "counts": {
+   "chassis": 361,
+   "body": 76,
+   "engine": 35,
+   "glass": 16,
+   "detail": 8,
+   "roof": 97,
+   "door": 32,
+   "wheel": 8,
+   "tyre": 4
+  },
+  "low_confidence": 3,
+  "seconds": 8.0,
+  "warnings": 0
+ },
+ "31045-1_Aircraft": {
+  "domain": "aircraft",
+  "counts": {
+   "body": 79,
+   "structure": 3,
+   "wing": 32,
+   "detail": 8,
+   "glass": 4,
+   "engine": 11,
+   "wheel": 4
+  },
+  "low_confidence": 1,
+  "seconds": 1.0,
+  "warnings": 0
+ },
+ "5892-1": {
+  "domain": "aircraft",
+  "counts": {
+   "wing": 200,
+   "body": 214,
+   "structure": 83,
+   "detail": 16,
+   "wheel": 3,
+   "engine": 2,
+   "glass": 12,
+   "tyre": 1,
+   "door": 2
+  },
+  "low_confidence": 1,
+  "seconds": 6.8,
+  "warnings": 0
+ },
+ "4954-1_House-with-Truck": {
+  "domain": "building",
+  "counts": {
+   "body": 65,
+   "wall": 271,
+   "chassis": 21,
+   "door": 31,
+   "roof": 180,
+   "glass": 3,
+   "wheel": 4,
+   "tyre": 4,
+   "detail": 2,
+   "base": 11,
+   "trim": 235,
+   "window": 45
+  },
+  "low_confidence": 177,
+  "seconds": 2.0,
+  "warnings": 0
+ },
+ "willowbank-cottage-v1": {
+  "domain": "building",
+  "counts": {
+   "base": 43,
+   "wall": 225,
+   "roof": 423,
+   "trim": 361,
+   "window": 25,
+   "door": 6,
+   "detail": 41
+  },
+  "low_confidence": 62,
+  "seconds": 6.0,
+  "warnings": 0
+ },
+ "generator-house": {
+  "domain": "building",
+  "counts": {
+   "wall": 30,
+   "roof": 36,
+   "base": 3,
+   "window": 5,
+   "door": 3,
+   "trim": 4
+  },
+  "low_confidence": 0,
+  "seconds": 2.7,
+  "warnings": 0
+ },
+ "generator-delivery-van": {
+  "domain": "vehicle",
+  "counts": {
+   "wheel": 4,
+   "chassis": 14,
+   "body": 81,
+   "tyre": 2,
+   "detail": 6,
+   "glass": 1,
+   "roof": 15
+  },
+  "low_confidence": 2,
+  "seconds": 0.4,
+  "warnings": 0
+ },
+ "generator-starfighter": {
+  "domain": "aircraft",
+  "counts": {
+   "wing": 21,
+   "engine": 4,
+   "body": 10,
+   "glass": 2
+  },
+  "low_confidence": 0,
+  "seconds": 0.2,
+  "warnings": 0
+ }
+}
