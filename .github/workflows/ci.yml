@@ -5,11 +5,13 @@ on:
   push:
     branches: [master]
   workflow_dispatch:      # Actions tab > CI > Run workflow: runs the image job on any branch
+  schedule:
+    - cron: '17 3 * * *'  # nightly full run on master: merges land every few minutes and cancel the push runs of the 20-minute image job
 
 # A newer push to the same PR/branch makes the older run pointless, and the
-# image job is expensive.
+# image job is expensive. The nightly run has its own group so a push cannot cancel it.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'nightly' || github.ref }}
   cancel-in-progress: true
 
 permissions:
