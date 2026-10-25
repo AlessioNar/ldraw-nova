@@ -178,3 +178,24 @@ def test_stored_chatgpt_entry_is_unsupported_even_without_browser_mode():
                                    "capabilities": {}, "auth_mode": "api_key"}], "default_id": "g1"})
     listed = TestClient(app).get("/api/llm-models").json()["models"]
     assert [(m["id"], m["unsupported"]) for m in listed] == [("g1", True)]
+
+
+@pytest.mark.parametrize("documents,tool,asks", [(True, "run_python", True), (True, "run_shell", True), (True, "write_file", False),
+                                                 (False, "run_python", False)])
+def test_full_permissions_ask_before_code_runs_in_chats_with_documents(monkeypatch, store, documents, tool, asks):
+    async def dispatch(*args):
+        return ToolResult("executed")
+    monkeypatch.setattr(agent, "dispatch", dispatch)
+    chat = store.create_chat()
+    store.add_message(chat["id"], {"role": "user", "content": "hi", **({"_documents": [{"name": "a.txt"}]} if documents else {})})
+    run = run_state.Run(chat["id"], options={"mode": "agent", "permissions": "full"})
+    run_state._runs[chat["id"]] = run
+    ctx = ToolContext(chat["id"], store, run.emit)
+    async def check():
+        task = asyncio.create_task(agent.execute_tool(run, ctx, "call", tool, "{}"))
+        await asyncio.sleep(0)
+        assert bool(run.approvals) is asks
+        for approval_id in list(run.approvals):
+            run_state.decide(chat["id"], approval_id, True)
+        assert (await task).content == "executed"
+    asyncio.run(check())

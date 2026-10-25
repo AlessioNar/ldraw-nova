@@ -77,11 +77,20 @@ async def _run_turn(store: ChatStore, run: Run, entry: dict) -> None:
     await run_turn(store, run, entry, execute_tool)
 
 
+CODE_TOOLS = {"run_shell", "run_python", "run_toolkit", "delegate"}      # delegate: its workers run Python without asking
+
+
+def _documents_gate(run: Run, ctx: ToolContext | None, name: str) -> bool:
+    """Full permissions still ask before code runs in a chat with uploaded documents: their text can carry injected instructions."""
+    return (name in CODE_TOOLS and ctx is not None
+            and any(m.get("_documents") for m in ctx.store.messages(run.chat_id)))
+
+
 async def execute_tool(run: Run, ctx: ToolContext, call_id: str, name: str, arguments: str) -> ToolResult:
     allowed = {t["function"]["name"] for t in available_tools(run.options, run.chat_id)}
     if name not in allowed:
         return ToolResult("Tool denied by the current mode or permissions.")
-    if name not in READ_TOOLS and run.options.get("permissions", "ask") == "ask":
+    if name not in READ_TOOLS and (run.options.get("permissions", "ask") == "ask" or _documents_gate(run, ctx, name)):
         # Independent approval IDs prevent replay between turns or duplicate provider call IDs.
         approval_id = uuid.uuid4().hex
         future = asyncio.get_running_loop().create_future()
