@@ -64,7 +64,7 @@ class Ctx:
                     alt = self.inv.nearest_colour(code)
                     self._colours[code] = alt
                     if alt != code:
-                        self.inv.substitutions.append(dict(wanted=code, used=alt, reason='colour not owned'))
+                        self.inv.substitute('colour', code, alt, 'colour not owned')
             return self._colours[code]
         return code
 

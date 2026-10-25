@@ -1,7 +1,7 @@
 """Layout of storeys and towers, floor bands, and the tops: flat decks, parapets and battlements, tower roofs."""
 from __future__ import annotations
 
-from . import catalog, footprint, roofs, tiling
+from . import catalog, footprint, parts, roofs, tiling
 from .context import Storey
 from .roofs import _put_cover
 
@@ -213,7 +213,7 @@ def parapet(ctx, st, cells, y, colour, role, courses, style, m, g):
                         run.append(p)
                         continue
                     pos = run[0]
-                    for length in tiling.tile_run(len(run), run[0], set()):
+                    for length in parts.fit_run(ctx, len(run), run[0], set(), catalog.BRICK, colour):
                         if axis == 'h':
                             ctx.canvas.put(catalog.BRICK[length], colour, role, pos + length / 2, key + .5, yk, 0, label='parapet')
                         else:

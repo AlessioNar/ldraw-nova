@@ -34,24 +34,25 @@ def tile_run(n, start, avoid, lengths=BRICK_LENGTHS, cost=None, owned=None):
     return list(best[n][1])
 
 
-def rect_cover(cells, kind='plate', longest=8):
+def rect_cover(cells, kind='plate', longest=8, allowed=None):
     """Cover a set of (i, j) cells with plates (or tiles): [(code, i0, j0, w, d)] with d in {1, 2} along z.
 
-    Wide plates first (2 x L), then 1 x L; deterministic scan order. Long side is always along x.
+    Wide plates first (2 x L), then 1 x L; deterministic scan order. Long side is always along x. `allowed` limits
+    the part codes used (it must include a 1 x L part).
     """
     cells = set(cells)
     done = set()
     one = catalog.PLATE if kind == 'plate' else catalog.TILE
     two = catalog.PLATE2 if kind == 'plate' else catalog.TILE2
-    two_lengths = sorted((n for n in two if n <= longest), reverse=True)
-    one_lengths = sorted((n for n in one if n <= longest), reverse=True)
+    two_lengths = sorted((n for n in two if n <= longest and (allowed is None or two[n] in allowed)), reverse=True)
+    one_lengths = sorted((n for n in one if n <= longest and (allowed is None or one[n] in allowed)), reverse=True)
     out = []
     for (i, j) in sorted(cells, key=lambda c: (c[1], c[0])):
         if (i, j) in done:
             continue
         run2 = 0
         while (i + run2, j) in cells and (i + run2, j) not in done and (i + run2, j + 1) in cells \
-                and (i + run2, j + 1) not in done and run2 < max(two_lengths):
+                and (i + run2, j + 1) not in done and run2 < max(two_lengths, default=0):
             run2 += 1
         length2 = next((n for n in two_lengths if n <= run2), 0)
         if length2:

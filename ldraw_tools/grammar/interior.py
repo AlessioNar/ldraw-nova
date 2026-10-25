@@ -1,7 +1,7 @@
 """Rooms: a partition wall with a doorway on every storey, bonded like the outer walls."""
 from __future__ import annotations
 
-from . import catalog, footprint, tiling
+from . import catalog, footprint, parts
 
 
 def partition(ctx, st):
@@ -25,7 +25,7 @@ def partition(ctx, st):
         spans = [(lo, door[0]), (door[1], hi)] if course < height else [(lo, hi)]
         for (a, b) in spans:
             pos = a
-            for length in tiling.tile_run(b - a, a, prev):
+            for length in parts.fit_run(ctx, b - a, a, prev, catalog.BRICK, colour):
                 if all(ctx.canvas.free(pos + k, j, y0 + h) for k in range(length) for h in range(3)):
                     ctx.canvas.put(catalog.BRICK[length], colour, 'structure', pos + length / 2, j + .5, y0, 0, label=f'partition s{st.index}')
                 joints |= {pos, pos + length}
