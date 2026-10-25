@@ -64,7 +64,6 @@ def plan_storey(ctx, st):
     for fac in facs:
         side = fac['side']
         ua, ub = fac['usable']
-        slots = []
         if ground and fac is door_fac:
             L = fac['b'] - fac['a']
             pos = cfg['door_position']

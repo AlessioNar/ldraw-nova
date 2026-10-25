@@ -1,6 +1,7 @@
 """Generator registry: interface, colour names, the digest budget, and a corner sweep of every parameter range."""
 import itertools
 import json
+import os
 import random
 
 import jsonschema
@@ -45,11 +46,11 @@ def extremes(spec):
     return []  # colours and arrays keep their defaults in the structured sweep
 
 
-def corner_cases(generator):
-    """One-at-a-time extremes, all-min, all-max, and a few seeded mixes of the extremes."""
+def corner_cases(generator, full=True):
+    """One-at-a-time extremes (full only), all-min, all-max, and a few seeded mixes of the extremes."""
     options = {k: extremes(v) for k, v in generator.params.items()}
     options = {k: v for k, v in options.items() if v}
-    cases = [{k: v} for k, vs in options.items() for v in vs]
+    cases = [{k: v} for k, vs in options.items() for v in vs] if full else []
     cases.append({k: vs[0] for k, vs in options.items()})
     cases.append({k: vs[-1] for k, vs in options.items()})
     rng = random.Random(generator.id)
@@ -158,7 +159,10 @@ def test_defaults_build_without_validation_errors(official, gid):
 @pytest.mark.parametrize('gid', IDS)
 def test_parameter_range_corners_build_without_validation_errors(official, gid):
     generator = generators.get(gid)
-    for case in corner_cases(generator):
+    # ponytail: the full sweep took ~10 min (dozens of builds per generator). By default only all-min, all-max,
+    # the seeded mixes and the length/wheelbase box; LDRAW_NOVA_FULL_SWEEP=1 adds every one-at-a-time extreme
+    # (run it when a generator changes).
+    for case in corner_cases(generator, full=os.environ.get('LDRAW_NOVA_FULL_SWEEP') == '1'):
         try:
             result = generator.generate(case)
             check(official, result['plan'], profile=PROFILES.get(gid))

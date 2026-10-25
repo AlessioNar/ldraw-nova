@@ -16,7 +16,6 @@ def build(config, inventory=None):
     ctx.storeys_preview = [st.cells for st in probe.storeys]
     details.base_plate(ctx)
     structure.make_layout(ctx)
-    sign_cells = None
     for st in ctx.storeys:
         override = None
         if st.index == 0 and cfg['details']['sign'] != 'none':

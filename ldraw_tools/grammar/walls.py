@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from . import catalog, tiling
-from .canvas import Canvas
 
 
 def wall_colours(ctx, st, course, cell, axis, corners, carved):
@@ -32,7 +31,6 @@ def wall_colours(ctx, st, course, cell, axis, corners, carved):
 
 def tile_course(ctx, st, course, y0, joints, override=None):
     """Place the bricks of one wall course. joints: dict with 'h' and 'v' maps of the previous course's joints."""
-    canvas: Canvas = ctx.canvas
     walls = st.walls
     carved = st.carve.get(course, set())
     gc = st.course0 + course

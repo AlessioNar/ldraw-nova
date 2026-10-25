@@ -102,7 +102,7 @@ def gable(ctx, rect, y_top, st):
     ridge_d = D - 2 * T
     keep = set()
     chim = ctx.cfg['details']['chimney']
-    cells_ridge = frame.rect_cells(0, ridge_v0, W, ridge_d)
+    frame.rect_cells(0, ridge_v0, W, ridge_d)
     ctx.ridge = dict(frame=frame, y=y_top + 3 * T, v0=ridge_v0, d=ridge_d, W=W)
     if chim != 'none':
         cu = {'left': max(g + 1, W // 4 - 1), 'centre': (W - 2) // 2, 'right': W - max(g + 1, W // 4 - 1) - 2}[chim]

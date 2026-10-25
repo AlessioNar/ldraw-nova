@@ -72,7 +72,7 @@ def svg_sheet(canvas, title='building'):
     height = pad * 2 + ymax * u * 0.8 + 24
     parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" height="{height:.0f}" font-family="sans-serif" font-size="11">',
              f'<rect width="100%" height="100%" fill="#ffffff"/><text x="{pad}" y="14" font-weight="bold">{title}: front and left elevation (1 stud = {u}px, 1 plate = {u * .8:.1f}px)</text>']
-    for k, side in enumerate(('front', 'side')):
+    for _k, side in enumerate(('front', 'side')):
         ox = pad + (0 if side == 'front' else w_front + pad)
         span = range(x0, x1) if side == 'front' else range(z0, z1)
         depth = range(z0, z1) if side == 'front' else range(x0, x1)
