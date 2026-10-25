@@ -34,13 +34,13 @@ HISTORY_TTL_S = 60
 # Families a generator exists for when the registry is not loaded yet (the estimate endpoint never waits for it).
 STATIC_FAMILIES = {"car", "van", "truck", "motorcycle", "boat", "aircraft", "spaceship", "house", "building"}
 GENERIC_KINDS = {"model", "vehicle", "building", "thing", "object", "toy"}
-SIZE_PARAMS = ("length", "wingspan", "width", "depth")
+SIZE_PARAMS = ("length", "wingspan", "width", "depth", "trunk_courses")
 WHOLE = ("whole", "model", "it", "", "size")
 
 ROLE_PARAMS = {"body": ["body", "wall", "hull"], "hull": ["hull", "body", "wall"], "walls": ["wall", "body"],
                "wheels": ["wheels", "wheel"], "glass": ["glass", "canopy"], "canopy": ["canopy", "glass"],
                "roof": ["roof"], "trim": ["trim"], "accent": ["accent"], "door": ["door"], "wing": ["wing"],
-               "chimney": ["chimney"], "engine": ["engine"]}
+               "chimney": ["chimney"], "engine": ["engine"], "foliage": ["foliage"], "trunk": ["trunk"], "flowers": ["flower"]}
 FEATURE_WORDS = {"door": "door", "window": "windows", "windows": "windows", "porch": "porch", "chimney": "chimney",
                  "dormer": "dormer", "engine": "engines", "engines": "engines", "wheel": "wheels", "wheels": "wheels"}
 # scale word -> share of the way from the default to the maximum (negative: from the default to the minimum)
@@ -404,8 +404,8 @@ def _scale(schema: dict, wanted: dict, edit: dict, target: str) -> bool:
     amount, unit = edit.get("amount"), edit.get("unit")
     if target == "roof" and "roof_tiers" in schema:
         names = ["roof_tiers"]
-    elif (unit == "courses" or delta in ("taller", "lower")) and "courses" in schema:
-        names = ["courses"]
+    elif (unit == "courses" or delta in ("taller", "lower")) and ("courses" in schema or "trunk_courses" in schema):
+        names = ["courses" if "courses" in schema else "trunk_courses"]
     elif delta in ("longer", "shorter"):
         names = [n for n in ("length", "depth") if n in schema][:1]
     elif delta in ("wider", "narrower"):
