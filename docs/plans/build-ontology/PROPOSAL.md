@@ -1,6 +1,6 @@
 # Build ontology as RDF: modelling approach
 
-Design note for epic #89 (issue #90). It decides which existing vocabularies to reuse, where they fall short, the IRI scheme, the file format, and what is generated from what. It does not build anything; the child issues #91 to #97 do.
+Design note for epic #89 (issue #90). It decides which existing vocabularies to reuse, where they fall short, the IRI scheme, the file format, and what is generated from what. It does not build anything; the child issues #91 to #97 do (numbering follows the epic's order: #91 roles, #92 components, #93 shapes, #94 JSON Schema, #95 templates, #96 vehicles, #97 export).
 
 ## Problem
 
@@ -68,10 +68,10 @@ Turtle, one file per concern, in the repo:
 
 ```
 ontology/
-  obd.ttl            owl:Ontology header, component classes, parameters (#93)
+  obd.ttl            owl:Ontology header, component classes, parameters (#92)
   roles.ttl          SKOS concept scheme (#91)
-  shapes.ttl         SHACL shapes (#94)
-  templates.ttl      reference builds with PROV-O (#96)
+  shapes.ttl         SHACL shapes (#93)
+  templates.ttl      reference builds with PROV-O (#95)
   context.jsonld     JSON-LD context for turning a plan into a graph for SHACL
 ```
 
@@ -90,7 +90,7 @@ templates.ttl ───────► ldraw_tools/data/templates/*.json metadat
 
 Direction is one way. Generated files carry a "generated from ontology/…, do not edit" header and are checked in so the app and users without `rdflib` still work. A CI step regenerates and fails on a diff (#97). The component-tree editor (#50) is unaffected because the JSON Schema keeps its shape, including `x-component` and `x-colour`, now emitted from `obd:component` and `obd:colourParameter`.
 
-Migration order, so nothing is ever two sources of truth: #57 lands the single role module; #91 moves its content into `roles.ttl` and generates the module back out with identical `ROLES`/`ALIASES`; #93 and #95 do the same for the schema; #94 replaces the hand rules only after the six presets and the 20 presets validate under both.
+Migration order, so nothing is ever two sources of truth: #57 lands the single role module; #91 moves its content into `roles.ttl` and generates the module back out with identical `ROLES`/`ALIASES`; #92 and #94 do the same for the schema; #93 replaces the hand rules only after the six presets and the 20 presets validate under both.
 
 ## Decisions
 
@@ -102,8 +102,8 @@ Migration order, so nothing is ever two sources of truth: #57 lands the single r
 
 ## Risks and open questions
 
-- Does `pyshacl` run fast enough to validate generation inside the agent loop? Measure on the 20 presets in #94; fall back to keeping the Python rules as the runtime check and SHACL as the CI check if not.
-- Domain-scoped aliases (`floor`): one scheme with `scopeNote`, or one scheme per domain (buildings, vehicles)? Needed before #91 merges; vehicles arrive in #97's sibling #96/#97 work.
+- Does `pyshacl` run fast enough to validate generation inside the agent loop? Measure on the 20 presets in #93; fall back to keeping the Python rules as the runtime check and SHACL as the CI check if not.
+- Domain-scoped aliases (`floor`): one scheme with `scopeNote`, or one scheme per domain (buildings, vehicles)? Needed before #91 merges; vehicles arrive with #96.
 - A stable base IRI: GitHub Pages path above is a placeholder; a `w3id.org` registration would survive a rename. Owner's call.
 - Licence of the ontology files: the repo's docs are CC BY-SA 4.0 (`ATTRIBUTION.md`); suggest the same for `ontology/` and say so in the `owl:Ontology` header. Template instance data keeps its source licence (CCAL 2.0) per instance.
 - Whether to model parameter bounds in OWL as well as SHACL. Proposed no: one place (SHACL) avoids a second copy.
@@ -113,8 +113,8 @@ Migration order, so nothing is ever two sources of truth: #57 lands the single r
 | issue | depends on this note for |
 |---|---|
 | #91 roles as SKOS | scheme layout, alias policy, IRI scheme, `CANONICAL` mapped to `exactMatch`/`broadMatch` |
-| #92/#93 components and parameters as OWL | `obd:` helper terms, class names, file layout |
-| #94 SHACL | shape file, the JSON-LD context, pyshacl as toolkit-only |
-| #95 generate JSON Schema | one-way generation, unchanged schema shape |
-| #96 templates with PROV-O | provenance pattern, licence per instance |
+| #92 components and parameters as OWL | `obd:` helper terms, class names, file layout |
+| #93 SHACL | shape file, the JSON-LD context, pyshacl as toolkit-only |
+| #94 generate JSON Schema | one-way generation, unchanged schema shape |
+| #95 templates with PROV-O | provenance pattern, licence per instance |
 | #97 export and docs | publishing base IRI, CI sync check |
